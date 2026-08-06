@@ -1,0 +1,362 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  manager
+  teacher
+  student
+  reception
+}
+
+enum Language {
+  uz
+  ru
+  en
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String
+  email            String?   @unique
+  username         String    @unique
+  passwordHash     String
+  role             Role      @default(student)
+  avatar           String?
+  phone            String?
+  gender           String?
+  age              Int?
+  address          String?
+  language         Language  @default(uz)
+  xp               Int       @default(0)
+  coins            Int       @default(0)
+  level            Int       @default(1)
+  streakCurrent    Int       @default(0)
+  streakLongest    Int       @default(0)
+  streakLastDate   DateTime?
+  achievements     Json      @default("[]")
+  refreshTokenHash String?
+  isActive         Boolean   @default(true)
+  isFrozen         Boolean   @default(false)
+  lastLogin        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  groupId   String?
+  group     Group?  @relation("StudentGroup", fields: [groupId], references: [id])
+
+  clonedVoiceId   String?
+  clonedVoiceName String?
+
+  branches    Branch[] @relation("ReceptionBranches")
+  maxBranches Int      @default(3) // only relevant for role='reception', set by admin
+
+  branchId String?
+  branch   Branch? @relation("TeacherBranch", fields: [branchId], references: [id])
+
+  teacherId String?
+  teacher   User?   @relation("StudentTeacher", fields: [teacherId], references: [id])
+  students  User[]  @relation("StudentTeacher")
+
+  taughtGroups  Group[]        @relation("TeacherGroup")
+  lessons       Lesson[]
+  homework      Homework[]
+  tests         Test[]
+  submissions   Submission[]
+  results       Result[]
+  notifications Notification[]
+  aiChats       AIChat[]
+  resources     Resource[]
+  attendances   Attendance[]
+  payments      Payment[]      @relation("StudentPayments")
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  subject     String   @default("other")
+  icon        String?
+  color       String?
+  isActive    Boolean  @default(true)
+  monthlyFee  Int?
+  weekDays    String?  // JSON array stored as string: ["mon","wed","fri"]
+  startTime   String?  // "HH:MM"  e.g. "09:00"
+  endTime     String?  // "HH:MM"  e.g. "10:30"
+  room        String?  // e.g. "101-xona", "2-kat"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teacherId String
+  teacher   User   @relation("TeacherGroup", fields: [teacherId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  students    User[]       @relation("StudentGroup")
+  lessons     Lesson[]
+  homework    Homework[]
+  tests       Test[]
+  attendances Attendance[]
+  resources   Resource[]
+}
+
+// A physical location/campus. Only reception accounts can create branches,
+// and each reception account may own at most 3 (enforced in the controller,
+// not the schema).
+model Branch {
+  id              String   @id @default(cuid())
+  name            String
+  address         String?
+  studentCapacity Int?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  receptionId String
+  reception   User   @relation("ReceptionBranches", fields: [receptionId], references: [id])
+
+  groups   Group[]
+  teachers User[]  @relation("TeacherBranch")
+}
+
+model Lesson {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?  @db.Text
+  subject   String   @default("other")
+  order     Int      @default(0)
+  views     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  groupId   String
+  group     Group  @relation(fields: [groupId], references: [id])
+  teacherId String
+  teacher   User   @relation(fields: [teacherId], references: [id])
+
+  attachments Json @default("[]")
+  aiContent   Json @default("{\"status\":\"pending\"}")
+
+  homework Homework[]
+  aiChats  AIChat[]
+  media    LessonMedia[]
+}
+
+// Cached AI-generated audio (story narration + explainer-video slide narration).
+// Generated lazily on first request and reused after that, so the AI/TTS APIs
+// are called at most once per lesson/slide instead of on every playback.
+model LessonMedia {
+  id         String   @id @default(cuid())
+  lessonId   String
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  kind       String   // 'story' | 'explainer_slide'
+  slideIndex Int      @default(-1) // -1 for 'story'/'voice', slide position (0+) for 'explainer_slide'
+  data       Bytes
+  mimeType   String   @default("audio/mpeg")
+  voice      String?
+  createdAt  DateTime @default(now())
+
+  @@unique([lessonId, kind, slideIndex])
+}
+
+model Homework {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  dueDate     DateTime
+  maxScore    Int      @default(100)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  groupId   String
+  group     Group  @relation(fields: [groupId], references: [id])
+  teacherId String
+  teacher   User   @relation(fields: [teacherId], references: [id])
+  lessonId  String?
+  lesson    Lesson? @relation(fields: [lessonId], references: [id])
+
+  attachments Json         @default("[]")
+  submissions Submission[]
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  answerText  String?  @db.Text
+  filePaths   Json     @default("[]")
+  content     String?  @db.Text
+  isLate      Boolean  @default(false)
+  status      String   @default("submitted")
+  finalScore  Int?
+  aiGrade     Json?
+  teacherGrade Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  homeworkId String
+  homework   Homework @relation(fields: [homeworkId], references: [id])
+  studentId  String
+  student    User     @relation(fields: [studentId], references: [id])
+
+  @@unique([homeworkId, studentId])
+}
+
+model Test {
+  id             String    @id @default(cuid())
+  title          String
+  type           String    @default("topic")
+  timeLimit      Int       @default(30)
+  passingScore   Int       @default(60)
+  totalPoints    Int       @default(0)
+  availableFrom  DateTime?
+  availableUntil DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  groupId   String
+  group     Group  @relation(fields: [groupId], references: [id])
+  teacherId String
+  teacher   User   @relation(fields: [teacherId], references: [id])
+  lessonId  String?
+
+  questions Question[]
+  results   Result[]
+}
+
+model Question {
+  id          String  @id @default(cuid())
+  text        String  @db.Text
+  type        String  @default("mcq")
+  options     Json    @default("[]")
+  difficulty  String  @default("medium")
+  points      Int     @default(1)
+  explanation String? @db.Text
+
+  testId String
+  test   Test   @relation(fields: [testId], references: [id], onDelete: Cascade)
+}
+
+model Result {
+  id          String   @id @default(cuid())
+  answers     Json     @default("[]")
+  score       Int      @default(0)
+  percentage  Int      @default(0)
+  passed      Boolean  @default(false)
+  timeTaken   Int?
+  aiAnalysis  Json?
+  completedAt DateTime @default(now())
+
+  testId    String
+  test      Test   @relation(fields: [testId], references: [id])
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  records   Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  groupId   String
+  group     Group  @relation(fields: [groupId], references: [id])
+  teacherId String
+  teacher   User   @relation(fields: [teacherId], references: [id])
+
+  @@unique([groupId, date])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  type      String    @default("info")
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model AIChat {
+  id        String   @id @default(cuid())
+  messages  Json     @default("[]")
+  style     String   @default("normal")
+  language  String   @default("uz")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lessonId  String
+  lesson    Lesson @relation(fields: [lessonId], references: [id])
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+
+  @@unique([lessonId, studentId])
+}
+
+// Generic file storage for lesson/homework attachments and homework
+// submissions. Render's free web service disk is ephemeral (wiped on every
+// restart/deploy) - files must be stored as DB bytes, same as the Resource
+// model already does for materials.
+model UploadedFile {
+  id        String   @id @default(cuid())
+  name      String
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  filePath    String
+  fileUrl     String?
+  fileData    Bytes?
+  mimeType    String?
+  type        String   @default("other")
+  downloads   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  groupId   String?
+  group     Group?  @relation(fields: [groupId], references: [id])
+  teacherId String
+  teacher   User    @relation(fields: [teacherId], references: [id])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  month     String
+  isPaid    Boolean  @default(true)
+  note      String?
+  paidAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  studentId String
+  student   User   @relation("StudentPayments", fields: [studentId], references: [id])
+  teacherId String
+
+  @@unique([studentId, month])
+}
+
+// Public lead/application form submissions from the landing page (people
+// interested in enrolling, submitted without needing a login/CRM account).
+model Application {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  message   String?
+  status    String   @default("new") // new | contacted | converted | rejected
+  createdAt DateTime @default(now())
+}
