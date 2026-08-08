@@ -5,6 +5,7 @@ const {
   getStats, getTeachers, createTeacher, updateTeacher, deleteTeacher,
   getStudents, getGroups, toggleUserStatus, getSettings, updateSettings,
   getReceptionUsers, createReceptionUser, updateReceptionUser, deleteReceptionUser, getTeacherOverview,
+  getBranches, createBranch, updateBranch, deleteBranch, getBranchDetail,
 } = require('../controllers/admin.controller');
 
 const adminOnly = [verifyToken, requireRole('admin', 'manager')];
@@ -25,6 +26,13 @@ router.get('/groups', ...adminOrReception, getGroups);
 router.put('/users/:id/toggle', ...adminOrReception, toggleUserStatus);
 router.get('/settings', ...adminOrReception, getSettings);
 router.put('/settings', ...adminOrReception, updateSettings);
+
+// Branches - admin only
+router.get('/branches', ...adminOnly, getBranches);
+router.post('/branches', ...adminOnly, createBranch);
+router.get('/branches/:id', ...adminOnly, getBranchDetail);
+router.put('/branches/:id', ...adminOnly, updateBranch);
+router.delete('/branches/:id', ...adminOnly, deleteBranch);
 
 // Reception accounts - only admin can create/deactivate them.
 router.get('/reception', ...adminOnly, getReceptionUsers);

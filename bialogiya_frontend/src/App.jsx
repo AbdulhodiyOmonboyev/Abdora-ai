@@ -54,9 +54,14 @@ import AdminGroups from './pages/admin/AdminGroups';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminManagers from './pages/admin/AdminManagers';
 import AdminManagerDetail from './pages/admin/AdminManagerDetail';
+import AdminBranches from './pages/admin/AdminBranches';
+import AdminBranchDetail from './pages/admin/AdminBranchDetail';
+import UserDetail from './pages/shared/UserDetail';
 
 // Manager pages
 import ManagerDashboard from './pages/manager/ManagerDashboard';
+import ManagerBranches from './pages/manager/ManagerBranches';
+import ManagerBranchDetail from './pages/manager/ManagerBranchDetail';
 
 // Reception pages
 import ReceptionCenters from './pages/reception/ReceptionCenters';
@@ -140,11 +145,16 @@ export default function App() {
         <Route path="/profile" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route index element={<ProfilePage />} />
         </Route>
+        <Route path="/users" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route path=":id" element={<UserDetail />} />
+        </Route>
 
         {/* Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute role="admin"><MainLayout /></ProtectedRoute>}>
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="applications" element={<AdminApplications />} />
+          <Route path="branches" element={<AdminBranches />} />
+          <Route path="branches/:id" element={<AdminBranchDetail />} />
           <Route path="managers" element={<AdminManagers />} />
           <Route path="managers/:id" element={<AdminManagerDetail />} />
           <Route path="settings" element={<AdminSettings />} />
@@ -153,6 +163,8 @@ export default function App() {
         {/* Manager Routes */}
         <Route path="/manager" element={<ProtectedRoute role="manager"><MainLayout /></ProtectedRoute>}>
           <Route path="dashboard" element={<ManagerDashboard />} />
+          <Route path="branches" element={<ManagerBranches />} />
+          <Route path="branches/:id" element={<ManagerBranchDetail />} />
           <Route path="reception" element={<AdminReception />} />
           <Route path="teachers" element={<AdminTeachers />} />
           <Route path="teachers/:id" element={<ReceptionTeacherDetail />} />

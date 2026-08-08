@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Sun, Moon, LogOut, Globe, ChevronDown, Menu, KeyRound, User, Eye, EyeOff } from 'lucide-react';
+import { Bell, Sun, Moon, LogOut, Globe, ChevronDown, Menu, KeyRound, User, Eye, EyeOff, Search } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,8 @@ export default function Topbar({ onMenuClick }) {
   const { theme, toggle } = useThemeStore();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchRef = useRef(null);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showLang, setShowLang] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -22,6 +24,61 @@ export default function Topbar({ onMenuClick }) {
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [headerSearch, setHeaderSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [showHeaderResults, setShowHeaderResults] = useState(false);
+
+  const searchPath = user?.role === 'admin'
+    ? '/admin/branches'
+    : user?.role === 'manager'
+      ? '/manager/branches'
+      : null;
+
+  const searchPlaceholder = user?.role === 'manager'
+    ? "Filial nomi bo'yicha qidirish"
+    : "Markaz nomi bo'yicha qidirish";
+
+  useEffect(() => {
+    if (!searchPath) return;
+    const params = new URLSearchParams(location.search);
+    if (location.pathname.startsWith(searchPath)) {
+      setHeaderSearch(params.get('search') || '');
+    }
+  }, [location.search, location.pathname, searchPath]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(headerSearch.trim());
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [headerSearch]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowHeaderResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const { data: headerUsers = [], isFetching: isHeaderSearching } = useQuery({
+    queryKey: ['header-search-users', debouncedSearch],
+    queryFn: () => api.get('/users', { params: { search: debouncedSearch } }).then(r => r.data.data),
+    enabled: Boolean(debouncedSearch),
+    keepPreviousData: true,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    if (!searchPath) return;
+    const params = new URLSearchParams();
+    if (headerSearch.trim()) params.set('search', headerSearch.trim());
+    navigate(`${searchPath}${params.toString() ? `?${params.toString()}` : ''}`);
+  };
 
   const { data: notifData, refetch } = useQuery({
     queryKey: ['notifications'],
@@ -70,56 +127,105 @@ export default function Topbar({ onMenuClick }) {
 
   return (
     <>
-      <header className="h-14 md:h-16 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center px-3 md:px-6 gap-2 md:gap-3 z-30 flex-shrink-0">
-        {/* Hamburger — mobile only */}
-        <button
-          onClick={onMenuClick}
-          className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 flex-shrink-0"
-        >
-          <Menu size={20} />
-        </button>
-
-        {/* Date */}
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 truncate">
-            {new Date().toLocaleDateString(
-              i18n.language === 'uz' ? 'uz-UZ' : i18n.language === 'ru' ? 'ru-RU' : 'en-US',
-              { weekday: 'long', month: 'long', day: 'numeric' }
-            )}
-          </h1>
-        </div>
-
-        {/* Language */}
-        <div className="relative">
+      <header className="h-14 md:h-16 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-3 md:px-6 z-30 flex-shrink-0">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          {/* Hamburger — mobile only */}
           <button
-            onClick={() => { setShowLang(!showLang); setShowNotifs(false); setShowProfile(false); }}
-            className="btn-ghost flex items-center gap-1 text-xs sm:text-sm py-1.5 px-2 sm:px-3"
+            onClick={onMenuClick}
+            className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 flex-shrink-0"
           >
-            <Globe size={14} />
-            <span className="uppercase font-semibold hidden sm:inline">{i18n.language}</span>
-            <ChevronDown size={11} />
+            <Menu size={20} />
           </button>
-          <AnimatePresence>
-            {showLang && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded-xl shadow-soft border border-gray-100 dark:border-gray-800 py-1 w-32 z-50"
-              >
-                {[{ code: 'uz', label: "O'zbek" }, { code: 'ru', label: 'Русский' }, { code: 'en', label: 'English' }].map(l => (
-                  <button key={l.code} onClick={() => changeLanguage(l.code)}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${i18n.language === l.code ? 'text-primary font-semibold' : 'text-gray-700 dark:text-gray-300'}`}>
-                    {l.label}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+
+          {/* Date */}
+          <div className="hidden md:flex flex-col min-w-0">
+            <h1 className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 truncate">
+              {new Date().toLocaleDateString(
+                i18n.language === 'uz' ? 'uz-UZ' : i18n.language === 'ru' ? 'ru-RU' : 'en-US',
+                { weekday: 'long', month: 'long', day: 'numeric' }
+              )}
+            </h1>
+          </div>
         </div>
 
-        {/* Theme toggle */}
-        <button onClick={toggle} className="btn-ghost p-2 rounded-xl flex-shrink-0">
-          {theme === 'dark' ? <Sun size={16} className="text-yellow-500" /> : <Moon size={16} className="text-gray-600" />}
-        </button>
+        {searchPath && (
+          <div ref={searchRef} className="hidden md:flex flex-1 max-w-xl relative mx-4">
+            <form onSubmit={handleSearchSubmit} className="w-full">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                value={headerSearch}
+                onChange={(e) => {
+                  setHeaderSearch(e.target.value);
+                  setShowHeaderResults(true);
+                }}
+                onFocus={() => setShowHeaderResults(Boolean(headerSearch.trim()))}
+                placeholder={searchPlaceholder}
+                className="input-field w-full pl-10 pr-3"
+              />
+            </form>
+            {showHeaderResults && (debouncedSearch || headerSearch) && (
+              <div className="absolute left-0 right-0 top-full mt-2 rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden z-40">
+                {isHeaderSearching ? (
+                  <div className="p-3 text-sm text-gray-500 dark:text-gray-400">Qidirilmoqda...</div>
+                ) : headerUsers.length === 0 ? (
+                  <div className="p-3 text-sm text-gray-500 dark:text-gray-400">Hech narsa topilmadi.</div>
+                ) : (
+                  headerUsers.slice(0, 8).map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => {
+                        setHeaderSearch(user.name || user.username || '');
+                        setShowHeaderResults(false);
+                        navigate(`/users/${user.id}`);
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <div className="font-semibold text-sm text-gray-800 dark:text-white">{user.name || "Noma'lum"}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-2">
+                        <span>@{user.username}</span>
+                        <span>{user.role}</span>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Language */}
+          <div className="relative">
+            <button
+              onClick={() => { setShowLang(!showLang); setShowNotifs(false); setShowProfile(false); }}
+              className="btn-ghost flex items-center gap-1 text-xs sm:text-sm py-1.5 px-2 sm:px-3"
+            >
+              <Globe size={14} />
+              <span className="uppercase font-semibold hidden sm:inline">{i18n.language}</span>
+              <ChevronDown size={11} />
+            </button>
+            <AnimatePresence>
+              {showLang && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
+                  className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded-xl shadow-soft border border-gray-100 dark:border-gray-800 py-1 w-32 z-50"
+                >
+                  {[{ code: 'uz', label: "O'zbek" }, { code: 'ru', label: 'Русский' }, { code: 'en', label: 'English' }].map(l => (
+                    <button key={l.code} onClick={() => changeLanguage(l.code)}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${i18n.language === l.code ? 'text-primary font-semibold' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {l.label}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Theme toggle */}
+          <button onClick={toggle} className="btn-ghost p-2 rounded-xl flex-shrink-0">
+            {theme === 'dark' ? <Sun size={16} className="text-yellow-500" /> : <Moon size={16} className="text-gray-600" />}
+          </button>
 
         {/* Notifications */}
         <div className="relative flex-shrink-0">
@@ -230,6 +336,7 @@ export default function Topbar({ onMenuClick }) {
             )}
           </AnimatePresence>
         </div>
+      </div>
 
         {/* Old logout button removed — now in profile dropdown */}
       </header>

@@ -6,28 +6,23 @@ import { Plus, Copy, X, UserCheck, Pencil, Trash2, Save, Users, GraduationCap, P
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { useAuthStore } from '../../store/authStore';
 
 export default function AdminTeachers() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', email: '', language: 'uz', branchId: '' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', language: 'uz' });
   const [newCreds, setNewCreds] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
-  const [branchFilter, setBranchFilter] = useState('');
   const [confirm, setConfirm] = useState(null);
-
-  const { data: branches } = useQuery({
-    queryKey: ['branches-for-filter'],
-    queryFn: () => api.get('/reception/branches').then(r => r.data.data),
-  });
-
+  const { user } = useAuthStore();
   const { data: teachers } = useQuery({
-    queryKey: ['all-teachers', branchFilter],
-    queryFn: () => api.get('/admin/teachers', { params: branchFilter ? { branchId: branchFilter } : {} }).then(r => r.data.data),
+    queryKey: ['all-teachers'],
+    queryFn: () => api.get('/admin/teachers').then(r => r.data.data),
   });
 
   const createMutation = useMutation({
@@ -35,7 +30,7 @@ export default function AdminTeachers() {
     onSuccess: ({ data }) => {
       qc.invalidateQueries(['all-teachers']);
       setNewCreds(data.data.credentials);
-      setForm({ name: '', phone: '', email: '', language: 'uz', branchId: '' });
+      setForm({ name: '', phone: '', email: '', language: 'uz' });
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Xato'),
   });
@@ -70,7 +65,7 @@ export default function AdminTeachers() {
 
   const openEdit = (t) => {
     setEditingId(t.id);
-    setEditForm({ name: t.name, phone: t.phone || '', email: t.email || '', branchId: t.branch?.id || '' });
+    setEditForm({ name: t.name, phone: t.phone || '', email: t.email || '' });
     setSelectedTeacher(null);
   };
 
@@ -88,17 +83,9 @@ export default function AdminTeachers() {
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white">O'qituvchilar</h1>
-        <div className="flex items-center gap-2">
-          {branches?.length > 0 && (
-            <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} className="input-field text-sm py-2">
-              <option value="">Barcha markazlar</option>
-              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          )}
-          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
-            <Plus size={15} /> O'qituvchi qo'shish
-          </button>
-        </div>
+        <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
+          <Plus size={15} /> O'qituvchi qo'shish
+        </button>
       </div>
 
       {/* Teacher list */}
@@ -131,15 +118,6 @@ export default function AdminTeachers() {
                     <input value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
                       className="input-field text-sm" placeholder="email@example.com" type="email" />
                   </div>
-                  {branches?.length > 0 && (
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-gray-500">Markaz</label>
-                      <select value={editForm.branchId} onChange={e => setEditForm(f => ({ ...f, branchId: e.target.value }))} className="input-field text-sm">
-                        <option value="">Markazsiz</option>
-                        {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                      </select>
-                    </div>
-                  )}
                   <div className="flex gap-2 pt-1">
                     <button onClick={() => setEditingId(null)} className="btn-ghost flex-1 text-sm">Bekor</button>
                     <button
@@ -166,7 +144,6 @@ export default function AdminTeachers() {
                         <span>@{t.username}</span>
                         {t.phone && <span className="flex items-center gap-0.5"><Phone size={10} /> {t.phone}</span>}
                         {t.email && <span>{t.email}</span>}
-                        {t.branch && <span className="badge bg-primary/10 text-primary text-[10px]">{t.branch.name}</span>}
                       </div>
                     </div>
                     <div className="text-xs text-gray-400 flex items-center gap-3 flex-shrink-0">
@@ -266,32 +243,29 @@ export default function AdminTeachers() {
                   </div>
                 )}
 
-                {selectedTeacher.branch && (
-                  <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-2xl p-3">
-                    <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Users size={16} className="text-green-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-xs text-gray-400">Markaz</div>
-                      <div className="font-semibold text-sm text-gray-800 dark:text-white">{selectedTeacher.branch.name}</div>
-                    </div>
-                  </div>
-                )}
-
                 <div className="grid grid-cols-3 gap-3">
-                  <button onClick={() => { const p = location.pathname.startsWith('/admin') ? 'admin' : 'reception'; navigate(`/${p}/teachers/${selectedTeacher.id}?tab=groups`); }}
+                  <button onClick={() => {
+                      const role = user?.role === 'manager' ? 'manager' : location.pathname.startsWith('/admin') ? 'admin' : 'reception';
+                      navigate(`/${role}/teachers/${selectedTeacher.id}?tab=groups`);
+                    }}
                     className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 text-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <Users size={16} className="text-primary mx-auto mb-1" />
                     <div className="font-bold text-primary text-lg">{selectedTeacher._count?.taughtGroups || 0}</div>
                     <div className="text-xs text-gray-400">Guruh</div>
                   </button>
-                  <button onClick={() => { const p = location.pathname.startsWith('/admin') ? 'admin' : 'reception'; navigate(`/${p}/teachers/${selectedTeacher.id}?tab=students`); }}
+                  <button onClick={() => {
+                      const role = user?.role === 'manager' ? 'manager' : location.pathname.startsWith('/admin') ? 'admin' : 'reception';
+                      navigate(`/${role}/teachers/${selectedTeacher.id}?tab=students`);
+                    }}
                     className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 text-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <GraduationCap size={16} className="text-secondary mx-auto mb-1" />
                     <div className="font-bold text-secondary text-lg">{selectedTeacher._count?.students || 0}</div>
                     <div className="text-xs text-gray-400">O'quvchi</div>
                   </button>
-                  <button onClick={() => { const p = location.pathname.startsWith('/admin') ? 'admin' : 'reception'; navigate(`/${p}/teachers/${selectedTeacher.id}?tab=lessons`); }}
+                  <button onClick={() => {
+                      const role = user?.role === 'manager' ? 'manager' : location.pathname.startsWith('/admin') ? 'admin' : 'reception';
+                      navigate(`/${role}/teachers/${selectedTeacher.id}?tab=lessons`);
+                    }}
                     className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 text-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <BookOpen size={16} className="text-amber-500 mx-auto mb-1" />
                     <div className="font-bold text-amber-600 text-lg">{selectedTeacher._count?.lessons || 0}</div>
@@ -369,15 +343,6 @@ export default function AdminTeachers() {
                       <option value="en">English</option>
                     </select>
                   </div>
-                  {branches?.length > 0 && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">Markaz</label>
-                      <select value={form.branchId} onChange={e => setForm(f => ({ ...f, branchId: e.target.value }))} className="input-field">
-                        <option value="">Markazsiz</option>
-                        {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                      </select>
-                    </div>
-                  )}
                   <div className="flex gap-3 pt-2">
                     <button onClick={() => setShowCreate(false)} className="btn-ghost flex-1">Bekor</button>
                     <button

@@ -67,12 +67,19 @@ const createTeacher = async (req, res, next) => {
 
 const createManager = async (req, res, next) => {
   try {
-    const { name, email, phone, gender, age, address, language, password } = req.body;
+    const { name, email, phone, gender, age, address, language, password, branchId } = req.body;
     if (!name || !phone) return error(res, 'Name and phone required', 400);
     if (age !== undefined && age !== null && Number.isNaN(Number(age))) return error(res, 'Age must be a number', 400);
 
     const code = password?.trim() || getPhoneCode(phone);
     if (!code || code.length < 4) return error(res, 'Phone must include at least 4 digits or provide a valid code', 400);
+
+    let branch = null;
+    if (branchId) {
+      branch = await prisma.branch.findUnique({ where: { id: branchId } });
+      if (!branch) return error(res, 'Branch not found', 404);
+      if (branch.managerId) return error(res, 'Branch already assigned to another manager', 400);
+    }
 
     const username = generateUsername(name, phone);
     const passwordHash = await bcrypt.hash(code, 10);
@@ -89,6 +96,7 @@ const createManager = async (req, res, next) => {
         passwordHash,
         role: 'manager',
         language: language || 'uz',
+        ...(branchId ? { managedBranches: { connect: { id: branchId } } } : {}),
       },
     });
 
@@ -109,7 +117,22 @@ const getStudentsByTeacher = async (req, res, next) => {
 
 const getAllUsers = async (req, res, next) => {
   try {
-    const users = await prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
+    const { role, branchId, search } = req.query;
+    const where = {
+      ...(role ? { role } : {}),
+      ...(branchId ? { branchId } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { username: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+              { phone: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+    const users = await prisma.user.findMany({ where, orderBy: { createdAt: 'desc' } });
     return success(res, users.map(safeUser));
   } catch (err) { next(err); }
 };
@@ -224,4 +247,85 @@ const freezeStudent = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createStudent, createTeacher, createManager, getStudentsByTeacher, getAllUsers, getUserById, updateProfile, updateUser, deleteUser, resetStudentPassword, freezeStudent, changePassword };
+const getManagers = async (req, res, next) => {
+  try {
+    const managers = await prisma.user.findMany({
+      where: { role: 'manager' },
+      select: { id: true, name: true, username: true, email: true, phone: true, gender: true, age: true, address: true, isActive: true, createdAt: true, lastLogin: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return success(res, managers);
+  } catch (err) { next(err); }
+};
+
+const updateManager = async (req, res, next) => {
+  try {
+    const { name, email, phone, gender, age, address } = req.body;
+    const manager = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!manager || manager.role !== 'manager') return error(res, 'Manager not found', 404);
+
+    const updated = await prisma.user.update({
+      where: { id: req.params.id },
+      data: {
+        ...(name && { name }),
+        ...(email !== undefined && { email }),
+        ...(phone !== undefined && { phone }),
+        ...(gender !== undefined && { gender }),
+        ...(age !== undefined && { age: age ? Number(age) : null }),
+        ...(address !== undefined && { address }),
+      },
+      select: { id: true, name: true, username: true, email: true, phone: true, gender: true, age: true, address: true, isActive: true },
+    });
+    return success(res, updated, 'Manager updated');
+  } catch (err) { next(err); }
+};
+
+const deleteManager = async (req, res, next) => {
+  try {
+    const manager = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!manager || manager.role !== 'manager') return error(res, 'Manager not found', 404);
+
+    await prisma.user.update({ where: { id: req.params.id }, data: { isActive: false } });
+    return success(res, null, 'Manager deactivated');
+  } catch (err) { next(err); }
+};
+
+const getManagerBranches = async (req, res, next) => {
+  try {
+    const branches = await prisma.branch.findMany({
+      where: { managerId: req.user.userId, isActive: true },
+      include: {
+        reception: { select: { id: true, name: true } },
+        manager: { select: { id: true, name: true } },
+        teachers: { select: { id: true, name: true, username: true, phone: true, isActive: true } },
+        groups: {
+          select: {
+            id: true,
+            name: true,
+            subject: true,
+            monthlyFee: true,
+            weekDays: true,
+            startTime: true,
+            endTime: true,
+            room: true,
+            teacher: { select: { id: true, name: true } },
+            _count: { select: { students: true } },
+          },
+          orderBy: { name: 'asc' },
+        },
+        _count: { select: { teachers: true } },
+      },
+    });
+
+    const branchesWithCounts = await Promise.all(branches.map(async (branch) => {
+      const studentsCount = await prisma.user.count({
+        where: { role: 'student', group: { branchId: branch.id }, isActive: true },
+      });
+      return { ...branch, studentsCount };
+    }));
+
+    return success(res, branchesWithCounts);
+  } catch (err) { next(err); }
+};
+
+module.exports = { createStudent, createTeacher, createManager, getManagers, updateManager, deleteManager, getManagerBranches, getStudentsByTeacher, getAllUsers, getUserById, updateProfile, updateUser, deleteUser, resetStudentPassword, freezeStudent, changePassword };

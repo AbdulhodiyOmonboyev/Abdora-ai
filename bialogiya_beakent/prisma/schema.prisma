@@ -55,6 +55,7 @@ model User {
   clonedVoiceName String?
 
   branches    Branch[] @relation("ReceptionBranches")
+  managedBranches Branch[] @relation("ManagerBranches")
   maxBranches Int      @default(3) // only relevant for role='reception', set by admin
 
   branchId String?
@@ -118,8 +119,10 @@ model Branch {
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
 
-  receptionId String
-  reception   User   @relation("ReceptionBranches", fields: [receptionId], references: [id])
+  receptionId String?
+  reception   User?  @relation("ReceptionBranches", fields: [receptionId], references: [id])
+  managerId   String?
+  manager     User?  @relation("ManagerBranches", fields: [managerId], references: [id])
 
   groups   Group[]
   teachers User[]  @relation("TeacherBranch")

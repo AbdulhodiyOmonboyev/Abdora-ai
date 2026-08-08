@@ -6,7 +6,7 @@ import api from '../../config/axios';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 
-const EMPTY_FORM = { name: '', phone: '', email: '', language: 'uz', maxBranches: 3 };
+const EMPTY_FORM = { name: '', phone: '', email: '', language: 'uz', maxBranches: 3, branchId: '' };
 
 export default function AdminReception() {
   const qc = useQueryClient();
@@ -19,6 +19,11 @@ export default function AdminReception() {
   const { data: users } = useQuery({
     queryKey: ['admin-reception'],
     queryFn: () => api.get('/admin/reception').then(r => r.data.data),
+  });
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ['admin-branches'],
+    queryFn: () => api.get('/admin/branches').then(r => r.data.data),
   });
 
   const createMutation = useMutation({
@@ -100,7 +105,7 @@ export default function AdminReception() {
               <div className="text-xs text-gray-400 flex items-center gap-2 flex-wrap">
                 <span>@{u.username}</span>
                 {u.phone && <span className="flex items-center gap-0.5"><Phone size={10} /> {u.phone}</span>}
-                <span className="flex items-center gap-0.5"><Building2 size={10} /> {u._count?.branches || 0} / {u.maxBranches ?? 3} markaz</span>
+                <span className="flex items-center gap-0.5"><Building2 size={10} /> {u._count?.branches || 0} / {u.maxBranches ?? 3} filial</span>
               </div>
             </div>
             <span className={`badge text-xs ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -172,6 +177,20 @@ export default function AdminReception() {
                     <label className="block text-sm font-medium mb-1.5">Email</label>
                     <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                       placeholder="email@example.com" type="email" className="input-field" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Filial</label>
+                    <select
+                      value={form.branchId}
+                      onChange={e => setForm(f => ({ ...f, branchId: e.target.value }))}
+                      className="input-field"
+                    >
+                      <option value="">Tanlang</option>
+                      {branches.filter((branch) => !branch.receptionId).map((branch) => (
+                        <option key={branch.id} value={branch.id}>{branch.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">Agar filial tanlangan bo'lsa, bu qabulxona shu filialga bog'lanadi.</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5 flex items-center gap-1">

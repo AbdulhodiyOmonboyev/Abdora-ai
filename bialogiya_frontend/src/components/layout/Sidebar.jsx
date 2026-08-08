@@ -40,12 +40,14 @@ const teacherLinks = [
 const adminLinks = [
   { to: '/admin/dashboard', icon: LayoutDashboard, key: 'dashboard' },
   { to: '/admin/applications', icon: Inbox, key: 'applications' },
+  { to: '/admin/branches', icon: Building2, key: 'branches' },
   { to: '/admin/managers', icon: UserCheck, key: 'managers' },
   { to: '/admin/settings', icon: Settings, key: 'settings' },
 ];
 
 const managerLinks = [
   { to: '/manager/dashboard', icon: LayoutDashboard, key: 'dashboard' },
+  { to: '/manager/branches', icon: Building2, key: 'branches' },
   { to: '/manager/reception', icon: UserCog, key: 'reception' },
   { to: '/manager/teachers', icon: BookMarked, key: 'teachers' },
   { to: '/manager/groups', icon: Users, key: 'groups' },
@@ -146,7 +148,7 @@ export default function Sidebar({ isOpen, onClose }) {
               className={({ isActive }) => cn('sidebar-link', isActive && 'active')}
             >
               <Icon size={16} />
-              <span>{t(key)}</span>
+              <span>{user?.role === 'manager' && key === 'branches' ? 'Filiallar' : t(key)}</span>
             </NavLink>
           </motion.div>
         ))}

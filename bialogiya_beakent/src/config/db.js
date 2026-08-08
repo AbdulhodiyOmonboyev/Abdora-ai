@@ -136,8 +136,9 @@ const runMigrations = async () => {
       ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'reception'
     `).catch(() => {});
 
-    // Branch (filial) table - only reception accounts create these, max 3
-    // per account (enforced in the controller).
+    // Branch (filial) table - other accounts can create these too, and a
+    // branch may be unassigned to a reception while it is managed by a
+    // manager or later linked to a reception.
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "Branch" (
         "id"              TEXT NOT NULL,
@@ -146,7 +147,8 @@ const runMigrations = async () => {
         "studentCapacity" INTEGER,
         "isActive"        BOOLEAN NOT NULL DEFAULT true,
         "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "receptionId"     TEXT NOT NULL,
+        "receptionId"     TEXT,
+        "managerId"       TEXT,
         CONSTRAINT "Branch_pkey" PRIMARY KEY ("id")
       )
     `);
@@ -157,6 +159,22 @@ const runMigrations = async () => {
         ) THEN
           ALTER TABLE "Branch" ADD CONSTRAINT "Branch_receptionId_fkey"
             FOREIGN KEY ("receptionId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+        END IF;
+      END $$
+    `);
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "Branch" ADD COLUMN IF NOT EXISTS "managerId" TEXT
+    `);
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "Branch" ALTER COLUMN "receptionId" DROP NOT NULL
+    `).catch(() => {});
+    await prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'Branch_managerId_fkey'
+        ) THEN
+          ALTER TABLE "Branch" ADD CONSTRAINT "Branch_managerId_fkey"
+            FOREIGN KEY ("managerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
         END IF;
       END $$
     `);

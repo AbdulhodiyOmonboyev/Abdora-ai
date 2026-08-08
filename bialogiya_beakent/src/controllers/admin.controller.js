@@ -141,8 +141,12 @@ const deleteTeacher = async (req, res, next) => {
 // and reception users cannot create other reception users.
 const getReceptionUsers = async (req, res, next) => {
   try {
+    const branchFilter = req.user.role === 'manager'
+      ? { branches: { some: { managerId: req.user.userId } } }
+      : {};
+
     const users = await prisma.user.findMany({
-      where: { role: 'reception' },
+      where: { role: 'reception', ...branchFilter },
       select: { id: true, name: true, username: true, email: true, phone: true, isActive: true, maxBranches: true, createdAt: true, lastLogin: true,
         _count: { select: { branches: true } } },
       orderBy: { createdAt: 'desc' },
@@ -153,22 +157,41 @@ const getReceptionUsers = async (req, res, next) => {
 
 const createReceptionUser = async (req, res, next) => {
   try {
-    const { name, email, phone, language, maxBranches, password } = req.body;
+    const { name, email, phone, language, maxBranches, password, branchId } = req.body;
     if (!name) return error(res, 'Name required', 400);
 
     const code = password?.trim() || getPhoneCode(phone);
     if (!code || code.length < 4) return error(res, 'Phone must include at least 4 digits or provide a valid code', 400);
+
+    if (branchId) {
+      const branch = await prisma.branch.findUnique({ where: { id: branchId } });
+      if (!branch) return error(res, 'Branch not found', 404);
+      if (branch.receptionId) return error(res, 'Branch already assigned to another reception', 400);
+    }
 
     const username = generateUsername(name, phone);
     const passwordHash = await bcrypt.hash(code, 10);
 
     const user = await prisma.user.create({
       data: {
-        name, email, phone: phone || null, username, passwordHash, role: 'reception', language: language || 'uz',
+        name,
+        email,
+        phone: phone || null,
+        username,
+        passwordHash,
+        role: 'reception',
+        language: language || 'uz',
         maxBranches: Number.isFinite(Number(maxBranches)) && Number(maxBranches) > 0 ? Number(maxBranches) : 3,
       },
       select: { id: true, name: true, username: true, email: true, phone: true, role: true, maxBranches: true, createdAt: true },
     });
+
+    if (branchId) {
+      await prisma.branch.update({
+        where: { id: branchId },
+        data: { receptionId: user.id },
+      });
+    }
 
     return success(res, { user, credentials: { username, password: code } }, 'Reception user created', 201);
   } catch (err) { next(err); }
@@ -302,7 +325,123 @@ const getTeacherOverview = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// Branch management - admin only
+const getBranches = async (req, res, next) => {
+  try {
+    const ownBranchIds = await getOwnBranchIds(req.user);
+    const branches = await prisma.branch.findMany({
+      where: { isActive: true, ...(ownBranchIds ? { id: { in: ownBranchIds } } : {}) },
+      include: {
+        reception: { select: { id: true, name: true } },
+        _count: { select: { groups: true, teachers: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return success(res, branches);
+  } catch (err) { next(err); }
+};
+
+const createBranch = async (req, res, next) => {
+  try {
+    const { name, address, receptionId, studentCapacity } = req.body;
+    if (!name) return error(res, 'Branch name required', 400);
+
+    const branchData = {
+      name,
+      address: address || null,
+      studentCapacity: Number.isFinite(Number(studentCapacity)) ? Number(studentCapacity) : null,
+      receptionId: receptionId || null,
+    };
+
+    if (req.user.role === 'manager') {
+      branchData.managerId = req.user.userId;
+    }
+
+    const branch = await prisma.branch.create({
+      data: branchData,
+      include: {
+        reception: { select: { id: true, name: true } },
+        manager: { select: { id: true, name: true } },
+        _count: { select: { groups: true, teachers: true } },
+      },
+    });
+    return success(res, branch, 'Branch created', 201);
+  } catch (err) { next(err); }
+};
+
+const updateBranch = async (req, res, next) => {
+  try {
+    const { name, address, receptionId, studentCapacity } = req.body;
+    const branch = await prisma.branch.findUnique({ where: { id: req.params.id } });
+    if (!branch) return error(res, 'Branch not found', 404);
+    if (req.user.role === 'manager' && branch.managerId !== req.user.userId) return error(res, 'Forbidden', 403);
+
+    const updated = await prisma.branch.update({
+      where: { id: req.params.id },
+      data: {
+        ...(name && { name }),
+        ...(address !== undefined && { address }),
+        ...(receptionId !== undefined && { receptionId: receptionId || null }),
+        ...(studentCapacity !== undefined && { studentCapacity: Number.isFinite(Number(studentCapacity)) ? Number(studentCapacity) : null }),
+      },
+      include: {
+        reception: { select: { id: true, name: true } },
+        _count: { select: { groups: true, teachers: true } },
+      },
+    });
+    return success(res, updated, 'Branch updated');
+  } catch (err) { next(err); }
+};
+
+const deleteBranch = async (req, res, next) => {
+  try {
+    const branch = await prisma.branch.findUnique({ where: { id: req.params.id } });
+    if (!branch) return error(res, 'Branch not found', 404);
+    if (req.user.role === 'manager' && branch.managerId !== req.user.userId) return error(res, 'Forbidden', 403);
+
+    await prisma.branch.update({ where: { id: req.params.id }, data: { isActive: false } });
+    return success(res, null, 'Branch deleted');
+  } catch (err) { next(err); }
+};
+
+const getBranchDetail = async (req, res, next) => {
+  try {
+    const branch = await prisma.branch.findFirst({
+      where: { id: req.params.id, isActive: true },
+      include: {
+        reception: { select: { id: true, name: true } },
+        manager: { select: { id: true, name: true } },
+        teachers: { select: { id: true, name: true, username: true, phone: true, isActive: true } },
+        groups: {
+          select: {
+            id: true,
+            name: true,
+            subject: true,
+            monthlyFee: true,
+            weekDays: true,
+            startTime: true,
+            endTime: true,
+            room: true,
+            teacher: { select: { id: true, name: true } },
+            _count: { select: { students: true } },
+          },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+    if (!branch) return error(res, 'Branch not found', 404);
+    if (req.user.role === 'manager' && branch.managerId !== req.user.userId) return error(res, 'Forbidden', 403);
+
+    const studentsCount = await prisma.user.count({
+      where: { role: 'student', group: { branchId: branch.id }, isActive: true },
+    });
+
+    return success(res, { ...branch, studentsCount });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getStats, getTeachers, createTeacher, updateTeacher, deleteTeacher, getStudents, getGroups, toggleUserStatus, getSettings, updateSettings,
   getReceptionUsers, createReceptionUser, updateReceptionUser, deleteReceptionUser, getTeacherOverview,
+  getBranches, createBranch, updateBranch, deleteBranch, getBranchDetail,
 };

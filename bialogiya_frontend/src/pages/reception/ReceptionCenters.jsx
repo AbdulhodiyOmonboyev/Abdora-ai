@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Building2, MapPin, Users, ClipboardList } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../config/axios';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -18,10 +19,20 @@ export default function ReceptionCenters() {
     queryFn: () => api.get('/auth/me').then(r => r.data.data),
   });
 
+  const [searchParams] = useSearchParams();
+  const search = searchParams.get('search')?.trim().toLowerCase() || '';
+
   const { data: centers } = useQuery({
     queryKey: ['reception-branches'],
     queryFn: () => api.get('/reception/branches').then(r => r.data.data),
   });
+
+  const filteredCenters = search
+    ? centers.filter((center) =>
+        center.name?.toLowerCase().includes(search)
+        || center.address?.toLowerCase().includes(search)
+      )
+    : centers;
 
   const createMutation = useMutation({
     mutationFn: (data) => api.post('/reception/branches', data),
@@ -103,7 +114,7 @@ export default function ReceptionCenters() {
       )}
 
       <div className="space-y-3">
-        {centers?.map((center, index) => (
+        {filteredCenters?.map((center, index) => (
           <motion.div key={center.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
             className="card flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="w-12 h-12 bg-primary/10 rounded-3xl flex items-center justify-center text-primary flex-shrink-0">
@@ -129,10 +140,10 @@ export default function ReceptionCenters() {
           </motion.div>
         ))}
 
-        {centers?.length === 0 && (
+        {filteredCenters?.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <Building2 size={36} className="mx-auto mb-3 opacity-30" />
-            <p>Hali markaz yaratilmagan.</p>
+            <p>{search ? "Qidiruv bo'yicha hech qanday markaz topilmadi." : 'Hali markaz yaratilmagan.'}</p>
           </div>
         )}
       </div>

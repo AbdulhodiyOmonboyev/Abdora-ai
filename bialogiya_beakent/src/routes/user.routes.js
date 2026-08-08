@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const {
-  createStudent, createTeacher, createManager, getAllUsers, getStudentsByTeacher, getUserById,
+  createStudent, createTeacher, createManager, getManagers, updateManager, deleteManager, getManagerBranches, getAllUsers, getStudentsByTeacher, getUserById,
   updateUser, updateProfile, deleteUser, resetStudentPassword, freezeStudent, changePassword
 } = require('../controllers/user.controller');
 
@@ -14,6 +14,10 @@ router.get('/my-students', verifyToken, requireRole('teacher'), getStudentsByTea
 router.post('/create-student', verifyToken, requireRole('admin', 'reception', 'manager'), createStudent);
 router.post('/create-teacher', verifyToken, requireRole('admin', 'manager'), createTeacher);
 router.post('/create-manager', verifyToken, requireRole('admin'), createManager);
+router.get('/managers/list', verifyToken, requireRole('admin'), getManagers);
+router.put('/managers/:id', verifyToken, requireRole('admin'), updateManager);
+router.delete('/managers/:id', verifyToken, requireRole('admin'), deleteManager);
+router.get('/manager/branches', verifyToken, requireRole('manager'), getManagerBranches);
 router.put('/profile', verifyToken, updateProfile);
 router.post('/change-password', verifyToken, changePassword);
 router.get('/:id', verifyToken, requireRole('admin', 'reception', 'manager'), getUserById);

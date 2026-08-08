@@ -5,8 +5,17 @@ const { prisma } = require('../config/db');
 // Used everywhere a reception-scoped endpoint needs to check "is this
 // teacher/student/group inside one of MY branches".
 const getOwnBranchIds = async (user) => {
-  if (user.role !== 'reception') return null;
-  const branches = await prisma.branch.findMany({ where: { receptionId: user.userId }, select: { id: true } });
+  if (user.role === 'admin') return null;
+
+  const where = user.role === 'reception'
+    ? { receptionId: user.userId }
+    : user.role === 'manager'
+      ? { managerId: user.userId }
+      : null;
+
+  if (!where) return null;
+
+  const branches = await prisma.branch.findMany({ where, select: { id: true } });
   return branches.map(b => b.id);
 };
 
