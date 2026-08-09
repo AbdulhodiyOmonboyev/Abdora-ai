@@ -10,7 +10,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
+      - key: postgresql://neondb_owner:npg_0vxC5sbgRmnT@ep-snowy-hall-asgw3s8r-pooler.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require
         fromDatabase:
           name: abdora-db
           property: connectionString
