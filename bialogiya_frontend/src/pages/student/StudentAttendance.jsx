@@ -12,13 +12,16 @@ const STATUS_CONFIG = {
 
 export default function StudentAttendance() {
   const { user } = useAuthStore();
-  const { data: records, isLoading } = useQuery({
+  const { data: records = [], isLoading } = useQuery({
     queryKey: ['student-attendance'],
-    queryFn: () => api.get('/attendance/my').then(r => r.data.data),
+    queryFn: () => api.get('/attendance/my').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
-  const total = records?.length || 0;
-  const present = records?.filter(r => r.status === 'present' || r.status === 'late').length || 0;
+  const total = Array.isArray(records) ? records.length : 0;
+  const present = Array.isArray(records) ? records.filter(r => r.status === 'present' || r.status === 'late').length : 0;
   const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
   return (

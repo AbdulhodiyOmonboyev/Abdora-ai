@@ -6,13 +6,16 @@ import api from '../../config/axios';
 import { formatDate } from '../../utils/format';
 
 export default function StudentHomework() {
-  const { data: homework, isLoading } = useQuery({
+  const { data: homework = [], isLoading } = useQuery({
     queryKey: ['student-homework'],
-    queryFn: () => api.get('/homework/student').then(r => r.data.data),
+    queryFn: () => api.get('/homework/student').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
-  const pending = homework?.filter(h => !h.submissions?.[0]) || [];
-  const submitted = homework?.filter(h => h.submissions?.[0]) || [];
+  const pending = Array.isArray(homework) ? homework.filter(h => !h.submissions?.[0]) : [];
+  const submitted = Array.isArray(homework) ? homework.filter(h => h.submissions?.[0]) : [];
 
   const HWCard = ({ hw, i }) => {
     const sub = hw.submissions?.[0];

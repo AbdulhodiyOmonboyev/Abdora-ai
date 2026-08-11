@@ -19,14 +19,20 @@ export default function AdminUsers() {
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', groupId: '' });
 
-  const { data: users } = useQuery({
+  const { data: users = [] } = useQuery({
     queryKey: ['all-users'],
-    queryFn: () => api.get('/users').then((r) => r.data.data),
+    queryFn: () => api.get('/users').then((r) => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
-  const { data: groups } = useQuery({
+  const { data: groups = [] } = useQuery({
     queryKey: ['admin-groups'],
-    queryFn: () => api.get('/admin/groups').then((r) => r.data.data),
+    queryFn: () => api.get('/admin/groups').then((r) => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
   const updateMutation = useMutation({
@@ -74,12 +80,12 @@ export default function AdminUsers() {
     onError: () => toast.error('Password reset failed'),
   });
 
-  const filteredUsers = users?.filter((user) => {
+  const filteredUsers = Array.isArray(users) ? users.filter((user) => {
     const matchRole = roleFilter === 'all' ? true : user.role === roleFilter;
     const term = search.trim().toLowerCase();
     const matchSearch = !term || [user.name, user.username, user.email, user.role].some((field) => field?.toLowerCase().includes(term));
     return matchRole && matchSearch;
-  }) || [];
+  }) : [];
 
   const openEdit = (user) => {
     setEditingUser(user);

@@ -49,9 +49,27 @@ export default function ReceptionGroups() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [confirm, setConfirm] = useState(null);
 
-  const { data: groups } = useQuery({ queryKey: ['reception-groups'], queryFn: () => api.get('/reception/groups').then(r => r.data.data) });
-  const { data: teachers } = useQuery({ queryKey: ['reception-teachers'], queryFn: () => api.get('/admin/teachers').then(r => r.data.data) });
-  const { data: branches } = useQuery({ queryKey: ['reception-branches'], queryFn: () => api.get('/reception/branches').then(r => r.data.data) });
+  const { data: groups = [] } = useQuery({ 
+    queryKey: ['reception-groups'], 
+    queryFn: () => api.get('/reception/groups').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }) 
+  });
+  const { data: teachers = [] } = useQuery({ 
+    queryKey: ['reception-teachers'], 
+    queryFn: () => api.get('/admin/teachers').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }) 
+  });
+  const { data: branches = [] } = useQuery({ 
+    queryKey: ['reception-branches'], 
+    queryFn: () => api.get('/reception/branches').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }) 
+  });
 
   const closeModal = () => { setShowModal(false); setEditingGroup(null); setForm(EMPTY_FORM); };
 

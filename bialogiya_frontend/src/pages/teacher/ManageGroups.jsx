@@ -15,7 +15,13 @@ const parseWeekDays = (raw) => { try { return JSON.parse(raw || '[]'); } catch {
 // deleting groups (and adding/removing students) is reception's job.
 export default function ManageGroups() {
   const navigate = useNavigate();
-  const { data: groups, isLoading } = useQuery({ queryKey: ['my-groups'], queryFn: () => api.get('/groups').then(r => r.data.data) });
+  const { data: groups = [], isLoading } = useQuery({ 
+    queryKey: ['my-groups'], 
+    queryFn: () => api.get('/groups').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }) 
+  });
 
   return (
     <div className="max-w-4xl mx-auto">

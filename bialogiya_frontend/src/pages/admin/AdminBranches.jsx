@@ -22,18 +22,21 @@ export default function AdminBranches() {
 
   const { data: branches = [] } = useQuery({
     queryKey: ['admin-branches'],
-    queryFn: () => api.get('/admin/branches').then(r => r.data.data),
+    queryFn: () => api.get('/admin/branches').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
   const [searchParams] = useSearchParams();
   const search = searchParams.get('search')?.trim().toLowerCase() || '';
-  const filteredBranches = search
+  const filteredBranches = Array.isArray(branches) ? (search
     ? branches.filter((branch) =>
         branch.name?.toLowerCase().includes(search)
         || branch.address?.toLowerCase().includes(search)
         || branch.reception?.name?.toLowerCase().includes(search)
       )
-    : branches;
+    : branches) : [];
 
   const createMutation = useMutation({
     mutationFn: (data) => api.post('/admin/branches', data),

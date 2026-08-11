@@ -10,12 +10,24 @@ export default function TestResultsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { data: test } = useQuery({ queryKey: ['test', id], queryFn: () => api.get(`/tests/${id}`).then(r => r.data.data) });
-  const { data: results, isLoading } = useQuery({ queryKey: ['test-results', id], queryFn: () => api.get(`/tests/${id}/results`).then(r => r.data.data) });
+  const { data: test = {} } = useQuery({ 
+    queryKey: ['test', id], 
+    queryFn: () => api.get(`/tests/${id}`).then(r => {
+      const data = r.data?.data || r.data || {};
+      return typeof data === 'object' ? data : {};
+    }) 
+  });
+  const { data: results = [], isLoading } = useQuery({ 
+    queryKey: ['test-results', id], 
+    queryFn: () => api.get(`/tests/${id}/results`).then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }) 
+  });
 
-  const chartData = results?.map(r => ({ name: r.student?.name?.split(' ')[0], score: r.percentage })) || [];
-  const avgScore = results?.length ? Math.round(results.reduce((s, r) => s + r.percentage, 0) / results.length) : 0;
-  const passed = results?.filter(r => r.passed).length || 0;
+  const chartData = Array.isArray(results) ? results.map(r => ({ name: r.student?.name?.split(' ')[0], score: r.percentage })) : [];
+  const avgScore = Array.isArray(results) && results.length ? Math.round(results.reduce((s, r) => s + r.percentage, 0) / results.length) : 0;
+  const passed = Array.isArray(results) ? results.filter(r => r.passed).length : 0;
 
   return (
     <div className="max-w-4xl mx-auto">

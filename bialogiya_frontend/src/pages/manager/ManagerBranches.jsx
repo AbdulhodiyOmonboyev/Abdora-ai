@@ -17,7 +17,10 @@ export default function ManagerBranches() {
 
   const { data: branches = [], isLoading } = useQuery({
     queryKey: ['manager-branches'],
-    queryFn: () => api.get('/users/manager/branches').then(r => r.data.data),
+    queryFn: () => api.get('/users/manager/branches').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
   const createMutation = useMutation({
@@ -31,12 +34,12 @@ export default function ManagerBranches() {
     onError: (error) => toast.error(error.response?.data?.message || 'Filial yaratilmadi'),
   });
 
-  const filteredBranches = search
+  const filteredBranches = Array.isArray(branches) ? (search
     ? branches.filter((branch) =>
         branch.name?.toLowerCase().includes(search)
         || branch.address?.toLowerCase().includes(search)
       )
-    : branches;
+    : branches) : [];
 
   if (isLoading) {
     return (

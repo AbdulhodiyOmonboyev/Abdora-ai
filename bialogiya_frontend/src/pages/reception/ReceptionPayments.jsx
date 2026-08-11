@@ -19,21 +19,27 @@ export default function ReceptionPayments() {
   const [groupId, setGroupId] = useState('');
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
 
-  const { data: groups } = useQuery({
+  const { data: groups = [] } = useQuery({
     queryKey: ['reception-groups'],
-    queryFn: () => api.get('/reception/groups').then(r => r.data.data),
+    queryFn: () => api.get('/reception/groups').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
   useEffect(() => {
-    if (!groupId && groups?.length) setGroupId(groups[0].id);
+    if (!groupId && Array.isArray(groups) && groups.length) setGroupId(groups[0].id);
   }, [groups, groupId]);
 
-  const { data: paymentsData, isLoading } = useQuery({
+  const { data: paymentsData = {}, isLoading } = useQuery({
     queryKey: ['reception-payments', groupId, month],
-    queryFn: () => api.get(`/payments/group/${groupId}?month=${month}`).then(r => r.data.data),
+    queryFn: () => api.get(`/payments/group/${groupId}?month=${month}`).then(r => {
+      const data = r.data?.data || r.data || {};
+      return typeof data === 'object' ? data : {};
+    }),
     enabled: !!groupId,
   });
-  const students = paymentsData?.students;
+  const students = Array.isArray(paymentsData?.students) ? paymentsData.students : [];
   const monthlyFee = paymentsData?.monthlyFee || 0;
 
   const paymentMutation = useMutation({
@@ -41,10 +47,10 @@ export default function ReceptionPayments() {
     onSuccess: () => qc.invalidateQueries(['reception-payments', groupId, month]),
   });
 
-  const paidCount = students?.filter(s => s.isPaid).length || 0;
-  const unpaidCount = (students?.length || 0) - paidCount;
+  const paidCount = Array.isArray(students) ? students.filter(s => s.isPaid).length : 0;
+  const unpaidCount = (Array.isArray(students) ? students.length : 0) - paidCount;
   const collected = paidCount * monthlyFee;
-  const expected = (students?.length || 0) * monthlyFee;
+  const expected = (Array.isArray(students) ? students.length : 0) * monthlyFee;
 
   const [exporting, setExporting] = useState(false);
   const exportExcel = async () => {

@@ -16,14 +16,20 @@ export default function AdminReception() {
   const [newCreds, setNewCreds] = useState(null);
   const [confirm, setConfirm] = useState(null);
 
-  const { data: users } = useQuery({
+  const { data: users = [] } = useQuery({
     queryKey: ['admin-reception'],
-    queryFn: () => api.get('/admin/reception').then(r => r.data.data),
+    queryFn: () => api.get('/admin/reception').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
   const { data: branches = [] } = useQuery({
     queryKey: ['admin-branches'],
-    queryFn: () => api.get('/admin/branches').then(r => r.data.data),
+    queryFn: () => api.get('/admin/branches').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
   const createMutation = useMutation({

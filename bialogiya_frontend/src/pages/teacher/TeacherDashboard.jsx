@@ -7,21 +7,53 @@ import api from '../../config/axios';
 
 export default function TeacherDashboard() {
 
-  const { data: groups } = useQuery({ queryKey: ['my-groups'], queryFn: () => api.get('/groups').then(r => r.data.data) });
-  const { data: lessons } = useQuery({ queryKey: ['my-lessons'], queryFn: () => api.get('/lessons').then(r => r.data.data) });
-  const { data: tests } = useQuery({ queryKey: ['my-tests'], queryFn: () => api.get('/tests').then(r => r.data.data) });
-  const { data: homework } = useQuery({ queryKey: ['my-homework'], queryFn: () => api.get('/homework/my').then(r => r.data.data) });
-  const { data: teacherAnalytics } = useQuery({ queryKey: ['teacher-analytics'], queryFn: () => api.get('/analytics/teacher').then(r => r.data.data) });
+  const { data: groups = [] } = useQuery({ 
+    queryKey: ['my-groups'], 
+    queryFn: () => api.get('/groups').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }) 
+  });
+  const { data: lessons = [] } = useQuery({ 
+    queryKey: ['my-lessons'], 
+    queryFn: () => api.get('/lessons').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }) 
+  });
+  const { data: tests = [] } = useQuery({ 
+    queryKey: ['my-tests'], 
+    queryFn: () => api.get('/tests').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }) 
+  });
+  const { data: homework = [] } = useQuery({ 
+    queryKey: ['my-homework'], 
+    queryFn: () => api.get('/homework/my').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }) 
+  });
+  const { data: teacherAnalytics = {} } = useQuery({ 
+    queryKey: ['teacher-analytics'], 
+    queryFn: () => api.get('/analytics/teacher').then(r => {
+      const data = r.data?.data || r.data || {};
+      return typeof data === 'object' ? data : {};
+    }) 
+  });
 
   const month = new Date().toISOString().slice(0, 7);
-  const groupIds = groups?.map((g) => g.id).join(',') || '';
+  const groupIds = Array.isArray(groups) ? groups.map((g) => g.id).join(',') : '';
   const { data: earningsData } = useQuery({
     queryKey: ['teacher-earnings', month, groupIds],
     queryFn: async () => {
       if (!groups?.length) return { totalEarned: 0, totalPaidStudents: 0 };
       const summaries = await Promise.all(groups.map(async (g) => {
-        const data = await api.get(`/payments/group/${g.id}?month=${month}`).then((r) => r.data.data);
-        const paidStudents = data.students.filter((s) => s.isPaid).length;
+        const rawData = await api.get(`/payments/group/${g.id}?month=${month}`).then((r) => r.data?.data || r.data || {});
+        const data = typeof rawData === 'object' ? rawData : {};
+        const students = Array.isArray(data.students) ? data.students : [];
+        const paidStudents = students.filter((s) => s.isPaid).length;
         return { paidStudents, monthlyFee: data.monthlyFee || 0 };
       }));
       return {
@@ -33,7 +65,7 @@ export default function TeacherDashboard() {
   });
 
   const totalStudents = (teacherAnalytics?.totalStudents ?? groups?.reduce((sum, g) => sum + (g.students?.length || 0), 0)) || 0;
-  const aiReadyLessons = lessons?.filter((l) => l.aiContent?.status === 'done').length || 0;
+  const aiReadyLessons = Array.isArray(lessons) ? lessons.filter((l) => l.aiContent?.status === 'done').length : 0;
   const totalEarnings = earningsData?.totalEarned || 0;
   const avgScore = teacherAnalytics?.avgScore ?? 0;
   const totalTests = teacherAnalytics?.totalTests ?? 0;

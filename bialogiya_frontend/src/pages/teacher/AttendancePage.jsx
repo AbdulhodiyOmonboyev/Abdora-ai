@@ -14,9 +14,15 @@ export default function AttendancePage() {
   const [date, setDate] = useState(today);
   const [attendance, setAttendance] = useState({});
 
-  const { data: groups } = useQuery({ queryKey: ['my-groups'], queryFn: () => api.get('/groups').then(r => r.data.data) });
-  const group = groups?.find(g => g.id === selectedGroup);
-  const activeStudents = group?.students?.filter(s => !s.isFrozen) || [];
+  const { data: groups = [] } = useQuery({ 
+    queryKey: ['my-groups'], 
+    queryFn: () => api.get('/groups').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }) 
+  });
+  const group = Array.isArray(groups) ? groups.find(g => g.id === selectedGroup) : null;
+  const activeStudents = Array.isArray(group?.students) ? group.students.filter(s => !s.isFrozen) : [];
 
   useQuery({
     queryKey: ['attendance', selectedGroup, date],

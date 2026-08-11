@@ -40,19 +40,28 @@ export default function StudentDashboard() {
   const { user } = useAuthStore();
   const { t, i18n } = useTranslation();
 
-  const { data: analytics } = useQuery({
+  const { data: analytics = {} } = useQuery({
     queryKey: ['student-analytics'],
-    queryFn: () => api.get('/analytics/student').then(r => r.data.data),
+    queryFn: () => api.get('/analytics/student').then(r => {
+      const data = r.data?.data || r.data || {};
+      return typeof data === 'object' ? data : {};
+    }),
   });
 
-  const { data: homeworkData } = useQuery({
+  const { data: homeworkData = [] } = useQuery({
     queryKey: ['student-homework'],
-    queryFn: () => api.get('/homework/student').then(r => r.data.data),
+    queryFn: () => api.get('/homework/student').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
-  const { data: testsData } = useQuery({
+  const { data: testsData = [] } = useQuery({
     queryKey: ['student-tests'],
-    queryFn: () => api.get('/tests').then(r => r.data.data),
+    queryFn: () => api.get('/tests').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
   const { level, progress } = getLevelProgress(user?.xp || 0);
@@ -65,9 +74,9 @@ export default function StudentDashboard() {
     return t('good_evening');
   };
 
-  const pendingHW = homeworkData?.filter(h => !h.submissions?.[0]).slice(0, 3) || [];
-  const upcomingTests = testsData?.slice(0, 3) || [];
-  const scoreHistory = analytics?.scoreHistory || [];
+  const pendingHW = Array.isArray(homeworkData) ? homeworkData.filter(h => !h.submissions?.[0]).slice(0, 3) : [];
+  const upcomingTests = Array.isArray(testsData) ? testsData.slice(0, 3) : [];
+  const scoreHistory = Array.isArray(analytics?.scoreHistory) ? analytics.scoreHistory : [];
 
   const chartData = scoreHistory.map(r => ({
     name: formatDate(r.date).split(' ').slice(0, 2).join(' '),

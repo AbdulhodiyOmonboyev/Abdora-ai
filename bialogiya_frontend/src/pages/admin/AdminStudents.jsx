@@ -10,14 +10,20 @@ export default function AdminStudents() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
 
-  const { data: students } = useQuery({ queryKey: ['all-students'], queryFn: () => api.get('/admin/students').then(r => r.data.data) });
+  const { data: students = [] } = useQuery({ 
+    queryKey: ['all-students'], 
+    queryFn: () => api.get('/admin/students').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    })
+  });
 
   const toggleMutation = useMutation({
     mutationFn: (id) => api.put(`/admin/users/${id}/toggle`),
     onSuccess: () => { qc.invalidateQueries(['all-students']); toast.success('Status updated'); },
   });
 
-  const filtered = students?.filter(s => !search || s.name?.toLowerCase().includes(search.toLowerCase()) || s.username?.toLowerCase().includes(search.toLowerCase())) || [];
+  const filtered = Array.isArray(students) ? students.filter(s => !search || s.name?.toLowerCase().includes(search.toLowerCase()) || s.username?.toLowerCase().includes(search.toLowerCase())) : [];
 
   return (
     <div className="max-w-4xl mx-auto">

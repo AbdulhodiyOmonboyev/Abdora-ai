@@ -13,23 +13,32 @@ export default function ReceptionStudents() {
   const [newCreds, setNewCreds] = useState(null);
   const [branchFilter, setBranchFilter] = useState('');
 
-  const { data: branches } = useQuery({
+  const { data: branches = [] } = useQuery({
     queryKey: ['reception-branches-for-filter'],
-    queryFn: () => api.get('/reception/branches').then(r => r.data.data),
+    queryFn: () => api.get('/reception/branches').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
-  const { data: groups } = useQuery({
+  const { data: groups = [] } = useQuery({
     queryKey: ['reception-groups'],
-    queryFn: () => api.get('/reception/groups').then(r => r.data.data),
+    queryFn: () => api.get('/reception/groups').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
-  const visibleGroups = branchFilter ? groups?.filter(g => g.branch?.id === branchFilter) : groups;
+  const visibleGroups = branchFilter ? (Array.isArray(groups) ? groups.filter(g => g.branch?.id === branchFilter) : []) : groups;
 
   // No single "all students" endpoint for reception - list per selected group instead.
   const [filterGroupId, setFilterGroupId] = useState('');
-  const { data: group } = useQuery({
+  const { data: group = {} } = useQuery({
     queryKey: ['reception-group-detail', filterGroupId],
-    queryFn: () => api.get(`/groups/${filterGroupId}`).then(r => r.data.data),
+    queryFn: () => api.get(`/groups/${filterGroupId}`).then(r => {
+      const data = r.data?.data || r.data || {};
+      return typeof data === 'object' ? data : {};
+    }),
     enabled: !!filterGroupId,
   });
 

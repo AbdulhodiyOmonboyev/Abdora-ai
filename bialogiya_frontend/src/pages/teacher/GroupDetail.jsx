@@ -31,15 +31,21 @@ export default function GroupDetail() {
 
   const { data: group, isLoading } = useQuery({
     queryKey: ['group', id],
-    queryFn: () => api.get(`/groups/${id}`).then(r => r.data.data),
+    queryFn: () => api.get(`/groups/${id}`).then(r => {
+      const data = r.data?.data || r.data || {};
+      return typeof data === 'object' ? data : {};
+    }),
   });
 
   const { data: paymentsData } = useQuery({
     queryKey: ['group-payments', id, month],
-    queryFn: () => api.get(`/payments/group/${id}?month=${month}`).then(r => r.data.data),
+    queryFn: () => api.get(`/payments/group/${id}?month=${month}`).then(r => {
+      const data = r.data?.data || r.data || {};
+      return typeof data === 'object' ? data : {};
+    }),
     enabled: !!id,
   });
-  const payments = paymentsData?.students;
+  const payments = Array.isArray(paymentsData?.students) ? paymentsData.students : [];
 
   const paymentMap = {};
   (payments || []).forEach(p => { paymentMap[p.id] = p; });

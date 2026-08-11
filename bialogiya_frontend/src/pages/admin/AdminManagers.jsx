@@ -24,10 +24,13 @@ export default function AdminManagers() {
 
   const { data: users = [] } = useQuery({
     queryKey: ['admin-managers'],
-    queryFn: () => api.get('/users').then(r => r.data.data),
+    queryFn: () => api.get('/users').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
-  const managers = users.filter((u) => u.role === 'manager');
+  const managers = Array.isArray(users) ? users.filter((u) => u.role === 'manager') : [];
 
   const createMutation = useMutation({
     mutationFn: (data) => api.post('/users/create-manager', data),

@@ -14,25 +14,31 @@ export default function ReceptionCenters() {
   const [form, setForm] = useState({ name: '', address: '', studentCapacity: '' });
   const [confirm, setConfirm] = useState(null);
 
-  const { data: me } = useQuery({
+  const { data: me = {} } = useQuery({
     queryKey: ['me'],
-    queryFn: () => api.get('/auth/me').then(r => r.data.data),
+    queryFn: () => api.get('/auth/me').then(r => {
+      const data = r.data?.data || r.data || {};
+      return typeof data === 'object' ? data : {};
+    }),
   });
 
   const [searchParams] = useSearchParams();
   const search = searchParams.get('search')?.trim().toLowerCase() || '';
 
-  const { data: centers } = useQuery({
+  const { data: centers = [] } = useQuery({
     queryKey: ['reception-branches'],
-    queryFn: () => api.get('/reception/branches').then(r => r.data.data),
+    queryFn: () => api.get('/reception/branches').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
   });
 
-  const filteredCenters = search
+  const filteredCenters = Array.isArray(centers) ? (search
     ? centers.filter((center) =>
         center.name?.toLowerCase().includes(search)
         || center.address?.toLowerCase().includes(search)
       )
-    : centers;
+    : centers) : [];
 
   const createMutation = useMutation({
     mutationFn: (data) => api.post('/reception/branches', data),
