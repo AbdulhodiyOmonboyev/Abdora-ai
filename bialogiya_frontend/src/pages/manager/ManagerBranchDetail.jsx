@@ -14,9 +14,12 @@ export default function ManagerBranchDetail() {
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', address: '', studentCapacity: '' });
 
-  const { data: branch, isLoading, error } = useQuery({
+  const { data: branch = {}, isLoading, error } = useQuery({
     queryKey: ['manager-branch-detail', id],
-    queryFn: () => api.get(`/admin/branches/${id}`).then(r => r.data.data),
+    queryFn: () => api.get(`/admin/branches/${id}`).then(r => {
+      const data = r.data?.data || r.data || {};
+      return typeof data === 'object' ? data : {};
+    }),
   });
 
   const updateBranchMutation = useMutation({
@@ -192,7 +195,7 @@ export default function ManagerBranchDetail() {
       </motion.div>
 
       {/* Teachers */}
-      {branch.teachers && branch.teachers.length > 0 && (
+      {Array.isArray(branch.teachers) && branch.teachers.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -234,7 +237,7 @@ export default function ManagerBranchDetail() {
       )}
 
       {/* Groups */}
-      {branch.groups && branch.groups.length > 0 && (
+      {Array.isArray(branch.groups) && branch.groups.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

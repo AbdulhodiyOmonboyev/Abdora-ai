@@ -17,14 +17,20 @@ export default function AdminBranchDetail() {
   const [showCreateManager, setShowCreateManager] = useState(false);
   const [managerForm, setManagerForm] = useState(EMPTY_MANAGER_FORM);
 
-  const { data: branch, isLoading, error } = useQuery({
+  const { data: branch = {}, isLoading, error } = useQuery({
     queryKey: ['admin-branch-detail', id],
-    queryFn: () => api.get(`/admin/branches/${id}`).then(r => r.data.data),
+    queryFn: () => api.get(`/admin/branches/${id}`).then(r => {
+      const data = r.data?.data || r.data || {};
+      return typeof data === 'object' ? data : {};
+    }),
   });
 
   const { data: managers = [] } = useQuery({
     queryKey: ['admin-branch-managers', id, search],
-    queryFn: () => api.get('/users', { params: { role: 'manager', branchId: id, search } }).then((r) => r.data.data),
+    queryFn: () => api.get('/users', { params: { role: 'manager', branchId: id, search } }).then((r) => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
     enabled: !!id,
   });
 
@@ -158,7 +164,7 @@ export default function AdminBranchDetail() {
       </motion.div>
 
       {/* Teachers */}
-      {branch.teachers && branch.teachers.length > 0 && (
+      {Array.isArray(branch.teachers) && branch.teachers.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -352,7 +358,7 @@ export default function AdminBranchDetail() {
       </AnimatePresence>
 
       {/* Groups */}
-      {branch.groups && branch.groups.length > 0 && (
+      {Array.isArray(branch.groups) && branch.groups.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

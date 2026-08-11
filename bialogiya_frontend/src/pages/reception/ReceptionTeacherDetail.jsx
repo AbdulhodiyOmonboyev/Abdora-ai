@@ -21,9 +21,12 @@ export default function ReceptionTeacherDetail() {
   const initialTab = searchParams.get('tab') || 'groups';
   const [tab, setTab] = useState(TABS.some(t => t.key === initialTab) ? initialTab : 'groups');
 
-  const { data, isLoading } = useQuery({
+  const { data = {}, isLoading } = useQuery({
     queryKey: ['teacher-overview', id],
-    queryFn: () => api.get(`/admin/teachers/${id}/overview`).then(r => r.data.data),
+    queryFn: () => api.get(`/admin/teachers/${id}/overview`).then(r => {
+      const result = r.data?.data || r.data || {};
+      return typeof result === 'object' ? result : {};
+    }),
   });
 
   if (isLoading) {
