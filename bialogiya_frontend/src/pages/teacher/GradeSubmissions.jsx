@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle, Bot, Star } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Bot } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { getScoreColor } from '../../utils/format';

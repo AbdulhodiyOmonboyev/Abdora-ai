@@ -22,12 +22,15 @@ export default function CreateLesson() {
 
   useEffect(() => {
     if (lesson) {
-      setForm({
-        title: lesson.title || '',
-        content: lesson.content || '',
-        subject: lesson.subject || 'biology',
-        groupId: lesson.groupId || '',
-        order: lesson.order || 0,
+      setForm(prev => {
+        const next = {
+          title: lesson.title || '',
+          content: lesson.content || '',
+          subject: lesson.subject || 'biology',
+          groupId: lesson.groupId || '',
+          order: lesson.order || 0,
+        };
+        return (prev.title === next.title && prev.content === next.content && prev.subject === next.subject && prev.groupId === next.groupId && prev.order === next.order) ? prev : next;
       });
     }
   }, [lesson]);
@@ -46,7 +49,6 @@ export default function CreateLesson() {
 
   const handleSubmit = () => {
     if (!form.title || !form.groupId) return toast.error('Title and Group are required');
-    const submitting = id ? updateMutation : createMutation;
 
     if (id) {
       const fd = new FormData();

@@ -6,6 +6,7 @@ const { generateUsername, generatePassword, getPhoneCode } = require('../utils/g
 // Reception accounts should only ever see their OWN branches' data (admin
 // sees everything) - see utils/branchScope.js.
 const { getOwnBranchIds } = require('../utils/branchScope');
+const cache = require('../utils/simpleCache');
 
 const getStats = async (req, res, next) => {
   try {
@@ -328,6 +329,9 @@ const getTeacherOverview = async (req, res, next) => {
 // Branch management - admin only
 const getBranches = async (req, res, next) => {
   try {
+    const cacheKey = `admin_branches_${req.user.userId || 'anon'}`;
+    const cached = cache.get(cacheKey);
+    if (cached) return success(res, cached);
     const ownBranchIds = await getOwnBranchIds(req.user);
     const branches = await prisma.branch.findMany({
       where: { isActive: true, ...(ownBranchIds ? { id: { in: ownBranchIds } } : {}) },
@@ -338,6 +342,8 @@ const getBranches = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
     return success(res, branches);
+    // Cache for short period
+    cache.set(cacheKey, branches, 5000);
   } catch (err) { next(err); }
 };
 
@@ -406,6 +412,9 @@ const deleteBranch = async (req, res, next) => {
 
 const getBranchDetail = async (req, res, next) => {
   try {
+    const cacheKey = `branch_detail_${req.params.id}`;
+    const cached = cache.get(cacheKey);
+    if (cached) return success(res, cached);
     const branch = await prisma.branch.findFirst({
       where: { id: req.params.id, isActive: true },
       include: {
@@ -437,6 +446,7 @@ const getBranchDetail = async (req, res, next) => {
     });
 
     return success(res, { ...branch, studentsCount });
+    cache.set(cacheKey, { ...branch, studentsCount }, 5000);
   } catch (err) { next(err); }
 };
 

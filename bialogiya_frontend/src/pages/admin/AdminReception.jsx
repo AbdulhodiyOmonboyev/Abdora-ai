@@ -6,7 +6,7 @@ import api from '../../config/axios';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 
-const EMPTY_FORM = { name: '', phone: '', email: '', language: 'uz', maxBranches: 3, branchId: '' };
+const EMPTY_FORM = { name: '', phone: '', email: '', language: 'uz', branchId: '' };
 
 export default function AdminReception() {
   const qc = useQueryClient();
@@ -59,13 +59,13 @@ export default function AdminReception() {
 
   const openEdit = (u) => {
     setEditingId(u.id);
-    setForm({ name: u.name, phone: u.phone || '', email: u.email || '', language: 'uz', maxBranches: u.maxBranches ?? 3 });
+    setForm({ name: u.name, phone: u.phone || '', email: u.email || '', language: 'uz', branchId: u.branchId || '' });
     setShowCreate(true);
   };
 
   const submit = () => {
     if (!form.name) return;
-    if (editingId) updateMutation.mutate({ id: editingId, data: { name: form.name, phone: form.phone, email: form.email, maxBranches: form.maxBranches } });
+    if (editingId) updateMutation.mutate({ id: editingId, data: { name: form.name, phone: form.phone, email: form.email, branchId: form.branchId || null } });
     else createMutation.mutate(form);
   };
 
@@ -105,7 +105,7 @@ export default function AdminReception() {
               <div className="text-xs text-gray-400 flex items-center gap-2 flex-wrap">
                 <span>@{u.username}</span>
                 {u.phone && <span className="flex items-center gap-0.5"><Phone size={10} /> {u.phone}</span>}
-                <span className="flex items-center gap-0.5"><Building2 size={10} /> {u._count?.branches || 0} / {u.maxBranches ?? 3} filial</span>
+                <span className="flex items-center gap-0.5"><Building2 size={10} /> {u._count?.branches || 0} filial</span>
               </div>
             </div>
             <span className={`badge text-xs ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -191,17 +191,6 @@ export default function AdminReception() {
                       ))}
                     </select>
                     <p className="text-xs text-gray-400 mt-1">Agar filial tanlangan bo'lsa, bu qabulxona shu filialga bog'lanadi.</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5 flex items-center gap-1">
-                      <Building2 size={13} /> Nechta markaz ochishi mumkin
-                    </label>
-                    <input
-                      value={form.maxBranches}
-                      onChange={e => setForm(f => ({ ...f, maxBranches: e.target.value.replace(/\D/g, '') }))}
-                      type="number" min="1" max="50" className="input-field"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Bu xodim bu sondan ko'p markaz ocholmaydi.</p>
                   </div>
                   <div className="flex gap-3 pt-2">
                     <button onClick={closeModal} className="btn-ghost flex-1">Bekor</button>

@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Plus, ClipboardList, Clock, CheckCircle, Pencil, Trash2, X, Save } from 'lucide-react';
 import api from '../../config/axios';

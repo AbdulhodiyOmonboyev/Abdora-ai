@@ -42,7 +42,8 @@ export default function Topbar({ onMenuClick }) {
     if (!searchPath) return;
     const params = new URLSearchParams(location.search);
     if (location.pathname.startsWith(searchPath)) {
-      setHeaderSearch(params.get('search') || '');
+      const val = params.get('search') || '';
+      setHeaderSearch(prev => (prev === val ? prev : val));
     }
   }, [location.search, location.pathname, searchPath]);
 

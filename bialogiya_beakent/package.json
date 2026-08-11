@@ -19,6 +19,7 @@
     "prisma": "^6.9.0"
   },
   "dependencies": {
+    "compression": "^1.7.4",
     "@google/genai": "^1.52.0",
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.9.0",

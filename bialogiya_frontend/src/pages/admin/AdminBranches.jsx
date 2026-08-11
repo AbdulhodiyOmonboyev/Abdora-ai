@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 
-const EMPTY_FORM = { name: '', address: '', receptionId: '', studentCapacity: '' };
+const EMPTY_FORM = { name: '', address: '', studentCapacity: '' };
 
 export default function AdminBranches() {
   const navigate = useNavigate();
@@ -34,11 +34,6 @@ export default function AdminBranches() {
         || branch.reception?.name?.toLowerCase().includes(search)
       )
     : branches;
-
-  const { data: receptionUsers = [] } = useQuery({
-    queryKey: ['admin-reception'],
-    queryFn: () => api.get('/admin/reception').then(r => r.data.data),
-  });
 
   const createMutation = useMutation({
     mutationFn: (data) => api.post('/admin/branches', data),
@@ -88,7 +83,6 @@ export default function AdminBranches() {
     setEditForm({
       name: branch.name,
       address: branch.address || '',
-      receptionId: branch.receptionId || '',
       studentCapacity: branch.studentCapacity || '',
     });
     setShowEdit(true);
@@ -164,12 +158,6 @@ export default function AdminBranches() {
               </div>
             )}
 
-            {branch.reception && (
-              <div className="text-xs text-gray-600 dark:text-gray-300 mb-3">
-                <span className="font-medium">Qabul xonasi:</span> {branch.reception.name}
-              </div>
-            )}
-
             <div className="flex gap-3 text-xs text-gray-600">
               {branch._count && (
                 <>
@@ -237,22 +225,6 @@ export default function AdminBranches() {
                     className="input-field w-full"
                     placeholder="Tuman, ko'cha, uy raqami"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Qabul xonasi</label>
-                  <select
-                    value={form.receptionId}
-                    onChange={(e) => setForm((prev) => ({ ...prev, receptionId: e.target.value }))}
-                    className="input-field w-full"
-                  >
-                    <option value="">Tanlang</option>
-                    {receptionUsers.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 <div>
@@ -331,22 +303,6 @@ export default function AdminBranches() {
                     className="input-field w-full"
                     placeholder="Tuman, ko'cha, uy raqami"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Qabul xonasi</label>
-                  <select
-                    value={editForm.receptionId}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, receptionId: e.target.value }))}
-                    className="input-field w-full"
-                  >
-                    <option value="">Tanlang</option>
-                    {receptionUsers.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 <div>

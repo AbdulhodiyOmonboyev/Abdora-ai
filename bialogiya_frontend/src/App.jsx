@@ -64,10 +64,8 @@ import ManagerBranches from './pages/manager/ManagerBranches';
 import ManagerBranchDetail from './pages/manager/ManagerBranchDetail';
 
 // Reception pages
-import ReceptionCenters from './pages/reception/ReceptionCenters';
 import ReceptionGroups from './pages/reception/ReceptionGroups';
 import ReceptionGroupDetail from './pages/reception/ReceptionGroupDetail';
-import ReceptionCenterDetail from './pages/reception/ReceptionCenterDetail';
 import ReceptionTeacherDetail from './pages/reception/ReceptionTeacherDetail';
 import ReceptionStudents from './pages/reception/ReceptionStudents';
 import ReceptionPayments from './pages/reception/ReceptionPayments';
@@ -176,11 +174,9 @@ export default function App() {
         {/* Reception Routes - has almost all of admin's operational
             capabilities now (reuses the same Admin* components, which the
             backend allows for the 'reception' role too), plus its own
-            centers/groups/students/payments pages. */}
+            groups/students/payments pages. */}
         <Route path="/reception" element={<ProtectedRoute role="reception"><MainLayout /></ProtectedRoute>}>
           <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="centers" element={<ReceptionCenters />} />
-          <Route path="centers/:id" element={<ReceptionCenterDetail />} />
           <Route path="teachers" element={<AdminTeachers />} />
           <Route path="groups" element={<ReceptionGroups />} />
           <Route path="groups/:id" element={<ReceptionGroupDetail />} />

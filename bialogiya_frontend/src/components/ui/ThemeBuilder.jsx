@@ -63,15 +63,14 @@ export default function ThemeBuilder() {
   const isCustom = activeTheme.type === 'custom';
 
   useEffect(() => {
-    setEditingValues(activeTheme.values);
-    setThemeName(activeTheme.name);
+    setEditingValues(prev => (prev === activeTheme.values ? prev : activeTheme.values));
+    setThemeName(prev => (prev === activeTheme.name ? prev : activeTheme.name));
     applyTheme(activeTheme.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTheme.id]);
 
   useEffect(() => {
     applyThemeVars(editingValues, activeTheme.mode);
-    setPreviewKey((value) => value + 1);
   }, [editingValues, activeTheme.mode]);
 
   const handleThemeSelect = (id) => applyTheme(id);
@@ -79,6 +78,7 @@ export default function ThemeBuilder() {
   const handleFieldChange = (key, value) => {
     const normalized = value.startsWith('#') ? value : `#${value}`;
     setEditingValues((current) => ({ ...current, [key]: normalized }));
+    setPreviewKey((val) => val + 1);
   };
 
   const handleSave = () => {
@@ -113,7 +113,7 @@ export default function ThemeBuilder() {
       const parsed = JSON.parse(importJson);
       importTheme(parsed);
       setImportJson('');
-    } catch (error) {
+    } catch {
       window.alert('JSON format noto‘g‘ri. Iltimos, to‘g‘ri JSON joylashtiring.');
     }
   };

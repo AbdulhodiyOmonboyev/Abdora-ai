@@ -1,12 +1,10 @@
 import { getSubjectIcon } from '../../utils/subjects';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Plus, BookOpen, Trash2, RefreshCw, Eye, Pencil } from 'lucide-react';
+import { Plus, BookOpen, Trash2, RefreshCw, Pencil } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { formatDate } from '../../utils/format';
 
 export default function ManageLessons() {
   const qc = useQueryClient();

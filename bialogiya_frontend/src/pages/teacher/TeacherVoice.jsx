@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { Mic, Upload, Trash2, Loader2, CheckCircle2, Info } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';

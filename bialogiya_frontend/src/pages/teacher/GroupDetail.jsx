@@ -1,14 +1,11 @@
 import { useState } from 'react';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import {
-  ArrowLeft, Users, Snowflake, CreditCard, RefreshCw, Copy,
-  Plus, X, CheckCircle2, XCircle, Clock, ChevronLeft, ChevronRight
+  ArrowLeft, Users, CreditCard, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import api from '../../config/axios';
-import toast from 'react-hot-toast';
 import { getSubjectLabel, getSubjectBadgeClass } from '../../utils/subjects';
 
 const MONTHS = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
@@ -27,7 +24,6 @@ function parseMonth(str) {
 export default function GroupDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const qc = useQueryClient();
   const [monthOffset, setMonthOffset] = useState(0);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
@@ -38,44 +34,12 @@ export default function GroupDetail() {
     queryFn: () => api.get(`/groups/${id}`).then(r => r.data.data),
   });
 
-  const { data: paymentsData, isLoading: payLoading } = useQuery({
+  const { data: paymentsData } = useQuery({
     queryKey: ['group-payments', id, month],
     queryFn: () => api.get(`/payments/group/${id}?month=${month}`).then(r => r.data.data),
     enabled: !!id,
   });
   const payments = paymentsData?.students;
-
-  const freezeMutation = useMutation({
-    mutationFn: (studentId) => api.patch(`/users/${studentId}/freeze`),
-    onSuccess: (res, studentId) => {
-      const frozen = res.data.data.isFrozen;
-      toast.success(frozen ? '❄️ Student muzlatildi' : '✅ Student faollashtirildi');
-      qc.invalidateQueries(['group', id]);
-    },
-    onError: () => toast.error('Xato yuz berdi'),
-  });
-
-  const paymentMutation = useMutation({
-    mutationFn: ({ studentId, isPaid }) => api.post('/payments', { studentId, month, isPaid }),
-    onSuccess: () => {
-      qc.invalidateQueries(['group-payments', id, month]);
-    },
-    onError: () => toast.error('Xato yuz berdi'),
-  });
-
-  const removePaymentMutation = useMutation({
-    mutationFn: (studentId) => api.delete(`/payments/${studentId}/${month}`),
-    onSuccess: () => {
-      qc.invalidateQueries(['group-payments', id, month]);
-    },
-  });
-
-  const resetPwMutation = useMutation({
-    mutationFn: (studentId) => api.post(`/users/${studentId}/reset-password`),
-    onSuccess: ({ data }) => toast.success(`Yangi parol: ${data.data.newPassword}`, { duration: 8000 }),
-  });
-
-  const copy = (text) => { navigator.clipboard.writeText(text); toast.success("Nusxalandi!"); };
 
   const paymentMap = {};
   (payments || []).forEach(p => { paymentMap[p.id] = p; });

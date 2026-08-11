@@ -118,9 +118,13 @@ const getStudentsByTeacher = async (req, res, next) => {
 const getAllUsers = async (req, res, next) => {
   try {
     const { role, branchId, search } = req.query;
+    const ownBranchIds = await getOwnBranchIds(req.user);
+    // Add pagination and limit fields returned to reduce payload
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const perPage = Math.min(100, Math.max(10, Number(req.query.perPage) || 20));
+
     const where = {
       ...(role ? { role } : {}),
-      ...(branchId ? { branchId } : {}),
       ...(search
         ? {
             OR: [
@@ -132,8 +136,23 @@ const getAllUsers = async (req, res, next) => {
           }
         : {}),
     };
-    const users = await prisma.user.findMany({ where, orderBy: { createdAt: 'desc' } });
-    return success(res, users.map(safeUser));
+
+    if (branchId) {
+      if (role === 'manager') {
+        where.managedBranches = { some: { id: branchId } };
+      } else {
+        where.branchId = branchId;
+      }
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      select: { id: true, name: true, username: true, email: true, phone: true, role: true, isActive: true },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * perPage,
+      take: perPage,
+    });
+    return success(res, { data: users.map(safeUser), page, perPage });
   } catch (err) { next(err); }
 };
 

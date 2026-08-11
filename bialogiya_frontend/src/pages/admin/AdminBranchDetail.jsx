@@ -5,10 +5,9 @@ import { ArrowLeft, Building2, Users, BookOpen, User, Search, Plus, X } from 'lu
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 
-const EMPTY_MANAGER_FORM = { name: '', phone: '', email: '' };
+const EMPTY_MANAGER_FORM = { name: '', phone: '', email: '', password: '', gender: '', address: '' };
 
 export default function AdminBranchDetail() {
   const { id } = useParams();
@@ -17,8 +16,6 @@ export default function AdminBranchDetail() {
   const [search, setSearch] = useState('');
   const [showCreateManager, setShowCreateManager] = useState(false);
   const [managerForm, setManagerForm] = useState(EMPTY_MANAGER_FORM);
-  const [newManagerCreds, setNewManagerCreds] = useState(null);
-  const [confirm, setConfirm] = useState(null);
 
   const { data: branch, isLoading, error } = useQuery({
     queryKey: ['admin-branch-detail', id],
@@ -135,10 +132,22 @@ export default function AdminBranchDetail() {
               className="input-field w-full pl-10"
             />
           </div>
-          <button onClick={() => setShowCreateManager(true)} className="btn-primary flex items-center gap-2">
+          <button
+            onClick={() => setShowCreateManager(true)}
+            disabled={!!branch.manager}
+            className="btn-primary flex items-center gap-2 disabled:opacity-40"
+          >
             <Plus size={16} /> Manager yaratish
           </button>
         </div>
+        {branch.manager && (
+          <div className="mt-3 text-sm text-gray-500">
+            Bu filiala manager allaqachon biriktirilgan: <button
+              onClick={() => navigate(`/admin/managers/${branch.manager.id}`)}
+              className="text-primary hover:underline"
+            >{branch.manager.name}</button>.
+          </div>
+        )}
 
         {branch.reception && (
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -208,7 +217,11 @@ export default function AdminBranchDetail() {
 
         <div className="space-y-3">
           {managers.map((manager) => (
-            <div key={manager.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div
+              key={manager.id}
+              onClick={() => navigate(`/admin/managers/${manager.id}`)}
+              className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
               <div className="w-10 h-10 rounded-full bg-primary/10 text-primary grid place-items-center font-semibold">
                 {manager.name?.charAt(0)}
               </div>
@@ -262,24 +275,61 @@ export default function AdminBranchDetail() {
                     placeholder="To'liq ismi"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Telefon *</label>
-                  <input
-                    value={managerForm.phone}
-                    onChange={(e) => setManagerForm((prev) => ({ ...prev, phone: e.target.value }))}
-                    className="input-field w-full"
-                    placeholder="+998 90 123 45 67"
-                    type="tel"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Telefon *</label>
+                    <input
+                      value={managerForm.phone}
+                      onChange={(e) => setManagerForm((prev) => ({ ...prev, phone: e.target.value }))}
+                      className="input-field w-full"
+                      placeholder="+998 90 123 45 67"
+                      type="tel"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Kod</label>
+                    <input
+                      value={managerForm.password}
+                      onChange={(e) => setManagerForm((prev) => ({ ...prev, password: e.target.value }))}
+                      className="input-field w-full"
+                      placeholder="Telefon oxirgi 4 raqami"
+                      type="text"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Agar bo'sh qoldirilsa, kod telefon oxirgi 4 raqamidan olinadi.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Jinsi</label>
+                    <select
+                      value={managerForm.gender}
+                      onChange={(e) => setManagerForm((prev) => ({ ...prev, gender: e.target.value }))}
+                      className="input-field w-full"
+                    >
+                      <option value="">Tanlang</option>
+                      <option value="male">Erkak</option>
+                      <option value="female">Ayol</option>
+                      <option value="other">Boshqa</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email</label>
+                    <input
+                      value={managerForm.email}
+                      onChange={(e) => setManagerForm((prev) => ({ ...prev, email: e.target.value }))}
+                      className="input-field w-full"
+                      placeholder="email@example.com"
+                      type="email"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <label className="block text-sm font-medium mb-1">Manzili</label>
                   <input
-                    value={managerForm.email}
-                    onChange={(e) => setManagerForm((prev) => ({ ...prev, email: e.target.value }))}
+                    value={managerForm.address}
+                    onChange={(e) => setManagerForm((prev) => ({ ...prev, address: e.target.value }))}
                     className="input-field w-full"
-                    placeholder="email@example.com"
-                    type="email"
+                    placeholder="Tuman, ko'cha, uy raqami"
                   />
                 </div>
                 <div className="flex gap-3">

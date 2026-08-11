@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Plus, Upload, FileText, Image, Video, Trash2, X, Download, ExternalLink, Loader2 } from 'lucide-react';
@@ -135,7 +134,7 @@ export default function TeacherResources() {
                   className="btn-ghost p-1.5 rounded-lg text-primary hover:bg-primary/10 disabled:opacity-50">
                   {isPreviewing ? <Loader2 size={13} className="animate-spin" /> : <ExternalLink size={13} />}
                 </button>
-                <button onClick={() => downloadMutation.mutate({ _id: resourceId, _id: resourceId, mimeType: r.mimeType, type: r.type, filePath: r.filePath, title: r.title })} disabled={isDownloading}
+                <button onClick={() => downloadMutation.mutate({ _id: resourceId, mimeType: r.mimeType, type: r.type, filePath: r.filePath, title: r.title })} disabled={isDownloading}
                   className="btn-ghost p-1.5 rounded-lg text-primary hover:bg-primary/10 disabled:opacity-50">
                   {isDownloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
                 </button>

@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -17,9 +17,7 @@ const queryClient = new QueryClient({
   },
 });
 
-import { useEffect } from 'react';
-
-function Root() {
+export function Root() {
   const { theme, init } = useThemeStore();
 
   useEffect(() => {

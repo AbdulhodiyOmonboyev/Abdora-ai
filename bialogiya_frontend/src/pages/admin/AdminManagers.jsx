@@ -130,7 +130,8 @@ export default function AdminManagers() {
       <div className="space-y-3">
         {managers.map((manager, index) => (
           <motion.div key={manager.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
-            className="card flex items-center gap-3">
+            className="card flex items-center gap-3 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate(`/admin/managers/${manager.id}`)}>
             <div className="w-12 h-12 rounded-full bg-primary/10 text-primary grid place-items-center font-semibold text-lg">
               {manager.name?.charAt(0)}
             </div>
@@ -148,14 +149,14 @@ export default function AdminManagers() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => toggleMutation.mutate(manager.id)}
+              <button onClick={(e) => { e.stopPropagation(); toggleMutation.mutate(manager.id); }}
                 className={`badge text-xs ${manager.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                 {manager.isActive ? 'Faol' : 'Nofaol'}
               </button>
-              <button onClick={() => openEdit(manager)} className="btn-ghost p-2 rounded-lg text-blue-500 hover:bg-blue-50">
+              <button onClick={(e) => { e.stopPropagation(); openEdit(manager); }} className="btn-ghost p-2 rounded-lg text-blue-500 hover:bg-blue-50">
                 <Edit2 size={16} />
               </button>
-              <button onClick={() => openDelete(manager)} className="btn-ghost p-2 rounded-lg text-red-500 hover:bg-red-50">
+              <button onClick={(e) => { e.stopPropagation(); openDelete(manager); }} className="btn-ghost p-2 rounded-lg text-red-500 hover:bg-red-50">
                 <Trash2 size={16} />
               </button>
             </div>

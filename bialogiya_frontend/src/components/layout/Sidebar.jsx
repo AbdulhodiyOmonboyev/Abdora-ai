@@ -57,7 +57,6 @@ const managerLinks = [
 
 const receptionLinks = [
   { to: '/reception/dashboard', icon: LayoutDashboard, key: 'dashboard' },
-  { to: '/reception/centers', icon: Building2, key: 'centers' },
   { to: '/reception/teachers', icon: BookMarked, key: 'teachers' },
   { to: '/reception/groups', icon: Users, key: 'groups' },
   { to: '/reception/students', icon: GraduationCap, key: 'students' },

@@ -2,13 +2,10 @@ import { getSubjectBadgeClass } from '../../utils/subjects';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Users, BookOpen, ClipboardList, FileText, TrendingUp, ChevronRight, Plus } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { useAuthStore } from '../../store/authStore';
+import { Users, BookOpen, ClipboardList, FileText } from 'lucide-react';
 import api from '../../config/axios';
 
 export default function TeacherDashboard() {
-  const { user } = useAuthStore();
 
   const { data: groups } = useQuery({ queryKey: ['my-groups'], queryFn: () => api.get('/groups').then(r => r.data.data) });
   const { data: lessons } = useQuery({ queryKey: ['my-lessons'], queryFn: () => api.get('/lessons').then(r => r.data.data) });

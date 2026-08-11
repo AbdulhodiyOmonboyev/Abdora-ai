@@ -71,9 +71,10 @@ export default function ExplainerVideoPlayer({ lessonId }) {
   }, [lessonId]);
 
   useEffect(() => {
+    const cache = imageCacheRef.current;
     return () => {
-      imageCacheRef.current.forEach(url => URL.revokeObjectURL(url));
-      imageCacheRef.current.clear();
+      cache.forEach(url => URL.revokeObjectURL(url));
+      cache.clear();
     };
   }, []);
 
@@ -118,7 +119,9 @@ export default function ExplainerVideoPlayer({ lessonId }) {
   };
 
   useEffect(() => {
-    if (playing) playSlide();
+    if (playing) {
+      void playSlide();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideIdx]);
 

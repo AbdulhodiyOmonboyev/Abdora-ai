@@ -49,9 +49,9 @@ export const hslToRgb = ({ h, s, l }) => {
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = l - c / 2;
-  let rr = 0;
-  let gg = 0;
-  let bb = 0;
+  let rr;
+  let gg;
+  let bb;
 
   if (h < 60) {
     rr = c; gg = x; bb = 0;

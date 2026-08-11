@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Check, X, Clock, Users, Save } from 'lucide-react';
+import { Check, X, Clock, Save } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 
@@ -18,7 +18,7 @@ export default function AttendancePage() {
   const group = groups?.find(g => g.id === selectedGroup);
   const activeStudents = group?.students?.filter(s => !s.isFrozen) || [];
 
-  const { data: existingRecords } = useQuery({
+  useQuery({
     queryKey: ['attendance', selectedGroup, date],
     queryFn: () => api.get(`/attendance/group/${selectedGroup}?from=${date}&to=${date}`).then(r => {
       const records = r.data.data;

@@ -28,4 +28,8 @@ async function seed() {
   console.log('   ⚠️  Change this password after first login.\n');
 }
 
-seed().catch(e => { console.error(e); process.exit(1); }).finally(() => prisma.$disconnect());
+if (require.main === module) {
+  seed().catch(e => { console.error(e); process.exit(1); }).finally(() => prisma.$disconnect());
+}
+
+module.exports = { seed };

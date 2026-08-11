@@ -1,12 +1,10 @@
 import { useState, useRef } from 'react';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Plus, FileText, Clock, Trash2, BarChart2, Upload, X, Loader2 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { formatDate } from '../../utils/format';
 
 const TYPE_COLORS = { topic: 'bg-blue-100 text-blue-700', weekly: 'bg-green-100 text-green-700', monthly: 'bg-purple-100 text-purple-700', mock: 'bg-orange-100 text-orange-700' };
 

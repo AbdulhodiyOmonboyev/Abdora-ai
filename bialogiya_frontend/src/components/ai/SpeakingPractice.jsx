@@ -50,8 +50,6 @@ export default function SpeakingPractice({ lessonId, topic }) {
   const nextPlayTimeRef = useRef(0);
   const pendingTranscriptRef = useRef({ user: '', assistant: '' });
 
-  useEffect(() => () => cleanup(), []);
-
   const cleanup = () => {
     processorRef.current?.disconnect();
     micStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -65,6 +63,8 @@ export default function SpeakingPractice({ lessonId, topic }) {
     wsRef.current = null;
     nextPlayTimeRef.current = 0;
   };
+
+  useEffect(() => () => cleanup(), []);
 
   const playChunk = (base64Pcm) => {
     if (!playCtxRef.current) {

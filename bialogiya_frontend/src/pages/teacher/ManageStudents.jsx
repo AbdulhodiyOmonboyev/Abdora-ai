@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Copy, X, GraduationCap, Phone, Users, Star, Zap, Pencil, Trash2, Save, ChevronRight } from 'lucide-react';
+import { Copy, X, GraduationCap, Phone, Users, Star, Zap, Pencil, Trash2, Save, ChevronRight } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 
