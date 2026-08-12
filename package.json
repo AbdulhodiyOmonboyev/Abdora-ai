@@ -1,0 +1,50 @@
+{
+  "name": "abdora-ai",
+  "version": "1.0.0",
+  "description": "Uzbekistan uchun AI-powered biology learning platform. O'qituvchi, o'quvchi va administratorlar uchun to'liq LMS tizimi.",
+  "main": "index.js",
+  "scripts": {
+    "install:all": "npm install && cd bialogiya_frontend && npm install && cd ../bialogiya_beakent && npm install",
+    "dev:frontend": "cd bialogiya_frontend && npm run dev",
+    "dev:backend": "cd bialogiya_beakent && npm start",
+    "build:frontend": "cd bialogiya_frontend && npm run build",
+    "build:backend": "cd bialogiya_beakent && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "biology-learning",
+    "ai-education",
+    "uzbekistan",
+    "learning-management-system",
+    "lms",
+    "react",
+    "nodejs",
+    "artificial-intelligence",
+    "online-education",
+    "e-learning",
+    "education-platform",
+    "o'zbek-tilida",
+    "ta'lim",
+    "biologiya",
+    "interactive-learning",
+    "student-management",
+    "teacher-dashboard",
+    "full-stack",
+    "open-source",
+    "education-technology"
+  ],
+  "author": "Abdulhodi Omonboyev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AbdulhodiyOmonboyev/Abdora-ai.git"
+  },
+  "homepage": "https://github.com/AbdulhodiyOmonboyev/Abdora-ai",
+  "bugs": {
+    "url": "https://github.com/AbdulhodiyOmonboyev/Abdora-ai/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

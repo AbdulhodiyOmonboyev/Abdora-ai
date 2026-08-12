@@ -1,11 +1,13 @@
-# 🧬 Abdora AI - Intelligent Biology Learning Platform
+# 🧬 Abdora AI - Intelligent Biology Learning Platform | O'zbek Tilida AI Ta'lim Tizimi
 
 [![GitHub Stars](https://img.shields.io/github/stars/AbdulhodiyOmonboyev/Abdora-ai.svg?style=social)](https://github.com/AbdulhodiyOmonboyev/Abdora-ai)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-18.0+-green.svg)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18.0+-blue.svg)](https://react.dev)
 
-**Abdora AI** - Uzbekistan uchun yaratilgan artificial intelligence powered biology o'qitish platformasi. O'qituvchi, o'quvchi va administrator uchun to'liq xususiyatlarga ega modern ta'lim tizimi.
+**Abdora AI** - O'zbekistonda ta'lim uchun yaratilgan bugungi kuni AI bilan tejashgan biologiya ta'limi platformasi. O'qituvchi, o'quvchi, administrator va qabulxona xodimi uchun to'liq xususiyatlarga ega zamonaviy ta'lim boshqaruv tizimi (LMS).
+
+**Keywords:** Biology learning | AI education | Uzbekistan | O'zbek ta'limi | Learning Management System | LMS | React | Node.js | Artificial Intelligence | Online Education | E-learning platform
 
 ## 🎯 Asosiy Xususiyatlari
 
