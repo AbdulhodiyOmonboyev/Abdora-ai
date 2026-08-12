@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Main Repository -->
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Documentation Pages -->
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/blob/main/README.md</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/blob/main/FEATURES.md</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/blob/main/CHANGELOG.md</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/blob/main/SECURITY.md</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/blob/main/API.md</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/blob/main/CONTRIBUTING.md</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/blob/main/DEPLOYMENT.md</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Frontend Folder -->
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/tree/main/bialogiya_frontend</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Backend Folder -->
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/tree/main/bialogiya_beakent</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Releases -->
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/releases</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Issues -->
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/issues</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Pull Requests -->
+  <url>
+    <loc>https://github.com/AbdulhodiyOmonboyev/Abdora-ai/pulls</loc>
+    <lastmod>2024-08-12</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+</urlset>
