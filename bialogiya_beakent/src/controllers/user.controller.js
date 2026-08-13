@@ -117,11 +117,11 @@ const getStudentsByTeacher = async (req, res, next) => {
 
 const getAllUsers = async (req, res, next) => {
   try {
-    const { role, branchId, search } = req.query;
-    const ownBranchIds = await getOwnBranchIds(req.user);
+    const { role, branchId } = req.query;
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     // Add pagination and limit fields returned to reduce payload
     const page = Math.max(1, Number(req.query.page) || 1);
-    const perPage = Math.min(100, Math.max(10, Number(req.query.perPage) || 20));
+    const perPage = Math.min(100, Math.max(10, Number(req.query.perPage) || 50));
 
     const where = {
       ...(role ? { role } : {}),
@@ -145,14 +145,21 @@ const getAllUsers = async (req, res, next) => {
       }
     }
 
-    const users = await prisma.user.findMany({
-      where,
-      select: { id: true, name: true, username: true, email: true, phone: true, role: true, isActive: true },
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * perPage,
-      take: perPage,
-    });
-    return success(res, { data: users.map(safeUser), page, perPage });
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true, name: true, username: true, email: true, phone: true, role: true,
+          avatar: true, isActive: true, isFrozen: true, groupId: true, branchId: true, createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * perPage,
+        take: perPage,
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    return success(res, users, 'Success', 200, { page, perPage, total });
   } catch (err) { next(err); }
 };
 
@@ -166,6 +173,14 @@ const getUserById = async (req, res, next) => {
           { username: id },
           { phone: id },
         ],
+      },
+      include: {
+        group: { select: { id: true, name: true, branch: { select: { id: true, name: true } } } },
+        branch: { select: { id: true, name: true } },
+        teacher: { select: { id: true, name: true, username: true } },
+        branches: { select: { id: true, name: true } },
+        managedBranches: { select: { id: true, name: true } },
+        _count: { select: { students: true, taughtGroups: true } },
       },
     });
     if (!user) return error(res, 'User not found', 404);

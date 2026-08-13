@@ -10,6 +10,14 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { formatRelativeTime } from '../../utils/format';
 
+const ROLE_LABELS = {
+  admin: 'Admin',
+  manager: 'Manager',
+  reception: 'Qabulxona',
+  teacher: "O'qituvchi",
+  student: "O'quvchi",
+};
+
 export default function Topbar({ onMenuClick }) {
   const { user, clearAuth } = useAuthStore();
   const { theme, toggle } = useThemeStore();
@@ -38,14 +46,16 @@ export default function Topbar({ onMenuClick }) {
     ? "Filial nomi bo'yicha qidirish"
     : "Markaz nomi bo'yicha qidirish";
 
-  useEffect(() => {
-    if (!searchPath) return;
-    const params = new URLSearchParams(location.search);
-    if (location.pathname.startsWith(searchPath)) {
-      const val = params.get('search') || '';
-      setHeaderSearch(prev => (prev === val ? prev : val));
-    }
-  }, [location.search, location.pathname, searchPath]);
+  // Keep the input in sync with ?search= while on the results page (back/forward,
+  // shared links) without an effect - adjusting state during render, React-style.
+  const urlSearch = searchPath && location.pathname.startsWith(searchPath)
+    ? new URLSearchParams(location.search).get('search') || ''
+    : null;
+  const [syncedUrlSearch, setSyncedUrlSearch] = useState(urlSearch);
+  if (urlSearch !== null && urlSearch !== syncedUrlSearch) {
+    setSyncedUrlSearch(urlSearch);
+    setHeaderSearch(urlSearch);
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -65,13 +75,18 @@ export default function Topbar({ onMenuClick }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const { data: headerUsers = [], isFetching: isHeaderSearching } = useQuery({
+  const { data: headerUsers = [], isFetching: isHeaderSearching, isError: headerSearchFailed } = useQuery({
     queryKey: ['header-search-users', debouncedSearch],
-    queryFn: () => api.get('/users', { params: { search: debouncedSearch } }).then(r => r.data.data),
+    queryFn: () => api.get('/users', { params: { search: debouncedSearch, perPage: 10 } })
+      .then(r => (Array.isArray(r.data?.data) ? r.data.data : [])),
     enabled: Boolean(debouncedSearch),
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
     staleTime: 1000 * 60 * 5,
   });
+
+  // The debounce timer keeps `debouncedSearch` behind the input for 250ms - without
+  // this the dropdown flashes "topilmadi" before the request is even fired.
+  const searchPending = isHeaderSearching || debouncedSearch !== headerSearch.trim();
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
@@ -160,33 +175,43 @@ export default function Topbar({ onMenuClick }) {
                   setShowHeaderResults(true);
                 }}
                 onFocus={() => setShowHeaderResults(Boolean(headerSearch.trim()))}
+                onKeyDown={(e) => e.key === 'Escape' && setShowHeaderResults(false)}
                 placeholder={searchPlaceholder}
                 className="input-field w-full pl-10 pr-3"
               />
             </form>
-            {showHeaderResults && (debouncedSearch || headerSearch) && (
-              <div className="absolute left-0 right-0 top-full mt-2 rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden z-40">
-                {isHeaderSearching ? (
+            {showHeaderResults && headerSearch.trim() && (
+              <div className="absolute left-0 right-0 top-full mt-2 rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden z-40 max-h-96 overflow-y-auto">
+                {searchPending ? (
                   <div className="p-3 text-sm text-gray-500 dark:text-gray-400">Qidirilmoqda...</div>
+                ) : headerSearchFailed ? (
+                  <div className="p-3 text-sm text-red-500">Qidiruvda xatolik. Qayta urinib ko'ring.</div>
                 ) : headerUsers.length === 0 ? (
                   <div className="p-3 text-sm text-gray-500 dark:text-gray-400">Hech narsa topilmadi.</div>
                 ) : (
-                  headerUsers.slice(0, 8).map((user) => (
+                  headerUsers.slice(0, 8).map((result) => (
                     <button
-                      key={user.id}
+                      key={result.id}
                       type="button"
                       onClick={() => {
-                        setHeaderSearch(user.name || user.username || '');
                         setShowHeaderResults(false);
-                        navigate(`/users/${user.id}`);
+                        navigate(`/users/${result.id}`);
                       }}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      className="w-full flex items-center gap-3 text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
-                      <div className="font-semibold text-sm text-gray-800 dark:text-white">{user.name || "Noma'lum"}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-2">
-                        <span>@{user.username}</span>
-                        <span>{user.role}</span>
+                      <div className="w-8 h-8 rounded-full gradient-bg text-white grid place-items-center text-xs font-bold flex-shrink-0">
+                        {(result.name || result.username || '?').charAt(0).toUpperCase()}
                       </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">{result.name || "Noma'lum"}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-2">
+                          <span className="truncate">@{result.username}</span>
+                          {result.phone && <span className="truncate">{result.phone}</span>}
+                        </div>
+                      </div>
+                      <span className="badge text-[10px] bg-primary/10 text-primary flex-shrink-0">
+                        {ROLE_LABELS[result.role] || result.role}
+                      </span>
                     </button>
                   ))
                 )}
@@ -300,7 +325,7 @@ export default function Topbar({ onMenuClick }) {
                   <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">{user?.name}</div>
                   <div className="text-xs text-gray-400">@{user?.username}</div>
                   <span className={`badge text-xs mt-1 ${user?.role === 'teacher' ? 'bg-blue-100 text-blue-700' : user?.role === 'admin' ? 'bg-surface text-gray-700 dark:bg-gray-800 dark:text-gray-300' : user?.role === 'reception' ? 'bg-green-100 text-green-700' : user?.role === 'manager' ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700'}`}>
-                    {user?.role === 'teacher' ? 'O\'qituvchi' : user?.role === 'admin' ? 'Admin' : user?.role === 'reception' ? 'Qabulxona' : user?.role === 'manager' ? 'Manager' : 'O\'quvchi'}
+                    {ROLE_LABELS[user?.role] || user?.role}
                   </span>
                   {user?.isFrozen && (
                     <div className="mt-2 text-xs text-blue-600 dark:text-blue-300">❄️ Hisobingiz muzlatilgan</div>

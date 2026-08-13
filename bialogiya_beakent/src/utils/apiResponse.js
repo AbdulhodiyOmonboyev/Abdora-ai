@@ -12,8 +12,12 @@ const transformIds = (data) => {
   return data;
 };
 
-const success = (res, data = null, message = 'Success', statusCode = 200) => {
-  return res.status(statusCode).json({ success: true, message, data: transformIds(data) });
+// `data` always holds the payload itself (a list stays a list) - pagination and
+// other envelope info goes to `meta` so clients never have to unwrap twice.
+const success = (res, data = null, message = 'Success', statusCode = 200, meta = null) => {
+  const body = { success: true, message, data: transformIds(data) };
+  if (meta) body.meta = meta;
+  return res.status(statusCode).json(body);
 };
 
 const error = (res, message = 'Error', statusCode = 500, errors = null) => {
