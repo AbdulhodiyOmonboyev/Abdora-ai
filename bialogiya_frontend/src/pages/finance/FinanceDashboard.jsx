@@ -7,13 +7,13 @@ import {
 } from 'recharts';
 import {
   TrendingUp, TrendingDown, Wallet, AlertCircle, Sparkles, ArrowRight,
-  PiggyBank, Receipt, Table2, ChevronDown,
+  PiggyBank, Receipt, Table2, ChevronDown, FileSpreadsheet,
 } from 'lucide-react';
 import api from '../../config/axios';
 import { Skeleton, StatTileSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import {
-  formatSum, formatCompactSum, formatMonth, categoryLabel, methodLabel, useChartColors,
+  formatSum, formatCompactSum, formatMonth, categoryLabel, methodLabel, useChartColors, exportFinanceToExcel,
 } from '../../utils/finance';
 
 const currentMonth = () => new Date().toISOString().slice(0, 7);
@@ -118,6 +118,14 @@ export default function FinanceDashboard() {
             className="input-field w-40 focus-visible:ring-2 focus-visible:ring-primary/40">
             {monthOptions().map(m => <option key={m} value={m}>{formatMonth(m)}</option>)}
           </select>
+          <button
+            type="button"
+            onClick={() => exportFinanceToExcel({ month, summary: s, expenseRows, incomeByMethod: s?.incomeByMethod, topGroups })}
+            disabled={!s}
+            className="btn-ghost flex items-center gap-2 text-sm border border-gray-200 dark:border-gray-700 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <FileSpreadsheet size={15} /> Excelga yuklash
+          </button>
           <Link to="/finance/expenses"
             className="btn-primary flex items-center gap-2 text-sm focus-visible:ring-2 focus-visible:ring-primary/40">
             <Receipt size={15} /> Xarajatlar

@@ -7,8 +7,9 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
+import BranchLocationPicker from '../../components/ui/BranchLocationPicker';
 
-const EMPTY_FORM = { name: '', address: '', studentCapacity: '' };
+const EMPTY_FORM = { name: '', address: '', studentCapacity: '', latitude: null, longitude: null };
 
 export default function AdminBranches() {
   const navigate = useNavigate();
@@ -87,6 +88,8 @@ export default function AdminBranches() {
       name: branch.name,
       address: branch.address || '',
       studentCapacity: branch.studentCapacity || '',
+      latitude: branch.latitude ?? null,
+      longitude: branch.longitude ?? null,
     });
     setShowEdit(true);
   };
@@ -241,6 +244,19 @@ export default function AdminBranches() {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Markaz joylashuvi {form.latitude && <span className="text-gray-400 font-normal">(xaritada bosing yoki markerni suring)</span>}
+                  </label>
+                  <BranchLocationPicker
+                    value={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : null}
+                    onChange={({ lat, lng }) => setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))}
+                  />
+                  {!form.latitude && (
+                    <p className="text-xs text-gray-400 mt-1">Markaz joylashgan nuqtani xaritada belgilang.</p>
+                  )}
+                </div>
+
                 <div className="flex gap-3">
                   <button onClick={closeModal} className="btn-ghost flex-1">
                     Bekor
@@ -317,6 +333,19 @@ export default function AdminBranches() {
                     placeholder="Jami o'quvchi soni"
                     type="number"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Markaz joylashuvi {editForm.latitude && <span className="text-gray-400 font-normal">(xaritada bosing yoki markerni suring)</span>}
+                  </label>
+                  <BranchLocationPicker
+                    value={editForm.latitude && editForm.longitude ? { lat: editForm.latitude, lng: editForm.longitude } : null}
+                    onChange={({ lat, lng }) => setEditForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))}
+                  />
+                  {!editForm.latitude && (
+                    <p className="text-xs text-gray-400 mt-1">Markaz joylashgan nuqtani xaritada belgilang.</p>
+                  )}
                 </div>
 
                 <div className="flex gap-3">

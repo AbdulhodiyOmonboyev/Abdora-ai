@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import * as XLSX from 'xlsx';
 
 export const formatSum = (value) => `${new Intl.NumberFormat('uz-UZ').format(Math.round(value || 0))} so'm`;
 
@@ -46,6 +47,50 @@ const SERIES = {
   light: { income: '#00BFA6', expense: '#F97316', profit: '#0099FF' },
   dark: { income: '#009985', expense: '#EA580C', profit: '#007ACC' },
 };
+
+/**
+ * Builds and downloads an .xlsx report of the finance dashboard for the
+ * selected month: monthly summary, expense categories, income methods and
+ * top-earning groups, each on its own sheet.
+ */
+export function exportFinanceToExcel({ month, summary, expenseRows, incomeByMethod, topGroups }) {
+  const wb = XLSX.utils.book_new();
+
+  const summarySheet = XLSX.utils.json_to_sheet([
+    { Ko_rsatkich: 'Oy', Qiymat: formatMonth(month) },
+    { Ko_rsatkich: 'Tushum', Qiymat: summary?.current?.income || 0 },
+    { Ko_rsatkich: 'Xarajat', Qiymat: summary?.current?.expense || 0 },
+    { Ko_rsatkich: (summary?.current?.profit ?? 0) >= 0 ? 'Sof foyda' : 'Zarar', Qiymat: Math.abs(summary?.current?.profit || 0) },
+    { Ko_rsatkich: "Yig'ilmagan qarz", Qiymat: summary?.outstanding || 0 },
+  ], { header: ['Ko_rsatkich', 'Qiymat'] });
+  XLSX.utils.sheet_add_aoa(summarySheet, [['Ko\'rsatkich', 'Qiymat']], { origin: 'A1' });
+  XLSX.utils.book_append_sheet(wb, summarySheet, 'Umumiy');
+
+  const expenseSheet = XLSX.utils.json_to_sheet(
+    (expenseRows || []).map((r) => ({ Toifa: r.label, Summa: r.amount })),
+  );
+  XLSX.utils.book_append_sheet(wb, expenseSheet, 'Xarajat toifalari');
+
+  const incomeSheet = XLSX.utils.json_to_sheet(
+    Object.entries(incomeByMethod || {}).map(([method, amount]) => ({ Turi: methodLabel(method), Summa: amount })),
+  );
+  XLSX.utils.book_append_sheet(wb, incomeSheet, 'Tushum turlari');
+
+  const groupsSheet = XLSX.utils.json_to_sheet(
+    (topGroups || []).map((g) => ({
+      Guruh: g.name,
+      "O'qituvchi": g.teacher?.name || '',
+      "O'quvchilar": g.activeCount,
+      Tushum: g.collected,
+      'Markaz ulushi': g.centerNet,
+      Qarz: g.debt || 0,
+      "Yig'ish foizi (%)": g.collectionRate,
+    })),
+  );
+  XLSX.utils.book_append_sheet(wb, groupsSheet, 'Guruhlar');
+
+  XLSX.writeFile(wb, `hisob-kitob-${month}.xlsx`);
+}
 
 export function useChartColors() {
   const read = () => (document.documentElement.classList.contains('dark') ? SERIES.dark : SERIES.light);

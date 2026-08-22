@@ -396,7 +396,7 @@ const getBranches = async (req, res, next) => {
 
 const createBranch = async (req, res, next) => {
   try {
-    const { name, address, receptionId, studentCapacity } = req.body;
+    const { name, address, receptionId, studentCapacity, latitude, longitude } = req.body;
     if (!name) return error(res, 'Branch name required', 400);
 
     const branchData = {
@@ -404,6 +404,8 @@ const createBranch = async (req, res, next) => {
       address: address || null,
       studentCapacity: Number.isFinite(Number(studentCapacity)) ? Number(studentCapacity) : null,
       receptionId: receptionId || null,
+      latitude: Number.isFinite(Number(latitude)) ? Number(latitude) : null,
+      longitude: Number.isFinite(Number(longitude)) ? Number(longitude) : null,
     };
 
     if (req.user.role === 'manager') {
@@ -424,7 +426,7 @@ const createBranch = async (req, res, next) => {
 
 const updateBranch = async (req, res, next) => {
   try {
-    const { name, address, receptionId, studentCapacity } = req.body;
+    const { name, address, receptionId, studentCapacity, latitude, longitude } = req.body;
     const branch = await prisma.branch.findUnique({ where: { id: req.params.id } });
     if (!branch) return error(res, 'Branch not found', 404);
     if (req.user.role === 'manager' && branch.managerId !== req.user.userId) return error(res, 'Forbidden', 403);
@@ -436,6 +438,8 @@ const updateBranch = async (req, res, next) => {
         ...(address !== undefined && { address }),
         ...(receptionId !== undefined && { receptionId: receptionId || null }),
         ...(studentCapacity !== undefined && { studentCapacity: Number.isFinite(Number(studentCapacity)) ? Number(studentCapacity) : null }),
+        ...(latitude !== undefined && { latitude: Number.isFinite(Number(latitude)) ? Number(latitude) : null }),
+        ...(longitude !== undefined && { longitude: Number.isFinite(Number(longitude)) ? Number(longitude) : null }),
       },
       include: {
         reception: { select: { id: true, name: true } },
