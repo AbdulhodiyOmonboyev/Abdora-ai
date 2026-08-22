@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 
-const EMPTY_FORM = { name: '', phone: '', email: '', language: 'uz', gender: '', age: '', address: '', password: '' };
+const EMPTY_FORM = { name: '', phone: '', email: '', language: 'uz', gender: '', age: '', address: '', branchId: '' };
 const EMPTY_EDIT_FORM = { name: '', phone: '', email: '', gender: '', age: '', address: '' };
 
 export default function AdminManagers() {
@@ -25,6 +25,14 @@ export default function AdminManagers() {
   const { data: users = [] } = useQuery({
     queryKey: ['admin-managers'],
     queryFn: () => api.get('/users').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
+  });
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ['admin-branches'],
+    queryFn: () => api.get('/admin/branches').then(r => {
       const data = r.data?.data || r.data || [];
       return Array.isArray(data) ? data : [];
     }),
@@ -232,15 +240,19 @@ export default function AdminManagers() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Kod</label>
-                      <input
-                        value={form.password}
-                        onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                      <label className="block text-sm font-medium mb-1">Markaz</label>
+                      <select
+                        value={form.branchId}
+                        onChange={(e) => setForm((prev) => ({ ...prev, branchId: e.target.value }))}
                         className="input-field w-full"
-                        placeholder="Telefon oxirgi 4 raqami"
-                        type="text"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">Agar bo'sh qoldirilsa, kod telefon oxirgi 4 raqamidan olinadi.</p>
+                      >
+                        <option value="">Tanlang</option>
+                        {branches.map((branch) => (
+                          <option key={branch.id} value={branch.id} disabled={!!branch.managerId}>
+                            {branch.name}{branch.managerId ? ' (band)' : ''}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
