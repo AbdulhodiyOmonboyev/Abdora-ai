@@ -5,23 +5,22 @@ services:
     runtime: node
     region: frankfurt
     rootDir: bialogiya_beakent
-    buildCommand: npm install && npx prisma generate
+    buildCommand: npm install && npx prisma generate && npx prisma db push
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
-      
-      - key: postgresql://neondb_owner:npg_IuEP79rzOeCb@ep-royal-dew-axim189u-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - key: DATABASE_URL
         sync: false
-      - key: AQ.Ab8RN6LCQWj0q3gogZKzLwo2-Ku-OeCdtF1kWiroDKbUnMx7lQ
+      - key: JWT_SECRET
         generateValue: true
-      - key: 8e80185873983b46b6cdf37fc78c2df4f79e43fa61b0a47333f2e85f2ab936ad802f151694cbd837f8aec
+      - key: JWT_REFRESH_SECRET
         generateValue: true
-      - key: 8e80185873983b46b6cdf37fc78c2df4f79e43fa61b0a47333f2e85f2ab936ad802f151694cbd837f8aec
+      - key: JWT_ACCESS_EXPIRES
         value: 15m
-      - key: 8e80185873983b46b6cdf37fc78c2df4f79e43fa61b0a47333f2e85f2ab936ad802f151694cbd837f8aec
+      - key: JWT_REFRESH_EXPIRES
         value: 7d
-      - key: AQ.Ab8RN6LCQWj0q3gogZKzLwo2-Ku-OeCdtF1kWiroDKbUnMx7lQ
+      - key: GIMINI_AI_API_KEY
         sync: false
       - key: CLIENT_URL
         sync: false
