@@ -52,8 +52,13 @@ function RecenterButton({ position }) {
  * value: { lat, lng } | null
  * onChange: ({ lat, lng }) => void
  */
-export default function BranchLocationPicker({ value, onChange }) {
+export default function BranchLocationPicker({ value, onChange, onManualChange }) {
   const [center] = useState(value?.lat && value?.lng ? value : TASHKENT);
+
+  const handleChange = (point) => {
+    onManualChange?.();
+    onChange(point);
+  };
 
   useEffect(() => {
     // If no location chosen yet, try to center on the user's current
@@ -80,7 +85,7 @@ export default function BranchLocationPicker({ value, onChange }) {
           attribution="&copy; OpenStreetMap hissa qo'shuvchilari"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <ClickHandler onPick={onChange} />
+        <ClickHandler onPick={handleChange} />
         {value?.lat && value?.lng && (
           <Marker
             position={[value.lat, value.lng]}
@@ -89,7 +94,7 @@ export default function BranchLocationPicker({ value, onChange }) {
             eventHandlers={{
               dragend: (e) => {
                 const { lat, lng } = e.target.getLatLng();
-                onChange({ lat, lng });
+                handleChange({ lat, lng });
               },
             }}
           />

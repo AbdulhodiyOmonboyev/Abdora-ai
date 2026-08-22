@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Building2, Users, BookOpen, MapPin, Trash2, Edit2 } from 'lucide-react';
@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import BranchLocationPicker from '../../components/ui/BranchLocationPicker';
+import { geocodeAddress } from '../../utils/geocode';
 
 const EMPTY_FORM = { name: '', address: '', studentCapacity: '', latitude: null, longitude: null };
 
@@ -20,6 +21,34 @@ export default function AdminBranches() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [confirm, setConfirm] = useState(null);
+  const [geocoding, setGeocoding] = useState(false);
+  const [editGeocoding, setEditGeocoding] = useState(false);
+  const markerMovedRef = useRef(false);
+  const editMarkerMovedRef = useRef(false);
+
+  // Auto-locate on the map as the address is typed (debounced), unless the
+  // user has already fine-tuned the pin by clicking/dragging it themselves.
+  useEffect(() => {
+    if (!showCreate || markerMovedRef.current || !form.address || form.address.trim().length < 4) return undefined;
+    setGeocoding(true);
+    const t = setTimeout(async () => {
+      const point = await geocodeAddress(form.address);
+      setGeocoding(false);
+      if (point) setForm((prev) => ({ ...prev, latitude: point.lat, longitude: point.lng }));
+    }, 800);
+    return () => { clearTimeout(t); setGeocoding(false); };
+  }, [form.address, showCreate]);
+
+  useEffect(() => {
+    if (!showEdit || editMarkerMovedRef.current || !editForm.address || editForm.address.trim().length < 4) return undefined;
+    setEditGeocoding(true);
+    const t = setTimeout(async () => {
+      const point = await geocodeAddress(editForm.address);
+      setEditGeocoding(false);
+      if (point) setEditForm((prev) => ({ ...prev, latitude: point.lat, longitude: point.lng }));
+    }, 800);
+    return () => { clearTimeout(t); setEditGeocoding(false); };
+  }, [editForm.address, showEdit]);
 
   const { data: branches = [] } = useQuery({
     queryKey: ['admin-branches'],
@@ -74,15 +103,18 @@ export default function AdminBranches() {
   const closeModal = () => {
     setShowCreate(false);
     setForm(EMPTY_FORM);
+    markerMovedRef.current = false;
   };
 
   const closeEditModal = () => {
     setShowEdit(false);
     setEditingBranch(null);
     setEditForm(EMPTY_FORM);
+    editMarkerMovedRef.current = false;
   };
 
   const openEdit = (branch) => {
+    editMarkerMovedRef.current = !!(branch.latitude && branch.longitude);
     setEditingBranch(branch);
     setEditForm({
       name: branch.name,
@@ -246,14 +278,15 @@ export default function AdminBranches() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Markaz joylashuvi {form.latitude && <span className="text-gray-400 font-normal">(xaritada bosing yoki markerni suring)</span>}
+                    Markaz joylashuvi {geocoding ? <span className="text-gray-400 font-normal">(manzil bo'yicha qidirilmoqda...)</span> : form.latitude && <span className="text-gray-400 font-normal">(xaritada bosing yoki markerni suring)</span>}
                   </label>
                   <BranchLocationPicker
                     value={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : null}
                     onChange={({ lat, lng }) => setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))}
+                    onManualChange={() => { markerMovedRef.current = true; }}
                   />
                   {!form.latitude && (
-                    <p className="text-xs text-gray-400 mt-1">Markaz joylashgan nuqtani xaritada belgilang.</p>
+                    <p className="text-xs text-gray-400 mt-1">Manzilni yozing yoki xaritada nuqtani belgilang.</p>
                   )}
                 </div>
 
@@ -337,14 +370,15 @@ export default function AdminBranches() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Markaz joylashuvi {editForm.latitude && <span className="text-gray-400 font-normal">(xaritada bosing yoki markerni suring)</span>}
+                    Markaz joylashuvi {editGeocoding ? <span className="text-gray-400 font-normal">(manzil bo'yicha qidirilmoqda...)</span> : editForm.latitude && <span className="text-gray-400 font-normal">(xaritada bosing yoki markerni suring)</span>}
                   </label>
                   <BranchLocationPicker
                     value={editForm.latitude && editForm.longitude ? { lat: editForm.latitude, lng: editForm.longitude } : null}
                     onChange={({ lat, lng }) => setEditForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))}
+                    onManualChange={() => { editMarkerMovedRef.current = true; }}
                   />
                   {!editForm.latitude && (
-                    <p className="text-xs text-gray-400 mt-1">Markaz joylashgan nuqtani xaritada belgilang.</p>
+                    <p className="text-xs text-gray-400 mt-1">Manzilni yozing yoki xaritada nuqtani belgilang.</p>
                   )}
                 </div>
 
