@@ -7,6 +7,7 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
+import { formatUzPhone } from '../../utils/formatPhone';
 
 const EMPTY_FORM = { name: '', phone: '', email: '', language: 'uz', gender: '', age: '', address: '', branchId: '' };
 const EMPTY_EDIT_FORM = { name: '', phone: '', email: '', gender: '', age: '', address: '' };
@@ -232,10 +233,11 @@ export default function AdminManagers() {
                     <div>
                       <label className="block text-sm font-medium mb-1">Telefon *</label>
                       <input
-                        value={form.phone}
-                        onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
-                        className="input-field w-full"
-                        placeholder="+998 90 123 45 67"
+                        value={form.phone || '+998 '}
+                        onChange={(e) => setForm((prev) => ({ ...prev, phone: formatUzPhone(e.target.value) }))}
+                        onFocus={(e) => { if (!form.phone || form.phone.trim() === '+998') setForm((prev) => ({ ...prev, phone: '+998 ' })); }}
+                        className="input-field w-full font-mono"
+                        placeholder="+998 (90) 123-45-67"
                         type="tel"
                       />
                     </div>
