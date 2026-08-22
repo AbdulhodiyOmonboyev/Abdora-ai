@@ -188,7 +188,7 @@ export default function App() {
           <Route index element={<FinanceDashboard />} />
           <Route path="expenses" element={<FinanceExpenses />} />
         </Route>
-        <Route path="/finance/payroll" element={<ProtectedRoute role={['manager', 'admin']}><MainLayout /></ProtectedRoute>}>
+        <Route path="/finance/payroll" element={<ProtectedRoute role={['manager']}><MainLayout /></ProtectedRoute>}>
           <Route index element={<FinancePayroll />} />
         </Route>
 

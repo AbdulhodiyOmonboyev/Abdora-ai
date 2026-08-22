@@ -44,7 +44,6 @@ const adminLinks = [
   { to: '/leads', icon: UserPlus, key: 'leads', label: 'Lidlar' },
   { to: '/admin/branches', icon: Building2, key: 'branches' },
   { to: '/admin/managers', icon: UserCheck, key: 'managers' },
-  { to: '/finance/payroll', icon: Receipt, key: 'payroll', label: 'Ish haqi' },
   { to: '/admin/settings', icon: Settings, key: 'settings' },
 ];
 
