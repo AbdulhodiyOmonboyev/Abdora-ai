@@ -184,10 +184,12 @@ export default function App() {
         <Route path="/leads" element={<ProtectedRoute role={['manager', 'admin', 'reception']}><MainLayout /></ProtectedRoute>}>
           <Route index element={<ManagerLeads />} />
         </Route>
-        <Route path="/finance" element={<ProtectedRoute role={['manager', 'admin', 'reception']}><MainLayout /></ProtectedRoute>}>
+        <Route path="/finance" element={<ProtectedRoute role={['manager', 'reception']}><MainLayout /></ProtectedRoute>}>
           <Route index element={<FinanceDashboard />} />
           <Route path="expenses" element={<FinanceExpenses />} />
-          <Route path="payroll" element={<ProtectedRoute role={['manager', 'admin']}><FinancePayroll /></ProtectedRoute>} />
+        </Route>
+        <Route path="/finance/payroll" element={<ProtectedRoute role={['manager', 'admin']}><MainLayout /></ProtectedRoute>}>
+          <Route index element={<FinancePayroll />} />
         </Route>
 
         {/* Reception Routes - has almost all of admin's operational
