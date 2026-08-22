@@ -1,0 +1,51 @@
+services:
+  # ── Backend (Node.js / Express + Prisma) ──────────────────────────────
+  - type: web
+    name: abdora-ai-backend
+    runtime: node
+    region: frankfurt
+    rootDir: bialogiya_beakent
+    buildCommand: npm install && npx prisma generate
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      
+      - key: postgresql://neondb_owner:npg_IuEP79rzOeCb@ep-royal-dew-axim189u-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+        sync: false
+      - key: AQ.Ab8RN6LCQWj0q3gogZKzLwo2-Ku-OeCdtF1kWiroDKbUnMx7lQ
+        generateValue: true
+      - key: 8e80185873983b46b6cdf37fc78c2df4f79e43fa61b0a47333f2e85f2ab936ad802f151694cbd837f8aec
+        generateValue: true
+      - key: 8e80185873983b46b6cdf37fc78c2df4f79e43fa61b0a47333f2e85f2ab936ad802f151694cbd837f8aec
+        value: 15m
+      - key: 8e80185873983b46b6cdf37fc78c2df4f79e43fa61b0a47333f2e85f2ab936ad802f151694cbd837f8aec
+        value: 7d
+      - key: AQ.Ab8RN6LCQWj0q3gogZKzLwo2-Ku-OeCdtF1kWiroDKbUnMx7lQ
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: MAX_FILE_SIZE_MB
+        value: "50"
+      - key: UPLOAD_DIR
+        value: uploads/
+
+  # ── Frontend (Vite + React – static site) ─────────────────────────────
+  - type: web
+    name: abdora-ai-frontend
+    runtime: static
+    region: frankfurt
+    rootDir: bialogiya_frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false
