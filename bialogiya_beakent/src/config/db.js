@@ -194,6 +194,13 @@ const runMigrations = async () => {
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "Branch" ADD COLUMN IF NOT EXISTS "studentCapacity" INTEGER
     `);
+
+    // Branch's map location (used by the branch-creation location picker)
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "Branch"
+        ADD COLUMN IF NOT EXISTS "latitude"  DOUBLE PRECISION,
+        ADD COLUMN IF NOT EXISTS "longitude" DOUBLE PRECISION
+    `);
     await prisma.$executeRawUnsafe(`
       DO $$ BEGIN
         IF NOT EXISTS (
