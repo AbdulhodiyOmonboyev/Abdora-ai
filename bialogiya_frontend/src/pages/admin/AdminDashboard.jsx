@@ -62,44 +62,50 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Branches list */}
-      {baseRole === 'admin' && Array.isArray(data?.branches) && data.branches.length > 0 && (
+      {/* Branches list (admin only) */}
+      {baseRole === 'admin' && (
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              <Building2 size={16} className="text-primary" /> Markazlar ({data.branches.length})
+              <Building2 size={16} className="text-primary" /> Markazlar ({data?.branches?.length || 0})
             </h3>
             <Link to="/admin/branches" className="text-xs text-primary hover:underline flex items-center gap-1">
               Barchasi <ArrowRight size={12} />
             </Link>
           </div>
-          <div className="space-y-2">
-            {data.branches.map((b) => (
-              <div
-                key={b.id}
-                onClick={() => navigate(`/admin/branches/${b.id}`)}
-                className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-full bg-primary/10 text-primary grid place-items-center font-semibold flex-shrink-0">
-                  <Building2 size={18} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">{b.name}</div>
-                  <div className="text-xs text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    {b.address && (
-                      <span className="flex items-center gap-1 truncate max-w-[220px]"><MapPin size={10} /> {b.address}</span>
-                    )}
-                    <span>{b.manager?.name ? `Manager: ${b.manager.name}` : 'Manager biriktirilmagan'}</span>
+          {Array.isArray(data?.branches) && data.branches.length > 0 ? (
+            <div className="space-y-2">
+              {data.branches.map((b) => (
+                <div
+                  key={b.id}
+                  onClick={() => navigate(`/admin/branches/${b.id}`)}
+                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary grid place-items-center font-semibold flex-shrink-0">
+                    <Building2 size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">{b.name}</div>
+                    <div className="text-xs text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      {b.address && (
+                        <span className="flex items-center gap-1 truncate max-w-[220px]"><MapPin size={10} /> {b.address}</span>
+                      )}
+                      <span>{b.manager?.name ? `Manager: ${b.manager.name}` : 'Manager biriktirilmagan'}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 flex-shrink-0">
+                    <span className="badge bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400">{b.teachersCount} o'qit.</span>
+                    <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400">{b.studentsCount} o'quv.</span>
+                    <span className="badge bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">{b.groupsCount} guruh</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-500 flex-shrink-0">
-                  <span className="badge bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400">{b.teachersCount} o'qit.</span>
-                  <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400">{b.studentsCount} o'quv.</span>
-                  <span className="badge bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">{b.groupsCount} guruh</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10 text-gray-400 text-sm">
+              Hali markazlar yo'q. <Link to="/admin/branches" className="text-primary hover:underline">Birinchi markazni qo'shing</Link>.
+            </div>
+          )}
         </div>
       )}
 
@@ -122,8 +128,8 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Recent users */}
-      {data?.recentUsers?.length > 0 && (
+      {/* Recent users (manager/reception only — admin sees the branches list instead) */}
+      {baseRole !== 'admin' && data?.recentUsers?.length > 0 && (
         <div className="card">
           <h3 className="font-bold text-gray-800 dark:text-white mb-3">Yaqinda qo'shilganlar</h3>
           <div className="space-y-2">
