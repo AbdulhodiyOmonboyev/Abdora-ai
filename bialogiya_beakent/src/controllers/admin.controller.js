@@ -48,7 +48,47 @@ const getStats = async (req, res, next) => {
       }),
     ]);
 
-    return success(res, { totalTeachers, totalStudents, totalGroups, aiLessons, activeToday, newThisWeek, recentUsers });
+    let branches = [];
+    let totalManagers = 0;
+    let pendingApplications = 0;
+
+    if (req.user.role === 'admin') {
+      const [branchRows, managersCount, applicationsCount] = await Promise.all([
+        prisma.branch.findMany({
+          where: { isActive: true },
+          select: {
+            id: true, name: true, address: true, studentCapacity: true,
+            manager: { select: { id: true, name: true } },
+            _count: { select: { groups: true, teachers: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.user.count({ where: { role: 'manager', isActive: true } }),
+        prisma.application.count({ where: { status: 'new' } }),
+      ]);
+
+      const studentCounts = await Promise.all(
+        branchRows.map((b) => prisma.user.count({ where: { role: 'student', isActive: true, OR: [{ branchId: b.id }, { group: { branchId: b.id } }] } }))
+      );
+
+      branches = branchRows.map((b, i) => ({
+        id: b.id,
+        name: b.name,
+        address: b.address,
+        studentCapacity: b.studentCapacity,
+        manager: b.manager,
+        groupsCount: b._count.groups,
+        teachersCount: b._count.teachers,
+        studentsCount: studentCounts[i],
+      }));
+      totalManagers = managersCount;
+      pendingApplications = applicationsCount;
+    }
+
+    return success(res, {
+      totalTeachers, totalStudents, totalGroups, aiLessons, activeToday, newThisWeek, recentUsers,
+      branches, totalManagers, pendingApplications, totalBranches: branches.length,
+    });
   } catch (err) { next(err); }
 };
 
