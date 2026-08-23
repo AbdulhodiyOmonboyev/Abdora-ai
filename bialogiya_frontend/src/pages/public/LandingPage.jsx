@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Sparkles, BookOpen, Video, Mic, Trophy, Building2, ArrowRight,
   CheckCircle2, Loader2, Phone, User, MessageSquare, Wand2, Brain,
+  Sun, Moon,
 } from 'lucide-react';
 import api from '../../config/axios';
 
@@ -40,9 +41,21 @@ const FEATURES = [
   },
 ];
 
+const THEME_KEY = 'abdora-landing-theme';
+
 export default function LandingPage() {
   const [form, setForm] = useState({ name: '', phone: '', message: '' });
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
+  const [dark, setDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved) return saved === 'dark';
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
+  }, [dark]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -58,158 +71,187 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a1420] text-white overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
-        .display-font { font-family: 'Space Grotesk', system-ui, sans-serif; }
-      `}</style>
+    <div className={dark ? 'dark' : ''}>
+      <div
+        className="min-h-screen overflow-x-hidden transition-colors duration-300
+          bg-[#FFFBF4] text-[#2B1B10]
+          dark:bg-[#180F08] dark:text-[#FFF3E2]"
+        style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+      >
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
+          .display-font { font-family: 'Space Grotesk', system-ui, sans-serif; }
+          .abdora-gradient { background: linear-gradient(135deg, #FF7A1A 0%, #FFA94D 100%); }
+          .abdora-glow { box-shadow: 0 0 32px rgba(255, 122, 26, 0.35); }
+          .abdora-grain {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+          }
+        `}</style>
 
-      {/* Ambient glow backdrop */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[36rem] h-[36rem] rounded-full bg-primary/20 blur-[120px]" />
-        <div className="absolute top-1/3 -right-40 w-[30rem] h-[30rem] rounded-full bg-secondary/20 blur-[120px]" />
-      </div>
+        {/* Subtle film-grain texture for warmth */}
+        <div className="pointer-events-none fixed inset-0 abdora-grain opacity-[0.025] dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen" />
 
-      {/* Nav */}
-      <nav className="relative z-10 max-w-6xl mx-auto flex items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 gradient-bg rounded-xl flex items-center justify-center font-bold text-sm shadow-glow">A</div>
-          <span className="display-font font-semibold text-lg">Abdora AI</span>
+        {/* Ambient glow backdrop */}
+        <div className="pointer-events-none fixed inset-0 overflow-hidden">
+          <div className="absolute -top-40 -left-40 w-[36rem] h-[36rem] rounded-full bg-[#FF7A1A]/15 dark:bg-[#FF7A1A]/20 blur-[120px]" />
+          <div className="absolute top-1/3 -right-40 w-[30rem] h-[30rem] rounded-full bg-[#FFA94D]/25 dark:bg-[#FFA94D]/15 blur-[120px]" />
         </div>
-        <Link to="/login" className="text-sm font-medium text-white/70 hover:text-white transition-colors border border-white/15 rounded-xl px-4 py-2 hover:border-white/30">
-          Kirish
-        </Link>
-      </nav>
 
-      {/* Hero */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 pt-16 pb-24 md:pt-24 md:pb-32">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3.5 py-1.5 text-xs text-white/70 mb-6">
-              <Sparkles size={12} className="text-primary" />
-              AI yordamida o'qitadigan o'quv markazi platformasi
-            </motion.div>
-            <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-              className="display-font text-4xl sm:text-5xl md:text-6xl font-semibold leading-[1.05] tracking-tight">
-              Har bir o'quvchi uchun
-              <span className="block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">shaxsiy AI o'qituvchi.</span>
-            </motion.h1>
-            <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
-              className="text-white/60 text-lg mt-6 max-w-lg leading-relaxed">
-              Abdora AI — darslarni avtomatik yaratadigan, video va ovoz bilan tushuntiradigan, gaplashib mashq qildiradigan
-              va markazlaringizni bitta joydan boshqarishga yordam beradigan platforma.
-            </motion.p>
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
-              className="flex flex-wrap gap-3 mt-8">
-              <a href="#ariza" className="gradient-bg rounded-2xl px-6 py-3.5 font-semibold text-sm flex items-center gap-2 shadow-glow hover:opacity-90 transition-opacity">
-                Ariza qoldirish <ArrowRight size={16} />
-              </a>
-              <a href="#imkoniyatlar" className="border border-white/15 rounded-2xl px-6 py-3.5 font-semibold text-sm text-white/80 hover:border-white/30 transition-colors">
-                Imkoniyatlarni ko'rish
-              </a>
+        {/* Nav */}
+        <nav className="relative z-10 max-w-6xl mx-auto flex items-center justify-between px-6 py-6">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 abdora-gradient rounded-xl flex items-center justify-center font-bold text-sm text-white abdora-glow">A</div>
+            <span className="display-font font-semibold text-lg">Abdora AI</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setDark((d) => !d)}
+              aria-label={dark ? "Yorug' rejimga o'tish" : "Qorong'i rejimga o'tish"}
+              className="w-10 h-10 rounded-xl border border-black/10 dark:border-white/15 flex items-center justify-center
+                text-[#2B1B10]/70 dark:text-white/70 hover:border-[#FF7A1A]/50 hover:text-[#FF7A1A] transition-colors"
+            >
+              {dark ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+            <Link
+              to="/login"
+              className="text-sm font-medium text-[#2B1B10]/70 dark:text-white/70 hover:text-[#FF7A1A] transition-colors
+                border border-black/10 dark:border-white/15 rounded-xl px-4 py-2 hover:border-[#FF7A1A]/50"
+            >
+              Kirish
+            </Link>
+          </div>
+        </nav>
+
+        {/* Hero */}
+        <section className="relative z-10 max-w-6xl mx-auto px-6 pt-16 pb-24 md:pt-24 md:pb-32">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                className="inline-flex items-center gap-2 bg-[#FF7A1A]/10 border border-[#FF7A1A]/25 rounded-full px-3.5 py-1.5 text-xs text-[#B85400] dark:text-[#FFA94D] mb-6">
+                <Sparkles size={12} className="text-[#FF7A1A]" />
+                AI yordamida o'qitadigan o'quv markazi platformasi
+              </motion.div>
+              <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+                className="display-font text-4xl sm:text-5xl md:text-6xl font-semibold leading-[1.05] tracking-tight">
+                Har bir o'quvchi uchun
+                <span className="block abdora-gradient bg-clip-text text-transparent">shaxsiy AI o'qituvchi.</span>
+              </motion.h1>
+              <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+                className="text-[#2B1B10]/60 dark:text-white/60 text-lg mt-6 max-w-lg leading-relaxed">
+                Abdora AI — darslarni avtomatik yaratadigan, video va ovoz bilan tushuntiradigan, gaplashib mashq qildiradigan
+                va markazlaringizni bitta joydan boshqarishga yordam beradigan platforma.
+              </motion.p>
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+                className="flex flex-wrap gap-3 mt-8">
+                <a href="#ariza" className="abdora-gradient rounded-2xl px-6 py-3.5 font-semibold text-sm text-white flex items-center gap-2 abdora-glow hover:opacity-90 transition-opacity">
+                  Ariza qoldirish <ArrowRight size={16} />
+                </a>
+                <a href="#imkoniyatlar" className="border border-black/10 dark:border-white/15 rounded-2xl px-6 py-3.5 font-semibold text-sm text-[#2B1B10]/80 dark:text-white/80 hover:border-[#FF7A1A]/50 transition-colors">
+                  Imkoniyatlarni ko'rish
+                </a>
+              </motion.div>
+            </div>
+
+            {/* Signature visual: an AI-lesson card assembling itself */}
+            <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2, duration: 0.6 }}
+              className="relative">
+              <div className="relative bg-white/70 dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-3xl p-6 backdrop-blur-sm shadow-sm">
+                <div className="flex items-center gap-2 mb-4 text-xs text-[#2B1B10]/50 dark:text-white/50">
+                  <Brain size={13} className="text-[#FF7A1A]" />
+                  AI dars generatsiya qilmoqda...
+                </div>
+                {['Mavzu: Fotosintez', 'Sodda tushuntirish ✓', 'Hikoya rejimi ✓', 'Video slaydlar ✓', 'Test savollari ✓'].map((line, i) => (
+                  <motion.div key={line} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + i * 0.15 }}
+                    className="flex items-center gap-2.5 py-2.5 border-b border-black/5 dark:border-white/5 last:border-0 text-sm">
+                    <CheckCircle2 size={15} className="text-[#FF7A1A] flex-shrink-0" />
+                    <span className="text-[#2B1B10]/80 dark:text-white/80">{line}</span>
+                  </motion.div>
+                ))}
+                <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 1.3, duration: 0.5 }}
+                  className="h-1 abdora-gradient rounded-full mt-4 origin-left" />
+              </div>
+              <div className="absolute -bottom-4 -right-4 w-24 h-24 abdora-gradient rounded-2xl opacity-20 blur-2xl" />
             </motion.div>
           </div>
+        </section>
 
-          {/* Signature visual: an AI-lesson card assembling itself */}
-          <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2, duration: 0.6 }}
-            className="relative">
-            <div className="relative bg-white/[0.04] border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
-              <div className="flex items-center gap-2 mb-4 text-xs text-white/50">
-                <Brain size={13} className="text-primary" />
-                AI dars generatsiya qilmoqda...
-              </div>
-              {['Mavzu: Fotosintez', 'Sodda tushuntirish ✓', 'Hikoya rejimi ✓', 'Video slaydlar ✓', 'Test savollari ✓'].map((line, i) => (
-                <motion.div key={line} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + i * 0.15 }}
-                  className="flex items-center gap-2.5 py-2.5 border-b border-white/5 last:border-0 text-sm">
-                  <CheckCircle2 size={15} className="text-primary flex-shrink-0" />
-                  <span className="text-white/80">{line}</span>
+        {/* Features */}
+        <section id="imkoniyatlar" className="relative z-10 max-w-6xl mx-auto px-6 py-20 border-t border-black/5 dark:border-white/5">
+          <div className="max-w-xl mb-14">
+            <h2 className="display-font text-3xl sm:text-4xl font-semibold tracking-tight">Nima qila oladi</h2>
+            <p className="text-[#2B1B10]/50 dark:text-white/50 mt-3">Bitta platformada — o'quvchi, o'qituvchi va qabulxona uchun kerakli hamma narsa.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {FEATURES.map((f, i) => {
+              const Icon = f.icon;
+              return (
+                <motion.div key={f.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                  className="bg-white/70 dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-2xl p-6 hover:border-[#FF7A1A]/40 transition-colors">
+                  <div className="w-10 h-10 abdora-gradient rounded-xl flex items-center justify-center mb-4 text-white">
+                    <Icon size={18} />
+                  </div>
+                  <h3 className="font-semibold text-base mb-1.5">{f.title}</h3>
+                  <p className="text-sm text-[#2B1B10]/50 dark:text-white/50 leading-relaxed">{f.text}</p>
                 </motion.div>
-              ))}
-              <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 1.3, duration: 0.5 }}
-                className="h-1 gradient-bg rounded-full mt-4 origin-left" />
-            </div>
-            <div className="absolute -bottom-4 -right-4 w-24 h-24 gradient-bg rounded-2xl opacity-20 blur-2xl" />
-          </motion.div>
-        </div>
-      </section>
+              );
+            })}
+          </div>
+        </section>
 
-      {/* Features */}
-      <section id="imkoniyatlar" className="relative z-10 max-w-6xl mx-auto px-6 py-20 border-t border-white/5">
-        <div className="max-w-xl mb-14">
-          <h2 className="display-font text-3xl sm:text-4xl font-semibold tracking-tight">Nima qila oladi</h2>
-          <p className="text-white/50 mt-3">Bitta platformada — o'quvchi, o'qituvchi va qabulxona uchun kerakli hamma narsa.</p>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURES.map((f, i) => {
-            const Icon = f.icon;
-            return (
-              <motion.div key={f.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 hover:bg-white/[0.05] transition-colors">
-                <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center mb-4">
-                  <Icon size={18} />
-                </div>
-                <h3 className="font-semibold text-base mb-1.5">{f.title}</h3>
-                <p className="text-sm text-white/50 leading-relaxed">{f.text}</p>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
+        {/* Application form */}
+        <section id="ariza" className="relative z-10 max-w-2xl mx-auto px-6 py-20 border-t border-black/5 dark:border-white/5">
+          <div className="text-center mb-10">
+            <h2 className="display-font text-3xl sm:text-4xl font-semibold tracking-tight">Ariza qoldiring</h2>
+            <p className="text-[#2B1B10]/50 dark:text-white/50 mt-3">Ismingiz va telefon raqamingizni qoldiring — administratorimiz siz bilan bog'lanadi.</p>
+          </div>
 
-      {/* Application form */}
-      <section id="ariza" className="relative z-10 max-w-2xl mx-auto px-6 py-20 border-t border-white/5">
-        <div className="text-center mb-10">
-          <h2 className="display-font text-3xl sm:text-4xl font-semibold tracking-tight">Ariza qoldiring</h2>
-          <p className="text-white/50 mt-3">Ismingiz va telefon raqamingizni qoldiring — administratorimiz siz bilan bog'lanadi.</p>
-        </div>
+          {status === 'sent' ? (
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="bg-[#FF7A1A]/10 border border-[#FF7A1A]/25 rounded-3xl p-10 text-center">
+              <CheckCircle2 size={40} className="text-[#FF7A1A] mx-auto mb-4" />
+              <h3 className="font-semibold text-xl mb-1.5">Arizangiz qabul qilindi!</h3>
+              <p className="text-[#2B1B10]/60 dark:text-white/60 text-sm">Tez orada siz bilan bog'lanamiz.</p>
+            </motion.div>
+          ) : (
+            <form onSubmit={submit} className="bg-white/70 dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-3xl p-6 sm:p-8 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-[#2B1B10]/50 dark:text-white/50 mb-1.5 flex items-center gap-1.5"><User size={12} /> Ism-familiya *</label>
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Ismingiz" required
+                  className="w-full bg-black/[0.03] dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-sm placeholder-[#2B1B10]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#FF7A1A]/60 transition-colors" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-[#2B1B10]/50 dark:text-white/50 mb-1.5 flex items-center gap-1.5"><Phone size={12} /> Telefon raqami *</label>
+                <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                  placeholder="+998 90 123 45 67" required type="tel"
+                  className="w-full bg-black/[0.03] dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-sm placeholder-[#2B1B10]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#FF7A1A]/60 transition-colors" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-[#2B1B10]/50 dark:text-white/50 mb-1.5 flex items-center gap-1.5"><MessageSquare size={12} /> Xabar (ixtiyoriy)</label>
+                <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                  placeholder="Qaysi yo'nalish qiziqtiradi, nechchi yoshda va h.k." rows={3}
+                  className="w-full bg-black/[0.03] dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-sm placeholder-[#2B1B10]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#FF7A1A]/60 transition-colors resize-none" />
+              </div>
+              <button type="submit" disabled={status === 'sending'}
+                className="w-full abdora-gradient rounded-xl py-3.5 font-semibold text-sm text-white flex items-center justify-center gap-2 abdora-glow hover:opacity-90 transition-opacity disabled:opacity-50">
+                {status === 'sending' ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                {status === 'sending' ? 'Yuborilmoqda...' : 'Arizani yuborish'}
+              </button>
+              {status === 'error' && (
+                <p className="text-xs text-red-500 dark:text-red-400 text-center">Xatolik yuz berdi. Birozdan so'ng qayta urinib ko'ring.</p>
+              )}
+            </form>
+          )}
+        </section>
 
-        {status === 'sent' ? (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="bg-primary/10 border border-primary/25 rounded-3xl p-10 text-center">
-            <CheckCircle2 size={40} className="text-primary mx-auto mb-4" />
-            <h3 className="font-semibold text-xl mb-1.5">Arizangiz qabul qilindi!</h3>
-            <p className="text-white/60 text-sm">Tez orada siz bilan bog'lanamiz.</p>
-          </motion.div>
-        ) : (
-          <form onSubmit={submit} className="bg-white/[0.03] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4">
-            <div>
-              <label className="text-xs font-medium text-white/50 mb-1.5 flex items-center gap-1.5"><User size={12} /> Ism-familiya *</label>
-              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Ismingiz" required
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-white/50 mb-1.5 flex items-center gap-1.5"><Phone size={12} /> Telefon raqami *</label>
-              <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                placeholder="+998 90 123 45 67" required type="tel"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-white/50 mb-1.5 flex items-center gap-1.5"><MessageSquare size={12} /> Xabar (ixtiyoriy)</label>
-              <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-                placeholder="Qaysi yo'nalish qiziqtiradi, nechchi yoshda va h.k." rows={3}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors resize-none" />
-            </div>
-            <button type="submit" disabled={status === 'sending'}
-              className="w-full gradient-bg rounded-xl py-3.5 font-semibold text-sm flex items-center justify-center gap-2 shadow-glow hover:opacity-90 transition-opacity disabled:opacity-50">
-              {status === 'sending' ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-              {status === 'sending' ? 'Yuborilmoqda...' : 'Arizani yuborish'}
-            </button>
-            {status === 'error' && (
-              <p className="text-xs text-red-400 text-center">Xatolik yuz berdi. Birozdan so'ng qayta urinib ko'ring.</p>
-            )}
-          </form>
-        )}
-      </section>
-
-      {/* Footer */}
-      <footer className="relative z-10 max-w-6xl mx-auto px-6 py-10 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-white/40">
-        <span>© 2026 Abdora AI</span>
-        <Link to="/login" className="hover:text-white/70 transition-colors">Tizimga kirish →</Link>
-      </footer>
+        {/* Footer */}
+        <footer className="relative z-10 max-w-6xl mx-auto px-6 py-10 border-t border-black/5 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-[#2B1B10]/40 dark:text-white/40">
+          <span>© 2026 Abdora AI</span>
+          <Link to="/login" className="hover:text-[#FF7A1A] transition-colors">Tizimga kirish →</Link>
+        </footer>
+      </div>
     </div>
   );
 }
