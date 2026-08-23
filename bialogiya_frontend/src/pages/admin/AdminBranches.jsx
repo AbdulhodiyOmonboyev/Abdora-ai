@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import BranchLocationPicker from '../../components/ui/BranchLocationPicker';
-import { geocodeAddress } from '../../utils/geocode';
+import { geocodeSuggestions } from '../../utils/geocode';
 
 const EMPTY_FORM = { name: '', address: '', studentCapacity: '', latitude: null, longitude: null };
 
@@ -23,30 +23,45 @@ export default function AdminBranches() {
   const [confirm, setConfirm] = useState(null);
   const [geocoding, setGeocoding] = useState(false);
   const [editGeocoding, setEditGeocoding] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [editSuggestions, setEditSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showEditSuggestions, setShowEditSuggestions] = useState(false);
   const markerMovedRef = useRef(false);
   const editMarkerMovedRef = useRef(false);
 
-  // Auto-locate on the map as the address is typed (debounced), unless the
-  // user has already fine-tuned the pin by clicking/dragging it themselves.
+  // As the address is typed (debounced), fetch a handful of matching
+  // address suggestions from OpenStreetMap and pin the map to the best
+  // match — without requiring the user to press any "search" button.
   useEffect(() => {
-    if (!showCreate || markerMovedRef.current || !form.address || form.address.trim().length < 4) return undefined;
+    if (!showCreate || markerMovedRef.current || !form.address || form.address.trim().length < 4) {
+      setSuggestions([]);
+      return undefined;
+    }
     setGeocoding(true);
     const t = setTimeout(async () => {
-      const point = await geocodeAddress(form.address);
+      const results = await geocodeSuggestions(form.address, 5);
       setGeocoding(false);
-      if (point) setForm((prev) => ({ ...prev, latitude: point.lat, longitude: point.lng }));
-    }, 800);
+      setSuggestions(results);
+      setShowSuggestions(results.length > 0);
+      if (results[0]) setForm((prev) => ({ ...prev, latitude: results[0].lat, longitude: results[0].lng }));
+    }, 500);
     return () => { clearTimeout(t); setGeocoding(false); };
   }, [form.address, showCreate]);
 
   useEffect(() => {
-    if (!showEdit || editMarkerMovedRef.current || !editForm.address || editForm.address.trim().length < 4) return undefined;
+    if (!showEdit || editMarkerMovedRef.current || !editForm.address || editForm.address.trim().length < 4) {
+      setEditSuggestions([]);
+      return undefined;
+    }
     setEditGeocoding(true);
     const t = setTimeout(async () => {
-      const point = await geocodeAddress(editForm.address);
+      const results = await geocodeSuggestions(editForm.address, 5);
       setEditGeocoding(false);
-      if (point) setEditForm((prev) => ({ ...prev, latitude: point.lat, longitude: point.lng }));
-    }, 800);
+      setEditSuggestions(results);
+      setShowEditSuggestions(results.length > 0);
+      if (results[0]) setEditForm((prev) => ({ ...prev, latitude: results[0].lat, longitude: results[0].lng }));
+    }, 500);
     return () => { clearTimeout(t); setEditGeocoding(false); };
   }, [editForm.address, showEdit]);
 
@@ -104,6 +119,8 @@ export default function AdminBranches() {
     setShowCreate(false);
     setForm(EMPTY_FORM);
     markerMovedRef.current = false;
+    setSuggestions([]);
+    setShowSuggestions(false);
   };
 
   const closeEditModal = () => {
@@ -111,6 +128,8 @@ export default function AdminBranches() {
     setEditingBranch(null);
     setEditForm(EMPTY_FORM);
     editMarkerMovedRef.current = false;
+    setEditSuggestions([]);
+    setShowEditSuggestions(false);
   };
 
   const openEdit = (branch) => {
@@ -123,7 +142,21 @@ export default function AdminBranches() {
       latitude: branch.latitude ?? null,
       longitude: branch.longitude ?? null,
     });
+    setEditSuggestions([]);
+    setShowEditSuggestions(false);
     setShowEdit(true);
+  };
+
+  const selectSuggestion = (s) => {
+    markerMovedRef.current = true;
+    setForm((prev) => ({ ...prev, address: s.label, latitude: s.lat, longitude: s.lng }));
+    setShowSuggestions(false);
+  };
+
+  const selectEditSuggestion = (s) => {
+    editMarkerMovedRef.current = true;
+    setEditForm((prev) => ({ ...prev, address: s.label, latitude: s.lat, longitude: s.lng }));
+    setShowEditSuggestions(false);
   };
 
   const openDelete = (branch) => {
@@ -255,14 +288,34 @@ export default function AdminBranches() {
                   />
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-medium mb-1">Manzil</label>
                   <input
                     value={form.address}
-                    onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+                    onChange={(e) => { markerMovedRef.current = false; setForm((prev) => ({ ...prev, address: e.target.value })); }}
+                    onFocus={() => { if (suggestions.length) setShowSuggestions(true); }}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                     className="input-field w-full"
                     placeholder="Tuman, ko'cha, uy raqami"
+                    autoComplete="off"
                   />
+                  {showSuggestions && suggestions.length > 0 && (
+                    <ul className="absolute z-[1100] mt-1 w-full max-h-56 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg text-sm">
+                      {suggestions.map((s, i) => (
+                        <li key={i}>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => selectSuggestion(s)}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start gap-2"
+                          >
+                            <MapPin size={14} className="mt-0.5 shrink-0 text-gray-400" />
+                            <span>{s.label}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 <div>
@@ -347,14 +400,34 @@ export default function AdminBranches() {
                   />
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-medium mb-1">Manzil</label>
                   <input
                     value={editForm.address}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))}
+                    onChange={(e) => { editMarkerMovedRef.current = false; setEditForm((prev) => ({ ...prev, address: e.target.value })); }}
+                    onFocus={() => { if (editSuggestions.length) setShowEditSuggestions(true); }}
+                    onBlur={() => setTimeout(() => setShowEditSuggestions(false), 150)}
                     className="input-field w-full"
                     placeholder="Tuman, ko'cha, uy raqami"
+                    autoComplete="off"
                   />
+                  {showEditSuggestions && editSuggestions.length > 0 && (
+                    <ul className="absolute z-[1100] mt-1 w-full max-h-56 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg text-sm">
+                      {editSuggestions.map((s, i) => (
+                        <li key={i}>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => selectEditSuggestion(s)}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start gap-2"
+                          >
+                            <MapPin size={14} className="mt-0.5 shrink-0 text-gray-400" />
+                            <span>{s.label}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 <div>
