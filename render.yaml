@@ -10,17 +10,17 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
+      - key: postgresql://neondb_owner:npg_0vxC5sbgRmnT@ep-snowy-hall-asgw3s8r-pooler.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
         sync: false
-      - key: JWT_SECRET
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30
         generateValue: true
-      - key: JWT_REFRESH_SECRET
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30
         generateValue: true
-      - key: JWT_ACCESS_EXPIRES
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30
         value: 15m
       - key: JWT_REFRESH_EXPIRES
         value: 7d
-      - key: GIMINI_AI_API_KEY
+      - key: AQ.Ab8RN6In6wmHq88x-aqA3nWPJ4TBsIgaLOTb3L5QwNVHFxkBCw
         sync: false
       - key: CLIENT_URL
         sync: false
