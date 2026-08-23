@@ -20,11 +20,11 @@ export default function AdminDashboard() {
   const stats = [
     { icon: Users, label: 'O\'qituvchilar', value: data?.totalTeachers || 0, color: 'text-primary', bg: 'bg-primary/10', path: `/${baseRole}/teachers` },
     { icon: GraduationCap, label: 'O\'quvchilar', value: data?.totalStudents || 0, color: 'text-secondary', bg: 'bg-secondary/10', path: `/${baseRole}/students` },
-    { icon: BookOpen, label: 'Guruhlar', value: data?.totalGroups || 0, color: 'text-green-500', bg: 'bg-green-50', path: `/${baseRole}/groups` },
-    { icon: Bot, label: 'AI Darslar', value: data?.aiLessons || 0, color: 'text-purple-500', bg: 'bg-purple-50', path: `/${baseRole}/groups` },
+    { icon: BookOpen, label: 'Guruhlar', value: data?.totalGroups || 0, color: 'text-green-500', bg: 'bg-green-50', path: baseRole === 'admin' ? '/admin/branches' : `/${baseRole}/groups` },
+    { icon: Bot, label: 'AI Darslar', value: data?.aiLessons || 0, color: 'text-purple-500', bg: 'bg-purple-50', path: baseRole === 'admin' ? '/admin/branches' : `/${baseRole}/groups` },
     { icon: BarChart2, label: 'Bugun faol', value: data?.activeToday || 0, color: 'text-orange-500', bg: 'bg-orange-50', path: `/${baseRole}/students` },
     { icon: UserCheck, label: 'Bu hafta yangi', value: data?.newThisWeek || 0, color: 'text-teal-500', bg: 'bg-teal-50', path: `/${baseRole}/students` },
-  ];
+  ].filter((tile) => baseRole !== 'admin' || !tile.path.endsWith('/teachers') && !tile.path.endsWith('/students'));
 
   const chartData = data?.dailyActivity || [];
 

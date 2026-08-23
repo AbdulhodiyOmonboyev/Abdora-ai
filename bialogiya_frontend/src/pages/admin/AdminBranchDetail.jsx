@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Building2, Users, BookOpen, User, Search, Plus, X } from 'lucide-react';
+import { ArrowLeft, Building2, Users, BookOpen, User, Search, Plus, X, UserPlus, GraduationCap } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -31,6 +31,21 @@ export default function AdminBranchDetail() {
       const data = r.data?.data || r.data || [];
       return Array.isArray(data) ? data : [];
     }),
+    enabled: !!id,
+  });
+
+  const { data: students = [] } = useQuery({
+    queryKey: ['admin-branch-students', id],
+    queryFn: () => api.get('/admin/students', { params: { branchId: id } }).then((r) => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
+    enabled: !!id,
+  });
+
+  const { data: leadStats } = useQuery({
+    queryKey: ['admin-branch-lead-stats', id],
+    queryFn: () => api.get('/leads/stats', { params: { branchId: id } }).then((r) => r.data?.data),
     enabled: !!id,
   });
 
@@ -102,7 +117,7 @@ export default function AdminBranchDetail() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
             <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
               <BookOpen size={18} />
@@ -119,13 +134,24 @@ export default function AdminBranchDetail() {
             <div className="text-3xl font-bold text-green-700">{branch.teachers?.length || 0}</div>
           </div>
 
-          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+          <a href="#branch-students" className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 hover:opacity-90 transition-opacity">
             <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-2">
               <User size={18} />
               <span className="font-semibold">O'quvchilari</span>
             </div>
             <div className="text-3xl font-bold text-purple-700">{branch.studentsCount || 0}</div>
-          </div>
+          </a>
+
+          <Link
+            to={`/leads?branchId=${id}&branchName=${encodeURIComponent(branch.name || '')}`}
+            className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 hover:opacity-90 transition-opacity"
+          >
+            <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 mb-2">
+              <UserPlus size={18} />
+              <span className="font-semibold">Lidlar</span>
+            </div>
+            <div className="text-3xl font-bold text-orange-700">{leadStats?.active ?? leadStats?.total ?? 0}</div>
+          </Link>
         </div>
 
         <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -402,6 +428,43 @@ export default function AdminBranchDetail() {
           </div>
         </motion.div>
       )}
+
+      {/* Students */}
+      <motion.div
+        id="branch-students"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="card mt-6"
+      >
+        <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+          <GraduationCap size={20} /> O'quvchilari ({students.length})
+        </h2>
+        <div className="space-y-2">
+          {students.map((s) => (
+            <div key={s.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary grid place-items-center font-semibold">
+                {s.name?.charAt(0)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm text-gray-800 dark:text-white">{s.name}</div>
+                <div className="text-xs text-gray-500 flex flex-wrap gap-2">
+                  <span>@{s.username}</span>
+                  {s.group?.name && <span>{s.group.name}</span>}
+                  {s.teacher?.name && <span>O'qituvchi: {s.teacher.name}</span>}
+                </div>
+              </div>
+              {s.phone && <div className="text-xs text-gray-600 dark:text-gray-400">{s.phone}</div>}
+              <div className={`badge text-xs ${s.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                {s.isActive ? 'Faol' : 'Nofaol'}
+              </div>
+            </div>
+          ))}
+          {students.length === 0 && (
+            <div className="text-center py-10 text-gray-400">Bu markaz uchun o'quvchilar topilmadi.</div>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }

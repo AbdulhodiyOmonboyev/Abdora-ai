@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Search, X, Phone, UserPlus, Snowflake, Archive, TrendingUp, Trash2,
@@ -47,19 +48,22 @@ const emptyForm = () => ({ name: '', phone: '', source: 'instagram', interestedI
 
 export default function ManagerLeads() {
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const branchId = searchParams.get('branchId') || undefined;
+  const branchName = searchParams.get('branchName') || '';
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
   const statsQuery = useQuery({
-    queryKey: ['lead-stats'],
-    queryFn: () => api.get('/leads/stats').then(r => r.data.data),
+    queryKey: ['lead-stats', branchId],
+    queryFn: () => api.get('/leads/stats', { params: { branchId } }).then(r => r.data.data),
   });
 
   const leadsQuery = useQuery({
-    queryKey: ['leads', tab, search],
-    queryFn: () => api.get('/leads', { params: { status: tab, search: search.trim() || undefined } })
+    queryKey: ['leads', tab, search, branchId],
+    queryFn: () => api.get('/leads', { params: { status: tab, search: search.trim() || undefined, branchId } })
       .then(r => r.data.data),
   });
 
@@ -69,7 +73,7 @@ export default function ManagerLeads() {
   };
 
   const createMutation = useMutation({
-    mutationFn: (payload) => api.post('/leads', payload),
+    mutationFn: (payload) => api.post('/leads', { ...payload, branchId }),
     onSuccess: () => {
       invalidate();
       toast.success('Lid qo\'shildi');
@@ -106,7 +110,7 @@ export default function ManagerLeads() {
       <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-800 dark:text-white">Lidlar</h1>
-          <p className="mt-0.5 text-sm text-gray-500">Kelgan mijozlarni kuzatib boring</p>
+          <p className="mt-0.5 text-sm text-gray-500">{branchName ? `${branchName} filiali` : 'Kelgan mijozlarni kuzatib boring'}</p>
         </div>
         <button type="button" onClick={() => setModalOpen(true)}
           className="btn-primary flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">

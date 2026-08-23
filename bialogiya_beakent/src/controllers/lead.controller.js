@@ -74,7 +74,8 @@ const getLeads = async (req, res, next) => {
 // GET /leads/stats — the manager's board counters.
 const getLeadStats = async (req, res, next) => {
   try {
-    const where = scopeFor(req.user);
+    const { branchId } = req.query;
+    const where = { ...scopeFor(req.user), ...(branchId && { branchId }) };
     const weekStart = startOfWeek();
 
     const [byStatus, thisWeek, total] = await Promise.all([
