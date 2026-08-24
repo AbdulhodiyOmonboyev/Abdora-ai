@@ -7,7 +7,7 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 
-const EMPTY_MANAGER_FORM = { name: '', phone: '', email: '', password: '', gender: '', address: '' };
+const EMPTY_MANAGER_FORM = { name: '', phone: '', email: '', gender: '', address: '' };
 
 export default function AdminBranchDetail() {
   const { id } = useParams();
@@ -307,28 +307,15 @@ export default function AdminBranchDetail() {
                     placeholder="To'liq ismi"
                   />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Telefon *</label>
-                    <input
-                      value={managerForm.phone}
-                      onChange={(e) => setManagerForm((prev) => ({ ...prev, phone: e.target.value }))}
-                      className="input-field w-full"
-                      placeholder="+998 90 123 45 67"
-                      type="tel"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Kod</label>
-                    <input
-                      value={managerForm.password}
-                      onChange={(e) => setManagerForm((prev) => ({ ...prev, password: e.target.value }))}
-                      className="input-field w-full"
-                      placeholder="Telefon oxirgi 4 raqami"
-                      type="text"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Agar bo'sh qoldirilsa, kod telefon oxirgi 4 raqamidan olinadi.</p>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Telefon *</label>
+                  <input
+                    value={managerForm.phone}
+                    onChange={(e) => setManagerForm((prev) => ({ ...prev, phone: e.target.value }))}
+                    className="input-field w-full"
+                    placeholder="+998 90 123 45 67"
+                    type="tel"
+                  />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
