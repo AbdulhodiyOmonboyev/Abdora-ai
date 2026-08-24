@@ -7,6 +7,9 @@ import ProfilePage from './pages/shared/ProfilePage';
 
 // Public
 import LandingPage from './pages/public/LandingPage';
+import ServicesPage from './pages/public/ServicesPage';
+import DocumentsPage from './pages/public/DocumentsPage';
+import ContactPage from './pages/public/ContactPage';
 
 // Auth
 import LoginPage from './pages/auth/LoginPage';
@@ -106,6 +109,9 @@ export default function App() {
           user?.role === 'admin' ? <Navigate to="/admin/dashboard" replace /> :
           <LandingPage />
         } />
+        <Route path="/xizmatlar" element={<ServicesPage />} />
+        <Route path="/hujjatlar" element={<DocumentsPage />} />
+        <Route path="/aloqa" element={<ContactPage />} />
 
         {/* Student Routes */}
         <Route path="/student" element={<ProtectedRoute role="student"><MainLayout /></ProtectedRoute>}>

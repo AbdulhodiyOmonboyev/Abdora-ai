@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Sparkles, BookOpen, Video, Mic, Trophy, Building2, ArrowRight,
   CheckCircle2, Loader2, Phone, User, MessageSquare, Wand2, Brain,
-  Sun, Moon,
 } from 'lucide-react';
 import api from '../../config/axios';
+import usePublicTheme from '../../hooks/usePublicTheme';
+import PublicShell from '../../components/public/PublicShell';
+import PublicNav from '../../components/public/PublicNav';
+import PublicFooter from '../../components/public/PublicFooter';
 
 const FEATURES = [
   {
@@ -41,21 +43,10 @@ const FEATURES = [
   },
 ];
 
-const THEME_KEY = 'abdora-landing-theme';
-
 export default function LandingPage() {
   const [form, setForm] = useState({ name: '', phone: '', message: '' });
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
-  const [dark, setDark] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const saved = localStorage.getItem(THEME_KEY);
-    if (saved) return saved === 'dark';
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-  });
-
-  useEffect(() => {
-    localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
-  }, [dark]);
+  const [dark, setDark] = usePublicTheme();
 
   const submit = async (e) => {
     e.preventDefault();
@@ -71,56 +62,8 @@ export default function LandingPage() {
   };
 
   return (
-    <div className={dark ? 'dark' : ''}>
-      <div
-        className="min-h-screen overflow-x-hidden transition-colors duration-300
-          bg-[#FFFBF4] text-[#2B1B10]
-          dark:bg-[#180F08] dark:text-[#FFF3E2]"
-        style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
-      >
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
-          .display-font { font-family: 'Space Grotesk', system-ui, sans-serif; }
-          .abdora-gradient { background: linear-gradient(135deg, #FF7A1A 0%, #FFA94D 100%); }
-          .abdora-glow { box-shadow: 0 0 32px rgba(255, 122, 26, 0.35); }
-          .abdora-grain {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
-          }
-        `}</style>
-
-        {/* Subtle film-grain texture for warmth */}
-        <div className="pointer-events-none fixed inset-0 abdora-grain opacity-[0.025] dark:opacity-[0.05] mix-blend-multiply dark:mix-blend-screen" />
-
-        {/* Ambient glow backdrop */}
-        <div className="pointer-events-none fixed inset-0 overflow-hidden">
-          <div className="absolute -top-40 -left-40 w-[36rem] h-[36rem] rounded-full bg-[#FF7A1A]/15 dark:bg-[#FF7A1A]/20 blur-[120px]" />
-          <div className="absolute top-1/3 -right-40 w-[30rem] h-[30rem] rounded-full bg-[#FFA94D]/25 dark:bg-[#FFA94D]/15 blur-[120px]" />
-        </div>
-
-        {/* Nav */}
-        <nav className="relative z-10 max-w-6xl mx-auto flex items-center justify-between px-6 py-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 abdora-gradient rounded-xl flex items-center justify-center font-bold text-sm text-white abdora-glow">A</div>
-            <span className="display-font font-semibold text-lg">Abdora AI</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setDark((d) => !d)}
-              aria-label={dark ? "Yorug' rejimga o'tish" : "Qorong'i rejimga o'tish"}
-              className="w-10 h-10 rounded-xl border border-black/10 dark:border-white/15 flex items-center justify-center
-                text-[#2B1B10]/70 dark:text-white/70 hover:border-[#FF7A1A]/50 hover:text-[#FF7A1A] transition-colors"
-            >
-              {dark ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-            <Link
-              to="/login"
-              className="text-sm font-medium text-[#2B1B10]/70 dark:text-white/70 hover:text-[#FF7A1A] transition-colors
-                border border-black/10 dark:border-white/15 rounded-xl px-4 py-2 hover:border-[#FF7A1A]/50"
-            >
-              Kirish
-            </Link>
-          </div>
-        </nav>
+    <PublicShell dark={dark}>
+      <PublicNav dark={dark} setDark={setDark} />
 
         {/* Hero */}
         <section className="relative z-10 max-w-6xl mx-auto px-6 pt-16 pb-24 md:pt-24 md:pb-32">
@@ -155,7 +98,7 @@ export default function LandingPage() {
             {/* Signature visual: an AI-lesson card assembling itself */}
             <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2, duration: 0.6 }}
               className="relative">
-              <div className="relative bg-white/70 dark:bg-white/[0.04] border border-black/10 dark:border-white/10 rounded-3xl p-6 backdrop-blur-sm shadow-sm">
+              <div className="relative abdora-milk border border-black/[0.06] dark:border-white/10 rounded-3xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-4 text-xs text-[#2B1B10]/50 dark:text-white/50">
                   <Brain size={13} className="text-[#FF7A1A]" />
                   AI dars generatsiya qilmoqda...
@@ -188,7 +131,7 @@ export default function LandingPage() {
               return (
                 <motion.div key={f.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
                   transition={{ delay: i * 0.05 }}
-                  className="bg-white/70 dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-2xl p-6 hover:border-[#FF7A1A]/40 transition-colors">
+                  className="abdora-milk border border-black/[0.06] dark:border-white/10 rounded-2xl p-6 hover:border-[#FF7A1A]/40 transition-colors">
                   <div className="w-10 h-10 abdora-gradient rounded-xl flex items-center justify-center mb-4 text-white">
                     <Icon size={18} />
                   </div>
@@ -215,7 +158,7 @@ export default function LandingPage() {
               <p className="text-[#2B1B10]/60 dark:text-white/60 text-sm">Tez orada siz bilan bog'lanamiz.</p>
             </motion.div>
           ) : (
-            <form onSubmit={submit} className="bg-white/70 dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-3xl p-6 sm:p-8 space-y-4">
+            <form onSubmit={submit} className="abdora-milk border border-black/[0.06] dark:border-white/10 rounded-3xl p-6 sm:p-8 space-y-4">
               <div>
                 <label className="text-xs font-medium text-[#2B1B10]/50 dark:text-white/50 mb-1.5 flex items-center gap-1.5"><User size={12} /> Ism-familiya *</label>
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -247,11 +190,7 @@ export default function LandingPage() {
         </section>
 
         {/* Footer */}
-        <footer className="relative z-10 max-w-6xl mx-auto px-6 py-10 border-t border-black/5 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-[#2B1B10]/40 dark:text-white/40">
-          <span>© 2026 Abdora AI</span>
-          <Link to="/login" className="hover:text-[#FF7A1A] transition-colors">Tizimga kirish →</Link>
-        </footer>
-      </div>
-    </div>
+        <PublicFooter />
+    </PublicShell>
   );
 }
