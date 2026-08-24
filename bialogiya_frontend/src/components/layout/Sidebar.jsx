@@ -43,11 +43,6 @@ const adminLinks = [
   { to: '/admin/applications', icon: Inbox, key: 'applications' },
   { to: '/admin/branches', icon: Building2, key: 'branches' },
   { to: '/admin/managers', icon: UserCheck, key: 'managers' },
-  { to: '/admin/teachers', icon: BookMarked, key: 'teachers' },
-  { to: '/admin/students', icon: GraduationCap, key: 'students' },
-  { to: '/admin/groups', icon: Users, key: 'groups' },
-  { to: '/finance', icon: PieChart, key: 'finance', label: 'Moliya' },
-  { to: '/leads', icon: UserPlus, key: 'leads', label: 'Lidlar' },
   { to: '/admin/settings', icon: Settings, key: 'settings' },
 ];
 
