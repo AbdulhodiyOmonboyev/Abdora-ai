@@ -21,6 +21,35 @@ enum Language {
   en
 }
 
+model Center {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  branches  Branch[]
+  groups    Group[]
+  payments  Payment[]
+  expenses  Expense[]
+  leads     Lead[]
+  lessons   Lesson[]
+  homework  Homework[]
+  tests     Test[]
+  attendance Attendance[]
+  resources Resource[]
+  notifications Notification[]
+  aiChats   AIChat[]
+  files     UploadedFile[]
+  submissions Submission[]
+  results   Result[]
+
+  @@index([name])
+}
+
 model User {
   id               String    @id @default(cuid())
   name             String
@@ -90,6 +119,9 @@ model User {
   payments      Payment[]      @relation("StudentPayments")
   managedLeads  Lead[]         @relation("ManagerLeads")
   expenses      Expense[]      @relation("UserExpenses")
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
 }
 
 model Group {
@@ -126,6 +158,9 @@ model Group {
   tests       Test[]
   attendances Attendance[]
   resources   Resource[]
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
 }
 
 // A physical location/campus. Only reception accounts can create branches,
@@ -151,6 +186,9 @@ model Branch {
   leads    Lead[]
   expenses Expense[]
   payments Payment[]
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
 }
 
 model Lesson {
@@ -173,12 +211,17 @@ model Lesson {
   // teacher's own material and are never written by a generation job. When a
   // teacher turns aiEnabled off, no generation runs for this lesson at all.
   attachments Json    @default("[]")
+
+    centerId String?
+    center   Center? @relation(fields: [centerId], references: [id])
   aiContent   Json    @default("{\"status\":\"pending\"}")
   aiEnabled   Boolean @default(true)
 
   homework Homework[]
   aiChats  AIChat[]
   media    LessonMedia[]
+
+  @@index([centerId])
 }
 
 // Cached AI-generated audio (story narration + explainer-video slide narration).
@@ -215,8 +258,13 @@ model Homework {
   lessonId  String?
   lesson    Lesson? @relation(fields: [lessonId], references: [id])
 
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
   attachments Json         @default("[]")
   submissions Submission[]
+
+  @@index([centerId])
 }
 
 model Submission {
@@ -240,7 +288,11 @@ model Submission {
   studentId  String
   student    User     @relation(fields: [studentId], references: [id])
 
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
   @@unique([homeworkId, studentId])
+  @@index([centerId])
 }
 
 model Test {
@@ -271,6 +323,11 @@ model Test {
 
   questions Question[]
   results   Result[]
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@index([centerId])
 }
 
 model Question {
@@ -300,6 +357,11 @@ model Result {
   test      Test   @relation(fields: [testId], references: [id])
   studentId String
   student   User   @relation(fields: [studentId], references: [id])
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@index([centerId])
 }
 
 model Attendance {
@@ -313,7 +375,11 @@ model Attendance {
   teacherId String
   teacher   User   @relation(fields: [teacherId], references: [id])
 
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
   @@unique([groupId, date])
+  @@index([centerId])
 }
 
 model Notification {
@@ -322,12 +388,17 @@ model Notification {
   title     String
   message   String
   link      String?
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
   isRead    Boolean   @default(false)
   readAt    DateTime?
   createdAt DateTime  @default(now())
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  @@index([centerId])
 }
 
 model AIChat {
@@ -343,7 +414,11 @@ model AIChat {
   studentId String
   student   User   @relation(fields: [studentId], references: [id])
 
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
   @@unique([lessonId, studentId])
+  @@index([centerId])
 }
 
 // Generic file storage for lesson/homework attachments and homework
@@ -356,6 +431,11 @@ model UploadedFile {
   mimeType  String
   data      Bytes
   createdAt DateTime @default(now())
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@index([centerId])
 }
 
 model Resource {
@@ -375,6 +455,11 @@ model Resource {
   group     Group?  @relation(fields: [groupId], references: [id])
   teacherId String
   teacher   User    @relation(fields: [teacherId], references: [id])
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@index([centerId])
 }
 
 model Payment {
@@ -402,9 +487,13 @@ model Payment {
   branchId  String?
   branch    Branch? @relation(fields: [branchId], references: [id])
 
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
   @@unique([studentId, month])
   @@index([month])
   @@index([status])
+  @@index([centerId])
 }
 
 // A prospective student tracked by the manager before they become a User.
@@ -432,8 +521,12 @@ model Lead {
   // Set once the lead converts into a real student account.
   studentId String?
 
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
   @@index([status])
   @@index([createdAt])
+  @@index([centerId])
 }
 
 // Operating costs (rent, utilities, marketing, equipment) and one-off payouts.
@@ -454,8 +547,12 @@ model Expense {
   createdBy   User   @relation("UserExpenses", fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
 
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
   @@index([date])
   @@index([category])
+  @@index([centerId])
 }
 
 // Public lead/application form submissions from the landing page (people

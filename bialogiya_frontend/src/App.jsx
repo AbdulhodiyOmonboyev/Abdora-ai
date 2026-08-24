@@ -7,9 +7,10 @@ import ProfilePage from './pages/shared/ProfilePage';
 
 // Public
 import LandingPage from './pages/public/LandingPage';
+import PublicLayout from './pages/public/PublicLayout';
 import ServicesPage from './pages/public/ServicesPage';
 import DocumentsPage from './pages/public/DocumentsPage';
-import ContactPage from './pages/public/ContactPage';
+import ContactPage, { ContactSuccessPage } from './pages/public/ContactPage';
 
 // Auth
 import LoginPage from './pages/auth/LoginPage';
@@ -101,17 +102,21 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
+        <Route element={<PublicLayout />}>
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/documents" element={<DocumentsPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/contact/success" element={<ContactSuccessPage />} />
+        </Route>
+
         <Route path="/" element={
           user?.role === 'student' ? <Navigate to="/student/dashboard" replace /> :
           user?.role === 'teacher' ? <Navigate to="/teacher/dashboard" replace /> :
           user?.role === 'reception' ? <Navigate to="/reception/teachers" replace /> :
           user?.role === 'manager' ? <Navigate to="/manager/dashboard" replace /> :
           user?.role === 'admin' ? <Navigate to="/admin/dashboard" replace /> :
-          <LandingPage />
+          <PublicLayout><LandingPage /></PublicLayout>
         } />
-        <Route path="/xizmatlar" element={<ServicesPage />} />
-        <Route path="/hujjatlar" element={<DocumentsPage />} />
-        <Route path="/aloqa" element={<ContactPage />} />
 
         {/* Student Routes */}
         <Route path="/student" element={<ProtectedRoute role="student"><MainLayout /></ProtectedRoute>}>

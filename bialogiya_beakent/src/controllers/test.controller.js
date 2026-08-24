@@ -1,15 +1,20 @@
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
+const { getCenterId } = require('../utils/centerScope');
+const { assertGroupAccess } = require('../utils/branchScope');
 
 const createTest = async (req, res, next) => {
   try {
     const { title, type, groupId, lessonId, timeLimit, passingScore, availableFrom, availableUntil, questions } = req.body;
     if (!title || !groupId) return error(res, 'Title and group required', 400);
+    const centerId = getCenterId(req) || null;
+    const groupAccess = await assertGroupAccess(groupId, req.user, prisma);
+    if (groupAccess.error) return error(res, groupAccess.error, groupAccess.status);
 
     const test = await prisma.test.create({
       data: {
         title, type: type || 'topic', groupId, lessonId: lessonId || null,
-        teacherId: req.user.userId, timeLimit: timeLimit || 30, passingScore: passingScore || 60,
+        teacherId: req.user.userId, centerId, timeLimit: timeLimit || 30, passingScore: passingScore || 60,
         availableFrom: availableFrom ? new Date(availableFrom) : null,
         availableUntil: availableUntil ? new Date(availableUntil) : null,
         questions: {
@@ -30,7 +35,7 @@ const createTest = async (req, res, next) => {
 const getTests = async (req, res, next) => {
   try {
     const { groupId } = req.query;
-    const where = { isActive: true };
+    const where = { isActive: true, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) };
     if (groupId) where.groupId = groupId;
     if (req.user.role === 'teacher') where.teacherId = req.user.userId;
     if (req.user.role === 'student') {
@@ -49,11 +54,13 @@ const getTests = async (req, res, next) => {
 
 const getTestById = async (req, res, next) => {
   try {
-    const test = await prisma.test.findUnique({
-      where: { id: req.params.id },
+    const test = await prisma.test.findFirst({
+      where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       include: { questions: req.user.role !== 'student', group: { select: { id: true, name: true } } },
     });
     if (!test) return error(res, 'Test not found', 404);
+    const groupAccess = await assertGroupAccess(test.groupId, req.user, prisma);
+    if (groupAccess.error) return error(res, groupAccess.error, groupAccess.status);
     if (req.user.role === 'student') {
       // Shuffle and hide correct answers
       const q = await prisma.question.findMany({ where: { testId: test.id }, select: { id: true, text: true, type: true, options: true, points: true } });
@@ -66,8 +73,10 @@ const getTestById = async (req, res, next) => {
 const submitTest = async (req, res, next) => {
   try {
     const { answers, timeTaken } = req.body;
-    const test = await prisma.test.findUnique({ where: { id: req.params.id }, include: { questions: true } });
+    const test = await prisma.test.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, include: { questions: true } });
     if (!test) return error(res, 'Test not found', 404);
+    const groupAccess = await assertGroupAccess(test.groupId, req.user, prisma);
+    if (groupAccess.error) return error(res, groupAccess.error, groupAccess.status);
 
     // Grade answers
     let score = 0;
@@ -86,7 +95,7 @@ const submitTest = async (req, res, next) => {
     const passed = percentage >= test.passingScore;
 
     const result = await prisma.result.create({
-      data: { testId: test.id, studentId: req.user.userId, answers: gradedAnswers, score, percentage, passed, timeTaken: timeTaken || 0 },
+      data: { testId: test.id, studentId: req.user.userId, centerId: test.centerId, answers: gradedAnswers, score, percentage, passed, timeTaken: timeTaken || 0 },
     });
 
     // Award XP
@@ -113,7 +122,12 @@ const submitTest = async (req, res, next) => {
 
 const getTestResults = async (req, res, next) => {
   try {
-    const where = { testId: req.params.id };
+    const test = await prisma.test.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { groupId: true, teacherId: true } });
+    if (!test) return error(res, 'Test not found', 404);
+    if (req.user.role === 'teacher' && test.teacherId !== req.user.userId) return error(res, 'Forbidden', 403);
+    const groupAccess = await assertGroupAccess(test.groupId, req.user, prisma);
+    if (groupAccess.error) return error(res, groupAccess.error, groupAccess.status);
+    const where = { testId: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) };
     if (req.user.role === 'student') where.studentId = req.user.userId;
     const results = await prisma.result.findMany({
       where, orderBy: { completedAt: 'desc' },
@@ -126,7 +140,7 @@ const getTestResults = async (req, res, next) => {
 const getMyResults = async (req, res, next) => {
   try {
     const results = await prisma.result.findMany({
-      where: { studentId: req.user.userId },
+      where: { studentId: req.user.userId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       orderBy: { completedAt: 'desc' },
       include: { test: { select: { id: true, title: true, type: true, totalPoints: true, passingScore: true } } },
     });
@@ -139,7 +153,7 @@ const getMyResults = async (req, res, next) => {
 const getTestAnalysis = async (req, res, next) => {
   try {
     const test = await prisma.test.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       include: { questions: true, group: { select: { id: true, name: true } } },
     });
     if (!test) return error(res, 'Test not found', 404);
@@ -225,7 +239,7 @@ const getTestAnalysis = async (req, res, next) => {
 
 const deleteTest = async (req, res, next) => {
   try {
-    const test = await prisma.test.findFirst({ where: { id: req.params.id, teacherId: req.user.userId } });
+    const test = await prisma.test.findFirst({ where: { id: req.params.id, ...(req.user.role === 'admin' ? {} : { centerId: req.user.centerId, teacherId: req.user.userId }) } });
     if (!test) return error(res, 'Test not found or unauthorized', 404);
     await prisma.question.deleteMany({ where: { testId: req.params.id } });
     await prisma.test.update({ where: { id: req.params.id }, data: { isActive: false } });

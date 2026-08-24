@@ -7,7 +7,7 @@ const { error } = require('../utils/apiResponse');
 // lesson/homework payload the person is already allowed to see).
 const getFile = async (req, res, next) => {
   try {
-    const file = await prisma.uploadedFile.findUnique({ where: { id: req.params.id } });
+    const file = await prisma.uploadedFile.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!file) return error(res, 'File not found', 404);
     res.set({
       'Content-Type': file.mimeType,

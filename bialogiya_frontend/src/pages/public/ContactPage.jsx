@@ -1,129 +1,19 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Phone, Mail, MapPin, MessageSquare, User, ArrowRight, Loader2, CheckCircle2, Send } from 'lucide-react';
+import { ArrowLeft, Check, Clock3, Mail, MapPin, Phone, Send } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../config/axios';
-import usePublicTheme from '../../hooks/usePublicTheme';
-import PublicShell from '../../components/public/PublicShell';
-import PublicNav from '../../components/public/PublicNav';
-import PublicFooter from '../../components/public/PublicFooter';
+import './public.css';
 
-const CONTACT_INFO = [
-  { icon: Phone, label: 'Telefon', value: '+998 90 123 45 67', href: 'tel:+998901234567' },
-  { icon: Mail, label: 'Email', value: 'info@abdora.ai', href: 'mailto:info@abdora.ai' },
-  { icon: MapPin, label: 'Manzil', value: 'Toshkent shahri, O\'zbekiston', href: null },
-];
+const contacts = [[Phone, 'Telefon', '+998 90 123 45 67'], [Mail, 'Email', 'info@abdora.ai'], [MapPin, 'Manzil', 'Toshkent, O‘zbekiston'], [Clock3, 'Ish vaqti', '24/7 — Har doim siz bilan']];
 
 export default function ContactPage() {
-  const [dark, setDark] = usePublicTheme();
-  const [form, setForm] = useState({ name: '', phone: '', message: '' });
-  const [status, setStatus] = useState('idle'); // idle | sending | sent | error
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [status, setStatus] = useState('idle');
+  const submit = async (event) => { event.preventDefault(); setStatus('sending'); try { await api.post('/applications', form); navigate('/contact/success'); } catch { setStatus('error'); } };
+  return <main className="public-container"><div className="public-page-heading"><span className="public-eyebrow">Aloqa</span><h1 className="public-title">Biz bilan bog‘laning</h1><p className="public-lede">Savollaringiz bormi yoki qo‘llab-quvvatlashga muhtojmisiz? Biz bilan bog‘laning.</p></div><div className="contact-grid"><div className="contact-info">{contacts.map(([Icon, title, value]) => <div className="public-card contact-card" key={title}><span className="service-icon"><Icon size={18} /></span><div><small>{title}</small><strong>{value}</strong></div></div>)}</div><form className="public-card contact-form public-form" onSubmit={submit}><div className="form-row"><label>Ism Familya<input className="public-field" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ismingiz" /></label><label>Email<input className="public-field" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" /></label></div><label>Telefon raqam<input className="public-field" type="tel" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+998 90 123 45 67" /></label><label>Xabar<textarea className="public-field" rows="5" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Xabaringizni yozing..." /></label><button className="public-button primary" disabled={status === 'sending'} type="submit"><Send size={15} />{status === 'sending' ? 'Yuborilmoqda...' : 'Xabar yuborish'}</button>{status === 'error' && <p className="form-error">Xatolik yuz berdi. Birozdan so‘ng qayta urinib ko‘ring.</p>}</form></div><style>{`.contact-grid{display:grid;grid-template-columns:.75fr 1.25fr;gap:18px;align-items:start}.contact-info{display:grid;gap:10px}.contact-card{padding:18px;display:flex;align-items:center;gap:14px}.contact-card .service-icon{flex:none;width:38px;height:38px;margin:0}.contact-card small,.contact-card strong{display:block}.contact-card small{color:var(--muted);font-size:11px;margin-bottom:5px}.contact-card strong{font-size:13px}.contact-form{padding:26px}.contact-form label{display:grid;gap:7px;color:var(--secondary);font-size:12px}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.contact-form .public-button{justify-content:center;border:0;cursor:pointer}.form-error{color:#dc5545;font-size:12px;text-align:center}@media(max-width:760px){.contact-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}`}</style></main>;
+}
 
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim() || !form.phone.trim()) return;
-    setStatus('sending');
-    try {
-      await api.post('/applications', form);
-      setStatus('sent');
-      setForm({ name: '', phone: '', message: '' });
-    } catch {
-      setStatus('error');
-    }
-  };
-
-  return (
-    <PublicShell dark={dark}>
-      <PublicNav dark={dark} setDark={setDark} />
-
-      <section className="relative z-10 max-w-6xl mx-auto px-6 pt-12 pb-16 md:pt-16">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mb-14">
-          <h1 className="display-font text-4xl sm:text-5xl font-semibold leading-[1.05] tracking-tight">
-            Biz bilan bog'laning
-          </h1>
-          <p className="text-[#2B1B10]/60 dark:text-white/60 text-lg mt-5 leading-relaxed">
-            Savolingiz bormi yoki markazingiz uchun demo ko'rishni xohlaysizmi? Quyidagi shakl orqali yozing —
-            jamoamiz tez orada siz bilan bog'lanadi.
-          </p>
-        </motion.div>
-
-        <div className="grid md:grid-cols-5 gap-8">
-          {/* Contact info */}
-          <div className="md:col-span-2 space-y-4">
-            {CONTACT_INFO.map((c, i) => {
-              const Icon = c.icon;
-              const Wrapper = c.href ? 'a' : 'div';
-              return (
-                <motion.div key={c.label} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  transition={{ delay: i * 0.06 }}>
-                  <Wrapper
-                    {...(c.href ? { href: c.href } : {})}
-                    className="flex items-center gap-4 abdora-milk border border-black/[0.06] dark:border-white/10 rounded-2xl p-5 hover:border-[#FF7A1A]/40 transition-colors"
-                  >
-                    <div className="w-11 h-11 abdora-gradient rounded-xl flex items-center justify-center text-white flex-shrink-0">
-                      <Icon size={18} />
-                    </div>
-                    <div>
-                      <div className="text-xs text-[#2B1B10]/40 dark:text-white/40">{c.label}</div>
-                      <div className="font-semibold text-sm mt-0.5">{c.value}</div>
-                    </div>
-                  </Wrapper>
-                </motion.div>
-              );
-            })}
-
-            <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="abdora-gradient rounded-2xl p-6 text-white abdora-glow">
-              <Send size={20} className="mb-3 opacity-90" />
-              <h3 className="font-semibold text-base mb-1.5">Tez javob olasiz</h3>
-              <p className="text-sm text-white/80 leading-relaxed">Odatda arizalarga bir ish kuni ichida javob beramiz.</p>
-            </motion.div>
-          </div>
-
-          {/* Form */}
-          <div className="md:col-span-3">
-            {status === 'sent' ? (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                className="bg-[#FF7A1A]/10 border border-[#FF7A1A]/25 rounded-3xl p-10 text-center h-full flex flex-col items-center justify-center">
-                <CheckCircle2 size={40} className="text-[#FF7A1A] mx-auto mb-4" />
-                <h3 className="font-semibold text-xl mb-1.5">Xabaringiz qabul qilindi!</h3>
-                <p className="text-[#2B1B10]/60 dark:text-white/60 text-sm">Tez orada siz bilan bog'lanamiz.</p>
-              </motion.div>
-            ) : (
-              <form onSubmit={submit} className="abdora-milk border border-black/[0.06] dark:border-white/10 rounded-3xl p-6 sm:p-8 space-y-4">
-                <div>
-                  <label className="text-xs font-medium text-[#2B1B10]/50 dark:text-white/50 mb-1.5 flex items-center gap-1.5"><User size={12} /> Ism-familiya *</label>
-                  <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="Ismingiz" required
-                    className="w-full bg-black/[0.03] dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-sm placeholder-[#2B1B10]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#FF7A1A]/60 transition-colors" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-[#2B1B10]/50 dark:text-white/50 mb-1.5 flex items-center gap-1.5"><Phone size={12} /> Telefon raqami *</label>
-                  <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                    placeholder="+998 90 123 45 67" required type="tel"
-                    className="w-full bg-black/[0.03] dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-sm placeholder-[#2B1B10]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#FF7A1A]/60 transition-colors" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-[#2B1B10]/50 dark:text-white/50 mb-1.5 flex items-center gap-1.5"><MessageSquare size={12} /> Xabar</label>
-                  <textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-                    placeholder="Savolingiz yoki markazingiz haqida qisqacha ma'lumot" rows={5}
-                    className="w-full bg-black/[0.03] dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-sm placeholder-[#2B1B10]/30 dark:placeholder-white/30 focus:outline-none focus:border-[#FF7A1A]/60 transition-colors resize-none" />
-                </div>
-                <button type="submit" disabled={status === 'sending'}
-                  className="w-full abdora-gradient rounded-xl py-3.5 font-semibold text-sm text-white flex items-center justify-center gap-2 abdora-glow hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {status === 'sending' ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-                  {status === 'sending' ? 'Yuborilmoqda...' : 'Xabarni yuborish'}
-                </button>
-                {status === 'error' && (
-                  <p className="text-xs text-red-500 dark:text-red-400 text-center">Xatolik yuz berdi. Birozdan so'ng qayta urinib ko'ring.</p>
-                )}
-              </form>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <PublicFooter />
-    </PublicShell>
-  );
+export function ContactSuccessPage() {
+  return <main className="public-container success-page"><div className="success-mark"><Check size={38} /></div><span className="public-eyebrow">Muvaffaqiyatli</span><h1 className="public-title">Xabaringiz qabul qilindi!</h1><p className="public-lede">Tez orada siz bilan bog‘lanamiz. Bizga ishonchingiz uchun rahmat!</p><a className="public-button primary" href="/"><ArrowLeft size={15} /> Bosh sahifaga qaytish</a><style>{`.success-page{text-align:center;display:flex;align-items:center;flex-direction:column;justify-content:center;min-height:650px}.success-page .public-title{font-size:clamp(2.2rem,5vw,4rem)}.success-page .public-lede{margin-bottom:28px}.success-mark{display:grid;place-items:center;width:82px;height:82px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--orange-2));color:#fff;box-shadow:0 0 0 12px rgba(255,120,0,.1),0 0 45px rgba(255,120,0,.3);margin-bottom:28px;animation:success-pop .55s ease both}@keyframes success-pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}`}</style></main>;
 }

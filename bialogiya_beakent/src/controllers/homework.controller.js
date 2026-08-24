@@ -1,11 +1,16 @@
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
 const { saveFilesAsAttachments } = require('../utils/fileStorage');
+const { getCenterId } = require('../utils/centerScope');
+const { assertGroupAccess } = require('../utils/branchScope');
 
 const createHomework = async (req, res, next) => {
   try {
     const { title, description, groupId, lessonId, dueDate, maxScore } = req.body;
     if (!title || !groupId || !dueDate) return error(res, 'Title, group and due date required', 400);
+    const centerId = getCenterId(req) || null;
+    const groupAccess = await assertGroupAccess(groupId, req.user, prisma);
+    if (groupAccess.error) return error(res, groupAccess.error, groupAccess.status);
 
     const attachments = await saveFilesAsAttachments(req.files);
 
@@ -18,7 +23,7 @@ const createHomework = async (req, res, next) => {
     }
 
     const hw = await prisma.homework.create({
-      data: { title, description, groupId, lessonId: lessonId || null, teacherId: req.user.userId, dueDate: new Date(dueDate), maxScore: parsedMaxScore, attachments },
+      data: { title, description, groupId, lessonId: lessonId || null, teacherId: req.user.userId, centerId, dueDate: new Date(dueDate), maxScore: parsedMaxScore, attachments },
       include: { group: { select: { id: true, name: true } }, teacher: { select: { id: true, name: true } } },
     });
     return success(res, hw, 'Homework created', 201);
@@ -28,8 +33,10 @@ const createHomework = async (req, res, next) => {
 const getHomeworkByGroup = async (req, res, next) => {
   try {
     const { groupId } = req.params;
+    const groupAccess = await assertGroupAccess(groupId, req.user, prisma);
+    if (groupAccess.error) return error(res, groupAccess.error, groupAccess.status);
     const hw = await prisma.homework.findMany({
-      where: { groupId, isActive: true },
+      where: { groupId, isActive: true, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       orderBy: { dueDate: 'asc' },
       include: { lesson: { select: { id: true, title: true } }, _count: { select: { submissions: true } } },
     });
@@ -40,7 +47,7 @@ const getHomeworkByGroup = async (req, res, next) => {
 const getTeacherHomework = async (req, res, next) => {
   try {
     const hw = await prisma.homework.findMany({
-      where: { teacherId: req.user.userId, isActive: true },
+      where: { teacherId: req.user.userId, isActive: true, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       orderBy: { createdAt: 'desc' },
       include: { group: { select: { id: true, name: true } }, _count: { select: { submissions: true } } },
     });
@@ -54,7 +61,7 @@ const getMyHomework = async (req, res, next) => {
     if (!user?.groupId) return success(res, []);
 
     const hw = await prisma.homework.findMany({
-      where: { groupId: user.groupId, isActive: true },
+      where: { groupId: user.groupId, isActive: true, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       orderBy: { dueDate: 'asc' },
       include: {
         lesson: { select: { id: true, title: true } },
@@ -67,11 +74,13 @@ const getMyHomework = async (req, res, next) => {
 
 const getHomeworkById = async (req, res, next) => {
   try {
-    const hw = await prisma.homework.findUnique({
-      where: { id: req.params.id },
+    const hw = await prisma.homework.findFirst({
+      where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       include: { group: { select: { id: true, name: true } }, teacher: { select: { id: true, name: true } } },
     });
     if (!hw) return error(res, 'Homework not found', 404);
+    const groupAccess = await assertGroupAccess(hw.groupId, req.user, prisma);
+    if (groupAccess.error) return error(res, groupAccess.error, groupAccess.status);
     return success(res, hw);
   } catch (err) { next(err); }
 };
@@ -81,8 +90,10 @@ const submitHomework = async (req, res, next) => {
     const { homeworkId } = req.params;
     const { answerText } = req.body;
 
-    const hw = await prisma.homework.findUnique({ where: { id: homeworkId } });
+    const hw = await prisma.homework.findFirst({ where: { id: homeworkId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!hw) return error(res, 'Homework not found', 404);
+    const groupAccess = await assertGroupAccess(hw.groupId, req.user, prisma);
+    if (groupAccess.error) return error(res, groupAccess.error, groupAccess.status);
 
     const filePaths = await saveFilesAsAttachments(req.files);
     const submittedAt = new Date();
@@ -100,7 +111,7 @@ const submitHomework = async (req, res, next) => {
       });
     } else {
       submission = await prisma.submission.create({
-        data: { homeworkId, studentId: req.user.userId, answerText, filePaths, isLate, submittedAt, status: 'submitted' },
+        data: { homeworkId, studentId: req.user.userId, centerId: hw.centerId, answerText, filePaths, isLate, submittedAt, status: 'submitted' },
       });
       // Award XP
       try {
@@ -127,8 +138,11 @@ const submitHomework = async (req, res, next) => {
 const getSubmissions = async (req, res, next) => {
   try {
     const { homeworkId } = req.params;
+    const hw = await prisma.homework.findFirst({ where: { id: homeworkId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { groupId: true, teacherId: true } });
+    if (!hw) return error(res, 'Homework not found', 404);
+    if (req.user.role === 'teacher' && hw.teacherId !== req.user.userId) return error(res, 'Forbidden', 403);
     const subs = await prisma.submission.findMany({
-      where: { homeworkId },
+      where: { homeworkId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       include: {
         student: { select: { id: true, name: true, username: true } },
         // dueDate lets the teacher UI show how long before/after the deadline
@@ -146,6 +160,9 @@ const gradeSubmission = async (req, res, next) => {
     const { id } = req.params;
     const { score, feedback } = req.body;
 
+    const existing = await prisma.submission.findFirst({ where: { id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, include: { homework: { select: { teacherId: true } } } });
+    if (!existing) return error(res, 'Submission not found', 404);
+    if (req.user.role === 'teacher' && existing.homework.teacherId !== req.user.userId) return error(res, 'Forbidden', 403);
     const sub = await prisma.submission.update({
       where: { id },
       data: { finalScore: score, teacherGrade: { score, feedback }, status: 'graded' },
@@ -159,6 +176,9 @@ const gradeSubmission = async (req, res, next) => {
 const updateHomework = async (req, res, next) => {
   try {
     const { title, description, dueDate, maxScore } = req.body;
+    const existing = await prisma.homework.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { teacherId: true } });
+    if (!existing) return error(res, 'Homework not found', 404);
+    if (req.user.role === 'teacher' && existing.teacherId !== req.user.userId) return error(res, 'Forbidden', 403);
     const hw = await prisma.homework.update({
       where: { id: req.params.id },
       data: {
@@ -175,6 +195,9 @@ const updateHomework = async (req, res, next) => {
 
 const deleteHomework = async (req, res, next) => {
   try {
+    const existing = await prisma.homework.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { teacherId: true } });
+    if (!existing) return error(res, 'Homework not found', 404);
+    if (req.user.role === 'teacher' && existing.teacherId !== req.user.userId) return error(res, 'Forbidden', 403);
     await prisma.homework.update({ where: { id: req.params.id }, data: { isActive: false } });
     return success(res, null, 'Homework deleted');
   } catch (err) { next(err); }

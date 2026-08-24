@@ -20,6 +20,7 @@ const uploadResource = async (req, res, next) => {
         type,
         groupId: groupId || null,
         teacherId: req.user.userId,
+        centerId: req.user.centerId,
       },
       select: {
         id: true, title: true, description: true, filePath: true, fileUrl: true,
@@ -34,7 +35,7 @@ const uploadResource = async (req, res, next) => {
 const getResources = async (req, res, next) => {
   try {
     const { groupId } = req.query;
-    const where = { isActive: true };
+    const where = { isActive: true, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) };
     if (groupId) where.groupId = groupId;
     else if (req.user.role === 'teacher') where.teacherId = req.user.userId;
     const resources = await prisma.resource.findMany({
@@ -52,7 +53,7 @@ const getResources = async (req, res, next) => {
 
 const previewResource = async (req, res, next) => {
   try {
-    const resource = await prisma.resource.findUnique({ where: { id: req.params.id } });
+    const resource = await prisma.resource.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!resource) return error(res, 'Not found', 404);
     if (!resource.fileData) return error(res, 'File data unavailable — re-upload this resource', 404);
     res.set('Content-Type', resource.mimeType || 'application/octet-stream');
@@ -63,7 +64,7 @@ const previewResource = async (req, res, next) => {
 
 const downloadResource = async (req, res, next) => {
   try {
-    const resource = await prisma.resource.findUnique({ where: { id: req.params.id } });
+    const resource = await prisma.resource.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!resource) return error(res, 'Not found', 404);
     if (!resource.fileData) return error(res, 'File data unavailable — re-upload this resource', 404);
     await prisma.resource.update({ where: { id: resource.id }, data: { downloads: { increment: 1 } } });

@@ -21,11 +21,11 @@ const getGroupPayments = async (req, res, next) => {
     const access = await assertGroupAccess(groupId, req.user, prisma);
     if (access.error) return error(res, access.error, access.status);
 
-    const group = await prisma.group.findUnique({ where: { id: groupId }, select: { monthlyFee: true, name: true } });
+    const group = await prisma.group.findFirst({ where: { id: groupId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { monthlyFee: true, name: true } });
     if (!group) return error(res, 'Group not found', 404);
 
     const students = await prisma.user.findMany({
-      where: { groupId, role: 'student', isActive: true },
+      where: { groupId, role: 'student', isActive: true, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       select: { id: true, name: true, username: true, phone: true, isFrozen: true },
       orderBy: { name: 'asc' },
     });
@@ -81,7 +81,7 @@ const markPayment = async (req, res, next) => {
     if (!studentId || !month) return error(res, 'studentId and month required', 400);
 
     const student = await prisma.user.findUnique({
-      where: { id: studentId },
+      where: { id: studentId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       select: { id: true, isActive: true, role: true, teacherId: true, group: { select: { monthlyFee: true, branchId: true } } },
     });
     if (!student || student.role !== 'student' || !student.isActive) return error(res, 'Student not found or inactive', 404);
@@ -123,6 +123,7 @@ const markPayment = async (req, res, next) => {
       method: method || 'cash',
       note: note?.trim() || null,
       branchId: student.group?.branchId || null,
+      centerId: req.user.centerId,
       paidAt: new Date(),
     };
 
@@ -152,6 +153,7 @@ const getDebtors = async (req, res, next) => {
         isActive: true,
         isFrozen: false,
         group: { is: { isActive: true, ...branchScope } },
+        ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}),
       },
       select: {
         id: true, name: true, username: true, phone: true,
@@ -198,7 +200,7 @@ const getDebtors = async (req, res, next) => {
 const removePayment = async (req, res, next) => {
   try {
     const { studentId, month } = req.params;
-    const student = await prisma.user.findUnique({ where: { id: studentId }, select: { role: true, teacherId: true, group: { select: { branchId: true } } } });
+    const student = await prisma.user.findFirst({ where: { id: studentId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { role: true, teacherId: true, group: { select: { branchId: true } } } });
     if (!student || student.role !== 'student') return error(res, 'Student not found', 404);
     const ownBranchIds = await getOwnBranchIds(req.user);
     if (req.user.role === 'teacher' && student.teacherId !== req.user.userId) return error(res, 'Forbidden', 403);

@@ -13,11 +13,11 @@ const verifyToken = async (req, res, next) => {
     const decoded = verifyAccessToken(token);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, role: true, branchId: true, isActive: true, isFrozen: true },
+      select: { id: true, role: true, centerId: true, branchId: true, isActive: true, isFrozen: true },
     });
     if (!user || !user.isActive) return error(res, 'Account is inactive', 403);
     if (user.isFrozen && user.role === 'student') return error(res, 'Hisobingiz muzlatilgan', 403);
-    req.user = { ...decoded, role: user.role, branchId: user.branchId };
+    req.user = { ...decoded, role: user.role, centerId: user.centerId, branchId: user.branchId };
     next();
   } catch (err) {
     return error(res, 'Invalid or expired token', 401);

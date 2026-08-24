@@ -6,6 +6,7 @@ import './index.css';
 import './config/i18n';
 import App from './App.jsx';
 import { useThemeStore } from './store/themeStore';
+import { useAuthStore } from './store/authStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,10 +20,15 @@ const queryClient = new QueryClient({
 
 export function Root() {
   const { theme, init } = useThemeStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     init();
   }, [init, theme]);
+
+  useEffect(() => {
+    queryClient.clear();
+  }, [queryClient, isAuthenticated, user?.centerId]);
 
   return (
     <QueryClientProvider client={queryClient}>

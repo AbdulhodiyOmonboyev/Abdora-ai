@@ -11,10 +11,16 @@ const { generateImage } = require('../services/ai/geminiImage.service');
 // getLessons for the same rule); this helper re-checks that on every AI-media
 // endpoint since they're fetched directly by lesson id.
 const assertLessonAccess = async (lesson, user) => {
-  if (user.role === 'admin' || user.role === 'teacher') return true;
-  const student = await prisma.user.findUnique({ where: { id: user.userId }, select: { groupId: true } });
-  return !!student?.groupId && student.groupId === lesson.groupId;
+  if (user.role === 'admin') return true;
+  if (user.role === 'teacher') return lesson.teacherId === user.userId;
+  const student = await prisma.user.findUnique({ where: { id: user.userId }, select: { groupId: true, centerId: true } });
+  return !!student?.groupId && student.groupId === lesson.groupId && student.centerId === lesson.centerId;
 };
+
+const findAccessibleLesson = (lessonId, user, select) => prisma.lesson.findFirst({
+  where: { id: lessonId, ...(user.role !== 'admin' ? { centerId: user.centerId } : {}) },
+  select,
+});
 
 const streamAudioBuffer = (res, buffer, mimeType) => {
   res.set({
@@ -45,7 +51,7 @@ const synthesizeForLesson = async (teacherId, text) => {
 // "storyMode" text, generated once and cached in LessonMedia after that.
 const getStoryAudio = async (req, res, next) => {
   try {
-    const lesson = await prisma.lesson.findUnique({ where: { id: req.params.id } });
+    const lesson = await prisma.lesson.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!lesson) return error(res, 'Lesson not found', 404);
     if (!(await assertLessonAccess(lesson, req.user))) return error(res, 'Forbidden', 403);
 
@@ -71,7 +77,7 @@ const getStoryAudio = async (req, res, next) => {
 // the Uzbek pronunciation is consistent and good quality.
 const getVoiceAudio = async (req, res, next) => {
   try {
-    const lesson = await prisma.lesson.findUnique({ where: { id: req.params.id } });
+    const lesson = await prisma.lesson.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!lesson) return error(res, 'Lesson not found', 404);
     if (!(await assertLessonAccess(lesson, req.user))) return error(res, 'Forbidden', 403);
 
@@ -96,7 +102,7 @@ const getVoiceAudio = async (req, res, next) => {
 // lazily per-slide the first time it's played (see getExplainerSlideAudio).
 const generateExplainerVideo = async (req, res, next) => {
   try {
-    const lesson = await prisma.lesson.findUnique({ where: { id: req.params.id } });
+    const lesson = await prisma.lesson.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!lesson) return error(res, 'Lesson not found', 404);
     if (!(await assertLessonAccess(lesson, req.user))) return error(res, 'Forbidden', 403);
 
@@ -115,7 +121,7 @@ const generateExplainerVideo = async (req, res, next) => {
 // GET /api/lessons/:id/ai/explainer-video - returns the cached slide script
 const getExplainerVideo = async (req, res, next) => {
   try {
-    const lesson = await prisma.lesson.findUnique({ where: { id: req.params.id }, select: { groupId: true, aiContent: true } });
+    const lesson = await prisma.lesson.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { groupId: true, aiContent: true } });
     if (!lesson) return error(res, 'Lesson not found', 404);
     if (!(await assertLessonAccess(lesson, req.user))) return error(res, 'Forbidden', 403);
 
@@ -130,7 +136,7 @@ const getExplainerSlideAudio = async (req, res, next) => {
     const slideIndex = parseInt(req.params.slideIndex, 10);
     if (Number.isNaN(slideIndex)) return error(res, 'Invalid slide index', 400);
 
-    const lesson = await prisma.lesson.findUnique({ where: { id: req.params.id } });
+    const lesson = await prisma.lesson.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!lesson) return error(res, 'Lesson not found', 404);
     if (!(await assertLessonAccess(lesson, req.user))) return error(res, 'Forbidden', 403);
 
@@ -158,7 +164,7 @@ const getExplainerSlideImage = async (req, res, next) => {
     const slideIndex = parseInt(req.params.slideIndex, 10);
     if (Number.isNaN(slideIndex)) return error(res, 'Invalid slide index', 400);
 
-    const lesson = await prisma.lesson.findUnique({ where: { id: req.params.id } });
+    const lesson = await prisma.lesson.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!lesson) return error(res, 'Lesson not found', 404);
     if (!(await assertLessonAccess(lesson, req.user))) return error(res, 'Forbidden', 403);
 
@@ -185,8 +191,9 @@ const chatMessage = async (req, res, next) => {
     const { message, style, language } = req.body;
     if (!message) return error(res, 'Message required', 400);
 
-    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId }, select: { id: true, title: true, content: true } });
+    const lesson = await findAccessibleLesson(lessonId, req.user, { id: true, title: true, content: true, groupId: true, teacherId: true, centerId: true });
     if (!lesson) return error(res, 'Lesson not found', 404);
+    if (!(await assertLessonAccess(lesson, req.user))) return error(res, 'Forbidden', 403);
 
     let chat = await prisma.aIChat.findUnique({
       where: { lessonId_studentId: { lessonId, studentId: req.user.userId } },
@@ -201,7 +208,7 @@ const chatMessage = async (req, res, next) => {
     if (chat) {
       chat = await prisma.aIChat.update({ where: { id: chat.id }, data: { messages, style: style || chat.style, language: language || chat.language } });
     } else {
-      chat = await prisma.aIChat.create({ data: { lessonId, studentId: req.user.userId, messages, style: style || 'normal', language: language || 'uz' } });
+      chat = await prisma.aIChat.create({ data: { lessonId, studentId: req.user.userId, centerId: lesson.centerId, messages, style: style || 'normal', language: language || 'uz' } });
     }
 
     return success(res, { reply: aiReply, chatId: chat.id });
@@ -211,6 +218,9 @@ const chatMessage = async (req, res, next) => {
 const getChatHistory = async (req, res, next) => {
   try {
     const { lessonId } = req.params;
+    const lesson = await findAccessibleLesson(lessonId, req.user, { groupId: true, teacherId: true, centerId: true });
+    if (!lesson) return error(res, 'Lesson not found', 404);
+    if (!(await assertLessonAccess(lesson, req.user))) return error(res, 'Forbidden', 403);
     const chat = await prisma.aIChat.findUnique({
       where: { lessonId_studentId: { lessonId, studentId: req.user.userId } },
     });
@@ -220,8 +230,9 @@ const getChatHistory = async (req, res, next) => {
 
 const generateQuizForLesson = async (req, res, next) => {
   try {
-    const lesson = await prisma.lesson.findUnique({ where: { id: req.params.lessonId } });
+    const lesson = await findAccessibleLesson(req.params.lessonId, req.user, { id: true, title: true, content: true, groupId: true, teacherId: true, centerId: true });
     if (!lesson) return error(res, 'Lesson not found', 404);
+    if (!(await assertLessonAccess(lesson, req.user))) return error(res, 'Forbidden', 403);
     const { difficulty } = req.query;
     const quiz = await generateQuiz(lesson.title, lesson.content || '', difficulty || 'medium');
     return success(res, quiz);

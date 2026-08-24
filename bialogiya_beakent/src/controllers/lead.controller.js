@@ -7,7 +7,7 @@ const SOURCES = ['instagram', 'telegram', 'referral', 'walkin', 'landing', 'othe
 const CLOSED_STATUSES = ['archived', 'lost'];
 
 // Managers only see leads in the branches they run; admin sees everything.
-const scopeFor = (user) => (user.role === 'manager' ? { managerId: user.userId } : {});
+const scopeFor = (user) => ({ ...(user.role !== 'admin' ? { centerId: user.centerId } : {}), ...(user.role === 'manager' ? { managerId: user.userId } : {}) });
 
 const startOfWeek = (now = new Date()) => {
   const d = new Date(now);
@@ -35,6 +35,7 @@ const createLead = async (req, res, next) => {
         note: note?.trim() || null,
         branchId: branchId || null,
         managerId: req.user.role === 'manager' ? req.user.userId : null,
+        centerId: req.user.centerId,
       },
       include: { branch: { select: { id: true, name: true } } },
     });
@@ -106,7 +107,7 @@ const updateLead = async (req, res, next) => {
   try {
     const { name, phone, source, status, interestedIn, note, branchId, frozenUntil, closeReason } = req.body;
 
-    const existing = await prisma.lead.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.lead.findFirst({ where: { id: req.params.id, ...scopeFor(req.user) } });
     if (!existing) return error(res, 'Lid topilmadi', 404);
     if (req.user.role === 'manager' && existing.managerId && existing.managerId !== req.user.userId) {
       return error(res, 'Bu lid sizga tegishli emas', 403);
@@ -140,7 +141,7 @@ const updateLead = async (req, res, next) => {
 
 const deleteLead = async (req, res, next) => {
   try {
-    const existing = await prisma.lead.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.lead.findFirst({ where: { id: req.params.id, ...scopeFor(req.user) } });
     if (!existing) return error(res, 'Lid topilmadi', 404);
     if (req.user.role === 'manager' && existing.managerId && existing.managerId !== req.user.userId) {
       return error(res, 'Bu lid sizga tegishli emas', 403);

@@ -40,7 +40,7 @@ const login = async (req, res, next) => {
       select: { paidAt: true },
     });
 
-    const { accessToken, refreshToken } = generateTokens(user.id, user.role);
+    const { accessToken, refreshToken } = generateTokens(user.id, user.role, user.centerId);
     const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
 
     await prisma.user.update({
@@ -73,7 +73,7 @@ const refresh = async (req, res, next) => {
     const isValid = await bcrypt.compare(refreshToken, user.refreshTokenHash);
     if (!isValid) return error(res, 'Invalid token', 401);
 
-    const tokens = generateTokens(user.id, user.role);
+    const tokens = generateTokens(user.id, user.role, user.centerId);
     const newHash = await bcrypt.hash(tokens.refreshToken, 10);
     await prisma.user.update({ where: { id: user.id }, data: { refreshTokenHash: newHash } });
 
@@ -97,7 +97,7 @@ const getMe = async (req, res, next) => {
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
       select: {
-        id: true, name: true, username: true, email: true, phone: true, role: true, maxBranches: true, branchId: true,
+        id: true, name: true, username: true, email: true, phone: true, role: true, centerId: true, maxBranches: true, branchId: true,
         studyLocation: true, residence: true, alternativeWorkplace: true, birthDate: true,
         avatar: true, language: true, xp: true, coins: true, level: true,
         streakCurrent: true, streakLongest: true, streakLastDate: true,

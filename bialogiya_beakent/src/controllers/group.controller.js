@@ -1,13 +1,14 @@
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
 const { getOwnBranchIds } = require('../utils/branchScope');
+const { getCenterId } = require('../utils/centerScope');
 
 // Reception may only touch groups that belong to one of their own branches
 // (a group with no branch at all is admin-only territory). Returns an error
 // object {message, status} or null if access is fine.
 const assertGroupAccess = async (groupId, user) => {
   if (user.role === 'admin') return null;
-  const group = await prisma.group.findUnique({ where: { id: groupId }, select: { branchId: true } });
+  const group = await prisma.group.findFirst({ where: { id: groupId, ...(user.role !== 'admin' ? { centerId: user.centerId } : {}) }, select: { branchId: true, centerId: true } });
   if (!group) return { message: 'Guruh topilmadi', status: 404 };
   if (!group.branchId) return { message: "Ruxsat yo'q", status: 403 };
   if (user.role === 'teacher') {
@@ -28,6 +29,7 @@ const createGroup = async (req, res, next) => {
 
     const assignedTeacherId = req.user.role === 'teacher' ? req.user.userId : teacherId;
     if (!assignedTeacherId) return error(res, 'teacherId required', 400);
+    const centerId = getCenterId(req) || req.body.centerId || null;
 
     const ownBranchIds = await getOwnBranchIds(req.user);
     if (ownBranchIds) {
@@ -38,10 +40,10 @@ const createGroup = async (req, res, next) => {
     }
 
     if (branchId) {
-      const branch = await prisma.branch.findUnique({ where: { id: branchId } });
+      const branch = await prisma.branch.findFirst({ where: { id: branchId, ...(centerId ? { centerId } : {}) } });
       if (!branch) return error(res, 'Branch not found', 404);
     }
-    const teacher = await prisma.user.findFirst({ where: { id: assignedTeacherId, role: 'teacher' }, select: { id: true, branchId: true } });
+    const teacher = await prisma.user.findFirst({ where: { id: assignedTeacherId, role: 'teacher', ...(centerId ? { centerId } : {}) }, select: { id: true, branchId: true } });
     if (!teacher) return error(res, 'Teacher not found', 404);
     if (ownBranchIds && teacher.branchId && !ownBranchIds.includes(teacher.branchId)) return error(res, 'Forbidden', 403);
 
@@ -53,6 +55,7 @@ const createGroup = async (req, res, next) => {
       data: {
         name, description, subject: subject || 'other', icon, color,
         teacherId: assignedTeacherId,
+        centerId,
         branchId: branchId || null,
         monthlyFee: monthlyFee ? parseInt(monthlyFee, 10) : null,
         weekDays: weekDays ? JSON.stringify(weekDays) : null,
@@ -89,6 +92,7 @@ const getAllGroups = async (req, res, next) => {
     let where = {};
     if (req.user.role === 'teacher') where = { teacherId: req.user.userId };
     else if (req.user.role === 'reception') where = { branch: { receptionId: req.user.userId } };
+    if (req.user.role !== 'admin') where = { ...where, centerId: req.user.centerId };
     const groups = await prisma.group.findMany({
       where: { ...where, isActive: true },
       include: { teacher: { select: { id: true, name: true } }, branch: { select: { id: true, name: true } }, students: { select: { id: true, name: true } } },
@@ -129,7 +133,7 @@ const buildProgress = async (group) => {
 const getGroupById = async (req, res, next) => {
   try {
     const group = await prisma.group.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       include: {
         teacher: { select: { id: true, name: true, phone: true } },
         branch: { select: { id: true, name: true } },
@@ -167,12 +171,12 @@ const updateGroup = async (req, res, next) => {
     // If reception is reassigning the group to a different branch, that
     // branch must also be one of theirs.
     if (branchId) {
-      const branch = await prisma.branch.findUnique({ where: { id: branchId } });
+      const branch = await prisma.branch.findFirst({ where: { id: branchId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
       const ownBranchIds = await getOwnBranchIds(req.user);
       if (!branch || (ownBranchIds && !ownBranchIds.includes(branchId))) return error(res, 'Forbidden: not your branch', 403);
     }
     if (teacherId && req.user.role !== 'admin') {
-      const teacher = await prisma.user.findFirst({ where: { id: teacherId, role: 'teacher' }, select: { branchId: true } });
+      const teacher = await prisma.user.findFirst({ where: { id: teacherId, role: 'teacher', ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { branchId: true } });
       const ownBranchIds = await getOwnBranchIds(req.user);
       if (!teacher || (ownBranchIds && !ownBranchIds.includes(teacher.branchId)) || (branchId && teacher.branchId !== branchId)) return error(res, 'Forbidden', 403);
     }
@@ -214,9 +218,9 @@ const addStudentToGroup = async (req, res, next) => {
 
     const { studentId } = req.body;
     if (!studentId) return error(res, 'studentId required', 400);
-    const student = await prisma.user.findFirst({ where: { id: studentId, role: 'student' }, select: { id: true, group: { select: { branchId: true } } } });
+    const student = await prisma.user.findFirst({ where: { id: studentId, role: 'student', ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { id: true, group: { select: { branchId: true } } } });
     if (!student) return error(res, 'Student not found', 404);
-    const group = await prisma.group.findUnique({ where: { id: req.params.id }, select: { branchId: true } });
+    const group = await prisma.group.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { branchId: true } });
     if (req.user.role !== 'admin' && student.group?.branchId && student.group.branchId !== group.branchId) return error(res, 'Forbidden', 403);
     await prisma.user.update({ where: { id: studentId }, data: { groupId: req.params.id } });
     return success(res, null, 'Student added');

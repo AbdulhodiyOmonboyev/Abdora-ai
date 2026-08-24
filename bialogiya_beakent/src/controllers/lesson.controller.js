@@ -2,11 +2,27 @@ const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
 const { generateLessonAI, generateTestFromPDFText } = require('../services/ai/lessonAI.service');
 const { saveFilesAsAttachments } = require('../utils/fileStorage');
+const { getCenterId } = require('../utils/centerScope');
+
+const findAccessibleLesson = (id, user) => prisma.lesson.findFirst({
+  where: { id, ...(user.role !== 'admin' ? { centerId: user.centerId } : {}) },
+  select: { id: true, aiContent: true, aiEnabled: true, title: true, content: true, groupId: true, teacherId: true, centerId: true },
+});
+
+const canAccessLesson = async (lesson, user) => {
+  if (user.role === 'admin') return true;
+  if (user.role === 'teacher') return lesson.teacherId === user.userId;
+  const student = await prisma.user.findUnique({ where: { id: user.userId }, select: { groupId: true, centerId: true } });
+  return student?.groupId === lesson.groupId && student.centerId === lesson.centerId;
+};
 
 const createLesson = async (req, res, next) => {
   try {
     const { title, content, groupId, subject, aiEnabled } = req.body;
     if (!title || !groupId) return error(res, 'Title and group required', 400);
+    const centerId = getCenterId(req) || req.body.centerId || null;
+    const group = await prisma.group.findFirst({ where: { id: groupId, ...(centerId ? { centerId } : {}) }, select: { id: true } });
+    if (!group) return error(res, 'Group not found', 404);
 
     const attachments = await saveFilesAsAttachments(req.files);
     // multipart/form-data sends booleans as strings.
@@ -15,7 +31,7 @@ const createLesson = async (req, res, next) => {
     const lesson = await prisma.lesson.create({
       data: {
         title, content, subject: subject || 'other', groupId,
-        teacherId: req.user.userId, attachments, aiEnabled: wantsAI,
+        teacherId: req.user.userId, centerId, attachments, aiEnabled: wantsAI,
         aiContent: wantsAI ? { status: 'pending' } : { status: 'disabled' },
       },
       include: { group: { select: { id: true, name: true } }, teacher: { select: { id: true, name: true } } },
@@ -32,7 +48,7 @@ const createLesson = async (req, res, next) => {
 const getLessons = async (req, res, next) => {
   try {
     const { groupId } = req.query;
-    const where = { isActive: true };
+    const where = { isActive: true, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) };
     if (groupId) where.groupId = groupId;
     if (req.user.role === 'teacher') where.teacherId = req.user.userId;
     if (req.user.role === 'student') {
@@ -49,8 +65,8 @@ const getLessons = async (req, res, next) => {
 
 const getLessonById = async (req, res, next) => {
   try {
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: req.params.id },
+    const lesson = await prisma.lesson.findFirst({
+      where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       include: { teacher: { select: { id: true, name: true } }, group: { select: { id: true, name: true } } },
     });
     if (!lesson) return error(res, 'Lesson not found', 404);
@@ -72,8 +88,8 @@ const updateLesson = async (req, res, next) => {
   try {
     const { title, content, subject, order, groupId, aiEnabled } = req.body;
 
-    const existing = await prisma.lesson.findUnique({
-      where: { id: req.params.id },
+    const existing = await prisma.lesson.findFirst({
+      where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       select: { attachments: true, aiEnabled: true },
     });
     if (!existing) return error(res, 'Lesson not found', 404);
@@ -106,8 +122,8 @@ const updateLesson = async (req, res, next) => {
 // DELETE /lessons/:id/attachments/:attachmentId — remove one attachment.
 const removeAttachment = async (req, res, next) => {
   try {
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: req.params.id },
+    const lesson = await prisma.lesson.findFirst({
+      where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       select: { attachments: true, teacherId: true },
     });
     if (!lesson) return error(res, 'Lesson not found', 404);
@@ -135,16 +151,18 @@ const deleteLesson = async (req, res, next) => {
 
 const getAIContent = async (req, res, next) => {
   try {
-    const lesson = await prisma.lesson.findUnique({ where: { id: req.params.id }, select: { aiContent: true } });
+    const lesson = await findAccessibleLesson(req.params.id, req.user);
     if (!lesson) return error(res, 'Lesson not found', 404);
+    if (!(await canAccessLesson(lesson, req.user))) return error(res, 'Forbidden', 403);
     return success(res, lesson.aiContent);
   } catch (err) { next(err); }
 };
 
 const regenerateAI = async (req, res, next) => {
   try {
-    const lesson = await prisma.lesson.findUnique({ where: { id: req.params.id } });
+    const lesson = await findAccessibleLesson(req.params.id, req.user);
     if (!lesson) return error(res, 'Not found', 404);
+    if (!(await canAccessLesson(lesson, req.user))) return error(res, 'Forbidden', 403);
     if (!lesson.aiEnabled) return error(res, 'Bu dars uchun AI o\'chirilgan', 400);
     await prisma.lesson.update({ where: { id: lesson.id }, data: { aiContent: { status: 'generating' } } });
     setImmediate(() => generateLessonAI(lesson.id, lesson.title, lesson.content || '').catch(console.error));
@@ -208,10 +226,8 @@ const populateTestWithAI = async (testId, pdfText, groupId, teacherId, testTitle
       options: q.options || [],
       difficulty: q.difficulty || 'medium',
       points: q.points || 1,
-      // Prefer `studentExplanation` (detailed step-by-step); fall back to `explanation`.
       explanation: q.studentExplanation || q.explanation || '',
     }));
-
     if (questions.length === 0) {
       await prisma.test.update({
         where: { id: testId },
@@ -265,9 +281,17 @@ const generateTestFromPDF = async (req, res, next) => {
       type: 'topic',
       groupId,
       teacherId: req.user.userId,
+      centerId: getCenterId(req) || null,
       timeLimit: parseInt(timeLimit, 10) || 30,
       passingScore: parseInt(passingScore, 10) || 60,
     };
+
+    const group = await prisma.group.findFirst({
+      where: { id: groupId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId, teacherId: req.user.userId } : {}) },
+      select: { id: true, centerId: true },
+    });
+    if (!group) return error(res, 'Group not found', 404);
+    baseData.centerId = group.centerId || baseData.centerId;
 
     // "AI aralashmasin" — import the questions exactly as the teacher wrote them.
     if (!aiEnabled) {

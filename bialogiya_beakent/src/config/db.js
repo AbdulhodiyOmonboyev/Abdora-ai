@@ -6,6 +6,48 @@ const prisma = new PrismaClient({
 
 const runMigrations = async () => {
   try {
+    // Tenant foundation. Columns stay nullable during rollout so this remains
+    // safe against databases containing legacy rows; all new API writes set the
+    // authenticated user's center explicitly.
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Center" (
+        "id" TEXT NOT NULL,
+        "name" TEXT NOT NULL,
+        "address" TEXT,
+        "phone" TEXT,
+        "isActive" BOOLEAN NOT NULL DEFAULT true,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "Center_pkey" PRIMARY KEY ("id")
+      )
+    `);
+    const tenantTables = ['User', 'Branch', 'Group', 'Lesson', 'Homework', 'Submission', 'Test', 'Result', 'Attendance', 'Notification', 'AIChat', 'UploadedFile', 'Resource', 'Payment', 'Lead', 'Expense'];
+    for (const table of tenantTables) {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+      await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "${table}_centerId_idx" ON "${table}" ("centerId")`);
+    }
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO "Center" ("id", "name")
+      SELECT 'legacy-center', 'Legacy Center'
+      WHERE NOT EXISTS (SELECT 1 FROM "Center")
+    `);
+    await prisma.$executeRawUnsafe(`UPDATE "User" SET "centerId" = 'legacy-center' WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Branch" SET "centerId" = COALESCE((SELECT "centerId" FROM "User" WHERE "User"."id" = "Branch"."receptionId" OR "User"."id" = "Branch"."managerId" LIMIT 1), 'legacy-center') WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Group" SET "centerId" = COALESCE((SELECT "centerId" FROM "User" WHERE "User"."id" = "Group"."teacherId"), (SELECT "centerId" FROM "Branch" WHERE "Branch"."id" = "Group"."branchId"), 'legacy-center') WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Lesson" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Lesson"."groupId") WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Homework" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Homework"."groupId") WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Test" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Test"."groupId") WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Attendance" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Attendance"."groupId") WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Resource" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Resource"."teacherId") WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Payment" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Payment"."studentId") WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Lead" SET "centerId" = COALESCE((SELECT "centerId" FROM "Branch" WHERE "Branch"."id" = "Lead"."branchId"), (SELECT "centerId" FROM "User" WHERE "User"."id" = "Lead"."managerId"), 'legacy-center') WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Expense" SET "centerId" = COALESCE((SELECT "centerId" FROM "Branch" WHERE "Branch"."id" = "Expense"."branchId"), (SELECT "centerId" FROM "User" WHERE "User"."id" = "Expense"."createdById"), 'legacy-center') WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Submission" SET "centerId" = (SELECT "centerId" FROM "Homework" WHERE "Homework"."id" = "Submission"."homeworkId") WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Result" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Result"."studentId") WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Notification" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Notification"."userId") WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "AIChat" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "AIChat"."studentId") WHERE "centerId" IS NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "UploadedFile" SET "centerId" = 'legacy-center' WHERE "centerId" IS NULL`);
+
     // Add isFrozen to User if missing
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isFrozen" BOOLEAN NOT NULL DEFAULT false

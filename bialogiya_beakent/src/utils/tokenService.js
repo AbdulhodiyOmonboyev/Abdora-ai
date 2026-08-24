@@ -1,14 +1,14 @@
 const jwt = require('jsonwebtoken');
 
-const generateTokens = (userId, role) => {
+const generateTokens = (userId, role, centerId = null) => {
   const accessToken = jwt.sign(
-    { userId, role },
+    { userId, role, centerId },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' }
   );
 
   const refreshToken = jwt.sign(
-    { userId, role },
+    { userId, role, centerId },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES || '7d' }
   );

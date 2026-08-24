@@ -3,15 +3,17 @@ const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
 const { generateUsername, generatePassword, getPhoneCode } = require('../utils/generateCredentials');
 const { getOwnBranchIds } = require('../utils/branchScope');
+const { getCenterId } = require('../utils/centerScope');
 
 const targetBranchId = (user) => user.role === 'teacher' ? user.branchId : user.group?.branchId;
 
 const assertScopedUser = async (userId, reqUser, allowedRoles = null) => {
-  const target = await prisma.user.findUnique({
+  const target = await prisma.user.findFirst({
     where: { id: userId },
     include: { group: { select: { branchId: true } } },
   });
   if (!target) return { error: 'User not found', status: 404 };
+  if (reqUser.role !== 'admin' && target.centerId !== reqUser.centerId) return { error: 'Forbidden', status: 403 };
   if (allowedRoles && !allowedRoles.includes(target.role)) return { error: 'Forbidden', status: 403 };
   if (reqUser.role === 'teacher' && target.teacherId !== reqUser.userId) return { error: 'Forbidden', status: 403 };
   if (reqUser.role === 'admin') return { target };
@@ -33,10 +35,11 @@ const createStudent = async (req, res, next) => {
 
     let group = null;
     let teacherId = null;
+    const centerId = getCenterId(req) || req.body.centerId || null;
     let effectiveBranchId = branchId || null;
 
     if (groupId) {
-      group = await prisma.group.findUnique({ where: { id: groupId } });
+      group = await prisma.group.findFirst({ where: { id: groupId, ...(centerId ? { centerId } : {}) } });
       if (!group) return error(res, 'Group not found', 404);
 
       if (req.user.role !== 'admin') {
@@ -72,6 +75,7 @@ const createStudent = async (req, res, next) => {
         groupId: groupId || null,
         teacherId: teacherId || null,
         branchId: effectiveBranchId || null,
+        centerId,
         phone: phone || null,
       },
     });
@@ -93,8 +97,9 @@ const createTeacher = async (req, res, next) => {
 
     const passwordHash = await bcrypt.hash(code, 10);
 
+    const centerId = getCenterId(req) || req.body.centerId || null;
     const user = await prisma.user.create({
-      data: { name, email, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz' },
+      data: { name, email, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', centerId },
     });
 
     return success(res, { user: safeUser(user), credentials: { username, password: code } }, 'Teacher created', 201);
@@ -108,6 +113,7 @@ const createManager = async (req, res, next) => {
     if (age !== undefined && age !== null && Number.isNaN(Number(age))) return error(res, 'Age must be a number', 400);
 
     const code = generatePassword(phone, password);
+    const centerId = getCenterId(req) || req.body.centerId || null;
     let username = generateUsername(name, phone);
 
     const existing = await prisma.user.findUnique({ where: { username } });
@@ -115,7 +121,7 @@ const createManager = async (req, res, next) => {
 
     let branch = null;
     if (branchId) {
-      branch = await prisma.branch.findUnique({ where: { id: branchId } });
+      branch = await prisma.branch.findFirst({ where: { id: branchId, ...(centerId ? { centerId } : {}) } });
       if (!branch) return error(res, 'Branch not found', 404);
       if (branch.managerId) return error(res, 'Branch already assigned to another manager', 400);
     }
@@ -133,6 +139,7 @@ const createManager = async (req, res, next) => {
         username,
         passwordHash,
         role: 'manager',
+        centerId,
         language: language || 'uz',
         ...(branchId ? { managedBranches: { connect: { id: branchId } } } : {}),
       },
@@ -145,7 +152,7 @@ const createManager = async (req, res, next) => {
 const getStudentsByTeacher = async (req, res, next) => {
   try {
     const students = await prisma.user.findMany({
-      where: { teacherId: req.user.userId, role: 'student', isActive: true },
+      where: { teacherId: req.user.userId, role: 'student', isActive: true, ...(req.user.centerId ? { centerId: req.user.centerId } : {}) },
       include: { group: { select: { id: true, name: true } } },
       orderBy: { name: 'asc' },
     });
@@ -163,6 +170,7 @@ const getAllUsers = async (req, res, next) => {
     const perPage = Math.min(100, Math.max(10, Number(req.query.perPage) || 50));
 
     const where = {
+      ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}),
       ...(role ? { role } : {}),
       ...(search
         ? {
@@ -255,7 +263,7 @@ const updateUser = async (req, res, next) => {
     if (access.error) return error(res, access.error, access.status);
     const target = access.target;
     if (groupId && req.user.role !== 'admin') {
-      const group = await prisma.group.findUnique({ where: { id: groupId }, select: { branchId: true, teacherId: true } });
+      const group = await prisma.group.findFirst({ where: { id: groupId, centerId: req.user.centerId }, select: { branchId: true, teacherId: true } });
       const ownBranchIds = await getOwnBranchIds(req.user);
       if (!group || (group.branchId && !ownBranchIds?.includes(group.branchId)) || (req.user.role === 'teacher' && group.teacherId !== req.user.userId)) return error(res, 'Forbidden', 403);
     }
@@ -269,8 +277,8 @@ const updateUser = async (req, res, next) => {
 
 const deleteUser = async (req, res, next) => {
   try {
-    const target = await prisma.user.findUnique({
-      where: { id: req.params.id },
+    const target = await prisma.user.findFirst({
+      where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       select: { id: true, role: true, teacherId: true, branchId: true, group: { select: { branchId: true } } },
     });
     if (!target) return error(res, 'User not found', 404);
@@ -351,8 +359,8 @@ const getManagers = async (req, res, next) => {
 const updateManager = async (req, res, next) => {
   try {
     const { name, email, phone, gender, age, address } = req.body;
-    const manager = await prisma.user.findUnique({ where: { id: req.params.id } });
-    if (!manager || manager.role !== 'manager') return error(res, 'Manager not found', 404);
+    const manager = await prisma.user.findFirst({ where: { id: req.params.id, role: 'manager', ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
+    if (!manager) return error(res, 'Manager not found', 404);
 
     const updated = await prisma.user.update({
       where: { id: req.params.id },
@@ -372,7 +380,7 @@ const updateManager = async (req, res, next) => {
 
 const deleteManager = async (req, res, next) => {
   try {
-    const manager = await prisma.user.findUnique({ where: { id: req.params.id } });
+    const manager = await prisma.user.findFirst({ where: { id: req.params.id, role: 'manager', ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!manager || manager.role !== 'manager') return error(res, 'Manager not found', 404);
 
     await prisma.user.update({ where: { id: req.params.id }, data: { isActive: false } });

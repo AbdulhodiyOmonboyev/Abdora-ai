@@ -68,6 +68,10 @@ const createExpense = async (req, res, next) => {
       if (!scopedBranchId && ownBranchIds.length === 1) scopedBranchId = ownBranchIds[0];
       if (!scopedBranchId || !ownBranchIds.includes(scopedBranchId)) return error(res, 'Filial tanlanmagan yoki ruxsat yo\'q', 403);
     }
+    const branch = scopedBranchId
+      ? await prisma.branch.findFirst({ where: { id: scopedBranchId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { centerId: true } })
+      : null;
+    if (scopedBranchId && !branch) return error(res, 'Filial topilmadi', 404);
 
     const expense = await prisma.expense.create({
       data: {
@@ -78,6 +82,7 @@ const createExpense = async (req, res, next) => {
         note: note?.trim() || null,
         method: method || 'cash',
         branchId: scopedBranchId,
+        centerId: branch?.centerId || (req.user.role !== 'admin' ? req.user.centerId : null),
         createdById: req.user.userId,
       },
       include: { branch: { select: { id: true, name: true } } },
@@ -282,7 +287,7 @@ const setTeacherSalary = async (req, res, next) => {
       if (!Number.isFinite(n) || n < 0 || n > 100) return error(res, 'Foiz 0 va 100 orasida bo\'lishi kerak', 400);
     }
 
-    const teacher = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true, role: true, branchId: true } });
+    const teacher = await prisma.user.findFirst({ where: { id: req.params.id, role: 'teacher', ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { id: true, role: true, branchId: true } });
     if (!teacher || teacher.role !== 'teacher') return error(res, 'O\'qituvchi topilmadi', 404);
     const ownBranchIds = await getOwnBranchIds(req.user);
     if (ownBranchIds && (!teacher.branchId || !ownBranchIds.includes(teacher.branchId))) return error(res, 'Forbidden', 403);

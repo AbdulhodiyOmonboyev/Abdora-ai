@@ -11,6 +11,12 @@ const prisma = new PrismaClient();
 async function seed() {
   console.log('🌱 Seeding database...');
 
+  const center = await prisma.center.upsert({
+    where: { id: 'default-center' },
+    update: {},
+    create: { id: 'default-center', name: 'Abdora AI Center' },
+  });
+
   const adminExists = await prisma.user.findUnique({ where: { username: 'admin' } });
   if (adminExists) {
     console.log('✅ Admin account already exists (username: admin). Nothing to do.');
@@ -20,7 +26,7 @@ async function seed() {
   const adminHash = await bcrypt.hash('admin123', 12);
 
   await prisma.user.create({
-    data: { name: 'Super Admin', username: 'admin', email: 'admin@abdora.uz', passwordHash: adminHash, role: 'admin' },
+    data: { name: 'Super Admin', username: 'admin', email: 'admin@abdora.uz', passwordHash: adminHash, role: 'admin', centerId: center.id },
   });
 
   console.log('\n✅ Seed completed!');

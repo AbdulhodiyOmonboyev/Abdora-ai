@@ -15,6 +15,7 @@ const getOwnBranchIds = async (user) => {
 
     const branches = await prisma.branch.findMany({
       where: {
+        centerId: user.centerId,
         OR: [
           { receptionId: user.userId },
           ...(userBranchId ? [{ id: userBranchId }] : []),
@@ -29,6 +30,7 @@ const getOwnBranchIds = async (user) => {
 
     const branches = await prisma.branch.findMany({
       where: {
+        centerId: user.centerId,
         OR: [
           { managerId: user.userId },
           ...(userBranchId ? [{ id: userBranchId }] : []),
@@ -46,13 +48,21 @@ const getOwnBranchIds = async (user) => {
 };
 
 const assertGroupAccess = async (groupId, user, prisma) => {
-  const group = await prisma.group.findUnique({
-    where: { id: groupId },
-    select: { id: true, branchId: true, teacherId: true },
+  const group = await prisma.group.findFirst({
+    where: { id: groupId, ...(user.role !== 'admin' ? { centerId: user.centerId } : {}) },
+    select: { id: true, branchId: true, teacherId: true, centerId: true },
   });
   if (!group) return { error: 'Group not found', status: 404 };
   if (user.role === 'admin') return { group };
-  if (user.role === 'teacher' && group.teacherId !== user.userId) return { error: 'Forbidden', status: 403 };
+  if (user.role === 'teacher') {
+    if (group.teacherId !== user.userId) return { error: 'Forbidden', status: 403 };
+    return { group };
+  }
+  if (user.role === 'student') {
+    const student = await prisma.user.findUnique({ where: { id: user.userId }, select: { groupId: true } });
+    if (student?.groupId !== group.id) return { error: 'Forbidden', status: 403 };
+    return { group };
+  }
   const ownBranchIds = await getOwnBranchIds(user);
   if (!ownBranchIds?.includes(group.branchId)) return { error: 'Forbidden', status: 403 };
   return { group };
