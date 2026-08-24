@@ -319,8 +319,8 @@ export const themePresets = [
     values: {
       background: '#0B0F19',
       secondaryBackground: '#111722',
-      cardBackground: '#141A26',
-      surfaceColor: '#111722',
+      cardBackground: '#202733',
+      surfaceColor: '#171D28',
       primaryColor: '#F06413',
       secondaryColor: '#60A5FA',
       accentColor: '#EAB308',
