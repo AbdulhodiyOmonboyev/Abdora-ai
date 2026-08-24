@@ -234,6 +234,12 @@
   .dark .app-main .dark\:bg-gray-950 {
     background-color: color-mix(in srgb, var(--background) 82%, var(--card)) !important;
   }
+  .dark .app-main .card,
+  .dark .app-main [class~="card"] {
+    background-color: #202733 !important;
+    border-color: #303846 !important;
+    color: #F8FAFC;
+  }
   .dark .app-main .border-gray-100,
   .dark .app-main .border-gray-200,
   .dark .app-main .border-slate-200 {
