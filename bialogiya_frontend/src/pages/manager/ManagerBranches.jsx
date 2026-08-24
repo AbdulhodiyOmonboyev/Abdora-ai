@@ -26,7 +26,8 @@ export default function ManagerBranches() {
   const createMutation = useMutation({
     mutationFn: (data) => api.post('/admin/branches', data),
     onSuccess: () => {
-      qc.invalidateQueries(['manager-branches']);
+      qc.invalidateQueries({ queryKey: ['manager-branches'] });
+      qc.invalidateQueries({ queryKey: ['manager-stats'] });
       setShowCreate(false);
       setForm({ name: '', address: '', studentCapacity: '' });
       toast.success('Filial yaratildi');

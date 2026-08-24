@@ -14,21 +14,25 @@ const getStats = async (req, res, next) => {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const branchIds = await getOwnBranchIds(req.user);
 
-    let teacherScope = {};
-    let groupScope = {};
-    let studentScope = {};
-    let lessonScope = {};
-    let recentUserScope = {};
+    const isAdmin = req.user.role === 'admin';
+    const centerScope = !isAdmin ? { centerId: req.user.centerId } : {};
+    let teacherScope = centerScope;
+    let groupScope = centerScope;
+    let studentScope = centerScope;
+    let lessonScope = centerScope;
+    let recentUserScope = centerScope;
 
-    if (branchIds && branchIds.length > 0) {
-      teacherScope = { OR: [{ branchId: { in: branchIds } }, { branchId: null }] };
-      groupScope = { OR: [{ branchId: { in: branchIds } }, { branchId: null }] };
-      studentScope = { OR: [{ branchId: { in: branchIds } }, { group: { branchId: { in: branchIds } } }, { branchId: null }] };
-      lessonScope = { OR: [{ group: { branchId: { in: branchIds } } }, { group: { branchId: null } }] };
+    if (!isAdmin) {
+      const branchFilter = { branchId: { in: branchIds || [] } };
+      teacherScope = { ...centerScope, ...branchFilter };
+      groupScope = { ...centerScope, ...branchFilter };
+      studentScope = { ...centerScope, OR: [{ ...branchFilter }, { group: branchFilter }] };
+      lessonScope = { ...centerScope, group: branchFilter };
       recentUserScope = {
+        ...centerScope,
         OR: [
-          { role: 'teacher', OR: [{ branchId: { in: branchIds } }, { branchId: null }] },
-          { role: 'student', OR: [{ branchId: { in: branchIds } }, { group: { branchId: { in: branchIds } } }, { branchId: null }] }
+          { role: 'teacher', ...branchFilter },
+          { role: 'student', OR: [{ ...branchFilter }, { group: branchFilter }] }
         ]
       };
     }
@@ -103,12 +107,12 @@ const getTeachers = async (req, res, next) => {
       branchFilter = { branchId };
     } else if (ownBranchIds) {
       branchFilter = ownBranchIds.length > 0
-        ? { OR: [{ branchId: { in: ownBranchIds } }, { branchId: null }] }
-        : {};
+        ? { branchId: { in: ownBranchIds } }
+        : { branchId: { in: [] } };
     }
 
     const teachers = await prisma.user.findMany({
-      where: { role: 'teacher', ...(!showInactive && { isActive: true }), ...branchFilter },
+      where: { role: 'teacher', ...(!showInactive && { isActive: true }), ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}), ...branchFilter },
       select: {
         id: true, name: true, username: true, email: true, phone: true, branchId: true,
         isActive: true, createdAt: true, lastLogin: true,
@@ -127,6 +131,7 @@ const assertBranchAccess = async (branchId, user) => {
   if (!branchId) return user.role === 'manager' ? 'Branch is required' : null;
   const branch = await prisma.branch.findUnique({ where: { id: branchId } });
   if (!branch) return 'Branch not found';
+  if (user.role !== 'admin' && branch.centerId !== user.centerId) return 'Forbidden: not your center';
   if (user.role === 'reception' && branch.receptionId !== user.userId) return 'Forbidden: not your branch';
   if (user.role === 'manager' && branch.managerId !== user.userId) return 'Forbidden: not your branch';
   return null;
@@ -311,7 +316,7 @@ const getStudents = async (req, res, next) => {
     } else if (ownBranchIds) {
       branchFilter = ownBranchIds.length > 0
         ? { OR: [{ branchId: { in: ownBranchIds } }, { group: { branchId: { in: ownBranchIds } } }, { branchId: null }] }
-        : {};
+        : { branchId: { in: [] } };
     }
 
     const students = await prisma.user.findMany({
@@ -319,6 +324,7 @@ const getStudents = async (req, res, next) => {
         role: 'student',
         isActive: true,
         ...(groupId && { groupId }),
+        ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}),
         ...branchFilter,
       },
       select: {
@@ -337,7 +343,9 @@ const getGroups = async (req, res, next) => {
   try {
     const ownBranchIds = await getOwnBranchIds(req.user);
     const groups = await prisma.group.findMany({
-      where: ownBranchIds ? { branchId: { in: ownBranchIds } } : {},
+      where: ownBranchIds
+        ? { centerId: req.user.centerId, branchId: { in: ownBranchIds } }
+        : {},
       include: { teacher: { select: { id: true, name: true } }, _count: { select: { students: true, lessons: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -450,6 +458,7 @@ const createBranch = async (req, res, next) => {
 
     if (req.user.role === 'manager') {
       branchData.managerId = req.user.userId;
+      branchData.centerId = req.user.centerId;
     }
 
     const branch = await prisma.branch.create({
@@ -467,7 +476,7 @@ const createBranch = async (req, res, next) => {
 const updateBranch = async (req, res, next) => {
   try {
     const { name, address, receptionId, studentCapacity, latitude, longitude } = req.body;
-    const branch = await prisma.branch.findUnique({ where: { id: req.params.id } });
+    const branch = await prisma.branch.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!branch) return error(res, 'Branch not found', 404);
     if (req.user.role === 'manager' && branch.managerId !== req.user.userId) return error(res, 'Forbidden', 403);
 
@@ -492,7 +501,7 @@ const updateBranch = async (req, res, next) => {
 
 const deleteBranch = async (req, res, next) => {
   try {
-    const branch = await prisma.branch.findUnique({ where: { id: req.params.id } });
+    const branch = await prisma.branch.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
     if (!branch) return error(res, 'Branch not found', 404);
     if (req.user.role === 'manager' && branch.managerId !== req.user.userId) return error(res, 'Forbidden', 403);
 
@@ -507,7 +516,7 @@ const getBranchDetail = async (req, res, next) => {
     const cached = cache.get(cacheKey);
     if (cached) return success(res, cached);
     const branch = await prisma.branch.findFirst({
-      where: { id: req.params.id, isActive: true },
+      where: { id: req.params.id, isActive: true, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       include: {
         reception: { select: { id: true, name: true } },
         manager: { select: { id: true, name: true } },

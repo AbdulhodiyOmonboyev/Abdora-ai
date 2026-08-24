@@ -391,7 +391,7 @@ const deleteManager = async (req, res, next) => {
 const getManagerBranches = async (req, res, next) => {
   try {
     const branches = await prisma.branch.findMany({
-      where: { managerId: req.user.userId, isActive: true },
+      where: { managerId: req.user.userId, centerId: req.user.centerId, isActive: true },
       include: {
         reception: { select: { id: true, name: true } },
         manager: { select: { id: true, name: true } },

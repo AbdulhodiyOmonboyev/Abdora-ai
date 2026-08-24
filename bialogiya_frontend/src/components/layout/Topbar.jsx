@@ -143,7 +143,7 @@ export default function Topbar({ onMenuClick }) {
 
   return (
     <>
-      <header className="h-14 md:h-16 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-3 md:px-6 z-30 flex-shrink-0">
+      <header className="app-topbar h-14 md:h-16 bg-white dark:bg-[#111722] border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-3 md:px-6 z-30 flex-shrink-0">
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
           {/* Hamburger — mobile only */}
           <button

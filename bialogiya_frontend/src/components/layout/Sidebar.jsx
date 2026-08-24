@@ -43,6 +43,11 @@ const adminLinks = [
   { to: '/admin/applications', icon: Inbox, key: 'applications' },
   { to: '/admin/branches', icon: Building2, key: 'branches' },
   { to: '/admin/managers', icon: UserCheck, key: 'managers' },
+  { to: '/admin/teachers', icon: BookMarked, key: 'teachers' },
+  { to: '/admin/students', icon: GraduationCap, key: 'students' },
+  { to: '/admin/groups', icon: Users, key: 'groups' },
+  { to: '/finance', icon: PieChart, key: 'finance', label: 'Moliya' },
+  { to: '/leads', icon: UserPlus, key: 'leads', label: 'Lidlar' },
   { to: '/admin/settings', icon: Settings, key: 'settings' },
 ];
 
@@ -83,7 +88,7 @@ export default function Sidebar({ isOpen, onClose }) {
   return (
     <aside
       className={cn(
-        'w-64 flex-shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col h-full overflow-hidden',
+        'w-64 flex-shrink-0 bg-white dark:bg-[#111722] border-r border-gray-100 dark:border-gray-800 flex flex-col h-full overflow-hidden',
         'fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out',
         'md:relative md:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'

@@ -9,7 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { data } = useQuery({ queryKey: ['admin-stats'], queryFn: () => api.get('/admin/stats').then(r => r.data.data) });
+  const { data } = useQuery({ queryKey: ['admin-stats', user?.role, user?.centerId], queryFn: () => api.get('/admin/stats').then(r => r.data.data) });
 
   const role = user?.role || 'admin';
   const baseRole = role === 'manager' ? 'manager' : role === 'reception' ? 'reception' : 'admin';

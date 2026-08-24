@@ -25,7 +25,8 @@ export default function ManagerBranchDetail() {
   const updateBranchMutation = useMutation({
     mutationFn: (data) => api.put(`/admin/branches/${id}`, data),
     onSuccess: () => {
-      qc.invalidateQueries(['manager-branch-detail', id]);
+      qc.invalidateQueries({ queryKey: ['manager-branch-detail', id] });
+      qc.invalidateQueries({ queryKey: ['manager-branches'] });
       setShowEdit(false);
       toast.success('Filial maʼlumotlari yangilandi');
     },

@@ -174,6 +174,9 @@ export default function App() {
           <Route path="branches/:id" element={<AdminBranchDetail />} />
           <Route path="managers" element={<AdminManagers />} />
           <Route path="managers/:id" element={<AdminManagerDetail />} />
+          <Route path="teachers" element={<AdminTeachers />} />
+          <Route path="students" element={<AdminStudents />} />
+          <Route path="groups" element={<AdminGroups />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
@@ -187,6 +190,7 @@ export default function App() {
           <Route path="teachers/:id" element={<ReceptionTeacherDetail />} />
           <Route path="students" element={<AdminStudents />} />
           <Route path="groups" element={<AdminGroups />} />
+          <Route path="groups/:id" element={<GroupDetail />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
@@ -195,7 +199,7 @@ export default function App() {
         <Route path="/leads" element={<ProtectedRoute role={['manager', 'admin', 'reception']}><MainLayout /></ProtectedRoute>}>
           <Route index element={<ManagerLeads />} />
         </Route>
-        <Route path="/finance" element={<ProtectedRoute role={['manager', 'reception']}><MainLayout /></ProtectedRoute>}>
+        <Route path="/finance" element={<ProtectedRoute role={['admin', 'manager', 'reception']}><MainLayout /></ProtectedRoute>}>
           <Route index element={<FinanceDashboard />} />
           <Route path="expenses" element={<FinanceExpenses />} />
         </Route>

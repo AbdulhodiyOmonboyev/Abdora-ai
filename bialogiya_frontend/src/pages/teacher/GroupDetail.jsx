@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import api from '../../config/axios';
 import { getSubjectLabel, getSubjectBadgeClass } from '../../utils/subjects';
+import { useAuthStore } from '../../store/authStore';
 
 const MONTHS = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
 
@@ -24,6 +25,7 @@ function parseMonth(str) {
 export default function GroupDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [monthOffset, setMonthOffset] = useState(0);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
@@ -62,7 +64,7 @@ export default function GroupDetail() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate('/teacher/groups')} className="btn-ghost p-2 rounded-xl">
+        <button onClick={() => navigate(`/${user?.role === 'manager' ? 'manager' : 'teacher'}/groups`)} className="btn-ghost p-2 rounded-xl">
           <ArrowLeft size={18} />
         </button>
         <div className="flex items-center gap-3 flex-1">
