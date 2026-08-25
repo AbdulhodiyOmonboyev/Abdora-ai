@@ -301,6 +301,10 @@
   .dashboard-header-plain h1 {
     margin-top: 0;
     font-size: clamp(2rem, 3vw, 3rem);
+    color: var(--text-primary);
+  }
+  .dashboard-header-plain p {
+    color: var(--text-muted);
   }
   .dashboard-header h1 {
     margin: 0.45rem 0 0.15rem;
@@ -379,10 +383,10 @@
     min-height: 104px;
     padding: 1rem 1rem 0.9rem;
     border-radius: 1.1rem;
-    border: 1px solid rgba(148, 163, 184, 0.14);
-    background: rgba(15, 23, 42, 0.8);
-    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.06);
-    color: #f8fafc;
+    border: 1px solid var(--border);
+    background: var(--card);
+    box-shadow: var(--shadow-soft);
+    color: var(--text-primary);
     text-align: left;
     cursor: pointer;
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -407,12 +411,12 @@
     gap: 0.2rem;
   }
   .stat-copy strong {
-    color: #f8fafc;
+    color: var(--text-primary);
     font-size: clamp(1.3rem, 1.9vw, 1.8rem);
     line-height: 1;
   }
   .stat-copy span {
-    color: rgba(148, 163, 184, 0.82);
+    color: var(--text-muted);
     font-size: 0.76rem;
     letter-spacing: 0.01em;
   }
@@ -440,11 +444,12 @@
     height: 360px !important;
   }
   .panel-card {
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(148, 163, 184, 0.14);
+    background: var(--card);
+    border: 1px solid var(--border);
     border-radius: 1.2rem;
     padding: 1rem 1.1rem;
-    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.04);
+    box-shadow: var(--shadow-soft);
+    color: var(--text-primary);
   }
   .panel-header {
     display: flex;
@@ -466,7 +471,7 @@
   }
   .panel-header h2 {
     margin: 0;
-    color: #f8fafc;
+    color: var(--text-primary);
     font-size: 1.1rem;
     font-weight: 700;
   }
@@ -523,8 +528,8 @@
   }
   .dashboard-table th {
     padding: 0.8rem 1rem;
-    background: rgba(15, 23, 42, 0.72);
-    color: #94a3b8;
+    background: color-mix(in srgb, var(--card) 82%, var(--background));
+    color: var(--text-muted);
     font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -533,15 +538,44 @@
   }
   .dashboard-table td {
     padding: 0.85rem 1rem;
-    border-top: 1px solid rgba(148, 163, 184, 0.1);
+    border-top: 1px solid var(--border);
     white-space: nowrap;
   }
   .dashboard-table tbody tr {
-    background: rgba(15, 23, 42, 0.3);
+    background: var(--card);
     transition: background 0.2s ease;
   }
   .dashboard-table tbody tr:hover {
     background: rgba(249, 115, 22, 0.08);
+  }
+  .dark .dashboard-stat-card {
+    border-color: rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.06);
+    color: #f8fafc;
+  }
+  .dark .stat-copy strong,
+  .dark .panel-header h2 {
+    color: #f8fafc;
+  }
+  .dark .stat-copy span {
+    color: rgba(148, 163, 184, 0.82);
+  }
+  .dark .panel-card {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(148, 163, 184, 0.14);
+    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.04);
+    color: #f8fafc;
+  }
+  .dark .dashboard-table th {
+    background: rgba(15, 23, 42, 0.72);
+    color: #94a3b8;
+  }
+  .dark .dashboard-table td {
+    border-top-color: rgba(148, 163, 184, 0.1);
+  }
+  .dark .dashboard-table tbody tr {
+    background: rgba(15, 23, 42, 0.3);
   }
   .creator-modal {
     color: #0f172a;
