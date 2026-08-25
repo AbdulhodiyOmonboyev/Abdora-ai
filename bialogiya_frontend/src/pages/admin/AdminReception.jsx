@@ -139,9 +139,9 @@ export default function AdminReception() {
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
             onClick={e => e.target === e.currentTarget && closeModal()}>
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-md">
+              className="creator-modal bg-white rounded-[28px] p-7 w-full max-w-xl shadow-2xl">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-lg">{editingId ? "Hisobni tahrirlash" : "Qabulxona hisobi qo'shish"}</h2>
+                <h2 className="font-bold text-xl text-slate-900">{editingId ? "Hisobni tahrirlash" : "Qabulxona hisobi qo'shish"}</h2>
                 <button onClick={closeModal} className="btn-ghost p-1.5 rounded-lg">
                   <X size={16} />
                 </button>
@@ -170,40 +170,40 @@ export default function AdminReception() {
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">To'liq ismi *</label>
+                    <label className="creator-label block text-sm font-medium mb-1.5">To'liq ismi *</label>
                     <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                      placeholder="Xodim ismi" className="input-field" />
+                      placeholder="Xodim ismi" className="creator-field input-field" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Telefon raqami</label>
+                    <label className="creator-label block text-sm font-medium mb-1.5">Telefon raqami</label>
                     <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                      placeholder="+998 90 123 45 67" type="tel" className="input-field" />
+                      placeholder="+998 90 123 45 67" type="tel" className="creator-field input-field" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Email</label>
+                    <label className="creator-label block text-sm font-medium mb-1.5">Email</label>
                     <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                      placeholder="email@example.com" type="email" className="input-field" />
+                      placeholder="email@example.com" type="email" className="creator-field input-field" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Filial</label>
+                    <label className="creator-label block text-sm font-medium mb-1.5">Filial</label>
                     <select
                       value={form.branchId}
                       onChange={e => setForm(f => ({ ...f, branchId: e.target.value }))}
-                      className="input-field"
+                      className="creator-field input-field"
                     >
                       <option value="">Tanlang</option>
                       {branches.filter((branch) => !branch.receptionId).map((branch) => (
                         <option key={branch.id} value={branch.id}>{branch.name}</option>
                       ))}
                     </select>
-                    <p className="text-xs text-gray-400 mt-1">Agar filial tanlangan bo'lsa, bu qabulxona shu filialga bog'lanadi.</p>
+                    <p className="creator-hint text-xs mt-1">Agar filial tanlangan bo'lsa, bu qabulxona shu filialga bog'lanadi.</p>
                   </div>
                   <div className="flex gap-3 pt-2">
                     <button onClick={closeModal} className="btn-ghost flex-1">Bekor</button>
                     <button
                       onClick={submit}
                       disabled={!form.name || isSaving}
-                      className="btn-primary flex-1 disabled:opacity-40">
+                      className="creator-submit btn-primary flex-1 disabled:opacity-40">
                       {isSaving ? "Saqlanmoqda..." : editingId ? 'Saqlash' : "Qo'shish"}
                     </button>
                   </div>

@@ -543,6 +543,38 @@
   .dashboard-table tbody tr:hover {
     background: rgba(249, 115, 22, 0.08);
   }
+  .creator-modal {
+    color: #0f172a;
+  }
+  .creator-label {
+    color: #0f172a;
+  }
+  .creator-field.input-field {
+    min-height: 3.55rem;
+    border-color: #263653;
+    background: #111b2d;
+    color: #e2e8f0;
+    border-radius: 1rem;
+  }
+  .creator-field.input-field::placeholder {
+    color: #8da1c0;
+  }
+  .creator-field.input-field:focus {
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.16);
+  }
+  .creator-field.input-field option {
+    background: #111b2d;
+    color: #e2e8f0;
+  }
+  .creator-hint {
+    color: #94a3b8;
+  }
+  .creator-submit:disabled {
+    background: #f7b899;
+    color: #fff;
+    opacity: 1;
+  }
   .dashboard-page-teachers .panel-card > .panel-card {
     border-radius: 0.85rem;
     background: rgba(15, 23, 42, 0.38);
