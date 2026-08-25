@@ -543,6 +543,10 @@
   .dashboard-table tbody tr:hover {
     background: rgba(249, 115, 22, 0.08);
   }
+  .dashboard-page-teachers .panel-card > .panel-card {
+    border-radius: 0.85rem;
+    background: rgba(15, 23, 42, 0.38);
+  }
   .branch-list {
     display: grid;
     gap: 0.7rem;

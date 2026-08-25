@@ -87,12 +87,12 @@ export default function AdminTeachers() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="dashboard-shell dashboard-page-teachers max-w-6xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
-      <div className="dashboard-shell max-w-5xl mx-auto">
-        <header className="dashboard-header">
+      <div>
+        <header className="dashboard-header dashboard-header-plain">
           <div>
-            <span className="dashboard-badge"><Users size={12} /> Abdora AI</span>
+            <span className="dashboard-badge"><Users size={12} /> Admin</span>
             <h1>O'qituvchilar</h1>
             <p>Ushbu sahifada o'qituvchilar ro'yxati va faoliyati ko'rsatiladi.</p>
           </div>
@@ -106,7 +106,11 @@ export default function AdminTeachers() {
       </div>
 
       {/* Teacher list */}
-      <div className="space-y-3 max-w-5xl mx-auto">
+      <div className="panel-card overflow-hidden p-0 max-w-6xl mx-auto">
+        <div className="teacher-table-labels hidden md:grid grid-cols-[minmax(220px,1.5fr)_120px_120px_110px] gap-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+          <span>O'qituvchi</span><span>Guruh</span><span>O'quvchi</span><span className="text-right">Holat</span>
+        </div>
+        <div className="space-y-2 p-2">
         {teachers?.map((t, i) => {
           const isEditing = editingId === t.id;
           return (
@@ -198,6 +202,7 @@ export default function AdminTeachers() {
             <p>Hali o'qituvchilar yo'q.</p>
           </div>
         )}
+        </div>
       </div>
 
       {/* Teacher detail modal */}

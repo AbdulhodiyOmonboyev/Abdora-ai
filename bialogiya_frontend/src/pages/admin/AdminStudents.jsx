@@ -41,34 +41,26 @@ export default function AdminStudents() {
           className="input-field pl-10" />
       </div>
 
-      <div className="space-y-3">
-        {filtered.map((s, i) => {
-          const { level } = getLevelProgress(s.xp);
-          return (
-            <motion.div key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
-              className="panel-card flex items-center gap-3">
-              <div className="w-9 h-9 gradient-bg rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">{s.name?.charAt(0)}</div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm">{s.name}</div>
-                <div className="text-xs text-gray-400">@{s.username} • {s.group?.name || 'No group'} • Teacher: {s.teacher?.name || '-'}</div>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-400 flex-shrink-0">
-                <span className="badge bg-primary/10 text-primary">Lv.{level}</span>
-                <span>{s.xp} XP</span>
-              </div>
-              <button onClick={() => toggleMutation.mutate(s.id)}
-                className={`badge text-xs cursor-pointer flex-shrink-0 ${s.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                {s.isActive ? 'Active' : 'Inactive'}
-              </button>
-            </motion.div>
-          );
-        })}
-        {filtered.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
-            <GraduationCap size={36} className="mx-auto mb-3 opacity-30" />
-            <p>{search ? 'No students match your search' : 'No students yet'}</p>
+      <div className="panel-card overflow-hidden p-0">
+        {filtered.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="dashboard-table w-full text-left text-sm">
+              <thead><tr><th>O'quvchi</th><th>Guruh</th><th>O'qituvchi</th><th>Daromad</th><th>Holat</th></tr></thead>
+              <tbody>
+                {filtered.map((s, i) => {
+                  const { level } = getLevelProgress(s.xp);
+                  return <motion.tr key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}>
+                    <td><div className="flex items-center gap-2.5"><div className="w-8 h-8 gradient-bg rounded-full text-white grid place-items-center text-xs font-semibold">{s.name?.charAt(0)}</div><div><div className="font-semibold text-white">{s.name}</div><div className="text-xs text-slate-400">@{s.username}</div></div></div></td>
+                    <td className="text-slate-300">{s.group?.name || 'No group'}</td>
+                    <td className="text-slate-400">{s.teacher?.name || '-'}</td>
+                    <td className="text-slate-300">Lv.{level} · {s.xp || 0} XP</td>
+                    <td><button onClick={() => toggleMutation.mutate(s.id)} className={`badge text-xs ${s.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{s.isActive ? 'Active' : 'Inactive'}</button></td>
+                  </motion.tr>;
+                })}
+              </tbody>
+            </table>
           </div>
-        )}
+        ) : <div className="text-center py-16 text-slate-400"><GraduationCap size={36} className="mx-auto mb-3 opacity-30" /><p>{search ? 'No students match your search' : 'No students yet'}</p></div>}
       </div>
     </div>
   );

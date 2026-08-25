@@ -191,67 +191,28 @@ export default function AdminBranches() {
         </button>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredBranches.map((branch, index) => (
-          <motion.div
-            key={branch.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="panel-card cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => navigate(`/admin/branches/${branch.id}`)}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary grid place-items-center">
-                <Building2 size={24} />
-              </div>
-              <div className="flex gap-1">
-                <button
-                  onClick={(e) => { e.stopPropagation(); openEdit(branch); }}
-                  className="btn-ghost p-1.5 rounded-lg text-blue-500 hover:bg-blue-50"
-                >
-                  <Edit2 size={14} />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); openDelete(branch); }}
-                  className="btn-ghost p-1.5 rounded-lg text-red-500 hover:bg-red-50"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-
-            <h3 className="font-semibold text-gray-800 dark:text-white mb-1">{branch.name}</h3>
-            
-            {branch.address && (
-              <div className="text-xs text-gray-500 flex items-start gap-1 mb-3">
-                <MapPin size={12} className="mt-0.5 flex-shrink-0" />
-                <span>{branch.address}</span>
-              </div>
-            )}
-
-            <div className="flex gap-3 text-xs text-gray-600">
-              {branch._count && (
-                <>
-                  <div className="flex items-center gap-1">
-                    <BookOpen size={12} />
-                    <span>{branch._count.groups} guruh</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users size={12} />
-                    <span>{branch._count.teachers} o'qituvchi</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </motion.div>
-        ))}
-
-        {filteredBranches.length === 0 && (
-          <div className="col-span-full text-center py-16 text-gray-400">
-            <Building2 size={48} className="mx-auto mb-3 opacity-30" />
-            <p>{search ? "Qidiruv bo'yicha hech qanday markaz topilmadi." : "Hozircha markazlar yo'q."}</p>
+      <div className="panel-card overflow-hidden p-0">
+        {filteredBranches.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="dashboard-table w-full text-left text-sm">
+              <thead><tr><th>Markaz</th><th>Manzil</th><th>Manager</th><th>O'qituvchi</th><th>O'quvchi</th><th>Holat</th><th className="text-right">Amallar</th></tr></thead>
+              <tbody>
+                {filteredBranches.map((branch, index) => (
+                  <motion.tr key={branch.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.04 }}>
+                    <td className="cursor-pointer font-semibold text-white" onClick={() => navigate(`/admin/branches/${branch.id}`)}>{branch.name}</td>
+                    <td className="text-slate-400">{branch.address || '—'}</td>
+                    <td className="text-slate-300">{branch.manager?.name || branch.reception?.name || '—'}</td>
+                    <td className="text-slate-300">{branch._count?.teachers || 0}</td>
+                    <td className="text-slate-300">{branch.studentsCount || 0}</td>
+                    <td><span className="tag-pill">Faol</span></td>
+                    <td><div className="flex justify-end gap-1"><button onClick={() => openEdit(branch)} className="btn-ghost p-2 rounded-lg text-blue-400" title="Tahrirlash"><Edit2 size={14} /></button><button onClick={() => openDelete(branch)} className="btn-ghost p-2 rounded-lg text-red-400" title="O'chirish"><Trash2 size={14} /></button></div></td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        ) : (
+          <div className="text-center py-16 text-slate-400"><Building2 size={48} className="mx-auto mb-3 opacity-30" /><p>{search ? "Qidiruv bo'yicha hech qanday markaz topilmadi." : "Hozircha markazlar yo'q."}</p></div>
         )}
       </div>
 

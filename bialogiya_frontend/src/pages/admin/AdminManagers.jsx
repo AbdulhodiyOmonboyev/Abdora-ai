@@ -142,48 +142,25 @@ export default function AdminManagers() {
         </button>
       </header>
 
-      <div className="space-y-3">
-        {managers.map((manager, index) => (
-          <motion.div key={manager.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
-            className="panel-card flex items-center gap-3 cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => navigate(`/admin/managers/${manager.id}`)}>
-            <div className="w-12 h-12 rounded-full bg-primary/10 text-primary grid place-items-center font-semibold text-lg">
-              {manager.name?.charAt(0)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm text-gray-800 dark:text-white">{manager.name}</div>
-              <div className="text-xs text-gray-400 flex flex-wrap gap-2 items-center">
-                <span>@{manager.username}</span>
-                {manager.phone && <span className="flex items-center gap-1"><Phone size={12} /> {manager.phone}</span>}
-                {manager.email && <span>{manager.email}</span>}
-              </div>
-              <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-3">
-                {manager.age && <span>Yoshi: {manager.age}</span>}
-                {manager.gender && <span>Jinsi: {manager.gender === 'male' ? 'Erkak' : manager.gender === 'female' ? 'Ayol' : 'Boshqa'}</span>}
-                {manager.address && <span className="flex items-center gap-1"><MapPin size={12} /> {manager.address}</span>}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={(e) => { e.stopPropagation(); toggleMutation.mutate(manager.id); }}
-                className={`badge text-xs ${manager.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                {manager.isActive ? 'Faol' : 'Nofaol'}
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); openEdit(manager); }} className="btn-ghost p-2 rounded-lg text-blue-500 hover:bg-blue-50">
-                <Edit2 size={16} />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); openDelete(manager); }} className="btn-ghost p-2 rounded-lg text-red-500 hover:bg-red-50">
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </motion.div>
-        ))}
-
-        {managers.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
-            <User size={36} className="mx-auto mb-3 opacity-30" />
-            <p>Hozircha managerlar yo'q.</p>
+      <div className="panel-card overflow-hidden p-0">
+        {managers.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="dashboard-table w-full text-left text-sm">
+              <thead><tr><th>Manager</th><th>Telefon</th><th>Markaz</th><th>Holat</th><th className="text-right">Amallar</th></tr></thead>
+              <tbody>
+                {managers.map((manager, index) => (
+                  <motion.tr key={manager.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.03 }}>
+                    <td className="cursor-pointer" onClick={() => navigate(`/admin/managers/${manager.id}`)}><div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-full gradient-bg text-white grid place-items-center text-xs font-semibold">{manager.name?.charAt(0)}</div><div><div className="font-semibold text-white">{manager.name}</div><div className="text-xs text-slate-400">@{manager.username}</div></div></div></td>
+                    <td className="text-slate-300">{manager.phone || '—'}</td>
+                    <td className="text-slate-400">{manager.address || '—'}</td>
+                    <td><button onClick={() => toggleMutation.mutate(manager.id)} className={`badge text-xs ${manager.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{manager.isActive ? 'Faol' : 'Nofaol'}</button></td>
+                    <td><div className="flex justify-end gap-1"><button onClick={() => openEdit(manager)} className="btn-ghost p-2 rounded-lg text-blue-400" title="Tahrirlash"><Edit2 size={14} /></button><button onClick={() => openDelete(manager)} className="btn-ghost p-2 rounded-lg text-red-400" title="O'chirish"><Trash2 size={14} /></button></div></td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+        ) : <div className="text-center py-16 text-slate-400"><User size={36} className="mx-auto mb-3 opacity-30" /><p>Hozircha managerlar yo'q.</p></div>}
       </div>
 
       {/* Create Modal */}

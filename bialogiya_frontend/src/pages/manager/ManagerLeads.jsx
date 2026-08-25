@@ -106,11 +106,12 @@ export default function ManagerLeads() {
   const leads = leadsQuery.data || [];
 
   return (
-    <main className="mx-auto max-w-4xl pb-10">
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <main className="dashboard-shell mx-auto max-w-5xl pb-10">
+      <header className="dashboard-header dashboard-header-plain">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-800 dark:text-white">Lidlar</h1>
-          <p className="mt-0.5 text-sm text-gray-500">{branchName ? `${branchName} filiali` : 'Kelgan mijozlarni kuzatib boring'}</p>
+          <span className="dashboard-badge"><UserPlus size={12} /> Manager</span>
+          <h1>Lidlar</h1>
+          <p>{branchName ? `${branchName} filiali` : 'Kelgan mijozlarni kuzatib boring'}</p>
         </div>
         <button type="button" onClick={() => setModalOpen(true)}
           className="btn-primary flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
@@ -121,7 +122,7 @@ export default function ManagerLeads() {
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {statsQuery.isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="card"><Skeleton className="h-3 w-20" /><Skeleton className="mt-3 h-7 w-12" /></div>
+            <div key={i} className="panel-card"><Skeleton className="h-3 w-20" /><Skeleton className="mt-3 h-7 w-12" /></div>
           ))
         ) : statsQuery.isError ? null : (
           <>
@@ -189,7 +190,7 @@ export default function ManagerLeads() {
           const meta = statusMeta(lead.status);
           return (
             <motion.li key={lead.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.2 }} className="card">
+              transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.2 }} className="panel-card">
               <div className="flex flex-wrap items-start gap-3">
                 <span aria-hidden="true" className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full gradient-bg text-sm font-semibold text-white">
                   {lead.name?.charAt(0)?.toUpperCase()}
@@ -240,7 +241,7 @@ export default function ManagerLeads() {
             <motion.div initial={{ scale: 0.97, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.97, y: 12 }}
               transition={{ duration: 0.18 }}
               role="dialog" aria-modal="true" aria-labelledby="lead-modal-title"
-              className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900">
+              className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
               <div className="mb-4 flex items-center justify-between">
                 <h2 id="lead-modal-title" className="text-lg font-bold text-gray-800 dark:text-white">Yangi lid</h2>
                 <button type="button" onClick={() => setModalOpen(false)} aria-label="Yopish"
@@ -301,7 +302,7 @@ export default function ManagerLeads() {
 
 function StatTile({ label, value, icon: Icon, tone, hint }) {
   return (
-    <div className="card">
+    <div className="panel-card">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-medium text-gray-500">{label}</p>
         <span aria-hidden="true" className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl ${tone}`}>
