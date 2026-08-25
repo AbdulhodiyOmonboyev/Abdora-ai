@@ -47,16 +47,17 @@ export default function FinancePayroll() {
   const teachers = data?.teachers || [];
 
   return (
-    <main className="mx-auto max-w-3xl pb-10">
-      <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <main className="dashboard-shell mx-auto max-w-5xl pb-10">
+      <header className="dashboard-header">
         <div className="flex items-center gap-3">
           <Link to="/finance" aria-label="Moliyaga qaytish"
-            className="btn-ghost rounded-xl p-2 focus-visible:ring-2 focus-visible:ring-primary/40">
-            <ArrowLeft size={18} />
+            className="header-button focus-visible:ring-2 focus-visible:ring-primary/40">
+            <ArrowLeft size={16} /> Moliya
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-800 dark:text-white">Ish haqi</h1>
-            <p className="mt-0.5 text-sm text-gray-500">Yig'ilgan to'lovdan avtomatik hisoblanadi</p>
+            <span className="dashboard-badge"><Wallet size={12} /> Moliya</span>
+            <h1>Ish haqi</h1>
+            <p>Yig'ilgan to'lovdan avtomatik hisoblanadi</p>
           </div>
         </div>
         <div>
@@ -73,8 +74,8 @@ export default function FinancePayroll() {
       {isLoading && (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3">
-            <div className="card"><Skeleton className="h-3 w-24" /><Skeleton className="mt-3 h-7 w-32" /></div>
-            <div className="card"><Skeleton className="h-3 w-24" /><Skeleton className="mt-3 h-7 w-32" /></div>
+            <div className="panel-card"><Skeleton className="h-3 w-24" /><Skeleton className="mt-3 h-7 w-32" /></div>
+            <div className="panel-card"><Skeleton className="h-3 w-24" /><Skeleton className="mt-3 h-7 w-32" /></div>
           </div>
           <div className="space-y-2"><RowSkeleton count={3} /></div>
         </>
@@ -83,11 +84,11 @@ export default function FinancePayroll() {
       {!isLoading && !isError && (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3">
-            <div className="card">
+            <div className="panel-card">
               <p className="text-xs font-medium text-gray-500">Yig'ilgan tushum</p>
               <p className="mt-2 text-xl font-bold tabular-nums text-gray-900 dark:text-white">{formatSum(data.totalCollected)}</p>
             </div>
-            <div className="card">
+            <div className="panel-card">
               <p className="text-xs font-medium text-gray-500">O'qituvchilarga jami</p>
               <p className="mt-2 text-xl font-bold tabular-nums text-primary">{formatSum(data.totalSalary)}</p>
             </div>
@@ -108,7 +109,7 @@ export default function FinancePayroll() {
           <ul className="space-y-3">
             {teachers.map((t, i) => (
               <motion.li key={t.teacherId} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.04, 0.3), duration: 0.2 }} className="card">
+                transition={{ delay: Math.min(i * 0.04, 0.3), duration: 0.2 }} className="panel-card">
                 <div className="flex flex-wrap items-center gap-3">
                   <span aria-hidden="true" className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full gradient-bg text-sm font-semibold text-white">
                     {t.name?.charAt(0)}
@@ -159,7 +160,7 @@ export default function FinancePayroll() {
             <motion.div initial={{ scale: 0.97, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.97, y: 12 }}
               transition={{ duration: 0.18 }}
               role="dialog" aria-modal="true" aria-labelledby="salary-modal-title"
-              className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900">
+              className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
               <div className="mb-1 flex items-center justify-between">
                 <h2 id="salary-modal-title" className="text-lg font-bold text-gray-800 dark:text-white">
                   {editing.name}

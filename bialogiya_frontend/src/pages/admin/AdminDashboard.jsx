@@ -18,23 +18,24 @@ export default function AdminDashboard() {
   const subtitle = role === 'reception' ? 'Abdora AI — Qabulxona umumiy ko\'rinishi' : role === 'manager' ? 'Abdora AI — Filial ko\'rinishi' : 'Abdora AI — Platform Overview';
 
   const stats = [
-    { icon: Users, label: 'O\'qituvchilar', value: data?.totalTeachers || 0, color: 'text-primary', bg: 'bg-primary/10', path: `/${baseRole}/teachers` },
-    { icon: GraduationCap, label: 'O\'quvchilar', value: data?.totalStudents || 0, color: 'text-secondary', bg: 'bg-secondary/10', path: `/${baseRole}/students` },
-    { icon: BarChart2, label: 'Bugun faol', value: data?.activeToday || 0, color: 'text-orange-500', bg: 'bg-orange-50', path: `/${baseRole}/students` },
-    { icon: UserCheck, label: 'Bu hafta yangi', value: data?.newThisWeek || 0, color: 'text-teal-500', bg: 'bg-teal-50', path: `/${baseRole}/students` },
     ...(baseRole === 'admin' ? [
-      { icon: Building2, label: 'Markazlar', value: data?.totalBranches || 0, color: 'text-blue-500', bg: 'bg-blue-50', path: '/admin/branches' },
-      { icon: UserCheck, label: 'Managerlar', value: data?.totalManagers || 0, color: 'text-indigo-500', bg: 'bg-indigo-50', path: '/admin/managers' },
-      { icon: Inbox, label: 'Yangi arizalar', value: data?.pendingApplications || 0, color: 'text-rose-500', bg: 'bg-rose-50', path: '/admin/applications' },
-    ] : []),
-  ].filter((tile) => baseRole !== 'admin' || !tile.path.endsWith('/teachers') && !tile.path.endsWith('/students'));
+      { icon: Building2, label: 'Markazlar', value: data?.totalBranches || 0, color: 'text-orange-500', bg: 'bg-orange-50', path: '/admin/branches' },
+      { icon: UserCheck, label: 'Managerlar', value: data?.totalManagers || 0, color: 'text-violet-500', bg: 'bg-violet-50', path: '/admin/managers' },
+      { icon: GraduationCap, label: 'O\'quvchilar', value: data?.totalStudents || 0, color: 'text-blue-500', bg: 'bg-blue-50', path: '/admin/students' },
+      { icon: BarChart2, label: 'Bugun faol', value: data?.activeToday || 0, color: 'text-emerald-500', bg: 'bg-emerald-50', path: '/admin/students' },
+    ] : [
+      { icon: Users, label: 'O\'qituvchilar', value: data?.totalTeachers || 0, color: 'text-orange-500', bg: 'bg-orange-50', path: `/${baseRole}/teachers` },
+      { icon: GraduationCap, label: 'O\'quvchilar', value: data?.totalStudents || 0, color: 'text-blue-500', bg: 'bg-blue-50', path: `/${baseRole}/students` },
+      { icon: BarChart2, label: 'Bugun faol', value: data?.activeToday || 0, color: 'text-emerald-500', bg: 'bg-emerald-50', path: `/${baseRole}/students` },
+      { icon: UserCheck, label: 'Bu hafta yangi', value: data?.newThisWeek || 0, color: 'text-violet-500', bg: 'bg-violet-50', path: `/${baseRole}/students` },
+    ])];
 
   const visibleStats = stats.slice(0, 4);
   const chartData = data?.dailyActivity || [];
 
   return (
-    <div className="dashboard-shell max-w-6xl mx-auto">
-      <header className="dashboard-header">
+    <div className="dashboard-shell dashboard-page-admin max-w-6xl mx-auto">
+      <header className="dashboard-header dashboard-header-plain">
         <div>
           <span className="dashboard-badge"><Sparkles size={12} /> Abdora AI</span>
           <h1>{title}</h1>

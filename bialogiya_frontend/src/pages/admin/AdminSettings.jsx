@@ -45,12 +45,18 @@ export default function AdminSettings() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Platforma sozlamalari</h1>
+    <div className="dashboard-shell max-w-5xl mx-auto">
+      <header className="dashboard-header dashboard-header-plain">
+        <div>
+          <span className="dashboard-badge"><Shield size={12} /> Admin</span>
+          <h1>Platforma sozlamalari</h1>
+          <p>Platforma sozlamalarini boshqarish</p>
+        </div>
+      </header>
 
       <div className="space-y-5">
         {sections.map(({ title, icon: Icon, color, fields }, si) => (
-          <motion.div key={si} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: si * 0.05 }} className="card">
+          <motion.div key={si} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: si * 0.05 }} className="panel-card max-w-3xl">
             <div className="flex items-center gap-2 mb-4">
               <Icon size={18} className={color} />
               <h2 className="font-bold text-gray-800 dark:text-white">{title}</h2>

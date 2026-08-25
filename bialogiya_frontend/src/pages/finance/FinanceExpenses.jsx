@@ -88,16 +88,17 @@ export default function FinanceExpenses() {
   const expenses = data?.expenses || [];
 
   return (
-    <main className="mx-auto max-w-3xl pb-10">
-      <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <main className="dashboard-shell mx-auto max-w-5xl pb-10">
+      <header className="dashboard-header">
         <div className="flex items-center gap-3">
           <Link to="/finance" aria-label="Moliyaga qaytish"
-            className="btn-ghost rounded-xl p-2 focus-visible:ring-2 focus-visible:ring-primary/40">
-            <ArrowLeft size={18} />
+            className="header-button focus-visible:ring-2 focus-visible:ring-primary/40">
+            <ArrowLeft size={16} /> Moliya
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-800 dark:text-white">Xarajatlar</h1>
-            <p className="mt-0.5 text-sm text-gray-500">
+            <span className="dashboard-badge"><Receipt size={12} /> Moliya</span>
+            <h1>Xarajatlar</h1>
+            <p>
               {isLoading ? '—' : `${formatMonth(month)} · jami ${formatSum(data?.total)}`}
             </p>
           </div>
@@ -145,7 +146,7 @@ export default function FinanceExpenses() {
         {expenses.map((e, i) => (
           <motion.li key={e.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.2 }}
-            className="card flex items-center gap-3">
+            className="panel-card flex items-center gap-3">
             <span aria-hidden="true" className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
               <Receipt size={17} />
             </span>
@@ -185,7 +186,7 @@ export default function FinanceExpenses() {
             <motion.div initial={{ scale: 0.97, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.97, y: 12 }}
               transition={{ duration: 0.18 }}
               role="dialog" aria-modal="true" aria-labelledby="expense-modal-title"
-              className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900">
+              className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
               <div className="mb-4 flex items-center justify-between">
                 <h2 id="expense-modal-title" className="text-lg font-bold text-gray-800 dark:text-white">
                   {editingId ? 'Xarajatni tahrirlash' : 'Yangi xarajat'}

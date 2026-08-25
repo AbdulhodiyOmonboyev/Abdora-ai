@@ -129,22 +129,23 @@ export default function AdminManagers() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="dashboard-shell max-w-5xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+      <header className="dashboard-header dashboard-header-plain">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Managerlar</h1>
-          <p className="text-sm text-gray-500 mt-1">Admin bo'limida managerlarni qo'shish va boshqarish.</p>
+          <span className="dashboard-badge"><User size={12} /> Admin</span>
+          <h1>Managerlar</h1>
+          <p>Managerlar va ularga biriktirilgan markazlar</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
           <Plus size={15} /> Manager qo'shish
         </button>
-      </div>
+      </header>
 
       <div className="space-y-3">
         {managers.map((manager, index) => (
           <motion.div key={manager.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
-            className="card flex items-center gap-3 cursor-pointer hover:shadow-lg transition-shadow"
+            className="panel-card flex items-center gap-3 cursor-pointer hover:shadow-lg transition-shadow"
             onClick={() => navigate(`/admin/managers/${manager.id}`)}>
             <div className="w-12 h-12 rounded-full bg-primary/10 text-primary grid place-items-center font-semibold text-lg">
               {manager.name?.charAt(0)}

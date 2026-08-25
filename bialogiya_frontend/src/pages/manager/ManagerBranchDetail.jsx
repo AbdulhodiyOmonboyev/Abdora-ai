@@ -54,7 +54,7 @@ export default function ManagerBranchDetail() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="dashboard-shell max-w-5xl mx-auto">
         <button
           onClick={() => navigate('/manager/branches')}
           className="flex items-center gap-2 text-primary mb-6 hover:underline"
@@ -68,7 +68,7 @@ export default function ManagerBranchDetail() {
 
   if (error || !branch) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="dashboard-shell max-w-5xl mx-auto">
         <button
           onClick={() => navigate('/manager/branches')}
           className="flex items-center gap-2 text-primary mb-6 hover:underline"
@@ -83,15 +83,21 @@ export default function ManagerBranchDetail() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <button
-        onClick={() => navigate('/manager/branches')}
-        className="flex items-center gap-2 text-primary mb-6 hover:underline"
-      >
-        <ArrowLeft size={16} /> Orqaga
-      </button>
+    <div className="dashboard-shell max-w-5xl mx-auto">
+      <header className="dashboard-header dashboard-header-plain">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/manager/branches')} className="header-button">
+            <ArrowLeft size={16} /> Filiallar
+          </button>
+          <div>
+            <span className="dashboard-badge"><Building2 size={12} /> Manager</span>
+            <h1>{branch.name}</h1>
+            <p>Filial tafsilotlari va boshqaruvi</p>
+          </div>
+        </div>
+      </header>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card mb-6">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="panel-card mb-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
@@ -151,7 +157,7 @@ export default function ManagerBranchDetail() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="card mb-6"
+        className="panel-card mb-6"
       >
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -201,7 +207,7 @@ export default function ManagerBranchDetail() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="card mb-6"
+          className="panel-card mb-6"
         >
           <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
             <Users size={20} /> O'qituvchilari ({branch.teachers.length})
@@ -243,7 +249,7 @@ export default function ManagerBranchDetail() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="card"
+          className="panel-card"
         >
           <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
             <BookOpen size={20} /> Guruhlari ({branch.groups.length})

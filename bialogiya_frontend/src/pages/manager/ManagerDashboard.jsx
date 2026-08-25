@@ -13,14 +13,13 @@ export default function ManagerDashboard() {
     { icon: GraduationCap, label: 'Jami o\'quvchilar', value: data?.totalStudents || 0, color: 'text-secondary', bg: 'bg-secondary/10' },
     { icon: BookOpen, label: 'Jami guruhlar', value: data?.totalGroups || 0, color: 'text-green-500', bg: 'bg-green-50' },
     { icon: BarChart2, label: 'Bugun faol', value: data?.activeToday || 0, color: 'text-orange-500', bg: 'bg-orange-50' },
-    { icon: UserCheck, label: 'Shu hafta yangi', value: data?.newThisWeek || 0, color: 'text-teal-500', bg: 'bg-teal-50' },
   ];
 
   const chartData = data?.dailyActivity || [];
 
   return (
-    <div className="dashboard-shell max-w-6xl mx-auto">
-      <header className="dashboard-header">
+    <div className="dashboard-shell dashboard-page-manager max-w-6xl mx-auto">
+      <header className="dashboard-header dashboard-header-plain">
         <div>
           <span className="dashboard-badge"><Sparkles size={12} /> Abdora AI</span>
           <h1>Menejer paneli</h1>
@@ -81,28 +80,6 @@ export default function ManagerDashboard() {
           )}
         </div>
 
-        <div className="panel-card side-card">
-          <div className="panel-header compact">
-            <div>
-              <span className="panel-kicker">Tezkor</span>
-              <h2>Umumiy ko‘rsatkichlar</h2>
-            </div>
-          </div>
-          <div className="mini-metrics">
-            <div className="mini-metric orange">
-              <span>Bugun</span>
-              <strong>{data?.activeToday || 0}</strong>
-            </div>
-            <div className="mini-metric blue">
-              <span>Yangi</span>
-              <strong>{data?.newThisWeek || 0}</strong>
-            </div>
-            <div className="mini-metric teal">
-              <span>Guruhlar</span>
-              <strong>{data?.totalGroups || 0}</strong>
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );

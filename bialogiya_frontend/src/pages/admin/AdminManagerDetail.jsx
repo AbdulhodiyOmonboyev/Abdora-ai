@@ -78,28 +78,29 @@ export default function AdminManagerDetail() {
   }
 
   if (!user) {
-    return <div className="max-w-3xl mx-auto py-20 text-center text-gray-500">Manager topilmadi.</div>;
+    return <div className="dashboard-shell max-w-5xl mx-auto py-20 text-center text-slate-400">Manager topilmadi.</div>;
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="dashboard-shell max-w-5xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
-      <div className="flex items-center justify-between gap-3 mb-6">
+      <header className="dashboard-header">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="btn-ghost p-2 rounded-xl">
-            <ArrowLeft size={18} />
+          <button onClick={() => navigate(-1)} className="header-button">
+            <ArrowLeft size={16} /> Orqaga
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{user.name}</h1>
-            <p className="text-sm text-gray-500">Manager ma'lumotlari va boshqaruv</p>
+            <span className="dashboard-badge"><ShieldCheck size={12} /> Admin</span>
+            <h1>{user.name}</h1>
+            <p>Manager ma'lumotlari va boshqaruv</p>
           </div>
         </div>
         <button onClick={openEdit} className="btn-primary flex items-center gap-2">
           <Edit2 size={16} /> Tahrirlash
         </button>
-      </div>
+      </header>
 
-      <div className="card space-y-4">
+      <div className="panel-card space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-16 h-16 rounded-3xl bg-primary/10 text-primary grid place-items-center text-2xl font-bold">
@@ -130,8 +131,8 @@ export default function AdminManagerDetail() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-3 p-4 rounded-3xl bg-gray-50 dark:bg-gray-900">
-            <div className="text-xs uppercase tracking-wide text-gray-500">Kontakt</div>
+          <div className="space-y-3 p-4 rounded-3xl bg-slate-950/50 border border-slate-800">
+            <div className="text-xs uppercase tracking-wide text-slate-400">Kontakt</div>
             <div className="flex items-start gap-3">
               <Phone size={18} className="text-primary mt-1" />
               <div>
@@ -150,8 +151,8 @@ export default function AdminManagerDetail() {
               </div>
             </div>
           </div>
-          <div className="space-y-3 p-4 rounded-3xl bg-gray-50 dark:bg-gray-900">
-            <div className="text-xs uppercase tracking-wide text-gray-500">Ma'lumot</div>
+          <div className="space-y-3 p-4 rounded-3xl bg-slate-950/50 border border-slate-800">
+            <div className="text-xs uppercase tracking-wide text-slate-400">Ma'lumot</div>
             <div className="flex items-start gap-3">
               <ShieldCheck size={18} className="text-primary mt-1" />
               <div>

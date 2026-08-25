@@ -44,8 +44,8 @@ export default function ManagerBranches() {
 
   if (isLoading) {
     return (
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Filiallar</h1>
+      <div className="dashboard-shell max-w-6xl mx-auto">
+        <h1 className="text-2xl font-bold text-white mb-6">Filiallar</h1>
         <div className="text-center py-16">Yuklanmoqda...</div>
       </div>
     );
@@ -66,65 +66,41 @@ export default function ManagerBranches() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+    <div className="dashboard-shell max-w-6xl mx-auto">
+      <header className="dashboard-header dashboard-header-plain">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Filiallar</h1>
-          <p className="text-sm text-gray-500 mt-1">Barcha filiallar va ular ichidagi turli xil ta'lim jarayonlari.</p>
+          <span className="dashboard-badge"><Building2 size={12} /> Manager</span>
+          <h1>Filiallar</h1>
+          <p>Markazning barcha filiallari va ularning holati</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
           <Plus size={15} /> Filial qo'shish
         </button>
-      </div>
+      </header>
 
-      <div className="space-y-3">
-        {filteredBranches.map((branch, index) => (
-          <motion.div
-            key={branch.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <button
-              onClick={() => navigate(`/manager/branches/${branch.id}`)}
-              className="card w-full text-left hover:shadow-lg transition-shadow group"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary grid place-items-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <Building2 size={24} />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg text-gray-800 dark:text-white group-hover:text-primary transition-colors">{branch.name}</h3>
-                    {branch.address && (
-                      <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                        <MapPin size={12} /> {branch.address}
-                      </p>
-                    )}
-                    <div className="flex gap-4 mt-3 text-sm">
-                      <div className="flex items-center gap-1 text-blue-600">
-                        <BookOpen size={14} />
-                        <span>{branch.groups?.length || 0} guruh</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-green-600">
-                        <Users size={14} />
-                        <span>{branch._count?.teachers || 0} o'qituvchi</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-purple-600">
-                        <Users size={14} />
-                        <span>{branch.studentsCount || 0} o'quvchi</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <ArrowRight
-                  size={20}
-                  className="text-gray-400 group-hover:text-primary transition-colors flex-shrink-0 mt-1 group-hover:translate-x-1 transition-transform"
-                />
-              </div>
-            </button>
-          </motion.div>
-        ))}
+      <div className="panel-card overflow-hidden p-0">
+        <div className="overflow-x-auto">
+          <table className="dashboard-table w-full text-left text-sm">
+            <thead>
+              <tr>
+                <th>Filial</th><th>Manzil</th><th>O'qituvchi</th><th>O'quvchi</th><th>Guruh</th><th>Holat</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredBranches.map((branch, index) => (
+                <motion.tr key={branch.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.04 }}
+                  onClick={() => navigate(`/manager/branches/${branch.id}`)} className="cursor-pointer">
+                  <td className="font-semibold text-white">{branch.name}</td>
+                  <td className="text-slate-400">{branch.address || '—'}</td>
+                  <td className="text-slate-300">{branch._count?.teachers || 0}</td>
+                  <td className="text-slate-300">{branch.studentsCount || 0}</td>
+                  <td className="text-slate-300">{branch.groups?.length || 0}</td>
+                  <td><span className="tag-pill">Faol</span></td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {filteredBranches.length === 0 && (
           <div className="text-center py-16 text-gray-400">

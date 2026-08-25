@@ -178,17 +178,18 @@ export default function AdminBranches() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="dashboard-shell max-w-6xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+      <header className="dashboard-header dashboard-header-plain">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Markazlar</h1>
-          <p className="text-sm text-gray-500 mt-1">O'quv markazlarni boshqarish.</p>
+          <span className="dashboard-badge"><Building2 size={12} /> Admin</span>
+          <h1>Markazlar</h1>
+          <p>Barсha markazlarni boshqarish</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
           <Plus size={15} /> Markaz qo'shish
         </button>
-      </div>
+      </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredBranches.map((branch, index) => (
@@ -197,7 +198,7 @@ export default function AdminBranches() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="card cursor-pointer hover:shadow-lg transition-shadow"
+            className="panel-card cursor-pointer hover:shadow-lg transition-shadow"
             onClick={() => navigate(`/admin/branches/${branch.id}`)}
           >
             <div className="flex items-start justify-between mb-3">
