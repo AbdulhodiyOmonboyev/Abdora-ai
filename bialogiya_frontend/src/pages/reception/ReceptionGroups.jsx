@@ -125,24 +125,28 @@ export default function ReceptionGroups() {
   const canSubmit = form.name && form.teacherId && !saving;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="dashboard-shell max-w-5xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
 
-      <div className="flex items-center justify-between mb-6">
+      <header className="dashboard-header">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Guruhlar</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Guruh yarating, jadval va xona belgilang</p>
+          <span className="dashboard-badge"><Users2 size={12} /> Abdora AI</span>
+          <h1>Guruhlar</h1>
+          <p>Guruh yarating, jadval va xona belgilang.</p>
         </div>
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2">
-          <Plus size={15} /> Guruh yaratish
-        </button>
-      </div>
+        <div className="dashboard-header-actions">
+          <span className="header-status">Live</span>
+          <button onClick={openCreate} className="header-button">
+            <Plus size={14} /> Guruh yaratish
+          </button>
+        </div>
+      </header>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {groups?.map((g, i) => (
           <motion.div key={g.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
             onClick={() => navigate(`/reception/groups/${g.id}`)}
-            className="card flex items-center gap-3 cursor-pointer hover:shadow-md transition-shadow">
+            className="panel-card flex items-center gap-3 cursor-pointer hover:shadow-md transition-shadow">
             <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center text-white flex-shrink-0">
               <Users2 size={18} />
             </div>

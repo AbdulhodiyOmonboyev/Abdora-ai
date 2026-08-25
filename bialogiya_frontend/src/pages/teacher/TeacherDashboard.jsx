@@ -79,97 +79,133 @@ export default function TeacherDashboard() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Teacher overview */}
-      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-gray-900 dark:text-white">O'qituvchi dashboard</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Mavjud o'quvchilar, bu oy yig'ilgan daromad va o'z natijalaringiz.</p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="rounded-2xl bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">{totalStudents} o'quvchi</div>
-            <div className="rounded-2xl bg-green-100 px-4 py-2 text-sm font-semibold text-green-700">{new Intl.NumberFormat('uz-UZ').format(totalEarnings)} so'm</div>
-          </div>
+    <div className="dashboard-shell max-w-6xl mx-auto">
+      <header className="dashboard-header">
+        <div>
+          <span className="dashboard-badge"><Users size={12} /> Abdora AI</span>
+          <h1>O'qituvchi dashboard</h1>
+          <p>Mavjud o'quvchilar, bu oy yig'ilgan daromad va o'z natijalaringiz.</p>
         </div>
-
-        <div className="grid gap-4 mt-6 sm:grid-cols-3">
-          <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
-            <div className="text-sm text-gray-500 dark:text-gray-400">O'rtacha natija</div>
-            <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{avgScore}%</div>
-          </div>
-          <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Testlar soni</div>
-            <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{totalTests}</div>
-          </div>
-          <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Darslar soni</div>
-            <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{totalLessons}</div>
-          </div>
+        <div className="dashboard-header-actions">
+          <span className="header-status">Live</span>
+          <Link to="/teacher/groups" className="header-button">Guruhlar</Link>
         </div>
-      </div>
+      </header>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="stats-grid">
         {stats.map(({ icon: Icon, label, value, color, bg, link }, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-            <Link to={link} className="card flex items-center gap-3 hover:shadow-glow hover:border-primary/20 transition-all group">
-              <div className={`w-11 h-11 ${bg} rounded-xl flex items-center justify-center`}>
-                <Icon size={20} className={color} />
+            <Link to={link} className="dashboard-stat-card">
+              <div className="stat-icon-wrap">
+                <Icon size={18} className={color} />
               </div>
-              <div>
-                <div className="text-2xl font-bold text-gray-800 dark:text-white">{value}</div>
-                <div className="text-xs text-gray-500">{label}</div>
+              <div className="stat-copy">
+                <strong>{value}</strong>
+                <span>{label}</span>
               </div>
+              <div className="stat-trend"><BookOpen size={14} /></div>
             </Link>
           </motion.div>
         ))}
-      </div>
+      </section>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Groups overview */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><Users size={16} className="text-primary" /> Mening guruhlarim</h3>
-            <Link to="/teacher/groups" className="text-xs text-primary hover:underline">Boshqarish →</Link>
+      <section className="dashboard-grid">
+        <div className="panel-card chart-card">
+          <div className="panel-header">
+            <div>
+              <span className="panel-kicker">Overview</span>
+              <h2>Umumiy natijalar</h2>
+            </div>
+            <span className="tag-pill">Oy</span>
           </div>
-          <div className="space-y-3">
-            {groups?.slice(0, 4).map(g => (
-              <div key={g.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                <div className="w-9 h-9 gradient-bg rounded-xl flex items-center justify-center text-lg">{g.icon || '📚'}</div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">{g.name}</div>
-                  <div className="text-xs text-gray-400">{g.students?.length || 0} students</div>
-                </div>
-                <span className={`badge text-xs ${getSubjectBadgeClass(g.subject)}`}>
-                  {g.subject}
-                </span>
-              </div>
-            ))}
-            {groups?.length === 0 && <div className="text-sm text-gray-400 text-center py-4">Hali guruh yo'q. <Link to="/teacher/groups" className="text-primary hover:underline">Yarating</Link></div>}
+          <div className="mini-metrics">
+            <div className="mini-metric orange">
+              <span>O‘rtacha</span>
+              <strong>{avgScore}%</strong>
+            </div>
+            <div className="mini-metric blue">
+              <span>Testlar</span>
+              <strong>{totalTests}</strong>
+            </div>
+            <div className="mini-metric teal">
+              <span>Darslar</span>
+              <strong>{totalLessons}</strong>
+            </div>
           </div>
         </div>
 
-        {/* AI Lessons status */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><BookOpen size={16} className="text-secondary" /> Darslar (AI holati)</h3>
-            <Link to="/teacher/lessons" className="text-xs text-primary hover:underline">Barcha darslar →</Link>
+        <div className="panel-card side-card">
+          <div className="panel-header compact">
+            <div>
+              <span className="panel-kicker">Daromad</span>
+              <h2>Bu oy</h2>
+            </div>
           </div>
-          <div className="space-y-2">
-            {lessons?.slice(0, 5).map(l => (
-              <div key={l.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800">
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: l.aiContent?.status === 'done' ? '#00BFA6' : l.aiContent?.status === 'generating' ? '#FCD34D' : '#CBD5E1' }} />
-                <span className="text-sm flex-1 truncate">{l.title}</span>
-                <span className={`badge text-xs ${l.aiContent?.status === 'done' ? 'bg-primary/10 text-primary' : l.aiContent?.status === 'generating' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
-                  {l.aiContent?.status}
-                </span>
+          <div className="mini-metrics">
+            <div className="mini-metric orange">
+              <span>So‘m</span>
+              <strong>{new Intl.NumberFormat('uz-UZ').format(totalEarnings)}</strong>
+            </div>
+            <div className="mini-metric blue">
+              <span>O‘quvchi</span>
+              <strong>{totalStudents}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="panel-card">
+          <div className="panel-header">
+            <div>
+              <span className="panel-kicker">Groups</span>
+              <h2>Mening guruhlarim</h2>
+            </div>
+            <Link to="/teacher/groups" className="panel-link">Boshqarish</Link>
+          </div>
+          <div className="branch-list">
+            {groups?.slice(0, 4).map(g => (
+              <div key={g.id} className="branch-row">
+                <div className="branch-main">
+                  <div className="branch-dot">{g.icon || '📚'}</div>
+                  <div className="branch-copy">
+                    <strong>{g.name}</strong>
+                    <span>{g.students?.length || 0} o'quvchi</span>
+                  </div>
+                </div>
+                <div className="branch-meta">
+                  <span>{g.subject}</span>
+                </div>
               </div>
             ))}
-            {!lessons?.length && <div className="text-sm text-gray-400 text-center py-4">Hali dars yo'q.</div>}
+            {groups?.length === 0 && <div className="empty-state">Hali guruh yo‘q.</div>}
           </div>
-          <div className="mt-3 text-xs text-gray-500 flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-primary" /> {aiReadyLessons} of {lessons?.length || 0} lessons have AI content
+        </div>
+
+        <div className="panel-card">
+          <div className="panel-header">
+            <div>
+              <span className="panel-kicker">AI</span>
+              <h2>Darslar holati</h2>
+            </div>
+            <Link to="/teacher/lessons" className="panel-link">Barchasi</Link>
+          </div>
+          <div className="branch-list">
+            {lessons?.slice(0, 5).map(l => (
+              <div key={l.id} className="branch-row">
+                <div className="branch-main">
+                  <div className="branch-dot"><BookOpen size={14} /></div>
+                  <div className="branch-copy">
+                    <strong>{l.title}</strong>
+                    <span>{l.aiContent?.status || 'draft'}</span>
+                  </div>
+                </div>
+                <div className="branch-meta">
+                  <span>{l.aiContent?.status === 'done' ? 'Ready' : 'In progress'}</span>
+                </div>
+              </div>
+            ))}
+            {!lessons?.length && <div className="empty-state">Hali darslar yo‘q.</div>}
           </div>
         </div>
       </div>

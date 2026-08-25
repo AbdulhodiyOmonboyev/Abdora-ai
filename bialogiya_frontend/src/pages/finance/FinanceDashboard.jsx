@@ -106,11 +106,12 @@ export default function FinanceDashboard() {
   const topGroups = (groupsQuery.data?.groups || []).filter(g => g.collected > 0).slice(0, 6);
 
   return (
-    <main className="mx-auto max-w-5xl pb-10">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <main className="dashboard-shell max-w-6xl mx-auto pb-10">
+      <header className="dashboard-header">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-800 dark:text-white">Moliya</h1>
-          <p className="mt-0.5 text-sm text-gray-500">Daromad, xarajat va foyda tahlili</p>
+          <span className="dashboard-badge"><Wallet size={12} /> Moliya</span>
+          <h1>Moliya</h1>
+          <p>Daromad, xarajat va foyda tahlili</p>
         </div>
         <div className="flex items-center gap-2">
           <label htmlFor="finance-month" className="sr-only">Oyni tanlang</label>
@@ -156,7 +157,7 @@ export default function FinanceDashboard() {
             )}
           </div>
 
-          <section aria-labelledby="pl-heading" className="card mb-4">
+          <section aria-labelledby="pl-heading" className="panel-card mb-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 id="pl-heading" className="font-bold text-gray-800 dark:text-white">Daromad va xarajat</h2>
@@ -229,7 +230,7 @@ export default function FinanceDashboard() {
           </section>
 
           {!summaryQuery.isLoading && hasData && s.forecast.basedOnMonths > 1 && (
-            <section aria-labelledby="forecast-heading" className="card mb-4">
+            <section aria-labelledby="forecast-heading" className="panel-card mb-4">
               <h2 id="forecast-heading" className="mb-1 font-bold text-gray-800 dark:text-white">Keyingi oy prognozi</h2>
               <p className="mb-4 text-xs text-gray-400">
                 Oxirgi {s.forecast.basedOnMonths} oyning o'rtachasi asosida — kafolat emas, mo'ljal
@@ -250,7 +251,7 @@ export default function FinanceDashboard() {
           )}
 
           <div className="mb-4 grid gap-4 lg:grid-cols-2">
-            <section aria-labelledby="cat-heading" className="card">
+            <section aria-labelledby="cat-heading" className="panel-card">
               <h2 id="cat-heading" className="mb-4 font-bold text-gray-800 dark:text-white">Xarajat toifalari</h2>
               {summaryQuery.isLoading && <Skeleton className="h-40 w-full rounded-xl" />}
               {!summaryQuery.isLoading && expenseRows.length === 0 && (
@@ -277,7 +278,7 @@ export default function FinanceDashboard() {
               )}
             </section>
 
-            <section aria-labelledby="method-heading" className="card">
+            <section aria-labelledby="method-heading" className="panel-card">
               <h2 id="method-heading" className="mb-4 font-bold text-gray-800 dark:text-white">Tushum turlari</h2>
               {summaryQuery.isLoading && <Skeleton className="h-40 w-full rounded-xl" />}
               {!summaryQuery.isLoading && Object.keys(s.incomeByMethod || {}).length === 0 && (
@@ -296,7 +297,7 @@ export default function FinanceDashboard() {
             </section>
           </div>
 
-          <section aria-labelledby="groups-heading" className="card mb-4">
+          <section aria-labelledby="groups-heading" className="panel-card mb-4">
             <h2 id="groups-heading" className="mb-1 font-bold text-gray-800 dark:text-white">Eng ko'p daromad keltirgan guruhlar</h2>
             <p className="mb-4 text-xs text-gray-400">O'qituvchi ulushi ayirilgandan keyingi sof summa bo'yicha</p>
 
@@ -333,7 +334,7 @@ export default function FinanceDashboard() {
             </ul>
           </section>
 
-          <section aria-labelledby="ai-heading" className="card border-primary/20">
+          <section aria-labelledby="ai-heading" className="panel-card border-primary/20">
             <h2 id="ai-heading" className="mb-3 flex items-center gap-2 font-bold text-gray-800 dark:text-white">
               <Sparkles size={16} className="text-primary" /> AI moliyaviy maslahat
             </h2>

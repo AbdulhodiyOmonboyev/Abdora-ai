@@ -436,30 +436,33 @@ export default function LessonDetail() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
+    <div className="dashboard-shell max-w-5xl mx-auto space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link to={user?.role === 'teacher' ? '/teacher/lessons' : '/student/lessons'} className="btn-ghost p-2 rounded-xl">
-          <ArrowLeft size={18} />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white">{lesson?.title}</h1>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className={`badge ${getSubjectBadgeClass(lesson?.subject)}`}>
-              {getSubjectIcon(lesson?.subject)} {getSubjectLabel(lesson?.subject)}
-            </span>
-            <span className={`badge ${isDone ? 'bg-primary/10 text-primary' : isGenerating ? 'bg-yellow-100 text-yellow-700' : isError ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
-              {isDone ? '✓ AI Ready' : isGenerating ? '⏳ Generating...' : isError ? '⚠ Error' : '• Pending'}
-            </span>
+      <header className="dashboard-header">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Link to={user?.role === 'teacher' ? '/teacher/lessons' : '/student/lessons'} className="header-button">
+            <ArrowLeft size={16} /> Orqaga
+          </Link>
+          <div className="min-w-0">
+            <span className="dashboard-badge"><BookOpen size={12} /> Abdora AI</span>
+            <h1>{lesson?.title}</h1>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className={`badge ${getSubjectBadgeClass(lesson?.subject)}`}>
+                {getSubjectIcon(lesson?.subject)} {getSubjectLabel(lesson?.subject)}
+              </span>
+              <span className={`badge ${isDone ? 'bg-primary/10 text-primary' : isGenerating ? 'bg-yellow-100 text-yellow-700' : isError ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                {isDone ? '✓ AI Ready' : isGenerating ? '⏳ Generating...' : isError ? '⚠ Error' : '• Pending'}
+              </span>
+            </div>
           </div>
         </div>
         {(isError || isDone) && (
           <button onClick={() => regenerateMutation.mutate()} disabled={regenerateMutation.isPending}
-            className="btn-ghost p-2 rounded-xl text-gray-500 hover:text-primary">
+            className="header-button">
             <RefreshCw size={16} className={regenerateMutation.isPending ? 'animate-spin' : ''} />
           </button>
         )}
-      </div>
+      </header>
 
       {/* AI Generating banner */}
       <AnimatePresence>
@@ -503,7 +506,7 @@ export default function LessonDetail() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.2 }}
-          className="card"
+          className="panel-card"
         >
           {activeTab === 'overview' && (
             <div>

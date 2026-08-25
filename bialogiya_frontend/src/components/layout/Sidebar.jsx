@@ -83,19 +83,19 @@ export default function Sidebar({ isOpen, onClose }) {
   return (
     <aside
       className={cn(
-        'w-64 flex-shrink-0 bg-white dark:bg-[#111722] border-r border-gray-100 dark:border-gray-800 flex flex-col h-full overflow-hidden',
+        'w-64 flex-shrink-0 border-r border-slate-800/80 bg-[#0f172a] text-slate-200 flex flex-col h-full overflow-hidden shadow-[0_20px_35px_rgba(15,23,42,0.35)]',
         'fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out',
         'md:relative md:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
       {/* Logo */}
-      <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <div className="p-5 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 gradient-bg rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-glow">A</div>
           <div>
-            <div className="font-bold text-gray-900 dark:text-white text-sm">{t('app_name')}</div>
-            <div className="text-xs text-gray-400">
+            <div className="font-bold text-white text-sm">{t('app_name')}</div>
+            <div className="text-xs text-slate-400">
               {user?.role === 'student' ? 'Student' : user?.role === 'teacher' ? 'Teacher' : user?.role === 'reception' ? 'Reception' : user?.role === 'manager' ? 'Manager' : 'Admin'}
             </div>
           </div>
@@ -103,30 +103,30 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Mobile close button */}
         <button
           onClick={onClose}
-          className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+          className="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-300"
         >
           <X size={18} />
         </button>
       </div>
 
       {/* User card */}
-      <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+      <div className="p-4 border-b border-slate-800">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white font-semibold text-sm">
             {(user?.name || 'U').charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-gray-800 dark:text-white text-sm truncate">{user?.name}</div>
-            <div className="text-xs text-gray-400 truncate">@{user?.username}</div>
+            <div className="font-semibold text-white text-sm truncate">{user?.name}</div>
+            <div className="text-xs text-slate-400 truncate">@{user?.username}</div>
           </div>
         </div>
         {user?.role === 'student' && (
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-gray-500">{t('level')} {level}</span>
+              <span className="text-slate-300">{t('level')} {level}</span>
               <span className="text-primary font-semibold">{user?.xp || 0} XP</span>
             </div>
-            <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
@@ -161,20 +161,20 @@ export default function Sidebar({ isOpen, onClose }) {
       </nav>
 
       {/* Bottom */}
-      <div className="p-4 border-t border-gray-100 dark:border-gray-800">
+      <div className="p-4 border-t border-slate-800">
         {user?.role === 'student' && (
           <div className="flex gap-3 text-xs text-center mb-3">
-            <div className="flex-1 bg-surface dark:bg-gray-800 rounded-xl p-2">
+            <div className="flex-1 bg-slate-800/80 rounded-xl p-2">
               <div className="font-bold text-primary">{user?.streak?.current || 0}</div>
-              <div className="text-gray-500">{t('streak')}</div>
+              <div className="text-slate-400">{t('streak')}</div>
             </div>
-            <div className="flex-1 bg-surface dark:bg-gray-800 rounded-xl p-2">
+            <div className="flex-1 bg-slate-800/80 rounded-xl p-2">
               <div className="font-bold text-secondary">{user?.coins || 0}</div>
-              <div className="text-gray-500">{t('coins')}</div>
+              <div className="text-slate-400">{t('coins')}</div>
             </div>
           </div>
         )}
-        <div className="text-xs text-center text-gray-400">
+        <div className="text-xs text-center text-slate-500">
           © 2026 {t('app_name')}
         </div>
       </div>

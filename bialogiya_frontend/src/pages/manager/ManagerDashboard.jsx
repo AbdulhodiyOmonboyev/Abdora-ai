@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Users, GraduationCap, BookOpen, BarChart2, UserCheck, ArrowUpRight } from 'lucide-react';
+import { Users, GraduationCap, BookOpen, BarChart2, UserCheck, ArrowUpRight, Sparkles, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import api from '../../config/axios';
@@ -19,58 +19,91 @@ export default function ManagerDashboard() {
   const chartData = data?.dailyActivity || [];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8">
-      <div className="gradient-bg rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-white/70 text-xs font-semibold uppercase tracking-wider">Abdora AI / Manager workspace</p>
-            <h1 className="text-2xl font-black mt-1">Menejer paneli</h1>
-            <p className="text-white/75 text-sm mt-1">Markazingizning kundalik faoliyatini bir joydan boshqaring.</p>
-          </div>
-          <Link to="/manager/branches" className="inline-flex items-center gap-2 self-start rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25 transition-colors">
-            Filiallarni ko'rish <ArrowUpRight size={15} />
-          </Link>
+    <div className="dashboard-shell max-w-6xl mx-auto">
+      <header className="dashboard-header">
+        <div>
+          <span className="dashboard-badge"><Sparkles size={12} /> Abdora AI</span>
+          <h1>Menejer paneli</h1>
+          <p>Markazingizning kundalik faoliyatini bir joydan boshqaring.</p>
         </div>
-      </div>
+        <div className="dashboard-header-actions">
+          <span className="header-status">Live</span>
+          <Link to="/manager/branches" className="header-button">Filiallarni ko‘rish <ArrowUpRight size={14} /></Link>
+        </div>
+      </header>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <section className="stats-grid">
         {stats.map(({ icon: Icon, label, value, color, bg }, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="card dashboard-stat flex items-center gap-3">
-            <div className={`w-11 h-11 ${bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
-              <Icon size={20} className={color} />
+          <motion.button
+            key={`${label}-${i}`}
+            type="button"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="dashboard-stat-card"
+          >
+            <div className="stat-icon-wrap">
+              <Icon size={18} className={color} />
             </div>
-            <div>
-              <div className={`text-2xl font-bold ${color}`}>{value}</div>
-              <div className="text-xs text-gray-400">{label}</div>
+            <div className="stat-copy">
+              <strong>{value}</strong>
+              <span>{label}</span>
             </div>
-          </motion.div>
+            <div className="stat-trend"><TrendingUp size={14} /></div>
+          </motion.button>
         ))}
-      </div>
+      </section>
 
-      {chartData.length > 0 && (
-        <div className="card">
-          <div className="flex items-center justify-between gap-3 mb-4">
+      <section className="dashboard-grid">
+        <div className="panel-card chart-card">
+          <div className="panel-header">
             <div>
-              <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <BarChart2 size={16} className="text-primary" /> Kunlik faollik
-              </h3>
-              <p className="text-xs text-gray-500 mt-1">Markazdagi o'quvchi va o'qituvchilar faolligi</p>
+              <span className="panel-kicker">Faollik</span>
+              <h2>Kunlik faollik</h2>
             </div>
-            <span className="badge bg-primary/10 text-primary">So'nggi 7 kun</span>
+            <span className="tag-pill">7 kun</span>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
-              <Line type="monotone" dataKey="students" stroke="var(--primary)" strokeWidth={2.5} name="O'quvchilar" dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="teachers" stroke="var(--secondary)" strokeWidth={2.5} name="O'qituvchilar" dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          {chartData.length > 0 ? (
+            <div className="chart-box">
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.14)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={30} />
+                  <Tooltip contentStyle={{ borderRadius: '14px', background: '#0f172a', border: '1px solid rgba(148,163,184,0.24)', color: '#e2e8f0' }} />
+                  <Line type="monotone" dataKey="students" stroke="#f97316" strokeWidth={2.5} name="O'quvchilar" dot={{ r: 3, fill: '#f97316' }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="teachers" stroke="#38bdf8" strokeWidth={2.5} name="O'qituvchilar" dot={{ r: 3, fill: '#38bdf8' }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="empty-state">Faollik ma’lumotlari yo‘q.</div>
+          )}
         </div>
-      )}
+
+        <div className="panel-card side-card">
+          <div className="panel-header compact">
+            <div>
+              <span className="panel-kicker">Tezkor</span>
+              <h2>Umumiy ko‘rsatkichlar</h2>
+            </div>
+          </div>
+          <div className="mini-metrics">
+            <div className="mini-metric orange">
+              <span>Bugun</span>
+              <strong>{data?.activeToday || 0}</strong>
+            </div>
+            <div className="mini-metric blue">
+              <span>Yangi</span>
+              <strong>{data?.newThisWeek || 0}</strong>
+            </div>
+            <div className="mini-metric teal">
+              <span>Guruhlar</span>
+              <strong>{data?.totalGroups || 0}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

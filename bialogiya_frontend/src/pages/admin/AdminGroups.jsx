@@ -16,13 +16,19 @@ export default function AdminGroups() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Guruhlar ({groups.length})</h1>
+    <div className="dashboard-shell max-w-5xl mx-auto">
+      <header className="dashboard-header">
+        <div>
+          <span className="dashboard-badge"><Users size={12} /> Abdora AI</span>
+          <h1>Guruhlar ({groups.length})</h1>
+          <p>Faol guruhlar va o'qituvchilar kiritilgan jadval.</p>
+        </div>
+      </header>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {groups?.map((g, i) => (
           <motion.div key={g.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="card hover:shadow-soft transition-all cursor-pointer"
+            className="panel-card hover:shadow-soft transition-all cursor-pointer"
             onClick={() => navigate(`/${user?.role === 'manager' ? 'manager' : 'admin'}/groups/${g.id}`)}>
             <div className="flex items-start gap-3 mb-3">
               <div className="w-11 h-11 gradient-bg rounded-2xl flex items-center justify-center text-2xl">{g.icon || '📚'}</div>

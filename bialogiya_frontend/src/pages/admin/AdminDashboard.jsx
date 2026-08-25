@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
-import { Users, GraduationCap, UserCheck, BarChart2, Building2, Inbox, MapPin, ArrowRight } from 'lucide-react';
+import { Users, GraduationCap, UserCheck, BarChart2, Building2, Inbox, MapPin, ArrowRight, TrendingUp, Sparkles } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import api from '../../config/axios';
 import { useAuthStore } from '../../store/authStore';
@@ -29,120 +29,129 @@ export default function AdminDashboard() {
     ] : []),
   ].filter((tile) => baseRole !== 'admin' || !tile.path.endsWith('/teachers') && !tile.path.endsWith('/students'));
 
+  const visibleStats = stats.slice(0, 4);
   const chartData = data?.dailyActivity || [];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="gradient-bg rounded-3xl p-6 text-white shadow-lg">
-        <h1 className="text-2xl font-black">{title}</h1>
-        <p className="text-white/80 text-sm mt-1">{subtitle}</p>
-      </div>
+    <div className="dashboard-shell max-w-6xl mx-auto">
+      <header className="dashboard-header">
+        <div>
+          <span className="dashboard-badge"><Sparkles size={12} /> Abdora AI</span>
+          <h1>{title}</h1>
+          <p>{subtitle}</p>
+        </div>
+        <div className="dashboard-header-actions">
+          <span className="header-status">Live</span>
+          <button type="button" onClick={() => navigate(`/${baseRole}/dashboard`)} className="header-button">Barcha ma’lumotlar</button>
+        </div>
+      </header>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        {stats.map(({ icon: Icon, label, value, color, bg, path }, i) => (
-          <motion.div
-            key={i}
+      <section className="stats-grid">
+        {visibleStats.map(({ icon: Icon, label, value, color, bg, path }, i) => (
+          <motion.button
+            key={`${label}-${i}`}
+            type="button"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
             onClick={() => navigate(path)}
-            className="card flex items-center gap-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <div className={`w-11 h-11 ${bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
-              <Icon size={20} className={color} />
+            className="dashboard-stat-card"
+          >
+            <div className="stat-icon-wrap">
+              <Icon size={18} className={color} />
             </div>
-            <div>
-              <div className={`text-2xl font-bold ${color}`}>{value}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">{label}</div>
+            <div className="stat-copy">
+              <strong>{value}</strong>
+              <span>{label}</span>
             </div>
-          </motion.div>
+            <div className="stat-trend"><TrendingUp size={14} /></div>
+          </motion.button>
         ))}
-      </div>
+      </section>
 
-      {/* Branches list (admin only) */}
-      {baseRole === 'admin' && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              <Building2 size={16} className="text-primary" /> Markazlar ({data?.branches?.length || 0})
-            </h3>
-            <Link to="/admin/branches" className="text-xs text-primary hover:underline flex items-center gap-1">
-              Barchasi <ArrowRight size={12} />
-            </Link>
+      <section className="dashboard-grid">
+        <div className="panel-card chart-card">
+          <div className="panel-header">
+            <div>
+              <span className="panel-kicker">Faollik</span>
+              <h2>Kunlik faollik</h2>
+            </div>
+            <span className="tag-pill">7 kun</span>
           </div>
+          {chartData.length > 0 ? (
+            <div className="chart-box">
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.14)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={30} />
+                  <Tooltip contentStyle={{ borderRadius: '14px', background: '#0f172a', border: '1px solid rgba(148,163,184,0.24)', color: '#e2e8f0' }} />
+                  <Line type="monotone" dataKey="students" stroke="#f97316" strokeWidth={2.5} name="O'quvchilar" dot={{ r: 3, fill: '#f97316' }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="teachers" stroke="#38bdf8" strokeWidth={2.5} name="O'qituvchilar" dot={{ r: 3, fill: '#38bdf8' }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="empty-state">Faollik ma’lumotlari yo‘q.</div>
+          )}
+        </div>
+
+        <div className="panel-card side-card">
+          <div className="panel-header compact">
+            <div>
+              <span className="panel-kicker">Tezkor</span>
+              <h2>Umumiy ko‘rsatkichlar</h2>
+            </div>
+          </div>
+          <div className="mini-metrics">
+            <div className="mini-metric orange">
+              <span>Bugun</span>
+              <strong>{data?.activeToday || 0}</strong>
+            </div>
+            <div className="mini-metric blue">
+              <span>Yangi</span>
+              <strong>{data?.newThisWeek || 0}</strong>
+            </div>
+            <div className="mini-metric teal">
+              <span>Arizalar</span>
+              <strong>{data?.pendingApplications || 0}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {baseRole === 'admin' && (
+        <section className="panel-card table-card">
+          <div className="panel-header">
+            <div>
+              <span className="panel-kicker">Markazlar</span>
+              <h2>Markazlar ro‘yxati</h2>
+            </div>
+            <Link to="/admin/branches" className="panel-link">Barchasi <ArrowRight size={13} /></Link>
+          </div>
+
           {Array.isArray(data?.branches) && data.branches.length > 0 ? (
-            <div className="space-y-2">
+            <div className="branch-list">
               {data.branches.map((b) => (
-                <div
-                  key={b.id}
-                  onClick={() => navigate(`/admin/branches/${b.id}`)}
-                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary grid place-items-center font-semibold flex-shrink-0">
-                    <Building2 size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">{b.name}</div>
-                    <div className="text-xs text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      {b.address && (
-                        <span className="flex items-center gap-1 truncate max-w-[220px]"><MapPin size={10} /> {b.address}</span>
-                      )}
-                      <span>{b.manager?.name ? `Manager: ${b.manager.name}` : 'Manager biriktirilmagan'}</span>
+                <button key={b.id} type="button" onClick={() => navigate(`/admin/branches/${b.id}`)} className="branch-row">
+                  <div className="branch-main">
+                    <div className="branch-dot"><Building2 size={14} /></div>
+                    <div className="branch-copy">
+                      <strong>{b.name}</strong>
+                      <span>{b.address || 'Manzil ko’rsatilmagan'}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-gray-500 flex-shrink-0">
-                    <span className="badge bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400">{b.teachersCount} o'qit.</span>
-                    <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400">{b.studentsCount} o'quv.</span>
-                    <span className="badge bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">{b.groupsCount} guruh</span>
+                  <div className="branch-meta">
+                    <span>{b.teachersCount || 0} o‘qituvchilar</span>
+                    <span>{b.studentsCount || 0} o‘quvchilar</span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           ) : (
-            <div className="text-center py-10 text-gray-400 text-sm">
-              Hali markazlar yo'q. <Link to="/admin/branches" className="text-primary hover:underline">Birinchi markazni qo'shing</Link>.
-            </div>
+            <div className="empty-state">Hali markazlar qo‘shilmagan.</div>
           )}
-        </div>
-      )}
-
-      {/* Activity chart */}
-      {chartData.length > 0 && (
-        <div className="card">
-          <h3 className="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <BarChart2 size={16} className="text-primary" /> Kunlik faollik
-          </h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
-              <Line type="monotone" dataKey="students" stroke="#00BFA6" strokeWidth={2} name="O'quvchilar" dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="teachers" stroke="#0099FF" strokeWidth={2} name="O'qituvchilar" dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Recent users (manager/reception only — admin sees the branches list instead) */}
-      {baseRole !== 'admin' && data?.recentUsers?.length > 0 && (
-        <div className="card">
-          <h3 className="font-bold text-gray-800 dark:text-white mb-3">Yaqinda qo'shilganlar</h3>
-          <div className="space-y-2">
-            {data.recentUsers.map((u) => (
-              <div key={u.id} className="flex items-center gap-3 py-1">
-                <div className="w-8 h-8 gradient-bg rounded-full flex items-center justify-center text-white text-xs font-semibold">{u.name?.charAt(0)}</div>
-                <div className="flex-1 text-sm min-w-0">
-                  <span className="font-medium text-gray-800 dark:text-white truncate block">{u.name}</span>
-                  <span className="text-gray-400 text-xs">@{u.username}</span>
-                </div>
-                <span className={`badge text-xs capitalize ${u.role === 'teacher' ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'}`}>{u.role === 'teacher' ? 'O\'qituvchi' : u.role === 'student' ? 'O\'quvchi' : u.role}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        </section>
       )}
     </div>
   );

@@ -89,20 +89,29 @@ export default function AdminTeachers() {
   return (
     <div className="max-w-4xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
-      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">O'qituvchilar</h1>
-        <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
-          <Plus size={15} /> O'qituvchi qo'shish
-        </button>
+      <div className="dashboard-shell max-w-5xl mx-auto">
+        <header className="dashboard-header">
+          <div>
+            <span className="dashboard-badge"><Users size={12} /> Abdora AI</span>
+            <h1>O'qituvchilar</h1>
+            <p>Ushbu sahifada o'qituvchilar ro'yxati va faoliyati ko'rsatiladi.</p>
+          </div>
+          <div className="dashboard-header-actions">
+            <span className="header-status">Live</span>
+            <button onClick={() => setShowCreate(true)} className="header-button">
+              <Plus size={14} /> O'qituvchi qo'shish
+            </button>
+          </div>
+        </header>
       </div>
 
       {/* Teacher list */}
-      <div className="space-y-2">
+      <div className="space-y-3 max-w-5xl mx-auto">
         {teachers?.map((t, i) => {
           const isEditing = editingId === t.id;
           return (
             <motion.div key={t.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-              className="card">
+              className="panel-card">
               {isEditing ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">

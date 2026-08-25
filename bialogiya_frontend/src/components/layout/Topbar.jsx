@@ -143,7 +143,7 @@ export default function Topbar({ onMenuClick }) {
 
   return (
     <>
-      <header className="app-topbar h-14 md:h-16 bg-white dark:bg-[#111722] border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-3 md:px-6 z-30 flex-shrink-0">
+      <header className="app-topbar h-14 md:h-16 border-b border-slate-800/80 bg-[#0f172a] text-slate-100 flex items-center justify-between px-3 md:px-6 z-30 flex-shrink-0 shadow-[0_12px_24px_rgba(15,23,42,0.18)]">
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
           {/* Hamburger — mobile only */}
           <button
@@ -155,7 +155,7 @@ export default function Topbar({ onMenuClick }) {
 
           {/* Date */}
           <div className="hidden md:flex flex-col min-w-0">
-            <h1 className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 truncate">
+            <h1 className="text-xs sm:text-sm font-semibold text-slate-300 truncate">
               {new Date().toLocaleDateString(
                 i18n.language === 'uz' ? 'uz-UZ' : i18n.language === 'ru' ? 'ru-RU' : 'en-US',
                 { weekday: 'long', month: 'long', day: 'numeric' }

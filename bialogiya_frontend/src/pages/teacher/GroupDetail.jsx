@@ -61,27 +61,25 @@ export default function GroupDetail() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(`/${user?.role === 'manager' ? 'manager' : 'teacher'}/groups`)} className="btn-ghost p-2 rounded-xl">
-          <ArrowLeft size={18} />
-        </button>
-        <div className="flex items-center gap-3 flex-1">
-          <div className="w-12 h-12 gradient-bg rounded-2xl flex items-center justify-center text-2xl">
+    <div className="dashboard-shell max-w-5xl mx-auto">
+      <header className="dashboard-header">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <button onClick={() => navigate(`/${user?.role === 'manager' ? 'manager' : 'teacher'}/groups`)} className="header-button">
+            <ArrowLeft size={16} /> Back
+          </button>
+          <div className="w-12 h-12 gradient-bg rounded-2xl flex items-center justify-center text-2xl shadow-glow">
             {group?.icon || '📚'}
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-800 dark:text-white">{group?.name}</h1>
-            <span className={`badge text-xs ${getSubjectBadgeClass(group?.subject)}`}>
-              {getSubjectLabel(group?.subject)}
-            </span>
+          <div className="min-w-0">
+            <span className="dashboard-badge"><Users size={12} /> Abdora AI</span>
+            <h1>{group?.name}</h1>
+            <p>{getSubjectLabel(group?.subject)}</p>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Payment month selector */}
-      <div className="card">
+      <div className="panel-card">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <CreditCard size={18} className="text-primary" />
@@ -124,7 +122,7 @@ export default function GroupDetail() {
       </div>
 
       {/* Student list with freeze/actions */}
-      <div className="card">
+      <div className="panel-card">
         <h2 className="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
           <Users size={17} className="text-primary" />
           O'quvchilar ro'yxati
@@ -139,7 +137,7 @@ export default function GroupDetail() {
             const isSelected = selectedStudentId === s.id;
             return (
               <motion.div key={s.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                className={`rounded-xl border transition-all ${isSelected ? 'border-primary/40 bg-primary/5' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'}`}>
+                className={`rounded-xl border transition-all ${isSelected ? 'border-primary/40 bg-primary/5' : 'border-slate-800 bg-slate-900/40'}`}>
                 <button type="button" onClick={() => setSelectedStudentId(isSelected ? null : s.id)}
                   className="w-full text-left p-3 flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0
@@ -148,7 +146,7 @@ export default function GroupDetail() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm text-gray-800 dark:text-white">{s.name}</div>
-                    <div className="text-xs text-gray-400 flex flex-wrap gap-2">
+                    <div className="text-xs text-slate-400 flex flex-wrap gap-2">
                       <span>@{s.username}</span>
                       <span>Lv.{s.level}</span>
                       <span>{s.xp} XP</span>
@@ -158,16 +156,16 @@ export default function GroupDetail() {
                       <span className={`px-2 py-1 rounded-full ${isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
                         {isPaid ? "To'landi" : "To'lanmadi"}
                       </span>
-                      {paidAt && <span className="text-gray-400">Oxirgi to'lov: {paidAt}</span>}
+                      {paidAt && <span className="text-slate-400">Oxirgi to'lov: {paidAt}</span>}
                     </div>
                   </div>
                 </button>
                 {isSelected && (
-                  <div className="mt-3 rounded-3xl border border-gray-200 bg-white p-4 text-sm text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200">
+                  <div className="mt-3 rounded-3xl border border-slate-800 bg-slate-950/80 p-4 text-sm text-slate-200 shadow-sm">
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <div>
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">{s.name} haqida ma'lumot</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">To'lov va profil holati</div>
+                        <div className="text-sm font-semibold text-white">{s.name} haqida ma'lumot</div>
+                        <div className="text-xs text-slate-400">To'lov va profil holati</div>
                       </div>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
                         {isPaid ? "To'landi" : "To'lanmadi"}
@@ -175,24 +173,24 @@ export default function GroupDetail() {
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Login</div>
-                        <div className="rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2 dark:border-gray-800 dark:bg-gray-900">@{s.username}</div>
+                        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Login</div>
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-2 text-slate-200">@{s.username}</div>
                       </div>
                       <div className="space-y-2">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Telefon</div>
-                        <div className="rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2 dark:border-gray-800 dark:bg-gray-900">{s.phone || "Noma'lum"}</div>
+                        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Telefon</div>
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-2 text-slate-200">{s.phone || "Noma'lum"}</div>
                       </div>
                       <div className="space-y-2">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Daraja</div>
-                        <div className="rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2 dark:border-gray-800 dark:bg-gray-900">Lv.{s.level}</div>
+                        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Daraja</div>
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-2 text-slate-200">Lv.{s.level}</div>
                       </div>
                       <div className="space-y-2">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">XP</div>
-                        <div className="rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2 dark:border-gray-800 dark:bg-gray-900">{s.xp} XP</div>
+                        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">XP</div>
+                        <div className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-2 text-slate-200">{s.xp} XP</div>
                       </div>
                     </div>
                     {paidAt && (
-                      <div className="mt-4 rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+                      <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-400">
                         Oxirgi to'lov: {paidAt}
                       </div>
                     )}
@@ -202,7 +200,7 @@ export default function GroupDetail() {
             );
           })}
           {students.length === 0 && (
-            <div className="text-center py-10 text-gray-400">
+            <div className="text-center py-10 text-slate-400">
               <Users size={32} className="mx-auto mb-2 opacity-30" />
               <p className="text-sm">Hali o'quvchilar yo'q. Birinchi o'quvchini qo'shing!</p>
             </div>

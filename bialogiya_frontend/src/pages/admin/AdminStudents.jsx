@@ -26,10 +26,14 @@ export default function AdminStudents() {
   const filtered = Array.isArray(students) ? students.filter(s => !search || s.name?.toLowerCase().includes(search.toLowerCase()) || s.username?.toLowerCase().includes(search.toLowerCase())) : [];
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Students ({students?.length || 0})</h1>
-      </div>
+    <div className="dashboard-shell max-w-5xl mx-auto">
+      <header className="dashboard-header">
+        <div>
+          <span className="dashboard-badge"><GraduationCap size={12} /> Abdora AI</span>
+          <h1>Students ({students?.length || 0})</h1>
+          <p>O'quvchilar ro'yxati va statuslari ma'lum qiladi.</p>
+        </div>
+      </header>
 
       <div className="relative mb-4">
         <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -37,12 +41,12 @@ export default function AdminStudents() {
           className="input-field pl-10" />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {filtered.map((s, i) => {
           const { level } = getLevelProgress(s.xp);
           return (
             <motion.div key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
-              className="card flex items-center gap-3">
+              className="panel-card flex items-center gap-3">
               <div className="w-9 h-9 gradient-bg rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">{s.name?.charAt(0)}</div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm">{s.name}</div>

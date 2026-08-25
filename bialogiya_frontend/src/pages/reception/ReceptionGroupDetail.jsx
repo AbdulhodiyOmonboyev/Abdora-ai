@@ -136,53 +136,56 @@ export default function ReceptionGroupDetail() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="dashboard-shell max-w-5xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/reception/groups')} className="btn-ghost p-2 rounded-xl">
-          <ArrowLeft size={18} />
-        </button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white">{group?.name}</h1>
-          <p className="text-sm text-gray-400">
-            {group?.teacher?.name || 'O\'qituvchi biriktirilmagan'} · {students.length} o'quvchi
-            {monthlyFee > 0 && ` · ${fmt(monthlyFee)} so'm/oy`}
-          </p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
-            {parseWeekDays(group?.weekDays).length > 0 && (
-              <span className="text-xs text-primary/80 flex items-center gap-1">
-                <Calendar size={11} />
-                {parseWeekDays(group.weekDays).map(d => DAYS.find(x => x.key === d)?.label).filter(Boolean).join(', ')}
-              </span>
-            )}
-            {group?.startTime && (
-              <span className="text-xs text-primary/80 flex items-center gap-1">
-                <Clock size={11} />
-                {group.startTime}{group.endTime ? `–${group.endTime}` : ''}
-              </span>
-            )}
-            {group?.room && (
-              <span className="text-xs text-gray-400 flex items-center gap-1">
-                <DoorOpen size={11} />{group.room}
-              </span>
-            )}
-            {group?.branch?.name && (
-              <span className="text-xs text-gray-400 flex items-center gap-1">
-                <Building2 size={11} />{group.branch.name}
-              </span>
-            )}
+      <header className="dashboard-header">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <button onClick={() => navigate('/reception/groups')} className="header-button">
+            <ArrowLeft size={16} /> Guruhlar
+          </button>
+          <div className="min-w-0">
+            <span className="dashboard-badge"><Building2 size={12} /> Reception</span>
+            <h1>{group?.name}</h1>
+            <p>
+              {group?.teacher?.name || 'O\'qituvchi biriktirilmagan'} · {students.length} o'quvchi
+              {monthlyFee > 0 && ` · ${fmt(monthlyFee)} so'm/oy`}
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
+              {parseWeekDays(group?.weekDays).length > 0 && (
+                <span className="text-xs text-primary/80 flex items-center gap-1">
+                  <Calendar size={11} />
+                  {parseWeekDays(group.weekDays).map(d => DAYS.find(x => x.key === d)?.label).filter(Boolean).join(', ')}
+                </span>
+              )}
+              {group?.startTime && (
+                <span className="text-xs text-primary/80 flex items-center gap-1">
+                  <Clock size={11} />
+                  {group.startTime}{group.endTime ? `–${group.endTime}` : ''}
+                </span>
+              )}
+              {group?.room && (
+                <span className="text-xs text-slate-400 flex items-center gap-1">
+                  <DoorOpen size={11} />{group.room}
+                </span>
+              )}
+              {group?.branch?.name && (
+                <span className="text-xs text-slate-400 flex items-center gap-1">
+                  <Building2 size={11} />{group.branch.name}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2">
           <Plus size={15} /> O'quvchi qo'shish
         </button>
-      </div>
+      </header>
 
       {/* Course progress — the thing reception checks before placing a new
           student into an already-running group. */}
       {group?.progress && (
-        <section aria-labelledby="progress-heading" className="card mb-5">
+        <section aria-labelledby="progress-heading" className="panel-card mb-5">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 id="progress-heading" className="font-bold text-gray-800 dark:text-white">Kurs qayerga yetdi</h2>
@@ -233,7 +236,7 @@ export default function ReceptionGroupDetail() {
 
       {/* Lessons + Materials summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-        <div className="card flex items-center gap-3">
+        <div className="panel-card flex items-center gap-3">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
             <BookOpen size={17} className="text-primary" />
           </div>
@@ -242,7 +245,7 @@ export default function ReceptionGroupDetail() {
             <div className="text-xs text-gray-400">Yuklangan darslar</div>
           </div>
         </div>
-        <div className="card flex items-center gap-3">
+        <div className="panel-card flex items-center gap-3">
           <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
             <FileText size={17} className="text-amber-600" />
           </div>
@@ -255,7 +258,7 @@ export default function ReceptionGroupDetail() {
 
       {/* Lessons list */}
       {lessons?.length > 0 && (
-        <div className="card mb-5">
+        <div className="panel-card mb-5">
           <h2 className="font-bold text-sm mb-3 text-gray-800 dark:text-white">Darslar (mavzular)</h2>
           <div className="space-y-2">
             {lessons.map(l => (
@@ -275,7 +278,7 @@ export default function ReceptionGroupDetail() {
 
       {/* PDF / materials list */}
       {resources?.length > 0 && (
-        <div className="card mb-5">
+        <div className="panel-card mb-5">
           <h2 className="font-bold text-sm mb-3 text-gray-800 dark:text-white">Materiallar</h2>
           <div className="space-y-2">
             {resources.map(r => (
@@ -300,7 +303,7 @@ export default function ReceptionGroupDetail() {
       )}
 
       {/* Students table */}
-      <div className="card overflow-hidden p-0">
+      <div className="panel-card overflow-hidden p-0">
         {students.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <User size={36} className="mx-auto mb-3 opacity-30" />
@@ -435,7 +438,7 @@ export default function ReceptionGroupDetail() {
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
             onClick={e => e.target === e.currentTarget && setShowAdd(false)}>
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-md">
+              className="bg-slate-950 rounded-3xl p-6 w-full max-w-md border border-slate-800">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-lg">O'quvchi qo'shish</h2>
                 <button onClick={() => { setShowAdd(false); setNewCreds(null); }} className="btn-ghost p-1.5 rounded-lg">

@@ -34,13 +34,13 @@ function InfoRow({ icon: Icon, label, value }) {
 
 function StatCard({ icon: Icon, label, value }) {
   return (
-    <div className="rounded-3xl bg-gray-50 dark:bg-gray-900 p-4 flex items-center gap-3">
+    <div className="rounded-3xl bg-slate-950/60 border border-slate-800 p-4 flex items-center gap-3">
       <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary grid place-items-center flex-shrink-0">
         <Icon size={18} />
       </div>
       <div className="min-w-0">
-        <div className="text-lg font-bold text-gray-800 dark:text-white leading-tight">{value}</div>
-        <div className="text-xs text-gray-500 truncate">{label}</div>
+        <div className="text-lg font-bold text-white leading-tight">{value}</div>
+        <div className="text-xs text-slate-400 truncate">{label}</div>
       </div>
     </div>
   );
@@ -67,7 +67,7 @@ export default function UserDetail() {
 
   if (isError || !user) {
     return (
-      <div className="max-w-3xl mx-auto">
+      <div className="dashboard-shell max-w-5xl mx-auto">
         <div className="mb-6">{back}</div>
         <ErrorState
           error={error}
@@ -83,18 +83,21 @@ export default function UserDetail() {
   const branchName = user.branch?.name || user.group?.branch?.name || ownBranches.map(b => b.name).join(', ');
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        {back}
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white truncate">{user.name || user.username}</h1>
-          <p className="text-sm text-gray-500">Foydalanuvchi ma'lumotlari</p>
+    <div className="dashboard-shell max-w-5xl mx-auto">
+      <header className="dashboard-header">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {back}
+          <div className="min-w-0">
+            <span className="dashboard-badge"><ShieldCheck size={12} /> Abdora AI</span>
+            <h1>{user.name || user.username}</h1>
+            <p>Foydalanuvchi ma'lumotlari</p>
+          </div>
         </div>
-      </div>
+      </header>
 
       <motion.div
         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-        className="card space-y-5"
+        className="panel-card space-y-5"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -124,15 +127,15 @@ export default function UserDetail() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-3 p-4 rounded-3xl bg-gray-50 dark:bg-gray-900">
-            <div className="text-xs uppercase tracking-wide text-gray-500">Aloqa</div>
+          <div className="space-y-3 p-4 rounded-3xl bg-slate-950/50 border border-slate-800">
+            <div className="text-xs uppercase tracking-wide text-slate-400">Aloqa</div>
             <InfoRow icon={Phone} label="Telefon" value={user.phone} />
             <InfoRow icon={Mail} label="Email" value={user.email} />
             <InfoRow icon={MapPin} label="Manzil" value={user.address} />
           </div>
 
-          <div className="space-y-3 p-4 rounded-3xl bg-gray-50 dark:bg-gray-900">
-            <div className="text-xs uppercase tracking-wide text-gray-500">Ma'lumot</div>
+          <div className="space-y-3 p-4 rounded-3xl bg-slate-950/50 border border-slate-800">
+            <div className="text-xs uppercase tracking-wide text-slate-400">Ma'lumot</div>
             <InfoRow icon={ShieldCheck} label="Rol" value={roleLabel} />
             <InfoRow icon={Building2} label="Filial" value={branchName} />
             {user.role === 'student' && (
@@ -165,7 +168,7 @@ export default function UserDetail() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-gray-100 dark:border-gray-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-slate-800">
           <div className="pt-4">
             <InfoRow icon={CalendarCheck} label="Qo'shilgan" value={user.createdAt && formatDate(user.createdAt)} />
           </div>
