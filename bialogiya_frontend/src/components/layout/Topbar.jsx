@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Sun, Moon, LogOut, Globe, ChevronDown, Menu, KeyRound, User, Eye, EyeOff, Search } from 'lucide-react';
+import {
+  Bell, Sun, Moon, LogOut, Globe, ChevronDown, Menu,
+  KeyRound, User, Eye, EyeOff, Search, X, Check,
+} from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +21,12 @@ const ROLE_LABELS = {
   student: "O'quvchi",
 };
 
+const dropdownVariants = {
+  hidden: { opacity: 0, y: 6, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.15, ease: 'easeOut' } },
+  exit: { opacity: 0, y: 4, scale: 0.97, transition: { duration: 0.1 } },
+};
+
 export default function Topbar({ onMenuClick }) {
   const { user, clearAuth } = useAuthStore();
   const { theme, toggle } = useThemeStore();
@@ -25,6 +34,7 @@ export default function Topbar({ onMenuClick }) {
   const navigate = useNavigate();
   const location = useLocation();
   const searchRef = useRef(null);
+
   const [showNotifs, setShowNotifs] = useState(false);
   const [showLang, setShowLang] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -36,6 +46,8 @@ export default function Topbar({ onMenuClick }) {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showHeaderResults, setShowHeaderResults] = useState(false);
 
+  const closeAll = () => { setShowNotifs(false); setShowLang(false); setShowProfile(false); };
+
   const searchPath = user?.role === 'admin'
     ? '/admin/branches'
     : user?.role === 'manager'
@@ -46,8 +58,7 @@ export default function Topbar({ onMenuClick }) {
     ? "Filial nomi bo'yicha qidirish"
     : "Markaz nomi bo'yicha qidirish";
 
-  // Keep the input in sync with ?search= while on the results page (back/forward,
-  // shared links) without an effect - adjusting state during render, React-style.
+  // Sync input with URL ?search= on back/forward navigation
   const urlSearch = searchPath && location.pathname.startsWith(searchPath)
     ? new URLSearchParams(location.search).get('search') || ''
     : null;
@@ -58,19 +69,16 @@ export default function Topbar({ onMenuClick }) {
   }
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(headerSearch.trim());
-    }, 250);
+    const timer = setTimeout(() => setDebouncedSearch(headerSearch.trim()), 250);
     return () => clearTimeout(timer);
   }, [headerSearch]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
         setShowHeaderResults(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -84,16 +92,15 @@ export default function Topbar({ onMenuClick }) {
     staleTime: 1000 * 60 * 5,
   });
 
-  // The debounce timer keeps `debouncedSearch` behind the input for 250ms - without
-  // this the dropdown flashes "topilmadi" before the request is even fired.
   const searchPending = isHeaderSearching || debouncedSearch !== headerSearch.trim();
 
-  const handleSearchSubmit = (event) => {
-    event.preventDefault();
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
     if (!searchPath) return;
     const params = new URLSearchParams();
     if (headerSearch.trim()) params.set('search', headerSearch.trim());
     navigate(`${searchPath}${params.toString() ? `?${params.toString()}` : ''}`);
+    setShowHeaderResults(false);
   };
 
   const { data: notifData, refetch } = useQuery({
@@ -139,108 +146,137 @@ export default function Topbar({ onMenuClick }) {
     setShowLang(false);
   };
 
-  const notifIcons = { homework: '📚', exam: '✍️', announcement: '📢', achievement: '🏆', grade: '⭐', ai_reminder: '🤖' };
+  const initials = (user?.name || 'U').charAt(0).toUpperCase();
+
+  const pwStrength = pwForm.newPw.length >= 10 ? 4 : pwForm.newPw.length >= 8 ? 3 : pwForm.newPw.length >= 6 ? 2 : pwForm.newPw.length >= 2 ? 1 : 0;
+  const strengthColors = ['bg-gray-200', 'bg-red-400', 'bg-yellow-400', 'bg-blue-400', 'bg-green-400'];
 
   return (
     <>
-      <header className="app-topbar h-14 md:h-16 border-b border-slate-800/80 bg-[#0f172a] text-slate-100 flex items-center justify-between px-3 md:px-6 z-30 flex-shrink-0 shadow-[0_12px_24px_rgba(15,23,42,0.18)]">
-        <div className="flex items-center gap-2 md:gap-3 min-w-0">
-          {/* Hamburger — mobile only */}
+      <header className="app-topbar">
+        {/* Left */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={onMenuClick}
-            className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 flex-shrink-0"
+            className="btn-icon md:hidden"
+            aria-label="Toggle menu"
           >
-            <Menu size={20} />
+            <Menu size={20} style={{ color: 'var(--text-secondary)' }} />
           </button>
 
-          {/* Date */}
-          <div className="hidden md:flex flex-col min-w-0">
-            <h1 className="text-xs sm:text-sm font-semibold text-slate-300 truncate">
+          <div className="hidden md:flex flex-col justify-center">
+            <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
               {new Date().toLocaleDateString(
                 i18n.language === 'uz' ? 'uz-UZ' : i18n.language === 'ru' ? 'ru-RU' : 'en-US',
                 { weekday: 'long', month: 'long', day: 'numeric' }
               )}
-            </h1>
+            </span>
           </div>
         </div>
 
+        {/* Center — Search */}
         {searchPath && (
-          <div ref={searchRef} className="hidden md:flex flex-1 max-w-xl relative mx-4">
+          <div ref={searchRef} className="hidden md:flex flex-1 max-w-md relative mx-4">
             <form onSubmit={handleSearchSubmit} className="w-full">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                value={headerSearch}
-                onChange={(e) => {
-                  setHeaderSearch(e.target.value);
-                  setShowHeaderResults(true);
-                }}
-                onFocus={() => setShowHeaderResults(Boolean(headerSearch.trim()))}
-                onKeyDown={(e) => e.key === 'Escape' && setShowHeaderResults(false)}
-                placeholder={searchPlaceholder}
-                className="input-field w-full pl-10 pr-3"
-              />
-            </form>
-            {showHeaderResults && headerSearch.trim() && (
-              <div className="absolute left-0 right-0 top-full mt-2 rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden z-40 max-h-96 overflow-y-auto">
-                {searchPending ? (
-                  <div className="p-3 text-sm text-gray-500 dark:text-gray-400">Qidirilmoqda...</div>
-                ) : headerSearchFailed ? (
-                  <div className="p-3 text-sm text-red-500">Qidiruvda xatolik. Qayta urinib ko'ring.</div>
-                ) : headerUsers.length === 0 ? (
-                  <div className="p-3 text-sm text-gray-500 dark:text-gray-400">Hech narsa topilmadi.</div>
-                ) : (
-                  headerUsers.slice(0, 8).map((result) => (
-                    <button
-                      key={result.id}
-                      type="button"
-                      onClick={() => {
-                        setShowHeaderResults(false);
-                        navigate(`/users/${result.id}`);
-                      }}
-                      className="w-full flex items-center gap-3 text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <div className="w-8 h-8 rounded-full gradient-bg text-white grid place-items-center text-xs font-bold flex-shrink-0">
-                        {(result.name || result.username || '?').charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">{result.name || "Noma'lum"}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-2">
-                          <span className="truncate">@{result.username}</span>
-                          {result.phone && <span className="truncate">{result.phone}</span>}
-                        </div>
-                      </div>
-                      <span className="badge text-[10px] bg-primary/10 text-primary flex-shrink-0">
-                        {ROLE_LABELS[result.role] || result.role}
-                      </span>
-                    </button>
-                  ))
+              <div className="search-input-wrap">
+                <Search size={16} className="search-icon" />
+                <input
+                  value={headerSearch}
+                  onChange={(e) => {
+                    setHeaderSearch(e.target.value);
+                    setShowHeaderResults(Boolean(e.target.value.trim()));
+                  }}
+                  onFocus={() => setShowHeaderResults(Boolean(headerSearch.trim()))}
+                  onKeyDown={(e) => e.key === 'Escape' && setShowHeaderResults(false)}
+                  placeholder={searchPlaceholder}
+                  className="input-field"
+                  style={{ height: '2.375rem', fontSize: '0.8125rem' }}
+                />
+                {headerSearch && (
+                  <button
+                    type="button"
+                    onClick={() => { setHeaderSearch(''); setShowHeaderResults(false); }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    <X size={14} />
+                  </button>
                 )}
               </div>
-            )}
+            </form>
+
+            <AnimatePresence>
+              {showHeaderResults && headerSearch.trim() && (
+                <motion.div
+                  {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
+                  className="absolute left-0 right-0 top-full mt-1.5 dropdown-panel w-full max-h-80 overflow-y-auto z-50"
+                >
+                  {searchPending ? (
+                    <div className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>Qidirilmoqda...</div>
+                  ) : headerSearchFailed ? (
+                    <div className="px-4 py-3 text-sm" style={{ color: 'var(--error)' }}>Qidiruvda xatolik yuz berdi.</div>
+                  ) : headerUsers.length === 0 ? (
+                    <div className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>Hech narsa topilmadi.</div>
+                  ) : (
+                    headerUsers.slice(0, 8).map((result) => (
+                      <button
+                        key={result.id}
+                        type="button"
+                        onClick={() => { setShowHeaderResults(false); navigate(`/users/${result.id}`); }}
+                        className="dropdown-item w-full"
+                      >
+                        <div className="avatar avatar-sm" style={{ width: '2rem', height: '2rem', fontSize: '0.72rem', flexShrink: 0 }}>
+                          {(result.name || result.username || '?').charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                            {result.name || "Noma'lum"}
+                          </div>
+                          <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
+                            @{result.username}{result.phone ? ` · ${result.phone}` : ''}
+                          </div>
+                        </div>
+                        <span className="badge badge-gray text-[10px] flex-shrink-0">
+                          {ROLE_LABELS[result.role] || result.role}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
-        <div className="flex items-center gap-2 md:gap-3">
+        {/* Right actions */}
+        <div className="flex items-center gap-1 ml-auto">
+
           {/* Language */}
           <div className="relative">
             <button
-              onClick={() => { setShowLang(!showLang); setShowNotifs(false); setShowProfile(false); }}
-              className="btn-ghost flex items-center gap-1 text-xs sm:text-sm py-1.5 px-2 sm:px-3"
+              onClick={() => { closeAll(); setShowLang(v => !v); }}
+              className="btn-ghost btn-sm gap-1 hidden sm:inline-flex items-center"
             >
-              <Globe size={14} />
-              <span className="uppercase font-semibold hidden sm:inline">{i18n.language}</span>
+              <Globe size={15} />
+              <span className="uppercase font-semibold text-xs">{i18n.language}</span>
               <ChevronDown size={11} />
             </button>
             <AnimatePresence>
               {showLang && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                  className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded-xl shadow-soft border border-gray-100 dark:border-gray-800 py-1 w-32 z-50"
+                  {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
+                  className="absolute right-0 top-full mt-1.5 dropdown-panel w-32 py-1 z-50"
                 >
                   {[{ code: 'uz', label: "O'zbek" }, { code: 'ru', label: 'Русский' }, { code: 'en', label: 'English' }].map(l => (
-                    <button key={l.code} onClick={() => changeLanguage(l.code)}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${i18n.language === l.code ? 'text-primary font-semibold' : 'text-gray-700 dark:text-gray-300'}`}>
-                      {l.label}
+                    <button
+                      key={l.code}
+                      onClick={() => changeLanguage(l.code)}
+                      className="dropdown-item"
+                    >
+                      {i18n.language === l.code && <Check size={13} style={{ color: 'var(--primary)' }} className="flex-shrink-0" />}
+                      <span className={i18n.language === l.code ? 'font-semibold' : ''} style={i18n.language === l.code ? { color: 'var(--primary)' } : {}}>
+                        {l.label}
+                      </span>
                     </button>
                   ))}
                 </motion.div>
@@ -249,144 +285,213 @@ export default function Topbar({ onMenuClick }) {
           </div>
 
           {/* Theme toggle */}
-          <button onClick={toggle} className="btn-ghost p-2 rounded-xl flex-shrink-0">
-            {theme === 'dark' ? <Sun size={16} className="text-yellow-500" /> : <Moon size={16} className="text-gray-600" />}
+          <button
+            onClick={toggle}
+            className="btn-icon"
+            aria-label="Toggle theme"
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          >
+            {theme === 'dark'
+              ? <Sun size={17} style={{ color: '#F59E0B' }} />
+              : <Moon size={17} style={{ color: 'var(--text-secondary)' }} />
+            }
           </button>
 
-        {/* Notifications */}
-        <div className="relative flex-shrink-0">
-          <button
-            onClick={() => { setShowNotifs(!showNotifs); setShowProfile(false); setShowLang(false); if (unread > 0) markRead.mutate(); }}
-            className="btn-ghost p-2 rounded-xl relative"
-          >
-            <Bell size={16} />
-            {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
-                {unread > 9 ? '9+' : unread}
-              </span>
-            )}
-          </button>
-          <AnimatePresence>
-            {showNotifs && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded-2xl shadow-soft border border-gray-100 dark:border-gray-800 w-72 sm:w-80 z-50 overflow-hidden"
-              >
-                <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <span className="font-semibold text-sm">{t('notifications')}</span>
-                  {notifications.length > 0 && (
-                    <button onClick={() => markRead.mutate()} className="text-xs text-primary hover:underline">{t('mark_all_read')}</button>
-                  )}
-                </div>
-                <div className="max-h-72 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-6 text-center text-gray-400 text-sm">{t('no_notifications')}</div>
-                  ) : notifications.map(n => (
-                    <div key={n.id} className={`px-4 py-3 border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${!n.isRead ? 'bg-primary-50/30' : ''}`}>
-                      <div className="flex gap-3">
-                        <span className="text-xl flex-shrink-0">{notifIcons[n.type] || '📌'}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-sm text-gray-800 dark:text-white">{n.title}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{n.message}</div>
-                          <div className="text-xs text-gray-400 mt-1">{formatRelativeTime(n.createdAt)}</div>
+          {/* Notifications */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                closeAll();
+                setShowNotifs(v => !v);
+                if (unread > 0) markRead.mutate();
+              }}
+              className="btn-icon relative"
+              aria-label="Notifications"
+            >
+              <Bell size={17} style={{ color: 'var(--text-secondary)' }} />
+              {unread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold leading-none">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </button>
+            <AnimatePresence>
+              {showNotifs && (
+                <motion.div
+                  {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
+                  className="absolute right-0 top-full mt-1.5 dropdown-panel w-72 sm:w-80 z-50"
+                >
+                  <div
+                    className="flex items-center justify-between px-4 py-3"
+                    style={{ borderBottom: '1px solid var(--border)' }}
+                  >
+                    <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                      {t('notifications')}
+                    </span>
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={() => markRead.mutate()}
+                        className="text-xs font-medium hover:underline"
+                        style={{ color: 'var(--primary)' }}
+                      >
+                        {t('mark_all_read')}
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        {t('no_notifications')}
+                      </div>
+                    ) : notifications.map(n => (
+                      <div
+                        key={n.id}
+                        className="px-4 py-3 transition-colors"
+                        style={{
+                          borderBottom: '1px solid var(--border)',
+                          backgroundColor: !n.isRead ? 'rgba(240, 100, 19, 0.05)' : undefined,
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--secondary-background)'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = !n.isRead ? 'rgba(240, 100, 19, 0.05)' : ''}
+                      >
+                        <div className="flex gap-3">
+                          <div
+                            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-sm"
+                            style={{ backgroundColor: 'var(--secondary-background)', border: '1px solid var(--border)' }}
+                          >
+                            {n.type === 'homework' ? '📚' : n.type === 'exam' ? '✍️' : n.type === 'achievement' ? '🏆' : '📌'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-xs" style={{ color: 'var(--text-primary)' }}>{n.title}</div>
+                            <div className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{n.message}</div>
+                            <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{formatRelativeTime(n.createdAt)}</div>
+                          </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-5 mx-0.5 hidden sm:block" style={{ backgroundColor: 'var(--border)' }} />
+
+          {/* Profile */}
+          <div className="relative">
+            <button
+              onClick={() => { closeAll(); setShowProfile(v => !v); }}
+              className="flex items-center gap-2 btn-ghost py-1.5 px-2 rounded-xl"
+            >
+              <div className="avatar avatar-sm" style={{ width: '1.875rem', height: '1.875rem', fontSize: '0.7rem' }}>
+                {initials}
+              </div>
+              <div className="hidden sm:flex flex-col items-start min-w-0">
+                <span className="text-xs font-semibold truncate max-w-[90px] leading-tight" style={{ color: 'var(--text-primary)' }}>
+                  {user?.name}
+                </span>
+                <span className="text-[10px] leading-tight" style={{ color: 'var(--text-muted)' }}>
+                  {ROLE_LABELS[user?.role] || user?.role}
+                </span>
+              </div>
+              <ChevronDown size={13} style={{ color: 'var(--text-muted)' }} className="hidden sm:block flex-shrink-0" />
+            </button>
+
+            <AnimatePresence>
+              {showProfile && (
+                <motion.div
+                  {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
+                  className="absolute right-0 top-full mt-1.5 dropdown-panel w-52 z-50 py-1.5"
+                >
+                  {/* User info */}
+                  <div className="px-4 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <div className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                      {user?.name}
                     </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>@{user?.username}</div>
+                    <span className={`badge mt-1.5 ${
+                      user?.role === 'teacher' ? 'badge-purple'
+                      : user?.role === 'admin' ? 'badge-orange'
+                      : user?.role === 'reception' ? 'badge-success'
+                      : user?.role === 'manager' ? 'badge-info'
+                      : 'badge-gray'
+                    }`}>
+                      {ROLE_LABELS[user?.role] || user?.role}
+                    </span>
+                    {user?.isFrozen && (
+                      <div className="mt-1.5 text-xs" style={{ color: 'var(--info)' }}>❄️ Hisobingiz muzlatilgan</div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => { setShowProfile(false); navigate('/profile'); }}
+                    className="dropdown-item"
+                  >
+                    <User size={14} style={{ color: 'var(--primary)' }} />
+                    Mening profilim
+                  </button>
+                  <button
+                    onClick={() => { setShowProfile(false); setShowChangePw(true); }}
+                    className="dropdown-item"
+                  >
+                    <KeyRound size={14} style={{ color: 'var(--text-secondary)' }} />
+                    Parolni o'zgartirish
+                  </button>
+                  <div className="dropdown-divider" />
+                  <button
+                    onClick={() => logoutMutation.mutate()}
+                    className="dropdown-item danger"
+                    disabled={logoutMutation.isPending}
+                  >
+                    <LogOut size={14} />
+                    {logoutMutation.isPending ? 'Chiqilmoqda...' : 'Chiqish'}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-
-        {/* User profile dropdown */}
-        <div className="relative flex-shrink-0">
-          <button
-            onClick={() => { setShowProfile(!showProfile); setShowNotifs(false); setShowLang(false); }}
-            className="flex items-center gap-2 btn-ghost py-1.5 px-2 rounded-xl"
-          >
-            <div className="w-7 h-7 gradient-bg rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-              {user?.name?.charAt(0) || <User size={12} />}
-            </div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block max-w-[100px] truncate">
-              {user?.name}
-            </span>
-            <ChevronDown size={12} className="text-gray-400 hidden sm:block" />
-          </button>
-
-          <AnimatePresence>
-            {showProfile && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded-2xl shadow-soft border border-gray-100 dark:border-gray-800 w-52 z-50 overflow-hidden"
-              >
-                {/* User info */}
-                <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                  <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">{user?.name}</div>
-                  <div className="text-xs text-gray-400">@{user?.username}</div>
-                  <span className={`badge text-xs mt-1 ${user?.role === 'teacher' ? 'bg-blue-100 text-blue-700' : user?.role === 'admin' ? 'bg-surface text-gray-700 dark:bg-gray-800 dark:text-gray-300' : user?.role === 'reception' ? 'bg-green-100 text-green-700' : user?.role === 'manager' ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700'}`}>
-                    {ROLE_LABELS[user?.role] || user?.role}
-                  </span>
-                  {user?.isFrozen && (
-                    <div className="mt-2 text-xs text-blue-600 dark:text-blue-300">❄️ Hisobingiz muzlatilgan</div>
-                  )}
-                  {user?.lastPaymentAt && (
-                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">Oxirgi to'lov: {new Date(user.lastPaymentAt).toLocaleDateString()}</div>
-                  )}
-                </div>
-                {/* Full profile page */}
-                <button
-                  onClick={() => { setShowProfile(false); navigate('/profile'); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <User size={14} className="text-primary" />
-                  Mening profilim
-                </button>
-                {/* Change password */}
-                <button
-                  onClick={() => { setShowProfile(false); setShowChangePw(true); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <KeyRound size={14} className="text-primary" />
-                  Parolni o'zgartirish
-                </button>
-                {/* Logout */}
-                <button
-                  onClick={() => logoutMutation.mutate()}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-100 dark:border-gray-800"
-                >
-                  <LogOut size={14} />
-                  Chiqish
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-        {/* Old logout button removed — now in profile dropdown */}
       </header>
 
-      {/* Change Password Modal */}
+      {/* ── Change Password Modal ── */}
       <AnimatePresence>
         {showChangePw && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={e => e.target === e.currentTarget && setShowChangePw(false)}>
-            <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-sm shadow-xl">
-              <div className="text-center mb-5">
-                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <KeyRound size={22} className="text-primary" />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="modal-backdrop"
+            onClick={e => e.target === e.currentTarget && setShowChangePw(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.96, y: 12, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.96, y: 8, opacity: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="modal-panel max-w-sm"
+            >
+              {/* Header */}
+              <div className="modal-header">
+                <div>
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                    style={{ backgroundColor: 'rgba(240, 100, 19, 0.1)', border: '1px solid rgba(240, 100, 19, 0.2)' }}
+                  >
+                    <KeyRound size={20} style={{ color: 'var(--primary)' }} />
+                  </div>
+                  <h2 className="modal-title">Parolni o'zgartirish</h2>
+                  <p className="modal-subtitle">Yangi parolingizni kiriting</p>
                 </div>
-                <h2 className="text-lg font-bold text-gray-800 dark:text-white">Parolni o'zgartirish</h2>
-                <p className="text-sm text-gray-400 mt-1">Yangi parolingizni kiriting</p>
+                <button onClick={() => setShowChangePw(false)} className="btn-icon flex-shrink-0">
+                  <X size={18} />
+                </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 {/* Current password */}
                 <div>
-                  <label className="block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-300">Joriy parol *</label>
+                  <label className="form-label">Joriy parol *</label>
                   <div className="relative">
                     <input
                       type={showCurrent ? 'text' : 'password'}
@@ -395,8 +500,12 @@ export default function Topbar({ onMenuClick }) {
                       placeholder="Hozirgi parolingiz"
                       className="input-field pr-10"
                     />
-                    <button type="button" onClick={() => setShowCurrent(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrent(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
                       {showCurrent ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
@@ -404,7 +513,7 @@ export default function Topbar({ onMenuClick }) {
 
                 {/* New password */}
                 <div>
-                  <label className="block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-300">Yangi parol *</label>
+                  <label className="form-label">Yangi parol *</label>
                   <div className="relative">
                     <input
                       type={showNew ? 'text' : 'password'}
@@ -413,19 +522,22 @@ export default function Topbar({ onMenuClick }) {
                       placeholder="Kamida 6 ta belgi"
                       className="input-field pr-10"
                     />
-                    <button type="button" onClick={() => setShowNew(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <button
+                      type="button"
+                      onClick={() => setShowNew(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
                       {showNew ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
                   {pwForm.newPw && (
                     <div className="mt-1.5 flex gap-1">
                       {[...Array(4)].map((_, i) => (
-                        <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
-                          pwForm.newPw.length >= (i + 1) * 2
-                            ? i < 1 ? 'bg-red-400' : i < 2 ? 'bg-yellow-400' : i < 3 ? 'bg-blue-400' : 'bg-green-400'
-                            : 'bg-gray-200'
-                        }`} />
+                        <div
+                          key={i}
+                          className={`h-1 flex-1 rounded-full transition-all duration-300 ${i < pwStrength ? strengthColors[pwStrength] : 'bg-gray-200'}`}
+                        />
                       ))}
                     </div>
                   )}
@@ -433,27 +545,32 @@ export default function Topbar({ onMenuClick }) {
 
                 {/* Confirm password */}
                 <div>
-                  <label className="block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-300">Yangi parolni tasdiqlang *</label>
+                  <label className="form-label">Yangi parolni tasdiqlang *</label>
                   <input
                     type="password"
                     value={pwForm.confirm}
                     onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
                     placeholder="Qaytadan kiriting"
-                    className={`input-field ${pwForm.confirm && pwForm.newPw !== pwForm.confirm ? 'border-red-400 focus:border-red-400' : ''}`}
+                    className={`input-field ${pwForm.confirm && pwForm.newPw !== pwForm.confirm ? 'input-error' : ''}`}
                   />
                   {pwForm.confirm && pwForm.newPw !== pwForm.confirm && (
-                    <p className="text-xs text-red-500 mt-1">Parollar mos kelmaydi</p>
+                    <p className="form-error">Parollar mos kelmaydi</p>
                   )}
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-5">
-                <button onClick={() => { setShowChangePw(false); setPwForm({ current: '', newPw: '', confirm: '' }); }}
-                  className="btn-ghost flex-1">Bekor</button>
+              <div className="modal-footer">
+                <button
+                  onClick={() => { setShowChangePw(false); setPwForm({ current: '', newPw: '', confirm: '' }); }}
+                  className="btn-ghost"
+                >
+                  Bekor qilish
+                </button>
                 <button
                   onClick={handleChangePw}
                   disabled={!pwForm.current || !pwForm.newPw || !pwForm.confirm || changePwMutation.isPending}
-                  className="btn-primary flex-1 disabled:opacity-40">
+                  className="btn-primary"
+                >
                   {changePwMutation.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
                 </button>
               </div>

@@ -1,16 +1,33 @@
-export default function EmptyState({ icon: Icon, title, description, action }) {
+import { motion } from 'framer-motion';
+import { InboxIcon } from 'lucide-react';
+
+/**
+ * EmptyState — Reusable empty / no-data state
+ * Props: icon, title, description, action (ReactNode)
+ */
+export default function EmptyState({
+  icon: Icon = InboxIcon,
+  title = "Ma'lumot yo'q",
+  description,
+  action,
+}) {
   return (
-    <div className="card flex flex-col items-center gap-3 py-14 text-center">
-      {Icon && (
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Icon size={22} />
-        </div>
-      )}
-      <div>
-        <p className="font-semibold text-gray-800 dark:text-white">{title}</p>
-        {description && <p className="mt-1 max-w-sm text-sm text-gray-500">{description}</p>}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22 }}
+      className="empty-state"
+    >
+      <div className="empty-state-icon">
+        <Icon size={22} />
       </div>
-      {action}
-    </div>
+      <div>
+        <p className="font-semibold text-sm" style={{ color: 'var(--text-secondary)' }}>{title}</p>
+        {description && (
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{description}</p>
+        )}
+      </div>
+      {action && <div className="mt-1">{action}</div>}
+    </motion.div>
   );
 }

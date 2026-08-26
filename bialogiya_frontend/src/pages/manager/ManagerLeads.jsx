@@ -3,22 +3,26 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Search, X, Phone, UserPlus, Snowflake, Archive, TrendingUp, Trash2,
+  Plus, X, Phone, UserPlus, Snowflake, Archive, TrendingUp, Trash2
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { RowSkeleton, Skeleton } from '../../components/ui/Skeleton';
+import { RowSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
+import PageHeader from '../../components/ui/PageHeader';
+import StatCard from '../../components/ui/StatCard';
+import StatusBadge from '../../components/ui/StatusBadge';
+import SearchInput from '../../components/ui/SearchInput';
 import EmptyState from '../../components/ui/EmptyState';
 
 const STATUSES = [
-  { value: 'new', label: 'Yangi', tone: 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' },
-  { value: 'contacted', label: "Bog'lanildi", tone: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400' },
-  { value: 'trial', label: 'Sinov darsi', tone: 'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400' },
-  { value: 'enrolled', label: "O'qishga kirdi", tone: 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400' },
-  { value: 'frozen', label: 'Muzlatilgan', tone: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400' },
-  { value: 'archived', label: 'Arxiv', tone: 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
-  { value: 'lost', label: 'Chiqib ketdi', tone: 'bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400' },
+  { value: 'new', label: 'Yangi' },
+  { value: 'contacted', label: "Bog'lanildi" },
+  { value: 'trial', label: 'Sinov darsi' },
+  { value: 'enrolled', label: "O'qishga kirdi" },
+  { value: 'frozen', label: 'Muzlatilgan' },
+  { value: 'archived', label: 'Arxiv' },
+  { value: 'lost', label: 'Chiqib ketdi' },
 ];
 
 const SOURCES = [
@@ -30,7 +34,6 @@ const SOURCES = [
   { value: 'other', label: 'Boshqa' },
 ];
 
-const statusMeta = (value) => STATUSES.find(s => s.value === value) || STATUSES[0];
 const sourceLabel = (value) => SOURCES.find(s => s.value === value)?.label || value;
 
 const TABS = [
@@ -76,11 +79,11 @@ export default function ManagerLeads() {
     mutationFn: (payload) => api.post('/leads', { ...payload, branchId }),
     onSuccess: () => {
       invalidate();
-      toast.success('Lid qo\'shildi');
+      toast.success("Lid muvaffaqiyatli qo'shildi");
       setModalOpen(false);
       setForm(emptyForm());
     },
-    onError: (e) => toast.error(e.response?.data?.message || 'Qo\'shib bo\'lmadi'),
+    onError: (e) => toast.error(e.response?.data?.message || "Qo'shib bo'lmadi"),
   });
 
   const statusMutation = useMutation({
@@ -91,7 +94,7 @@ export default function ManagerLeads() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/leads/${id}`),
-    onSuccess: () => { invalidate(); toast.success('O\'chirildi'); },
+    onSuccess: () => { invalidate(); toast.success("Lid o'chirildi"); },
     onError: (e) => toast.error(e.response?.data?.message || 'Xato'),
   });
 
@@ -106,62 +109,73 @@ export default function ManagerLeads() {
   const leads = leadsQuery.data || [];
 
   return (
-    <main className="dashboard-shell mx-auto max-w-5xl pb-10">
-      <header className="dashboard-header dashboard-header-plain">
-        <div>
-          <span className="dashboard-badge"><UserPlus size={12} /> Manager</span>
-          <h1>Lidlar</h1>
-          <p>{branchName ? `${branchName} filiali` : 'Kelgan mijozlarni kuzatib boring'}</p>
+    <div className="dashboard-shell">
+      <PageHeader
+        title="Lidlar CRM"
+        subtitle={branchName ? `${branchName} filiali lidlari` : "Yangi mijozlar, murojaatlar va konversiya nazorati"}
+        actions={
+          <button onClick={() => setModalOpen(true)} className="btn-primary">
+            <Plus size={16} /> Lid qo'shish
+          </button>
+        }
+      />
+
+      {/* KPI Cards */}
+      <section className="stats-grid">
+        <StatCard
+          icon={TrendingUp}
+          label="Bu hafta keldi"
+          value={stats?.thisWeek ?? 0}
+          iconColor="var(--primary)"
+          iconBg="rgba(240, 100, 19, 0.1)"
+          trend="up"
+        />
+        <StatCard
+          icon={UserPlus}
+          label="Faol lidlar"
+          value={stats?.active ?? 0}
+          iconColor="var(--secondary)"
+          iconBg="rgba(37, 99, 235, 0.1)"
+        />
+        <StatCard
+          icon={Snowflake}
+          label="Muzlatilgan"
+          value={stats?.counts?.frozen ?? 0}
+          iconColor="var(--accent)"
+          iconBg="rgba(124, 58, 237, 0.1)"
+        />
+        <StatCard
+          icon={Archive}
+          label="Arxiv / Chiqib ketgan"
+          value={(stats?.counts?.archived || 0) + (stats?.counts?.lost || 0)}
+          iconColor="var(--text-muted)"
+          iconBg="var(--secondary-background)"
+          trendValue={stats?.conversionRate > 0 ? `${stats.conversionRate}% konversiya` : null}
+        />
+      </section>
+
+      {/* Filter and Search */}
+      <div className="space-y-3">
+        <div className="filter-bar">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Ism yoki telefon bo'yicha qidirish..."
+          />
         </div>
-        <button type="button" onClick={() => setModalOpen(true)}
-          className="btn-primary flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
-          <Plus size={15} /> Lid qo'shish
-        </button>
-      </header>
 
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {statsQuery.isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="panel-card"><Skeleton className="h-3 w-20" /><Skeleton className="mt-3 h-7 w-12" /></div>
-          ))
-        ) : statsQuery.isError ? null : (
-          <>
-            <StatTile label="Bu hafta keldi" value={stats.thisWeek} icon={TrendingUp} tone="bg-primary/10 text-primary" />
-            <StatTile label="Faol lidlar" value={stats.active} icon={UserPlus} tone="bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400" />
-            <StatTile label="Muzlatilgan" value={stats.counts.frozen} icon={Snowflake} tone="bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400" />
-            <StatTile label="Arxiv / chiqib ketgan" value={stats.counts.archived + stats.counts.lost} icon={Archive}
-              tone="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
-              hint={stats.conversionRate > 0 ? `${stats.conversionRate}% konversiya` : null} />
-          </>
-        )}
-      </div>
-
-      <div className="mb-4 space-y-3">
-        <div className="relative">
-          <Search size={15} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <label htmlFor="lead-search" className="sr-only">Lidlarni qidirish</label>
-          <input id="lead-search" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Ism yoki telefon bo'yicha qidiring..."
-            className="input-field pl-9 pr-9 focus-visible:ring-2 focus-visible:ring-primary/40" />
-          {search && (
-            <button type="button" onClick={() => setSearch('')} aria-label="Qidiruvni tozalash"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        <div role="tablist" aria-label="Lid holati" className="scrollbar-hide flex gap-1.5 overflow-x-auto pb-1">
+        {/* Tab List */}
+        <div className="tab-bar">
           {TABS.map(t => (
-            <button key={t.key} type="button" role="tab" aria-selected={tab === t.key}
+            <button
+              key={t.key}
+              type="button"
               onClick={() => setTab(t.key)}
-              className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-medium transition-all focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                tab === t.key
-                  ? 'gradient-bg text-white shadow-sm'
-                  : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
+              className={`tab-item ${tab === t.key ? 'active' : ''}`}
+            >
               {t.label}
               {stats && t.key !== 'all' && stats.counts[t.key] > 0 && (
-                <span className="ml-1.5 opacity-70">{stats.counts[t.key]}</span>
+                <span className="ml-1.5 opacity-70">({stats.counts[t.key]})</span>
               )}
             </button>
           ))}
@@ -172,122 +186,182 @@ export default function ManagerLeads() {
       {leadsQuery.isLoading && <div className="space-y-2"><RowSkeleton count={4} /></div>}
 
       {!leadsQuery.isLoading && !leadsQuery.isError && leads.length === 0 && (
-        <EmptyState icon={UserPlus}
-          title={search ? 'Hech narsa topilmadi' : 'Bu bo\'limda lid yo\'q'}
+        <EmptyState
+          icon={UserPlus}
+          title={search ? 'Lid topilmadi' : 'Bu bo\'limda lidlar mavjud emas'}
           description={search
             ? 'Boshqa ism yoki raqam bilan qidirib ko\'ring.'
-            : 'Yangi mijoz qo\'ng\'iroq qilganda shu yerga qo\'shib boring.'}
+            : 'Yangi mijozlar qo\'ng\'iroq qilganda shu yerga qo\'shib boring.'}
           action={!search && (
-            <button type="button" onClick={() => setModalOpen(true)}
-              className="btn-primary mt-1 flex items-center gap-2 text-sm focus-visible:ring-2 focus-visible:ring-primary/40">
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="btn-primary btn-sm"
+            >
               <Plus size={14} /> Birinchi lidni qo'shish
             </button>
-          )} />
+          )}
+        />
       )}
 
-      <ul className="space-y-2">
-        {leads.map((lead, i) => {
-          const meta = statusMeta(lead.status);
-          return (
-            <motion.li key={lead.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.2 }} className="panel-card">
-              <div className="flex flex-wrap items-start gap-3">
-                <span aria-hidden="true" className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full gradient-bg text-sm font-semibold text-white">
-                  {lead.name?.charAt(0)?.toUpperCase()}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-gray-800 dark:text-white">{lead.name}</p>
-                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-400">
-                    <a href={`tel:${lead.phone}`}
-                      className="inline-flex items-center gap-1 text-gray-500 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-gray-400">
-                      <Phone size={10} aria-hidden="true" /> {lead.phone}
-                    </a>
-                    <span>{sourceLabel(lead.source)}</span>
-                    {lead.interestedIn && <span>• {lead.interestedIn}</span>}
-                    <span>• {new Date(lead.createdAt).toLocaleDateString('uz-UZ')}</span>
-                  </p>
-                  {lead.note && <p className="mt-1 text-xs text-gray-500">{lead.note}</p>}
+      {/* Leads list */}
+      <div className="space-y-3">
+        {leads.map((lead, i) => (
+          <motion.div
+            key={lead.id}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.2 }}
+            className="panel-card"
+          >
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="avatar avatar-md flex-shrink-0">
+                {lead.name?.charAt(0)?.toUpperCase()}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                    {lead.name}
+                  </span>
+                  <StatusBadge status={lead.status} />
                 </div>
-                <span className={`badge flex-shrink-0 ${meta.tone}`}>{meta.label}</span>
-                <button type="button" onClick={() => deleteMutation.mutate(lead.id)}
-                  disabled={deleteMutation.isPending} aria-label={`${lead.name} — o'chirish`}
-                  className="btn-ghost flex-shrink-0 rounded-lg p-1.5 text-red-400 hover:bg-red-50 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-red-300 dark:hover:bg-red-500/10">
-                  <Trash2 size={13} />
+
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  <a
+                    href={`tel:${lead.phone}`}
+                    className="inline-flex items-center gap-1 font-medium hover:underline"
+                    style={{ color: 'var(--primary)' }}
+                  >
+                    <Phone size={11} /> {lead.phone}
+                  </a>
+                  <span className="badge badge-gray text-[10px]">{sourceLabel(lead.source)}</span>
+                  {lead.interestedIn && <span>• {lead.interestedIn}</span>}
+                  <span style={{ color: 'var(--text-muted)' }}>• {new Date(lead.createdAt).toLocaleDateString('uz-UZ')}</span>
+                </div>
+
+                {lead.note && (
+                  <p className="mt-2 p-2 rounded-lg text-xs" style={{ backgroundColor: 'var(--secondary-background)', color: 'var(--text-secondary)' }}>
+                    {lead.note}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => deleteMutation.mutate(lead.id)}
+                disabled={deleteMutation.isPending}
+                className="btn-icon"
+                title="O'chirish"
+              >
+                <Trash2 size={14} style={{ color: 'var(--error)' }} />
+              </button>
+            </div>
+
+            {/* Change Status Fast Buttons */}
+            <div className="mt-3 flex flex-wrap gap-1.5 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+              {STATUSES.filter(s => s.value !== lead.status).map(s => (
+                <button
+                  key={s.value}
+                  type="button"
+                  onClick={() => statusMutation.mutate({ id: lead.id, status: s.value })}
+                  disabled={statusMutation.isPending}
+                  className="btn-ghost btn-sm text-xs py-1 px-2.5"
+                >
+                  {s.label}
                 </button>
-              </div>
+              ))}
+            </div>
+          </motion.div>
+        ))}
+      </div>
 
-              <div className="mt-3 flex flex-wrap gap-1.5 border-t border-gray-100 pt-3 dark:border-gray-800">
-                {STATUSES.filter(s => s.value !== lead.status).map(s => (
-                  <button key={s.value} type="button"
-                    onClick={() => statusMutation.mutate({ id: lead.id, status: s.value })}
-                    disabled={statusMutation.isPending}
-                    className="rounded-lg px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary/40 dark:hover:bg-gray-800 dark:hover:text-gray-100">
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </motion.li>
-          );
-        })}
-      </ul>
-
+      {/* Create Modal */}
       <AnimatePresence>
         {modalOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="modal-backdrop"
             onClick={e => e.target === e.currentTarget && setModalOpen(false)}
-            onKeyDown={e => e.key === 'Escape' && setModalOpen(false)}>
-            <motion.div initial={{ scale: 0.97, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.97, y: 12 }}
-              transition={{ duration: 0.18 }}
-              role="dialog" aria-modal="true" aria-labelledby="lead-modal-title"
-              className="w-full max-w-md rounded-3xl border border-[var(--border)] dark:border-slate-800 bg-[var(--card)] dark:bg-slate-950 p-6 shadow-2xl">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 id="lead-modal-title" className="text-lg font-bold text-gray-800 dark:text-white">Yangi lid</h2>
-                <button type="button" onClick={() => setModalOpen(false)} aria-label="Yopish"
-                  className="btn-ghost rounded-lg p-1.5 focus-visible:ring-2 focus-visible:ring-primary/40">
-                  <X size={16} />
+          >
+            <motion.div
+              initial={{ scale: 0.96, y: 10, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.96, y: 8, opacity: 0 }}
+              className="modal-panel"
+            >
+              <div className="modal-header">
+                <div>
+                  <h2 className="modal-title">Yangi lid qo'shish</h2>
+                  <p className="modal-subtitle">Mijoz ma'lumotlarini to'ldiring</p>
+                </div>
+                <button type="button" onClick={() => setModalOpen(false)} className="btn-icon flex-shrink-0">
+                  <X size={18} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-3">
+              <form onSubmit={handleSubmit} className="space-y-3.5">
                 <div>
-                  <label htmlFor="lead-name" className="mb-1.5 block text-sm font-medium">Ism *</label>
-                  <input id="lead-name" autoFocus value={form.name}
+                  <label className="form-label">Ism *</label>
+                  <input
+                    autoFocus
+                    value={form.name}
                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="Ali Valiyev" className="input-field" />
+                    placeholder="Ali Valiyev"
+                    className="input-field"
+                  />
                 </div>
                 <div>
-                  <label htmlFor="lead-phone" className="mb-1.5 block text-sm font-medium">Telefon *</label>
-                  <input id="lead-phone" type="tel" value={form.phone}
+                  <label className="form-label">Telefon *</label>
+                  <input
+                    type="tel"
+                    value={form.phone}
                     onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                    placeholder="+998 90 123 45 67" className="input-field" />
+                    placeholder="+998 90 123 45 67"
+                    className="input-field font-mono"
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="lead-source" className="mb-1.5 block text-sm font-medium">Qayerdan</label>
-                    <select id="lead-source" value={form.source}
-                      onChange={e => setForm(f => ({ ...f, source: e.target.value }))} className="input-field">
+                    <label className="form-label">Kelish manbai</label>
+                    <select
+                      value={form.source}
+                      onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
+                      className="input-field"
+                    >
                       {SOURCES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="lead-interest" className="mb-1.5 block text-sm font-medium">Qiziqqan yo'nalish</label>
-                    <input id="lead-interest" value={form.interestedIn}
+                    <label className="form-label">Qiziqqan yo'nalish</label>
+                    <input
+                      value={form.interestedIn}
                       onChange={e => setForm(f => ({ ...f, interestedIn: e.target.value }))}
-                      placeholder="Ingliz tili" className="input-field" />
+                      placeholder="Masalan: IELTS, Matematika"
+                      className="input-field"
+                    />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="lead-note" className="mb-1.5 block text-sm font-medium">Izoh</label>
-                  <textarea id="lead-note" rows={2} value={form.note}
+                  <label className="form-label">Izoh / Eslatma</label>
+                  <textarea
+                    rows={2}
+                    value={form.note}
                     onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
-                    placeholder="Masalan: kechqurungi guruh so'radi" className="input-field resize-none" />
+                    placeholder="Kechki guruh qiziqtirmoqda..."
+                    className="input-field resize-none"
+                  />
                 </div>
-                <div className="flex gap-3 pt-1">
-                  <button type="button" onClick={() => setModalOpen(false)} className="btn-ghost flex-1">Bekor</button>
-                  <button type="submit" disabled={createMutation.isPending}
-                    className="btn-primary flex-1 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40">
+
+                <div className="modal-footer">
+                  <button type="button" onClick={() => setModalOpen(false)} className="btn-ghost">Bekor qilish</button>
+                  <button
+                    type="submit"
+                    disabled={createMutation.isPending}
+                    className="btn-primary"
+                  >
                     {createMutation.isPending ? 'Saqlanmoqda...' : 'Qo\'shish'}
                   </button>
                 </div>
@@ -296,21 +370,6 @@ export default function ManagerLeads() {
           </motion.div>
         )}
       </AnimatePresence>
-    </main>
-  );
-}
-
-function StatTile({ label, value, icon: Icon, tone, hint }) {
-  return (
-    <div className="panel-card">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium text-gray-500">{label}</p>
-        <span aria-hidden="true" className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl ${tone}`}>
-          <Icon size={15} />
-        </span>
-      </div>
-      <p className="mt-2 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{value ?? 0}</p>
-      {hint && <p className="mt-0.5 text-xs text-gray-400">{hint}</p>}
     </div>
   );
 }

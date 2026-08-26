@@ -1,158 +1,361 @@
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
-import { Users, GraduationCap, UserCheck, BarChart2, Building2, Inbox, MapPin, ArrowRight, TrendingUp, Sparkles } from 'lucide-react';
+import { Users, GraduationCap, UserCheck, BarChart2, Building2, Inbox, ArrowRight } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { motion } from 'framer-motion';
 import api from '../../config/axios';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
+import PageHeader from '../../components/ui/PageHeader';
+import StatCard from '../../components/ui/StatCard';
+import ChartCard from '../../components/ui/ChartCard';
+import EmptyState from '../../components/ui/EmptyState';
+import StatusBadge from '../../components/ui/StatusBadge';
+
+// Theme-aware chart tooltip
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div
+      style={{
+        borderRadius: 12,
+        background: 'var(--card)',
+        border: '1px solid var(--border)',
+        color: 'var(--text-primary)',
+        padding: '0.6rem 0.875rem',
+        boxShadow: 'var(--shadow-md)',
+        fontSize: '0.8rem',
+      }}
+    >
+      <div className="font-semibold mb-1" style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>{label}</div>
+      {payload.map(p => (
+        <div key={p.name} className="flex items-center gap-2">
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' }} />
+          <span style={{ color: 'var(--text-secondary)' }}>{p.name}:</span>
+          <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{p.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { data } = useQuery({ queryKey: ['admin-stats', user?.role, user?.centerId], queryFn: () => api.get('/admin/stats').then(r => r.data.data) });
+  const { theme } = useThemeStore();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-stats', user?.role, user?.centerId],
+    queryFn: () => api.get('/admin/stats').then(r => r.data.data),
+  });
 
   const role = user?.role || 'admin';
   const baseRole = role === 'manager' ? 'manager' : role === 'reception' ? 'reception' : 'admin';
 
-  const title = role === 'reception' ? 'Qabulxona paneli' : role === 'manager' ? 'Menejer paneli' : 'Admin Paneli';
-  const subtitle = role === 'reception' ? 'Abdora AI — Qabulxona umumiy ko\'rinishi' : role === 'manager' ? 'Abdora AI — Filial ko\'rinishi' : 'Abdora AI — Platform Overview';
+  const title = role === 'reception' ? 'Qabulxona paneli'
+    : role === 'manager' ? 'Menejer paneli'
+    : 'Admin Paneli';
+  const subtitle = role === 'reception' ? "Abdora AI — Qabulxona umumiy ko'rinishi"
+    : role === 'manager' ? "Abdora AI — Filial ko'rinishi"
+    : 'Platforma bo\'yicha umumiy ko\'rsatkichlar';
 
   const stats = [
     ...(baseRole === 'admin' ? [
-      { icon: Building2, label: 'Markazlar', value: data?.totalBranches || 0, color: 'text-orange-500', bg: 'bg-orange-50', path: '/admin/branches' },
-      { icon: UserCheck, label: 'Managerlar', value: data?.totalManagers || 0, color: 'text-violet-500', bg: 'bg-violet-50', path: '/admin/managers' },
-      { icon: GraduationCap, label: 'O\'quvchilar', value: data?.totalStudents || 0, color: 'text-blue-500', bg: 'bg-blue-50', path: '/admin/students' },
-      { icon: BarChart2, label: 'Bugun faol', value: data?.activeToday || 0, color: 'text-emerald-500', bg: 'bg-emerald-50', path: '/admin/students' },
+      {
+        icon: Building2, label: 'Markazlar', value: data?.totalBranches ?? 0,
+        iconColor: 'var(--primary)', iconBg: 'rgba(240, 100, 19, 0.1)',
+        path: '/admin/branches',
+      },
+      {
+        icon: UserCheck, label: 'Managerlar', value: data?.totalManagers ?? 0,
+        iconColor: 'var(--accent)', iconBg: 'rgba(124, 58, 237, 0.1)',
+        path: '/admin/managers',
+      },
+      {
+        icon: GraduationCap, label: "O'quvchilar", value: data?.totalStudents ?? 0,
+        iconColor: 'var(--secondary)', iconBg: 'rgba(37, 99, 235, 0.1)',
+        path: '/admin/students',
+      },
+      {
+        icon: BarChart2, label: 'Bugun faol', value: data?.activeToday ?? 0,
+        iconColor: 'var(--success)', iconBg: 'rgba(22, 163, 74, 0.1)',
+        path: '/admin/students',
+      },
     ] : [
-      { icon: Users, label: 'O\'qituvchilar', value: data?.totalTeachers || 0, color: 'text-orange-500', bg: 'bg-orange-50', path: `/${baseRole}/teachers` },
-      { icon: GraduationCap, label: 'O\'quvchilar', value: data?.totalStudents || 0, color: 'text-blue-500', bg: 'bg-blue-50', path: `/${baseRole}/students` },
-      { icon: BarChart2, label: 'Bugun faol', value: data?.activeToday || 0, color: 'text-emerald-500', bg: 'bg-emerald-50', path: `/${baseRole}/students` },
-      { icon: UserCheck, label: 'Bu hafta yangi', value: data?.newThisWeek || 0, color: 'text-violet-500', bg: 'bg-violet-50', path: `/${baseRole}/students` },
-    ])];
+      {
+        icon: Users, label: "O'qituvchilar", value: data?.totalTeachers ?? 0,
+        iconColor: 'var(--primary)', iconBg: 'rgba(240, 100, 19, 0.1)',
+        path: `/${baseRole}/teachers`,
+      },
+      {
+        icon: GraduationCap, label: "O'quvchilar", value: data?.totalStudents ?? 0,
+        iconColor: 'var(--secondary)', iconBg: 'rgba(37, 99, 235, 0.1)',
+        path: `/${baseRole}/students`,
+      },
+      {
+        icon: BarChart2, label: 'Bugun faol', value: data?.activeToday ?? 0,
+        iconColor: 'var(--success)', iconBg: 'rgba(22, 163, 74, 0.1)',
+        path: `/${baseRole}/students`,
+      },
+      {
+        icon: Inbox, label: 'Bu hafta yangi', value: data?.newThisWeek ?? 0,
+        iconColor: 'var(--accent)', iconBg: 'rgba(124, 58, 237, 0.1)',
+        path: `/${baseRole}/students`,
+      },
+    ]),
+  ];
 
-  const visibleStats = stats.slice(0, 4);
   const chartData = data?.dailyActivity || [];
 
-  return (
-    <div className="dashboard-shell dashboard-page-admin max-w-6xl mx-auto">
-      <header className="dashboard-header dashboard-header-plain">
-        <div>
-          <span className="dashboard-badge"><Sparkles size={12} /> Abdora AI</span>
-          <h1>{title}</h1>
-          <p>{subtitle}</p>
-        </div>
-        <div className="dashboard-header-actions">
-          <span className="header-status">Live</span>
-          <button type="button" onClick={() => navigate(`/${baseRole}/dashboard`)} className="header-button">Barcha ma’lumotlar</button>
-        </div>
-      </header>
+  // Chart colors adapt to theme
+  const lineColorOrange = theme === 'dark' ? '#FF6A00' : '#F06413';
+  const lineColorBlue = theme === 'dark' ? '#4D8DFF' : '#2563EB';
+  const gridColor = theme === 'dark' ? 'rgba(34,48,71,0.8)' : 'rgba(229,231,235,0.8)';
+  const tickColor = theme === 'dark' ? '#64748B' : '#98A2B3';
 
+  return (
+    <div className="dashboard-shell">
+      {/* Header */}
+      <PageHeader
+        title={title}
+        subtitle={subtitle}
+        actions={
+          <div className="flex items-center gap-2">
+            <span className="header-status">Live</span>
+            <button
+              type="button"
+              onClick={() => navigate(`/${baseRole}/dashboard`)}
+              className="btn-ghost btn-sm"
+            >
+              Barcha ma'lumotlar
+            </button>
+          </div>
+        }
+      />
+
+      {/* KPI Stats */}
       <section className="stats-grid">
-        {visibleStats.map(({ icon: Icon, label, value, color, bg, path }, i) => (
-          <motion.button
-            key={`${label}-${i}`}
-            type="button"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
+        {stats.map(({ icon, label, value, iconColor, iconBg, path }, i) => (
+          <StatCard
+            key={label}
+            icon={icon}
+            label={label}
+            value={isLoading ? '—' : value}
+            trend="up"
+            iconColor={iconColor}
+            iconBg={iconBg}
             onClick={() => navigate(path)}
-            className="dashboard-stat-card"
-          >
-            <div className="stat-icon-wrap">
-              <Icon size={18} className={color} />
-            </div>
-            <div className="stat-copy">
-              <strong>{value}</strong>
-              <span>{label}</span>
-            </div>
-            <div className="stat-trend"><TrendingUp size={14} /></div>
-          </motion.button>
+            delay={i * 0.05}
+          />
         ))}
       </section>
 
+      {/* Analytics Grid */}
       <section className="dashboard-grid">
-        <div className="panel-card chart-card">
+        {/* Chart */}
+        <ChartCard
+          kicker="Faollik"
+          title="Kunlik faollik"
+          tag="7 kun"
+        >
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 11, fill: tickColor }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: tickColor }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={28}
+                />
+                <Tooltip content={<ChartTooltip />} />
+                <Line
+                  type="monotone"
+                  dataKey="students"
+                  stroke={lineColorOrange}
+                  strokeWidth={2.5}
+                  name="O'quvchilar"
+                  dot={{ r: 3, fill: lineColorOrange, strokeWidth: 0 }}
+                  activeDot={{ r: 5, strokeWidth: 0 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="teachers"
+                  stroke={lineColorBlue}
+                  strokeWidth={2.5}
+                  name="O'qituvchilar"
+                  dot={{ r: 3, fill: lineColorBlue, strokeWidth: 0 }}
+                  activeDot={{ r: 5, strokeWidth: 0 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyState
+              title="Faollik ma'lumotlari yo'q"
+              description="Hozircha kunlik faollik kuzatilmagan"
+            />
+          )}
+        </ChartCard>
+
+        {/* Side panel */}
+        <div className="panel-card">
           <div className="panel-header">
             <div>
-              <span className="panel-kicker">Faollik</span>
-              <h2>Kunlik faollik</h2>
-            </div>
-            <span className="tag-pill">7 kun</span>
-          </div>
-          {chartData.length > 0 ? (
-            <div className="chart-box">
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.14)" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={30} />
-                  <Tooltip contentStyle={{ borderRadius: '14px', background: '#0f172a', border: '1px solid rgba(148,163,184,0.24)', color: '#e2e8f0' }} />
-                  <Line type="monotone" dataKey="students" stroke="#f97316" strokeWidth={2.5} name="O'quvchilar" dot={{ r: 3, fill: '#f97316' }} activeDot={{ r: 5 }} />
-                  <Line type="monotone" dataKey="teachers" stroke="#38bdf8" strokeWidth={2.5} name="O'qituvchilar" dot={{ r: 3, fill: '#38bdf8' }} activeDot={{ r: 5 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="empty-state">Faollik ma’lumotlari yo‘q.</div>
-          )}
-        </div>
-
-        <div className="panel-card side-card">
-          <div className="panel-header compact">
-            <div>
               <span className="panel-kicker">Tezkor</span>
-              <h2>Umumiy ko‘rsatkichlar</h2>
+              <h2 className="panel-title">Umumiy ko'rsatkichlar</h2>
             </div>
           </div>
           <div className="mini-metrics">
-            <div className="mini-metric orange">
-              <span>Bugun</span>
-              <strong>{data?.activeToday || 0}</strong>
+            <div className="mini-metric">
+              <span className="mini-metric-label">Bugun faol</span>
+              <span className="mini-metric-value" style={{ color: 'var(--primary)' }}>
+                {isLoading ? '—' : data?.activeToday ?? 0}
+              </span>
             </div>
-            <div className="mini-metric blue">
-              <span>Yangi</span>
-              <strong>{data?.newThisWeek || 0}</strong>
+            <div className="mini-metric">
+              <span className="mini-metric-label">Bu hafta yangi</span>
+              <span className="mini-metric-value" style={{ color: 'var(--secondary)' }}>
+                {isLoading ? '—' : data?.newThisWeek ?? 0}
+              </span>
             </div>
-            <div className="mini-metric teal">
-              <span>Arizalar</span>
-              <strong>{data?.pendingApplications || 0}</strong>
+            <div className="mini-metric">
+              <span className="mini-metric-label">Arizalar</span>
+              <span className="mini-metric-value" style={{ color: 'var(--success)' }}>
+                {isLoading ? '—' : data?.pendingApplications ?? 0}
+              </span>
             </div>
+            {baseRole === 'admin' && (
+              <div className="mini-metric">
+                <span className="mini-metric-label">Jami o'qituvchilar</span>
+                <span className="mini-metric-value" style={{ color: 'var(--accent)' }}>
+                  {isLoading ? '—' : data?.totalTeachers ?? 0}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Quick links */}
+          <div className="mt-4 space-y-1.5">
+            <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>
+              Tezkor havolalar
+            </p>
+            {[
+              { label: 'Arizalar', path: '/admin/applications', show: baseRole === 'admin' },
+              { label: 'Markazlar', path: '/admin/branches', show: baseRole === 'admin' },
+              { label: 'Managerlar', path: '/admin/managers', show: baseRole === 'admin' },
+              { label: "O'qituvchilar", path: `/${baseRole}/teachers` },
+              { label: "O'quvchilar", path: `/${baseRole}/students` },
+            ].filter(l => l.show !== false).map(l => (
+              <Link
+                key={l.path}
+                to={l.path}
+                className="flex items-center justify-between px-3 py-2 rounded-xl transition-colors group"
+                style={{ color: 'var(--text-secondary)' }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.backgroundColor = 'var(--secondary-background)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.backgroundColor = '';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
+              >
+                <span className="text-sm font-medium">{l.label}</span>
+                <ArrowRight size={14} style={{ color: 'var(--text-muted)' }} />
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
+      {/* Recent Centers Table (Admin only) */}
       {baseRole === 'admin' && (
-        <section className="panel-card table-card">
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.25 }}
+          className="panel-card"
+        >
           <div className="panel-header">
             <div>
               <span className="panel-kicker">Markazlar</span>
-              <h2>Markazlar ro‘yxati</h2>
+              <h2 className="panel-title">Markazlar ro'yxati</h2>
             </div>
-            <Link to="/admin/branches" className="panel-link">Barchasi <ArrowRight size={13} /></Link>
+            <Link to="/admin/branches" className="panel-link">
+              Barchasi <ArrowRight size={13} />
+            </Link>
           </div>
 
           {Array.isArray(data?.branches) && data.branches.length > 0 ? (
-            <div className="branch-list">
-              {data.branches.map((b) => (
-                <button key={b.id} type="button" onClick={() => navigate(`/admin/branches/${b.id}`)} className="branch-row">
-                  <div className="branch-main">
-                    <div className="branch-dot"><Building2 size={14} /></div>
-                    <div className="branch-copy">
-                      <strong>{b.name}</strong>
-                      <span>{b.address || 'Manzil ko’rsatilmagan'}</span>
-                    </div>
-                  </div>
-                  <div className="branch-meta">
-                    <span>{b.teachersCount || 0} o‘qituvchilar</span>
-                    <span>{b.studentsCount || 0} o‘quvchilar</span>
-                  </div>
-                </button>
-              ))}
+            <div className="table-shell">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Markaz</th>
+                    <th>Manzil</th>
+                    <th>O'qituvchilar</th>
+                    <th>O'quvchilar</th>
+                    <th>Holat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.branches.map((b) => (
+                    <tr
+                      key={b.id}
+                      onClick={() => navigate(`/admin/branches/${b.id}`)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td>
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: 'rgba(240, 100, 19, 0.1)', border: '1px solid rgba(240, 100, 19, 0.18)' }}
+                          >
+                            <Building2 size={14} style={{ color: 'var(--primary)' }} />
+                          </div>
+                          <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                            {b.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                          {b.address || '—'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="font-medium text-sm">{b.teachersCount || 0}</span>
+                      </td>
+                      <td>
+                        <span className="font-medium text-sm">{b.studentsCount || 0}</span>
+                      </td>
+                      <td>
+                        <StatusBadge status={b.isActive === false ? 'nofaol' : 'faol'} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
-            <div className="empty-state">Hali markazlar qo‘shilmagan.</div>
+            <EmptyState
+              icon={Building2}
+              title="Hali markazlar qo'shilmagan"
+              description="Birinchi markazni qo'shish uchun Markazlar sahifasiga o'ting"
+              action={
+                <Link to="/admin/branches" className="btn-primary btn-sm">
+                  Markaz qo'shish
+                </Link>
+              }
+            />
           )}
-        </section>
+        </motion.section>
       )}
     </div>
   );

@@ -1,19 +1,24 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Building2, Users, BookOpen, MapPin, ArrowRight } from 'lucide-react';
+import { Plus, X, Building2, MapPin, ArrowRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../../config/axios';
+import PageHeader from '../../components/ui/PageHeader';
+import SearchInput from '../../components/ui/SearchInput';
+import StatusBadge from '../../components/ui/StatusBadge';
+import EmptyState from '../../components/ui/EmptyState';
 
 export default function ManagerBranches() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: '', address: '', studentCapacity: '' });
-  const [confirm, setConfirm] = useState(null);
+  const [localSearch, setLocalSearch] = useState('');
   const [searchParams] = useSearchParams();
-  const search = searchParams.get('search')?.trim().toLowerCase() || '';
+  const urlSearch = searchParams.get('search')?.trim().toLowerCase() || '';
+  const search = localSearch.trim().toLowerCase() || urlSearch;
 
   const { data: branches = [], isLoading } = useQuery({
     queryKey: ['manager-branches'],
@@ -30,7 +35,7 @@ export default function ManagerBranches() {
       qc.invalidateQueries({ queryKey: ['manager-stats'] });
       setShowCreate(false);
       setForm({ name: '', address: '', studentCapacity: '' });
-      toast.success('Filial yaratildi');
+      toast.success('Filial muvaffaqiyatli yaratildi');
     },
     onError: (error) => toast.error(error.response?.data?.message || 'Filial yaratilmadi'),
   });
@@ -41,15 +46,6 @@ export default function ManagerBranches() {
         || branch.address?.toLowerCase().includes(search)
       )
     : branches) : [];
-
-  if (isLoading) {
-    return (
-      <div className="dashboard-shell max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold dark:text-white mb-6">Filiallar</h1>
-        <div className="text-center py-16">Yuklanmoqda...</div>
-      </div>
-    );
-  }
 
   const closeModal = () => {
     setShowCreate(false);
@@ -66,114 +62,188 @@ export default function ManagerBranches() {
   };
 
   return (
-    <div className="dashboard-shell max-w-6xl mx-auto">
-      <header className="dashboard-header dashboard-header-plain">
-        <div>
-          <span className="dashboard-badge"><Building2 size={12} /> Manager</span>
-          <h1>Filiallar</h1>
-          <p>Markazning barcha filiallari va ularning holati</p>
-        </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
-          <Plus size={15} /> Filial qo'shish
-        </button>
-      </header>
+    <div className="dashboard-shell">
+      <PageHeader
+        title="Filiallar"
+        subtitle="Markazingizga qarashli barcha o'quv filiallari"
+        actions={
+          <button onClick={() => setShowCreate(true)} className="btn-primary">
+            <Plus size={16} /> Filial qo'shish
+          </button>
+        }
+      />
 
-      <div className="panel-card overflow-hidden p-0">
-        <div className="overflow-x-auto">
-          <table className="dashboard-table w-full text-left text-sm">
+      <div className="filter-bar mb-1">
+        <SearchInput
+          value={localSearch}
+          onChange={setLocalSearch}
+          placeholder="Filial nomi yoki manzil bo'yicha qidirish..."
+        />
+        <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+          {filteredBranches.length} ta filial
+        </span>
+      </div>
+
+      {isLoading ? (
+        <div className="py-20 text-center text-sm" style={{ color: 'var(--text-muted)' }}>Yuklanmoqda...</div>
+      ) : filteredBranches.length > 0 ? (
+        <div className="table-shell">
+          <table className="data-table">
             <thead>
               <tr>
-                <th>Filial</th><th>Manzil</th><th>O'qituvchi</th><th>O'quvchi</th><th>Guruh</th><th>Holat</th>
+                <th>Filial</th>
+                <th>Manzil</th>
+                <th>O'qituvchilar</th>
+                <th>O'quvchilar</th>
+                <th>Guruhlar</th>
+                <th>Holat</th>
+                <th className="text-right">Amal</th>
               </tr>
             </thead>
             <tbody>
               {filteredBranches.map((branch, index) => (
-                <motion.tr key={branch.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.04 }}
-                  onClick={() => navigate(`/manager/branches/${branch.id}`)} className="cursor-pointer">
-                  <td className="font-semibold dark:text-white">{branch.name}</td>
-                  <td className="dark:text-slate-400">{branch.address || '—'}</td>
-                  <td className="dark:text-slate-300">{branch._count?.teachers || 0}</td>
-                  <td className="dark:text-slate-300">{branch.studentsCount || 0}</td>
-                  <td className="dark:text-slate-300">{branch.groups?.length || 0}</td>
-                  <td><span className="tag-pill">Faol</span></td>
+                <motion.tr
+                  key={branch.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.04 }}
+                  onClick={() => navigate(`/manager/branches/${branch.id}`)}
+                  className="cursor-pointer"
+                >
+                  <td>
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: 'rgba(240, 100, 19, 0.1)', border: '1px solid rgba(240, 100, 19, 0.18)' }}
+                      >
+                        <Building2 size={14} style={{ color: 'var(--primary)' }} />
+                      </div>
+                      <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        {branch.name}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ color: 'var(--text-secondary)' }}>
+                    {branch.address ? (
+                      <span className="flex items-center gap-1.5">
+                        <MapPin size={12} style={{ color: 'var(--text-muted)' }} />
+                        {branch.address}
+                      </span>
+                    ) : '—'}
+                  </td>
+                  <td>
+                    <span className="font-semibold text-sm">{branch._count?.teachers || 0}</span>
+                  </td>
+                  <td>
+                    <span className="font-semibold text-sm">{branch.studentsCount || 0}</span>
+                  </td>
+                  <td>
+                    <span className="font-semibold text-sm">{branch.groups?.length || 0}</span>
+                  </td>
+                  <td>
+                    <StatusBadge status="faol" />
+                  </td>
+                  <td>
+                    <div className="flex justify-end">
+                      <span className="btn-icon">
+                        <ArrowRight size={14} style={{ color: 'var(--text-muted)' }} />
+                      </span>
+                    </div>
+                  </td>
                 </motion.tr>
               ))}
             </tbody>
           </table>
         </div>
+      ) : (
+        <EmptyState
+          icon={Building2}
+          title={search ? "Filial topilmadi" : "Hozircha filiallar yo'q"}
+          description={search ? `"${search}" qidiruvi bo'yicha filiallar mavjud emas` : "Markazingizga yangi filial qo'shing"}
+          action={!search && (
+            <button onClick={() => setShowCreate(true)} className="btn-primary btn-sm">
+              <Plus size={14} /> Filial qo'shish
+            </button>
+          )}
+        />
+      )}
 
-        {filteredBranches.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
-            <Building2 size={48} className="mx-auto mb-3 opacity-30" />
-            <p>{search ? "Qidiruv bo'yicha hech qanday filial topilmadi." : "Hozircha filiallar yo'q."}</p>
-          </div>
-        )}
-      </div>
-
+      {/* Create Modal */}
       <AnimatePresence>
         {showCreate && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+            className="modal-backdrop"
             onClick={(e) => e.target === e.currentTarget && closeModal()}
           >
             <motion.div
-              initial={{ scale: 0.96 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.96 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-md"
+              initial={{ scale: 0.96, y: 10, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.96, y: 8, opacity: 0 }}
+              className="modal-panel"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-lg">Filial qo'shish</h2>
-                <button onClick={closeModal} className="btn-ghost p-1.5 rounded-lg">
-                  <X size={16} />
+              <div className="modal-header">
+                <div>
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                    style={{ backgroundColor: 'rgba(240, 100, 19, 0.1)', border: '1px solid rgba(240, 100, 19, 0.18)' }}
+                  >
+                    <Building2 size={20} style={{ color: 'var(--primary)' }} />
+                  </div>
+                  <h2 className="modal-title">Filial qo'shish</h2>
+                  <p className="modal-subtitle">Yangi o'quv filiali ma'lumotlarini kiriting</p>
+                </div>
+                <button onClick={closeModal} className="btn-icon flex-shrink-0">
+                  <X size={18} />
                 </button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Filial nomi *</label>
+                  <label className="form-label">Filial nomi *</label>
                   <input
                     value={form.name}
                     onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                    className="input-field w-full"
-                    placeholder="Filial nomi"
+                    className="input-field"
+                    placeholder="Masalan: Chilonzor filiali"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Manzil</label>
+                  <label className="form-label">Manzil</label>
                   <input
                     value={form.address}
                     onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
-                    className="input-field w-full"
-                    placeholder="Tuman, ko'cha, uy raqami"
+                    className="input-field"
+                    placeholder="Tuman, ko'cha, mo'ljal"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">O'quvchi sig'imi</label>
+                  <label className="form-label">O'quvchi sig'imi</label>
                   <input
                     type="number"
                     value={form.studentCapacity}
                     onChange={(e) => setForm((prev) => ({ ...prev, studentCapacity: e.target.value }))}
-                    className="input-field w-full"
-                    placeholder="Jami o'quvchi soni"
+                    className="input-field"
+                    placeholder="Jami o'quvchi o'rni"
                   />
                 </div>
-                <div className="flex gap-3">
-                  <button onClick={closeModal} className="btn-ghost flex-1">Bekor</button>
+
+                {createMutation.error && (
+                  <p className="form-error text-center">{createMutation.error.response?.data?.message || 'Filial yaratilmadi'}</p>
+                )}
+
+                <div className="modal-footer">
+                  <button onClick={closeModal} className="btn-ghost">Bekor qilish</button>
                   <button
                     onClick={submitForm}
                     disabled={!form.name || createMutation.isPending}
-                    className="btn-primary flex-1 disabled:opacity-40"
+                    className="btn-primary"
                   >
                     {createMutation.isPending ? 'Saqlanmoqda...' : 'Yaratish'}
                   </button>
                 </div>
-                {createMutation.error && (
-                  <p className="text-xs text-red-500 text-center">{createMutation.error.message}</p>
-                )}
               </div>
             </motion.div>
           </motion.div>
