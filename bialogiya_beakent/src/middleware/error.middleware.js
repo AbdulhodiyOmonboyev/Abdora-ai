@@ -11,6 +11,12 @@ const errorHandler = (err, req, res, next) => {
     return res.status(409).json({ success: false, message: `${field} allaqachon mavjud` });
   }
 
+  if (err.code === 'P2002') {
+    const fields = err.meta?.target || [];
+    const field = fields.includes('email') ? 'email' : fields.join(', ') || 'field';
+    return res.status(409).json({ success: false, message: `${field} allaqachon mavjud` });
+  }
+
   if (err.name === 'CastError') {
     return res.status(400).json({ success: false, message: "ID formati noto'g'ri" });
   }

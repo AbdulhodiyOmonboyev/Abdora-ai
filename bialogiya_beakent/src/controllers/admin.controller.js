@@ -283,6 +283,11 @@ const updateReceptionUser = async (req, res, next) => {
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user || user.role !== 'reception') return error(res, 'Reception user not found', 404);
 
+    if (email) {
+      const existingEmail = await prisma.user.findUnique({ where: { email } });
+      if (existingEmail && existingEmail.id !== req.params.id) return error(res, 'This email is already registered', 409);
+    }
+
     const updated = await prisma.user.update({
       where: { id: req.params.id },
       data: {
