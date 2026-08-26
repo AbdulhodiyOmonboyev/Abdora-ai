@@ -80,21 +80,22 @@ export default function ReceptionBranches() {
   const saveError = createMutation.error || updateMutation.error;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="dashboard-shell max-w-3xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
 
-      <div className="flex items-center justify-between mb-6">
+      <header className="dashboard-header dashboard-header-plain">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Filiallar</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{count} / {maxBranches} filial ochilgan</p>
+          <span className="dashboard-badge"><Building2 size={12} /> Reception</span>
+          <h1>Filiallar</h1>
+          <p>{count} / {maxBranches} filial ochilgan</p>
         </div>
         <button onClick={() => setShowCreate(true)} disabled={atLimit} className="btn-primary flex items-center gap-2 disabled:opacity-40">
           <Plus size={15} /> Filial qo'shish
         </button>
-      </div>
+      </header>
 
       {atLimit && (
-        <p className="text-xs text-amber-500 mb-4 text-center">
+        <p className="text-xs text-amber-500 mb-2 text-center">
           Sizga ko'pi bilan {maxBranches} ta filial ochish ruxsat etilgan. Ko'proq kerak bo'lsa, administratorga murojaat qiling.
         </p>
       )}
@@ -102,25 +103,25 @@ export default function ReceptionBranches() {
       <div className="space-y-2">
         {branches?.map((b, i) => (
           <motion.div key={b.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-            className="card flex items-center gap-3">
+            className="panel-card flex items-center gap-3">
             <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center text-white flex-shrink-0">
               <Building2 size={18} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm text-gray-800 dark:text-white">{b.name}</div>
-              {b.address && <div className="text-xs text-gray-400 flex items-center gap-1"><MapPin size={10} /> {b.address}</div>}
+              <div className="font-semibold text-sm text-[var(--text-primary)]">{b.name}</div>
+              {b.address && <div className="text-xs text-[var(--text-muted)] flex items-center gap-1"><MapPin size={10} /> {b.address}</div>}
             </div>
             <span className="badge text-xs bg-primary/10 text-primary whitespace-nowrap">{b._count?.groups || 0} guruh</span>
             <button onClick={() => openEdit(b)} className="btn-ghost p-2 rounded-lg" title="Tahrirlash">
               <Pencil size={14} />
             </button>
-            <button onClick={() => handleDelete(b)} className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50" title="O'chirish">
+            <button onClick={() => handleDelete(b)} className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10" title="O'chirish">
               <Trash2 size={14} />
             </button>
           </motion.div>
         ))}
         {branches?.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-[var(--text-muted)]">
             <Building2 size={36} className="mx-auto mb-3 opacity-30" />
             <p>Hali filial ochilmagan.</p>
           </div>
@@ -133,9 +134,9 @@ export default function ReceptionBranches() {
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
             onClick={e => e.target === e.currentTarget && closeModal()}>
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-md">
+              className="bg-[var(--card)] dark:bg-gray-900 border border-[var(--border)] dark:border-transparent rounded-3xl p-6 w-full max-w-md">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-lg">{editingId ? 'Filialni tahrirlash' : "Filial qo'shish"}</h2>
+                <h2 className="font-bold text-lg text-[var(--text-primary)]">{editingId ? 'Filialni tahrirlash' : "Filial qo'shish"}</h2>
                 <button onClick={closeModal} className="btn-ghost p-1.5 rounded-lg"><X size={16} /></button>
               </div>
               <div className="space-y-4">

@@ -88,11 +88,12 @@ export default function ReceptionPayments() {
   }, {});
 
   return (
-    <main className="mx-auto max-w-3xl pb-10">
-      <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <div className="dashboard-shell mx-auto max-w-3xl pb-10">
+      <header className="dashboard-header dashboard-header-plain">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-800 dark:text-white">To'lovlar</h1>
-          <p className="mt-0.5 text-sm text-gray-500">Kim qancha to'lagan va nima uchun to'lamagan</p>
+          <span className="dashboard-badge"><Wallet size={12} /> Reception</span>
+          <h1>To'lovlar</h1>
+          <p>Kim qancha to'lagan va nima uchun to'lamagan</p>
         </div>
         <button type="button" onClick={exportExcel} disabled={!groupId || exporting}
           className="btn-outline flex items-center gap-2 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary/40">
@@ -241,7 +242,7 @@ export default function ReceptionPayments() {
           </motion.div>
         )}
       </AnimatePresence>
-    </main>
+    </div>
   );
 }
 

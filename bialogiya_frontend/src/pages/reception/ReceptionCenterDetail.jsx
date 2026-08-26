@@ -41,8 +41,8 @@ export default function ReceptionCenterDetail() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="dashboard-shell max-w-4xl mx-auto">
+      <div className="flex items-center gap-3">
         <button onClick={() => navigate('/reception/centers')} className="btn-ghost p-2 rounded-xl">
           <ArrowLeft size={18} />
         </button>
@@ -52,57 +52,48 @@ export default function ReceptionCenterDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="card p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <Building2 size={20} className="text-primary" />
-            <div>
-              <div className="text-xs uppercase tracking-wide text-gray-500">O'quvchi sig'imi</div>
-              <div className="font-semibold text-lg text-gray-900 dark:text-white">{data.studentCapacity ?? '—'}</div>
-            </div>
+      <div className="stats-grid grid-cols-1 sm:grid-cols-3">
+        <div className="dashboard-stat-card">
+          <div className="stat-icon-wrap"><Building2 size={18} className="text-primary" /></div>
+          <div className="stat-copy">
+            <strong>{data.studentCapacity ?? '—'}</strong>
+            <span>O'quvchi sig'imi</span>
           </div>
-          <div className="text-sm text-gray-500">Bu markaz uchun maksimal o'quvchilar soni.</div>
         </div>
-        <div className="card p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <Users size={20} className="text-primary" />
-            <div>
-              <div className="text-xs uppercase tracking-wide text-gray-500">O'quvchilar</div>
-              <div className="font-semibold text-lg text-gray-900 dark:text-white">{data.studentsCount}</div>
-            </div>
+        <div className="dashboard-stat-card">
+          <div className="stat-icon-wrap"><Users size={18} className="text-primary" /></div>
+          <div className="stat-copy">
+            <strong>{data.studentsCount}</strong>
+            <span>O'quvchilar</span>
           </div>
-          <div className="text-sm text-gray-500">Faol guruhlardagi o'quvchilar.</div>
         </div>
-        <div className="card p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <UserCheck size={20} className="text-primary" />
-            <div>
-              <div className="text-xs uppercase tracking-wide text-gray-500">O'qituvchilar</div>
-              <div className="font-semibold text-lg text-gray-900 dark:text-white">{data.teachers?.length ?? 0}</div>
-            </div>
+        <div className="dashboard-stat-card">
+          <div className="stat-icon-wrap"><UserCheck size={18} className="text-primary" /></div>
+          <div className="stat-copy">
+            <strong>{data.teachers?.length ?? 0}</strong>
+            <span>O'qituvchilar</span>
           </div>
-          <div className="text-sm text-gray-500">Bu markazga biriktirilgan o'qituvchilar.</div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="panel-card">
+          <div className="panel-header">
             <div>
-              <div className="text-sm font-semibold text-gray-900 dark:text-white">Guruhlar</div>
-              <div className="text-xs text-gray-500">{data.groups?.length ?? 0} ta guruh</div>
+              <div className="text-sm font-semibold text-[var(--text-primary)]">Guruhlar</div>
+              <div className="text-xs text-[var(--text-muted)]">{data.groups?.length ?? 0} ta guruh</div>
             </div>
             <div className="badge bg-primary/10 text-primary text-xs">Markazdagi</div>
           </div>
           <div className="space-y-3">
             {data.groups?.map(group => (
-              <div key={group.id} className="border border-gray-100 dark:border-gray-800 rounded-3xl p-4">
+              <div key={group.id} className="border border-[var(--border)] rounded-3xl p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <div className="font-semibold text-gray-800 dark:text-white">{group.name}</div>
-                    <div className="text-xs text-gray-500 mt-1">{group._count?.students || 0} o'quvchi</div>
+                    <div className="font-semibold text-[var(--text-primary)]">{group.name}</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-1">{group._count?.students || 0} o'quvchi</div>
                   </div>
-                  <div className="text-xs text-gray-500">{group.monthlyFee ? `${group.monthlyFee} so'm/oy` : 'To‘lov yo‘q'}</div>
+                  <div className="text-xs text-[var(--text-muted)]">{group.monthlyFee ? `${group.monthlyFee} so'm/oy` : 'To‘lov yo‘q'}</div>
                 </div>
                 {formatSchedule(group) && (
                   <div className="text-xs text-primary/80 mt-2">{formatSchedule(group)}</div>
@@ -110,48 +101,48 @@ export default function ReceptionCenterDetail() {
               </div>
             ))}
             {data.groups?.length === 0 && (
-              <div className="text-sm text-gray-500">Bu markazga hali guruh biriktirilmagan.</div>
+              <div className="text-sm text-[var(--text-muted)]">Bu markazga hali guruh biriktirilmagan.</div>
             )}
           </div>
         </div>
 
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
+        <div className="panel-card">
+          <div className="panel-header">
             <div>
-              <div className="text-sm font-semibold text-gray-900 dark:text-white">O'qituvchilar</div>
-              <div className="text-xs text-gray-500">{data.teachers?.length ?? 0} ta</div>
+              <div className="text-sm font-semibold text-[var(--text-primary)]">O'qituvchilar</div>
+              <div className="text-xs text-[var(--text-muted)]">{data.teachers?.length ?? 0} ta</div>
             </div>
             <div className="badge bg-secondary/10 text-secondary text-xs">Markazga</div>
           </div>
           <div className="space-y-3">
             {data.teachers?.map(teacher => (
-              <div key={teacher.id} className="border border-gray-100 dark:border-gray-800 rounded-3xl p-4">
-                <div className="font-semibold text-gray-800 dark:text-white">{teacher.name}</div>
-                <div className="text-xs text-gray-500 mt-1">@{teacher.username}</div>
-                {teacher.phone && <div className="text-xs text-gray-500 mt-1">{teacher.phone}</div>}
+              <div key={teacher.id} className="border border-[var(--border)] rounded-3xl p-4">
+                <div className="font-semibold text-[var(--text-primary)]">{teacher.name}</div>
+                <div className="text-xs text-[var(--text-muted)] mt-1">@{teacher.username}</div>
+                {teacher.phone && <div className="text-xs text-[var(--text-muted)] mt-1">{teacher.phone}</div>}
               </div>
             ))}
             {data.teachers?.length === 0 && (
-              <div className="text-sm text-gray-500">Bu markazga hali o'qituvchi tayinlanmagan.</div>
+              <div className="text-sm text-[var(--text-muted)]">Bu markazga hali o'qituvchi tayinlanmagan.</div>
             )}
           </div>
         </div>
       </div>
 
-      <div className="card p-5">
+      <div className="panel-card">
         <div className="flex items-center gap-3 mb-3">
           <Calendar size={18} className="text-primary" />
           <div>
-            <div className="text-sm font-semibold text-gray-900 dark:text-white">Markaz ma'lumotlari</div>
-            <div className="text-xs text-gray-500">{data.createdAt ? new Date(data.createdAt).toLocaleDateString('uz-UZ') : '—'}</div>
+            <div className="text-sm font-semibold text-[var(--text-primary)]">Markaz ma'lumotlari</div>
+            <div className="text-xs text-[var(--text-muted)]">{data.createdAt ? new Date(data.createdAt).toLocaleDateString('uz-UZ') : '—'}</div>
           </div>
         </div>
         {data.address && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
             <MapPin size={16} />{data.address}
           </div>
         )}
-        <div className="mt-4 text-sm text-gray-500">Qabulxona uchun markazni o'zgartirish bu yerda amalga oshiriladi.</div>
+        <div className="mt-4 text-sm text-[var(--text-muted)]">Qabulxona uchun markazni o'zgartirish bu yerda amalga oshiriladi.</div>
       </div>
     </div>
   );

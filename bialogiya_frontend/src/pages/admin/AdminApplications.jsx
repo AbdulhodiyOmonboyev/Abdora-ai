@@ -49,71 +49,74 @@ export default function AdminApplications() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="dashboard-shell max-w-3xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Arizalar</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Landing sahifadan kelgan murojaatlar</p>
-      </div>
+      <header className="dashboard-header dashboard-header-plain">
+        <div>
+          <span className="dashboard-badge"><Inbox size={12} /> Admin</span>
+          <h1>Arizalar</h1>
+          <p>Landing sahifadan kelgan murojaatlar</p>
+        </div>
+      </header>
 
-      <div className="flex gap-2 mb-5 overflow-x-auto">
+      <div className="flex gap-2 mb-1 overflow-x-auto">
         {FILTERS.map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
             className={`px-3.5 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
-              filter === f.key ? 'gradient-bg text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+              filter === f.key ? 'gradient-bg text-white' : 'bg-[var(--surface)] dark:bg-gray-800 text-[var(--text-muted)]'
             }`}>
             {f.label}
           </button>
         ))}
       </div>
 
-      {isLoading && <div className="text-center py-16 text-gray-400">Yuklanmoqda...</div>}
+      {isLoading && <div className="text-center py-16 text-[var(--text-muted)]">Yuklanmoqda...</div>}
 
       <div className="space-y-2">
         {applications?.map((a, i) => {
           const st = STATUS_LABEL[a.status] || STATUS_LABEL.new;
           return (
             <motion.div key={a.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
-              className="card">
+              className="panel-card">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="font-semibold text-sm text-gray-800 dark:text-white">{a.name}</span>
+                    <span className="font-semibold text-sm text-[var(--text-primary)]">{a.name}</span>
                     <span className={`badge text-[11px] ${st.className}`}>{st.label}</span>
                   </div>
                   <a href={`tel:${a.phone}`} className="text-xs text-primary flex items-center gap-1 hover:underline">
                     <Phone size={11} /> {a.phone}
                   </a>
                   {a.message && (
-                    <p className="text-xs text-gray-500 mt-2 flex items-start gap-1.5">
-                      <MessageSquare size={12} className="flex-shrink-0 mt-0.5 text-gray-400" />
+                    <p className="text-xs text-[var(--text-secondary)] mt-2 flex items-start gap-1.5">
+                      <MessageSquare size={12} className="flex-shrink-0 mt-0.5 text-[var(--text-muted)]" />
                       {a.message}
                     </p>
                   )}
-                  <div className="text-[11px] text-gray-400 mt-2">
+                  <div className="text-[11px] text-[var(--text-muted)] mt-2">
                     {new Date(a.createdAt).toLocaleString('uz-UZ')}
                   </div>
                 </div>
-                <button onClick={() => handleDelete(a)} className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50 flex-shrink-0">
+                <button onClick={() => handleDelete(a)} className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex-shrink-0">
                   <Trash2 size={14} />
                 </button>
               </div>
 
               {a.status !== 'converted' && a.status !== 'rejected' && (
-                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex gap-2 mt-3 pt-3 border-t border-[var(--border)]">
                   {a.status === 'new' && (
                     <button onClick={() => updateStatus.mutate({ id: a.id, status: 'contacted' })}
-                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors">
                       <PhoneCall size={12} /> Bog'lanildi deb belgilash
                     </button>
                   )}
                   <button onClick={() => updateStatus.mutate({ id: a.id, status: 'converted' })}
-                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors">
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors">
                     <Check size={12} /> O'qishga yozildi
                   </button>
                   <button onClick={() => updateStatus.mutate({ id: a.id, status: 'rejected' })}
-                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-500 hover:bg-gray-100 transition-colors">
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--surface)] dark:bg-gray-800 text-[var(--text-muted)] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <X size={12} /> Rad etish
                   </button>
                 </div>
@@ -122,7 +125,7 @@ export default function AdminApplications() {
           );
         })}
         {applications?.length === 0 && !isLoading && (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-[var(--text-muted)]">
             <Inbox size={36} className="mx-auto mb-3 opacity-30" />
             <p>Hozircha ariza yo'q.</p>
           </div>

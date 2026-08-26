@@ -99,22 +99,22 @@ export default function ReceptionCenters() {
   const saveError = createMutation.error || updateMutation.error;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="dashboard-shell max-w-3xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <header className="dashboard-header dashboard-header-plain">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">O'quv markazlar</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Har bir markaz uchun nom, manzil va o'quvchi sig'imi belgilang.</p>
-          <p className="text-sm text-gray-500 mt-2">{count} / {limit} markaz ochilgan</p>
+          <span className="dashboard-badge"><Building2 size={12} /> Reception</span>
+          <h1>O'quv markazlar</h1>
+          <p>Har bir markaz uchun nom, manzil va o'quvchi sig'imi belgilang. {count} / {limit} markaz ochilgan.</p>
         </div>
         <button onClick={() => setShowForm(true)} disabled={atLimit} className="btn-primary flex items-center gap-2 disabled:opacity-40">
           <Plus size={15} /> Markaz qo'shish
         </button>
-      </div>
+      </header>
 
       {atLimit && (
-        <p className="text-xs text-amber-500 mb-4 text-center">
+        <p className="text-xs text-amber-500 mb-2 text-center">
           Sizga ko'pi bilan {limit} ta markaz ochish ruxsat etilgan. Ko'proq kerak bo'lsa, administrator bilan bog'laning.
         </p>
       )}
@@ -122,32 +122,32 @@ export default function ReceptionCenters() {
       <div className="space-y-3">
         {filteredCenters?.map((center, index) => (
           <motion.div key={center.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
-            className="card flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            className="panel-card flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="w-12 h-12 bg-primary/10 rounded-3xl flex items-center justify-center text-primary flex-shrink-0">
               <Building2 size={20} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-base text-gray-800 dark:text-white">{center.name}</div>
-              <div className="text-sm text-gray-500 mt-1 flex flex-wrap gap-2">
+              <div className="font-semibold text-base text-[var(--text-primary)]">{center.name}</div>
+              <div className="text-sm text-[var(--text-muted)] mt-1 flex flex-wrap gap-2">
                 {center.address && (
                   <span className="inline-flex items-center gap-1"><MapPin size={12} />{center.address}</span>
                 )}
                 <span>{center.studentCapacity ? `${center.studentCapacity} ta o'quvchi` : "Sig'im belgilanmagan"}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
+            <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] flex-wrap">
               <span className="badge bg-primary/10 text-primary">{center._count?.teachers || 0} o'qituvchi</span>
               <span className="badge bg-secondary/10 text-secondary">{center._count?.groups || 0} guruh</span>
             </div>
             <div className="flex items-center gap-2 ml-auto">
               <button onClick={() => openEdit(center)} className="btn-ghost p-2 rounded-lg" title="Tahrirlash">Tahrirlash</button>
-              <button onClick={() => handleDelete(center)} className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50" title="O'chirish">O'chirish</button>
+              <button onClick={() => handleDelete(center)} className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10" title="O'chirish">O'chirish</button>
             </div>
           </motion.div>
         ))}
 
         {filteredCenters?.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-[var(--text-muted)]">
             <Building2 size={36} className="mx-auto mb-3 opacity-30" />
             <p>{search ? "Qidiruv bo'yicha hech qanday markaz topilmadi." : 'Hali markaz yaratilmagan.'}</p>
           </div>
@@ -160,9 +160,9 @@ export default function ReceptionCenters() {
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
             onClick={e => e.target === e.currentTarget && closeForm()}>
             <motion.div initial={{ scale: 0.96 }} animate={{ scale: 1 }} exit={{ scale: 0.96 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-md">
+              className="bg-[var(--card)] dark:bg-gray-900 border border-[var(--border)] dark:border-transparent rounded-3xl p-6 w-full max-w-md">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-lg">{editingId ? "Markazni tahrirlash" : "Markaz qo'shish"}</h2>
+                <h2 className="font-bold text-lg text-[var(--text-primary)]">{editingId ? "Markazni tahrirlash" : "Markaz qo'shish"}</h2>
                 <button onClick={closeForm} className="btn-ghost p-1.5 rounded-lg"><X size={16} /></button>
               </div>
               <div className="space-y-4">

@@ -91,20 +91,21 @@ export default function ReceptionStudents() {
   }) : [];
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="dashboard-shell max-w-4xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
 
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <header className="dashboard-header dashboard-header-plain">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">O'quvchilar</h1>
-          <p className="text-sm text-gray-500 mt-0.5">O'quvchilarni boshqarish va yangi o'quvchi qo'shish</p>
+          <span className="dashboard-badge"><GraduationCap size={12} /> Reception</span>
+          <h1>O'quvchilar</h1>
+          <p>O'quvchilarni boshqarish va yangi o'quvchi qo'shish</p>
         </div>
         <button
           onClick={() => { setForm(f => ({ ...f, groupId: filterGroupId })); setShowCreate(true); }}
           className="btn-primary flex items-center gap-2">
           <Plus size={15} /> O'quvchi qo'shish
         </button>
-      </div>
+      </header>
 
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
@@ -143,16 +144,16 @@ export default function ReceptionStudents() {
           const { level } = getLevelProgress(s.xp || 0);
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
-              className="card flex items-center gap-3">
+              className="panel-card flex items-center gap-3">
               <div className="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                 {s.name?.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm text-gray-800 dark:text-white flex items-center gap-2">
+                <div className="font-semibold text-sm text-[var(--text-primary)] flex items-center gap-2">
                   <span>{s.name}</span>
                   <span className="badge bg-primary/10 text-primary text-[11px] font-medium">Lv.{level}</span>
                 </div>
-                <div className="text-xs text-gray-400 flex items-center gap-2 flex-wrap mt-0.5">
+                <div className="text-xs text-[var(--text-muted)] flex items-center gap-2 flex-wrap mt-0.5">
                   <span>@{s.username}</span>
                   {s.group ? (
                     <span className="flex items-center gap-1 text-primary">
@@ -166,7 +167,7 @@ export default function ReceptionStudents() {
                   )}
                 </div>
               </div>
-              <button onClick={() => handleDelete(s)} className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50" title="O'chirish">
+              <button onClick={() => handleDelete(s)} className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10" title="O'chirish">
                 <Trash2 size={14} />
               </button>
             </motion.div>
@@ -174,7 +175,7 @@ export default function ReceptionStudents() {
         })}
 
         {filteredStudents.length === 0 && (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-[var(--text-muted)]">
             <GraduationCap size={36} className="mx-auto mb-3 opacity-30" />
             <p>{isLoading ? 'Yuklanmoqda...' : search ? 'Qidiruv bo\'yicha o\'quvchi topilmadi.' : 'Hali o\'quvchilar yo\'q.'}</p>
           </div>
@@ -188,7 +189,7 @@ export default function ReceptionStudents() {
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
             onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-md">
+              className="bg-[var(--card)] dark:bg-gray-900 border border-[var(--border)] dark:border-transparent rounded-3xl p-6 w-full max-w-md">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-lg text-gray-800 dark:text-white">O'quvchi qo'shish</h2>
                 <button onClick={() => { setShowCreate(false); setNewCreds(null); }} className="btn-ghost p-1.5 rounded-lg"><X size={16} /></button>
