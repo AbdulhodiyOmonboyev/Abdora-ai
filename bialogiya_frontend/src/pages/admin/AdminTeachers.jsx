@@ -107,7 +107,7 @@ export default function AdminTeachers() {
 
       {/* Teacher list */}
       <div className="panel-card overflow-hidden p-0 max-w-6xl mx-auto">
-        <div className="teacher-table-labels hidden md:grid grid-cols-[minmax(220px,1.5fr)_120px_120px_110px] gap-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+        <div className="teacher-table-labels hidden md:grid grid-cols-[minmax(220px,1.5fr)_120px_120px_110px] gap-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide dark:text-slate-400">
           <span>O'qituvchi</span><span>Guruh</span><span>O'quvchi</span><span className="text-right">Holat</span>
         </div>
         <div className="space-y-2 p-2">

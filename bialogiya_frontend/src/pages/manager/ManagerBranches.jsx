@@ -45,7 +45,7 @@ export default function ManagerBranches() {
   if (isLoading) {
     return (
       <div className="dashboard-shell max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-white mb-6">Filiallar</h1>
+        <h1 className="text-2xl font-bold dark:text-white mb-6">Filiallar</h1>
         <div className="text-center py-16">Yuklanmoqda...</div>
       </div>
     );
@@ -90,11 +90,11 @@ export default function ManagerBranches() {
               {filteredBranches.map((branch, index) => (
                 <motion.tr key={branch.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.04 }}
                   onClick={() => navigate(`/manager/branches/${branch.id}`)} className="cursor-pointer">
-                  <td className="font-semibold text-white">{branch.name}</td>
-                  <td className="text-slate-400">{branch.address || '—'}</td>
-                  <td className="text-slate-300">{branch._count?.teachers || 0}</td>
-                  <td className="text-slate-300">{branch.studentsCount || 0}</td>
-                  <td className="text-slate-300">{branch.groups?.length || 0}</td>
+                  <td className="font-semibold dark:text-white">{branch.name}</td>
+                  <td className="dark:text-slate-400">{branch.address || '—'}</td>
+                  <td className="dark:text-slate-300">{branch._count?.teachers || 0}</td>
+                  <td className="dark:text-slate-300">{branch.studentsCount || 0}</td>
+                  <td className="dark:text-slate-300">{branch.groups?.length || 0}</td>
                   <td><span className="tag-pill">Faol</span></td>
                 </motion.tr>
               ))}

@@ -78,7 +78,7 @@ export default function AdminManagerDetail() {
   }
 
   if (!user) {
-    return <div className="dashboard-shell max-w-5xl mx-auto py-20 text-center text-slate-400">Manager topilmadi.</div>;
+    return <div className="dashboard-shell max-w-5xl mx-auto py-20 text-center dark:text-slate-400">Manager topilmadi.</div>;
   }
 
   return (
@@ -131,8 +131,8 @@ export default function AdminManagerDetail() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-3 p-4 rounded-3xl bg-slate-950/50 border border-slate-800">
-            <div className="text-xs uppercase tracking-wide text-slate-400">Kontakt</div>
+          <div className="space-y-3 p-4 rounded-3xl bg-[var(--surface)] dark:bg-slate-950/50 border border-[var(--border)] dark:border-slate-800">
+            <div className="text-xs uppercase tracking-wide dark:text-slate-400">Kontakt</div>
             <div className="flex items-start gap-3">
               <Phone size={18} className="text-primary mt-1" />
               <div>
@@ -151,8 +151,8 @@ export default function AdminManagerDetail() {
               </div>
             </div>
           </div>
-          <div className="space-y-3 p-4 rounded-3xl bg-slate-950/50 border border-slate-800">
-            <div className="text-xs uppercase tracking-wide text-slate-400">Ma'lumot</div>
+          <div className="space-y-3 p-4 rounded-3xl bg-[var(--surface)] dark:bg-slate-950/50 border border-[var(--border)] dark:border-slate-800">
+            <div className="text-xs uppercase tracking-wide dark:text-slate-400">Ma'lumot</div>
             <div className="flex items-start gap-3">
               <ShieldCheck size={18} className="text-primary mt-1" />
               <div>

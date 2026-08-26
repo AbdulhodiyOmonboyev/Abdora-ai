@@ -241,7 +241,7 @@ export default function ManagerLeads() {
             <motion.div initial={{ scale: 0.97, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.97, y: 12 }}
               transition={{ duration: 0.18 }}
               role="dialog" aria-modal="true" aria-labelledby="lead-modal-title"
-              className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
+              className="w-full max-w-md rounded-3xl border border-[var(--border)] dark:border-slate-800 bg-[var(--card)] dark:bg-slate-950 p-6 shadow-2xl">
               <div className="mb-4 flex items-center justify-between">
                 <h2 id="lead-modal-title" className="text-lg font-bold text-gray-800 dark:text-white">Yangi lid</h2>
                 <button type="button" onClick={() => setModalOpen(false)} aria-label="Yopish"

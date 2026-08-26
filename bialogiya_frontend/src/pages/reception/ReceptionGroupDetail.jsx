@@ -165,12 +165,12 @@ export default function ReceptionGroupDetail() {
                 </span>
               )}
               {group?.room && (
-                <span className="text-xs text-slate-400 flex items-center gap-1">
+                <span className="text-xs dark:text-slate-400 flex items-center gap-1">
                   <DoorOpen size={11} />{group.room}
                 </span>
               )}
               {group?.branch?.name && (
-                <span className="text-xs text-slate-400 flex items-center gap-1">
+                <span className="text-xs dark:text-slate-400 flex items-center gap-1">
                   <Building2 size={11} />{group.branch.name}
                 </span>
               )}
@@ -438,7 +438,7 @@ export default function ReceptionGroupDetail() {
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
             onClick={e => e.target === e.currentTarget && setShowAdd(false)}>
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
-              className="bg-slate-950 rounded-3xl p-6 w-full max-w-md border border-slate-800">
+              className="bg-[var(--card)] dark:bg-slate-950 rounded-3xl p-6 w-full max-w-md border border-[var(--border)] dark:border-slate-800">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-lg">O'quvchi qo'shish</h2>
                 <button onClick={() => { setShowAdd(false); setNewCreds(null); }} className="btn-ghost p-1.5 rounded-lg">

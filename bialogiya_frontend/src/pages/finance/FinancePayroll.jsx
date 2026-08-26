@@ -160,7 +160,7 @@ export default function FinancePayroll() {
             <motion.div initial={{ scale: 0.97, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.97, y: 12 }}
               transition={{ duration: 0.18 }}
               role="dialog" aria-modal="true" aria-labelledby="salary-modal-title"
-              className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
+              className="w-full max-w-md rounded-3xl border border-[var(--border)] dark:border-slate-800 bg-[var(--card)] dark:bg-slate-950 p-6 shadow-2xl">
               <div className="mb-1 flex items-center justify-between">
                 <h2 id="salary-modal-title" className="text-lg font-bold text-gray-800 dark:text-white">
                   {editing.name}
@@ -237,7 +237,7 @@ function SalaryForm({ teacher, pending, onSubmit, onCancel }) {
                   : 'border-gray-200 hover:border-gray-300 dark:border-gray-700'}`}>
               <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
                 salaryShare === p.share ? 'border-primary bg-primary' : 'border-gray-300'}`}>
-                {salaryShare === p.share && <Check size={11} className="text-white" aria-hidden="true" />}
+                {salaryShare === p.share && <Check size={11} className="dark:text-white" aria-hidden="true" />}
               </span>
               <span className="flex-1">
                 <span className="block text-sm font-semibold text-gray-800 dark:text-white">{p.label}</span>

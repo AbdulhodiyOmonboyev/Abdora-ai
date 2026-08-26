@@ -141,7 +141,7 @@ export default function AdminReception() {
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
               className="creator-modal bg-white rounded-[28px] p-7 w-full max-w-xl shadow-2xl">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-xl text-slate-900">{editingId ? "Hisobni tahrirlash" : "Qabulxona hisobi qo'shish"}</h2>
+                <h2 className="font-bold text-xl dark:text-slate-900">{editingId ? "Hisobni tahrirlash" : "Qabulxona hisobi qo'shish"}</h2>
                 <button onClick={closeModal} className="btn-ghost p-1.5 rounded-lg">
                   <X size={16} />
                 </button>

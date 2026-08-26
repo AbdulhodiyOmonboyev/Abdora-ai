@@ -150,9 +150,9 @@ export default function AdminManagers() {
               <tbody>
                 {managers.map((manager, index) => (
                   <motion.tr key={manager.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.03 }}>
-                    <td className="cursor-pointer" onClick={() => navigate(`/admin/managers/${manager.id}`)}><div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-full gradient-bg text-white grid place-items-center text-xs font-semibold">{manager.name?.charAt(0)}</div><div><div className="font-semibold text-white">{manager.name}</div><div className="text-xs text-slate-400">@{manager.username}</div></div></div></td>
-                    <td className="text-slate-300">{manager.phone || '—'}</td>
-                    <td className="text-slate-400">{manager.address || '—'}</td>
+                    <td className="cursor-pointer" onClick={() => navigate(`/admin/managers/${manager.id}`)}><div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-full gradient-bg text-white grid place-items-center text-xs font-semibold">{manager.name?.charAt(0)}</div><div><div className="font-semibold text-[var(--text-primary)]">{manager.name}</div><div className="text-xs text-[var(--text-muted)]">@{manager.username}</div></div></div></td>
+                    <td className="text-[var(--text-secondary)]">{manager.phone || '—'}</td>
+                    <td className="text-[var(--text-muted)]">{manager.address || '—'}</td>
                     <td><button onClick={() => toggleMutation.mutate(manager.id)} className={`badge text-xs ${manager.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{manager.isActive ? 'Faol' : 'Nofaol'}</button></td>
                     <td><div className="flex justify-end gap-1"><button onClick={() => openEdit(manager)} className="btn-ghost p-2 rounded-lg text-blue-400" title="Tahrirlash"><Edit2 size={14} /></button><button onClick={() => openDelete(manager)} className="btn-ghost p-2 rounded-lg text-red-400" title="O'chirish"><Trash2 size={14} /></button></div></td>
                   </motion.tr>
@@ -160,7 +160,7 @@ export default function AdminManagers() {
               </tbody>
             </table>
           </div>
-        ) : <div className="text-center py-16 text-slate-400"><User size={36} className="mx-auto mb-3 opacity-30" /><p>Hozircha managerlar yo'q.</p></div>}
+        ) : <div className="text-center py-16 dark:text-slate-400"><User size={36} className="mx-auto mb-3 opacity-30" /><p>Hozircha managerlar yo'q.</p></div>}
       </div>
 
       {/* Create Modal */}

@@ -50,17 +50,17 @@ export default function AdminStudents() {
                 {filtered.map((s, i) => {
                   const { level } = getLevelProgress(s.xp);
                   return <motion.tr key={s.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}>
-                    <td><div className="flex items-center gap-2.5"><div className="w-8 h-8 gradient-bg rounded-full text-white grid place-items-center text-xs font-semibold">{s.name?.charAt(0)}</div><div><div className="font-semibold text-white">{s.name}</div><div className="text-xs text-slate-400">@{s.username}</div></div></div></td>
-                    <td className="text-slate-300">{s.group?.name || 'No group'}</td>
-                    <td className="text-slate-400">{s.teacher?.name || '-'}</td>
-                    <td className="text-slate-300">Lv.{level} · {s.xp || 0} XP</td>
+                    <td><div className="flex items-center gap-2.5"><div className="w-8 h-8 gradient-bg rounded-full text-white grid place-items-center text-xs font-semibold">{s.name?.charAt(0)}</div><div><div className="font-semibold text-[var(--text-primary)]">{s.name}</div><div className="text-xs text-[var(--text-muted)]">@{s.username}</div></div></div></td>
+                    <td className="dark:text-slate-300">{s.group?.name || 'No group'}</td>
+                    <td className="dark:text-slate-400">{s.teacher?.name || '-'}</td>
+                    <td className="dark:text-slate-300">Lv.{level} · {s.xp || 0} XP</td>
                     <td><button onClick={() => toggleMutation.mutate(s.id)} className={`badge text-xs ${s.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{s.isActive ? 'Active' : 'Inactive'}</button></td>
                   </motion.tr>;
                 })}
               </tbody>
             </table>
           </div>
-        ) : <div className="text-center py-16 text-slate-400"><GraduationCap size={36} className="mx-auto mb-3 opacity-30" /><p>{search ? 'No students match your search' : 'No students yet'}</p></div>}
+        ) : <div className="text-center py-16 dark:text-slate-400"><GraduationCap size={36} className="mx-auto mb-3 opacity-30" /><p>{search ? 'No students match your search' : 'No students yet'}</p></div>}
       </div>
     </div>
   );

@@ -59,7 +59,7 @@ export default function ReceptionTeacherDetail() {
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
-                tab === t.key ? 'gradient-bg text-white' : 'bg-slate-900/60 text-slate-300 border border-slate-800'
+                tab === t.key ? 'gradient-bg text-white' : 'bg-[var(--surface)] dark:bg-slate-900/60 text-[var(--text-secondary)] dark:text-slate-300 border border-[var(--border)] dark:border-slate-800'
               }`}>
               <Icon size={14} /> {t.label} <span className="opacity-70">({count})</span>
             </button>
@@ -77,16 +77,16 @@ export default function ReceptionTeacherDetail() {
                 <Users2 size={16} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm text-white">{g.name}</div>
-                <div className="text-xs text-slate-400 flex items-center gap-1.5">
+                <div className="font-semibold text-sm dark:text-white">{g.name}</div>
+                <div className="text-xs dark:text-slate-400 flex items-center gap-1.5">
                   <span>{g._count?.students || 0} o'quvchi</span>
                   {g.branch && <><span>·</span><span className="flex items-center gap-0.5"><Building2 size={10} />{g.branch.name}</span></>}
                 </div>
               </div>
-              {isReception && <ChevronRight size={16} className="text-slate-400 flex-shrink-0" />}
+              {isReception && <ChevronRight size={16} className="dark:text-slate-400 flex-shrink-0" />}
             </motion.div>
           ))}
-          {groups.length === 0 && <div className="text-center py-16 text-slate-400"><Users2 size={32} className="mx-auto mb-2 opacity-30" /><p>Guruh yo'q.</p></div>}
+          {groups.length === 0 && <div className="text-center py-16 dark:text-slate-400"><Users2 size={32} className="mx-auto mb-2 opacity-30" /><p>Guruh yo'q.</p></div>}
         </div>
       )}
 
@@ -99,13 +99,13 @@ export default function ReceptionTeacherDetail() {
                 {s.name?.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm text-white">{s.name}</div>
-                <div className="text-xs text-slate-400">@{s.username} {s.group && `· ${s.group.name}`}</div>
+                <div className="font-semibold text-sm dark:text-white">{s.name}</div>
+                <div className="text-xs dark:text-slate-400">@{s.username} {s.group && `· ${s.group.name}`}</div>
               </div>
-              <span className="text-xs text-slate-400">{s.xp || 0} XP</span>
+              <span className="text-xs dark:text-slate-400">{s.xp || 0} XP</span>
             </motion.div>
           ))}
-          {students.length === 0 && <div className="text-center py-16 text-slate-400"><GraduationCap size={32} className="mx-auto mb-2 opacity-30" /><p>O'quvchi yo'q.</p></div>}
+          {students.length === 0 && <div className="text-center py-16 dark:text-slate-400"><GraduationCap size={32} className="mx-auto mb-2 opacity-30" /><p>O'quvchi yo'q.</p></div>}
         </div>
       )}
 
@@ -118,14 +118,14 @@ export default function ReceptionTeacherDetail() {
                 <BookOpen size={15} className="text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm text-white truncate">{l.title}</div>
-                <div className="text-xs text-slate-400">
+                <div className="font-semibold text-sm dark:text-white truncate">{l.title}</div>
+                <div className="text-xs dark:text-slate-400">
                   {l.group?.name || "Guruhsiz"} · {new Date(l.createdAt).toLocaleDateString('uz-UZ')}
                 </div>
               </div>
             </motion.div>
           ))}
-          {lessons.length === 0 && <div className="text-center py-16 text-slate-400"><BookOpen size={32} className="mx-auto mb-2 opacity-30" /><p>Dars yo'q.</p></div>}
+          {lessons.length === 0 && <div className="text-center py-16 dark:text-slate-400"><BookOpen size={32} className="mx-auto mb-2 opacity-30" /><p>Dars yo'q.</p></div>}
         </div>
       )}
     </div>

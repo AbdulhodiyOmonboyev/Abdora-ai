@@ -199,11 +199,11 @@ export default function AdminBranches() {
               <tbody>
                 {filteredBranches.map((branch, index) => (
                   <motion.tr key={branch.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.04 }}>
-                    <td className="cursor-pointer font-semibold text-white" onClick={() => navigate(`/admin/branches/${branch.id}`)}>{branch.name}</td>
-                    <td className="text-slate-400">{branch.address || '—'}</td>
-                    <td className="text-slate-300">{branch.manager?.name || branch.reception?.name || '—'}</td>
-                    <td className="text-slate-300">{branch._count?.teachers || 0}</td>
-                    <td className="text-slate-300">{branch.studentsCount || 0}</td>
+                    <td className="cursor-pointer font-semibold dark:text-white" onClick={() => navigate(`/admin/branches/${branch.id}`)}>{branch.name}</td>
+                    <td className="dark:text-slate-400">{branch.address || '—'}</td>
+                    <td className="dark:text-slate-300">{branch.manager?.name || branch.reception?.name || '—'}</td>
+                    <td className="dark:text-slate-300">{branch._count?.teachers || 0}</td>
+                    <td className="dark:text-slate-300">{branch.studentsCount || 0}</td>
                     <td><span className="tag-pill">Faol</span></td>
                     <td><div className="flex justify-end gap-1"><button onClick={() => openEdit(branch)} className="btn-ghost p-2 rounded-lg text-blue-400" title="Tahrirlash"><Edit2 size={14} /></button><button onClick={() => openDelete(branch)} className="btn-ghost p-2 rounded-lg text-red-400" title="O'chirish"><Trash2 size={14} /></button></div></td>
                   </motion.tr>
@@ -212,7 +212,7 @@ export default function AdminBranches() {
             </table>
           </div>
         ) : (
-          <div className="text-center py-16 text-slate-400"><Building2 size={48} className="mx-auto mb-3 opacity-30" /><p>{search ? "Qidiruv bo'yicha hech qanday markaz topilmadi." : "Hozircha markazlar yo'q."}</p></div>
+          <div className="text-center py-16 dark:text-slate-400"><Building2 size={48} className="mx-auto mb-3 opacity-30" /><p>{search ? "Qidiruv bo'yicha hech qanday markaz topilmadi." : "Hozircha markazlar yo'q."}</p></div>
         )}
       </div>
 

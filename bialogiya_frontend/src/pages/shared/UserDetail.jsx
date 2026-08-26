@@ -34,13 +34,13 @@ function InfoRow({ icon: Icon, label, value }) {
 
 function StatCard({ icon: Icon, label, value }) {
   return (
-    <div className="rounded-3xl bg-slate-950/60 border border-slate-800 p-4 flex items-center gap-3">
+    <div className="rounded-3xl bg-[var(--surface)] dark:bg-slate-950/60 border border-[var(--border)] dark:border-slate-800 p-4 flex items-center gap-3">
       <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary grid place-items-center flex-shrink-0">
         <Icon size={18} />
       </div>
       <div className="min-w-0">
-        <div className="text-lg font-bold text-white leading-tight">{value}</div>
-        <div className="text-xs text-slate-400 truncate">{label}</div>
+        <div className="text-lg font-bold dark:text-white leading-tight">{value}</div>
+        <div className="text-xs dark:text-slate-400 truncate">{label}</div>
       </div>
     </div>
   );
@@ -127,15 +127,15 @@ export default function UserDetail() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-3 p-4 rounded-3xl bg-slate-950/50 border border-slate-800">
-            <div className="text-xs uppercase tracking-wide text-slate-400">Aloqa</div>
+          <div className="space-y-3 p-4 rounded-3xl bg-[var(--surface)] dark:bg-slate-950/50 border border-[var(--border)] dark:border-slate-800">
+            <div className="text-xs uppercase tracking-wide dark:text-slate-400">Aloqa</div>
             <InfoRow icon={Phone} label="Telefon" value={user.phone} />
             <InfoRow icon={Mail} label="Email" value={user.email} />
             <InfoRow icon={MapPin} label="Manzil" value={user.address} />
           </div>
 
-          <div className="space-y-3 p-4 rounded-3xl bg-slate-950/50 border border-slate-800">
-            <div className="text-xs uppercase tracking-wide text-slate-400">Ma'lumot</div>
+          <div className="space-y-3 p-4 rounded-3xl bg-[var(--surface)] dark:bg-slate-950/50 border border-[var(--border)] dark:border-slate-800">
+            <div className="text-xs uppercase tracking-wide dark:text-slate-400">Ma'lumot</div>
             <InfoRow icon={ShieldCheck} label="Rol" value={roleLabel} />
             <InfoRow icon={Building2} label="Filial" value={branchName} />
             {user.role === 'student' && (
@@ -168,7 +168,7 @@ export default function UserDetail() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-slate-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-[var(--border)] dark:border-slate-800">
           <div className="pt-4">
             <InfoRow icon={CalendarCheck} label="Qo'shilgan" value={user.createdAt && formatDate(user.createdAt)} />
           </div>

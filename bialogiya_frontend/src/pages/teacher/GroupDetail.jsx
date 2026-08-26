@@ -137,7 +137,7 @@ export default function GroupDetail() {
             const isSelected = selectedStudentId === s.id;
             return (
               <motion.div key={s.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                className={`rounded-xl border transition-all ${isSelected ? 'border-primary/40 bg-primary/5' : 'border-slate-800 bg-slate-900/40'}`}>
+                className={`rounded-xl border transition-all ${isSelected ? 'border-primary/40 bg-primary/5' : 'border-[var(--border)] dark:border-slate-800 bg-[var(--surface)] dark:bg-slate-900/40'}`}>
                 <button type="button" onClick={() => setSelectedStudentId(isSelected ? null : s.id)}
                   className="w-full text-left p-3 flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0
@@ -146,7 +146,7 @@ export default function GroupDetail() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm text-gray-800 dark:text-white">{s.name}</div>
-                    <div className="text-xs text-slate-400 flex flex-wrap gap-2">
+                    <div className="text-xs text-[var(--text-muted)] dark:text-slate-400 flex flex-wrap gap-2">
                       <span>@{s.username}</span>
                       <span>Lv.{s.level}</span>
                       <span>{s.xp} XP</span>
@@ -156,16 +156,16 @@ export default function GroupDetail() {
                       <span className={`px-2 py-1 rounded-full ${isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
                         {isPaid ? "To'landi" : "To'lanmadi"}
                       </span>
-                      {paidAt && <span className="text-slate-400">Oxirgi to'lov: {paidAt}</span>}
+                      {paidAt && <span className="text-[var(--text-muted)] dark:text-slate-400">Oxirgi to'lov: {paidAt}</span>}
                     </div>
                   </div>
                 </button>
                 {isSelected && (
-                  <div className="mt-3 rounded-3xl border border-slate-800 bg-slate-950/80 p-4 text-sm text-slate-200 shadow-sm">
+                  <div className="mt-3 rounded-3xl border border-[var(--border)] dark:border-slate-800 bg-[var(--surface)] dark:bg-slate-950/80 p-4 text-sm text-[var(--text-primary)] dark:text-slate-200 shadow-sm">
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <div>
-                        <div className="text-sm font-semibold text-white">{s.name} haqida ma'lumot</div>
-                        <div className="text-xs text-slate-400">To'lov va profil holati</div>
+                        <div className="text-sm font-semibold text-[var(--text-primary)] dark:text-white">{s.name} haqida ma'lumot</div>
+                        <div className="text-xs text-[var(--text-muted)] dark:text-slate-400">To'lov va profil holati</div>
                       </div>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
                         {isPaid ? "To'landi" : "To'lanmadi"}
@@ -173,24 +173,24 @@ export default function GroupDetail() {
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Login</div>
-                        <div className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-2 text-slate-200">@{s.username}</div>
+                        <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)] dark:text-slate-400">Login</div>
+                        <div className="rounded-2xl border border-[var(--border)] dark:border-slate-800 bg-[var(--surface)] dark:bg-slate-900 px-3 py-2 text-[var(--text-primary)] dark:text-slate-200">@{s.username}</div>
                       </div>
                       <div className="space-y-2">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Telefon</div>
-                        <div className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-2 text-slate-200">{s.phone || "Noma'lum"}</div>
+                        <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)] dark:text-slate-400">Telefon</div>
+                        <div className="rounded-2xl border border-[var(--border)] dark:border-slate-800 bg-[var(--surface)] dark:bg-slate-900 px-3 py-2 text-[var(--text-primary)] dark:text-slate-200">{s.phone || "Noma'lum"}</div>
                       </div>
                       <div className="space-y-2">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Daraja</div>
-                        <div className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-2 text-slate-200">Lv.{s.level}</div>
+                        <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)] dark:text-slate-400">Daraja</div>
+                        <div className="rounded-2xl border border-[var(--border)] dark:border-slate-800 bg-[var(--surface)] dark:bg-slate-900 px-3 py-2 text-[var(--text-primary)] dark:text-slate-200">Lv.{s.level}</div>
                       </div>
                       <div className="space-y-2">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">XP</div>
-                        <div className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-2 text-slate-200">{s.xp} XP</div>
+                        <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)] dark:text-slate-400">XP</div>
+                        <div className="rounded-2xl border border-[var(--border)] dark:border-slate-800 bg-[var(--surface)] dark:bg-slate-900 px-3 py-2 text-[var(--text-primary)] dark:text-slate-200">{s.xp} XP</div>
                       </div>
                     </div>
                     {paidAt && (
-                      <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-400">
+                      <div className="mt-4 rounded-2xl border border-[var(--border)] dark:border-slate-800 bg-[var(--surface)] dark:bg-slate-900 px-3 py-2 text-xs text-[var(--text-muted)] dark:text-slate-400">
                         Oxirgi to'lov: {paidAt}
                       </div>
                     )}
@@ -200,7 +200,7 @@ export default function GroupDetail() {
             );
           })}
           {students.length === 0 && (
-            <div className="text-center py-10 text-slate-400">
+            <div className="text-center py-10 text-[var(--text-muted)] dark:text-slate-400">
               <Users size={32} className="mx-auto mb-2 opacity-30" />
               <p className="text-sm">Hali o'quvchilar yo'q. Birinchi o'quvchini qo'shing!</p>
             </div>
