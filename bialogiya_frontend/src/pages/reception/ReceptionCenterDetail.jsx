@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Building2, Users, ClipboardList, Calendar, MapPin, UserCheck } from 'lucide-react';
 import api from '../../config/axios';
 import Loader from '../../components/ui/Loader';
+import StatCard from '../../components/ui/StatCard';
 
 const formatSchedule = (group) => {
   const parts = [];
@@ -52,28 +53,10 @@ export default function ReceptionCenterDetail() {
         </div>
       </div>
 
-      <div className="stats-grid grid-cols-1 sm:grid-cols-3">
-        <div className="dashboard-stat-card">
-          <div className="stat-icon-wrap"><Building2 size={18} className="text-primary" /></div>
-          <div className="stat-copy">
-            <strong>{data.studentCapacity ?? '—'}</strong>
-            <span>O'quvchi sig'imi</span>
-          </div>
-        </div>
-        <div className="dashboard-stat-card">
-          <div className="stat-icon-wrap"><Users size={18} className="text-primary" /></div>
-          <div className="stat-copy">
-            <strong>{data.studentsCount}</strong>
-            <span>O'quvchilar</span>
-          </div>
-        </div>
-        <div className="dashboard-stat-card">
-          <div className="stat-icon-wrap"><UserCheck size={18} className="text-primary" /></div>
-          <div className="stat-copy">
-            <strong>{data.teachers?.length ?? 0}</strong>
-            <span>O'qituvchilar</span>
-          </div>
-        </div>
+      <div className="stats-grid">
+        <StatCard icon={Building2} label="O'quvchi sig'imi" value={data.studentCapacity ?? '—'} />
+        <StatCard icon={Users} label="O'quvchilar" value={data.studentsCount} />
+        <StatCard icon={UserCheck} label="O'qituvchilar" value={data.teachers?.length ?? 0} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

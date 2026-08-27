@@ -6,6 +6,7 @@ import { Plus, X, Users2, ChevronRight, Clock, Calendar, DoorOpen, Building2, Pe
 import api from '../../config/axios';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import PageHeader from '../../components/ui/PageHeader';
 
 const DAYS = [
   { key: 'mon', label: 'Du' }, { key: 'tue', label: 'Se' }, { key: 'wed', label: 'Cho' },
@@ -128,19 +129,18 @@ export default function ReceptionGroups() {
     <div className="dashboard-shell max-w-5xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
 
-      <header className="dashboard-header">
-        <div>
-          <span className="dashboard-badge"><Users2 size={12} /> Abdora AI</span>
-          <h1>Guruhlar</h1>
-          <p>Guruh yarating, jadval va xona belgilang.</p>
-        </div>
-        <div className="dashboard-header-actions">
-          <span className="header-status">Live</span>
-          <button onClick={openCreate} className="header-button">
-            <Plus size={14} /> Guruh yaratish
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title="Guruhlar"
+        subtitle="Guruh yarating, jadval va xona belgilang."
+        actions={
+          <>
+            <span className="header-status">Live</span>
+            <button onClick={openCreate} className="btn-primary flex items-center gap-2">
+              <Plus size={14} /> Guruh yaratish
+            </button>
+          </>
+        }
+      />
 
       <div className="space-y-3">
         {groups?.map((g, i) => (

@@ -778,6 +778,69 @@
     font-weight: 700;
   }
 
+  /* ── Compact row list (used inside panel-card for "my groups",
+     "lesson status" etc. on Teacher/Student dashboards) ── */
+  .branch-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .branch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: var(--radius-lg);
+    background-color: var(--surface);
+    border: 1px solid transparent;
+    transition: border-color 150ms ease, background-color 150ms ease;
+  }
+  .branch-row:hover {
+    border-color: rgba(240, 100, 19, 0.25);
+  }
+  .branch-main {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+  }
+  .branch-dot {
+    width: 2.1rem;
+    height: 2.1rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    background: rgba(240, 100, 19, 0.1);
+    color: var(--primary);
+    font-size: 1rem;
+  }
+  .branch-copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .branch-copy strong {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .branch-copy span {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+  .branch-meta {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
   /* ── Chart Card ── */
   .chart-card {
     background-color: var(--card);
@@ -1362,6 +1425,68 @@
     background: var(--card);
     border: 1px solid var(--border);
   }
+
+  /* ── Legacy dashboard-header (restored base — pages built before
+     the PageHeader component still reference this class directly) ── */
+  .dashboard-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--radius-2xl, 1.25rem);
+    background: linear-gradient(135deg, rgba(240, 100, 19, 0.08), rgba(240, 100, 19, 0.02));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.5rem;
+  }
+  .dashboard-header h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin: 0.2rem 0 0.15rem;
+  }
+  .dashboard-header p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 400;
+  }
+  .dashboard-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  /* Secondary pill button used inside dashboard headers (back-nav links,
+     "Guruhlar"/"Natijalar" shortcuts). Deliberately quieter than
+     .btn-primary since it shares the header with the badge/status pill. */
+  .header-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: var(--radius-md);
+    background-color: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    transition: all 150ms ease;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .header-button:hover {
+    background-color: rgba(240, 100, 19, 0.1);
+    border-color: rgba(240, 100, 19, 0.3);
+    color: var(--primary);
+  }
+
   .dashboard-header-plain {
     padding: 0.25rem 0 0.5rem;
     border: 0;
