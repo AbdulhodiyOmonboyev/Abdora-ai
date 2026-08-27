@@ -56,6 +56,7 @@ const managerLinks = [
   { to: '/manager/teachers', icon: BookMarked, key: 'teachers' },
   { to: '/manager/groups', icon: Users, key: 'groups' },
   { to: '/manager/students', icon: GraduationCap, key: 'students' },
+  { to: '/manager/payments', icon: Wallet, key: 'payments', label: "To'lovlar" },
   { to: '/finance', icon: PieChart, key: 'finance', label: 'Moliya' },
   { to: '/finance/payroll', icon: Receipt, key: 'payroll', label: 'Ish haqi' },
   { to: '/manager/settings', icon: Settings, key: 'settings' },

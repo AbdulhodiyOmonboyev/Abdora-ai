@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Building2, Users, BookOpen, GraduationCap, MapPin, Edit2, X } from 'lucide-react';
+import { ArrowLeft, Building2, Users, BookOpen, GraduationCap, MapPin, Edit2, X, PieChart as PieChartIcon } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
@@ -191,6 +192,78 @@ export default function ManagerBranchDetail() {
           )}
         </div>
       </div>
+
+      {/* Filial Statistika */}
+      {Array.isArray(branch.groups) && branch.groups.length > 0 && (() => {
+        const filled = branch.studentsCount || 0;
+        const capacity = branch.studentCapacity || null;
+        const free = capacity ? Math.max(0, capacity - filled) : 0;
+        const utilizationPercent = capacity ? Math.min(100, Math.round((filled / capacity) * 100)) : null;
+        const donutData = capacity
+          ? [{ name: 'Band', value: filled }, { name: "Bo'sh", value: free }]
+          : [{ name: 'Faol guruhlar', value: branch.groups.length }, { name: 'Bo\'sh', value: 0 }];
+        const barData = branch.groups.map((g) => ({ name: g.name, students: g._count?.students || 0 }));
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="panel-card">
+              <div className="panel-header">
+                <div>
+                  <span className="panel-kicker">Statistika</span>
+                  <h2 className="panel-title">O'rinlar band-bo'shligi</h2>
+                </div>
+                <PieChartIcon size={16} style={{ color: 'var(--primary)' }} />
+              </div>
+              <div className="flex items-center gap-4">
+                <ResponsiveContainer width={140} height={140}>
+                  <PieChart>
+                    <Pie data={donutData} dataKey="value" innerRadius={42} outerRadius={62} paddingAngle={2} stroke="none">
+                      <Cell fill="var(--primary)" />
+                      <Cell fill="var(--border)" />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div>
+                  <div className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {utilizationPercent !== null ? `${utilizationPercent}%` : filled}
+                  </div>
+                  <div className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
+                    {capacity ? "sig'imdan band" : 'jami o\'quvchi'}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs mb-1">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary)' }} />
+                    <span style={{ color: 'var(--text-secondary)' }}>{filled} band</span>
+                  </div>
+                  {capacity && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--border)' }} />
+                      <span style={{ color: 'var(--text-secondary)' }}>{free} bo'sh</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="panel-card">
+              <div className="panel-header">
+                <div>
+                  <span className="panel-kicker">Statistika</span>
+                  <h2 className="panel-title">Guruh bo'yicha o'quvchilar</h2>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={barData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="var(--text-muted)" interval={0} angle={-20} textAnchor="end" height={40} />
+                  <YAxis tick={{ fontSize: 10 }} stroke="var(--text-muted)" allowDecimals={false} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--card)' }} />
+                  <Bar dataKey="students" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Edit Modal */}
       <AnimatePresence>

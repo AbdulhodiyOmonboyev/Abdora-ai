@@ -72,6 +72,7 @@ import UserDetail from './pages/shared/UserDetail';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import ManagerBranches from './pages/manager/ManagerBranches';
 import ManagerBranchDetail from './pages/manager/ManagerBranchDetail';
+import ManagerPayments from './pages/manager/ManagerPayments';
 
 // Reception pages
 import ReceptionGroups from './pages/reception/ReceptionGroups';
@@ -191,6 +192,7 @@ export default function App() {
           <Route path="students" element={<AdminStudents />} />
           <Route path="groups" element={<AdminGroups />} />
           <Route path="groups/:id" element={<GroupDetail />} />
+          <Route path="payments" element={<ManagerPayments />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
