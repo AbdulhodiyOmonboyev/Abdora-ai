@@ -152,27 +152,27 @@ export default function ReceptionGroupDetail() {
             {group?.teacher?.name || 'O\'qituvchi biriktirilmagan'} · {students.length} o'quvchi
             {monthlyFee > 0 && ` · ${fmt(monthlyFee)} so'm/oy`}
           </p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
+          <div className="flex flex-wrap gap-2 mt-2.5">
             {parseWeekDays(group?.weekDays).length > 0 && (
-              <span className="text-xs text-primary/80 flex items-center gap-1">
-                <Calendar size={11} />
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary">
+                <Calendar size={12} />
                 {parseWeekDays(group.weekDays).map(d => DAYS.find(x => x.key === d)?.label).filter(Boolean).join(', ')}
               </span>
             )}
             {group?.startTime && (
-              <span className="text-xs text-primary/80 flex items-center gap-1">
-                <Clock size={11} />
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary">
+                <Clock size={12} />
                 {group.startTime}{group.endTime ? `–${group.endTime}` : ''}
               </span>
             )}
             {group?.room && (
-              <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                <DoorOpen size={11} />{group.room}
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--surface)] text-[var(--text-secondary)] border border-[var(--border)]">
+                <DoorOpen size={12} />{group.room}
               </span>
             )}
             {group?.branch?.name && (
-              <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                <Building2 size={11} />{group.branch.name}
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--surface)] text-[var(--text-secondary)] border border-[var(--border)]">
+                <Building2 size={12} />{group.branch.name}
               </span>
             )}
           </div>
