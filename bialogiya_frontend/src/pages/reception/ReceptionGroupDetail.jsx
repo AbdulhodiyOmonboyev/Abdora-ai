@@ -140,44 +140,44 @@ export default function ReceptionGroupDetail() {
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
       {/* Header */}
       <header className="dashboard-header">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <button onClick={() => navigate('/reception/groups')} className="header-button">
-            <ArrowLeft size={16} /> Guruhlar
-          </button>
-          <div className="min-w-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-1">
+            <button onClick={() => navigate('/reception/groups')} className="header-button flex-shrink-0">
+              <ArrowLeft size={16} /> Guruhlar
+            </button>
             <span className="dashboard-badge"><Building2 size={12} /> Reception</span>
-            <h1>{group?.name}</h1>
-            <p>
-              {group?.teacher?.name || 'O\'qituvchi biriktirilmagan'} · {students.length} o'quvchi
-              {monthlyFee > 0 && ` · ${fmt(monthlyFee)} so'm/oy`}
-            </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
-              {parseWeekDays(group?.weekDays).length > 0 && (
-                <span className="text-xs text-primary/80 flex items-center gap-1">
-                  <Calendar size={11} />
-                  {parseWeekDays(group.weekDays).map(d => DAYS.find(x => x.key === d)?.label).filter(Boolean).join(', ')}
-                </span>
-              )}
-              {group?.startTime && (
-                <span className="text-xs text-primary/80 flex items-center gap-1">
-                  <Clock size={11} />
-                  {group.startTime}{group.endTime ? `–${group.endTime}` : ''}
-                </span>
-              )}
-              {group?.room && (
-                <span className="text-xs dark:text-slate-400 flex items-center gap-1">
-                  <DoorOpen size={11} />{group.room}
-                </span>
-              )}
-              {group?.branch?.name && (
-                <span className="text-xs dark:text-slate-400 flex items-center gap-1">
-                  <Building2 size={11} />{group.branch.name}
-                </span>
-              )}
-            </div>
+          </div>
+          <h1>{group?.name}</h1>
+          <p>
+            {group?.teacher?.name || 'O\'qituvchi biriktirilmagan'} · {students.length} o'quvchi
+            {monthlyFee > 0 && ` · ${fmt(monthlyFee)} so'm/oy`}
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
+            {parseWeekDays(group?.weekDays).length > 0 && (
+              <span className="text-xs text-primary/80 flex items-center gap-1">
+                <Calendar size={11} />
+                {parseWeekDays(group.weekDays).map(d => DAYS.find(x => x.key === d)?.label).filter(Boolean).join(', ')}
+              </span>
+            )}
+            {group?.startTime && (
+              <span className="text-xs text-primary/80 flex items-center gap-1">
+                <Clock size={11} />
+                {group.startTime}{group.endTime ? `–${group.endTime}` : ''}
+              </span>
+            )}
+            {group?.room && (
+              <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                <DoorOpen size={11} />{group.room}
+              </span>
+            )}
+            {group?.branch?.name && (
+              <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                <Building2 size={11} />{group.branch.name}
+              </span>
+            )}
           </div>
         </div>
-        <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2">
+        <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2 flex-shrink-0">
           <Plus size={15} /> O'quvchi qo'shish
         </button>
       </header>

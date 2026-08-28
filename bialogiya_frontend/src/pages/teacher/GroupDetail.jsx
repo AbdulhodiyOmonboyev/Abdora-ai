@@ -63,17 +63,21 @@ export default function GroupDetail() {
   return (
     <div className="dashboard-shell max-w-5xl mx-auto">
       <header className="dashboard-header">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <button onClick={() => navigate(`/${user?.role === 'manager' ? 'manager' : 'teacher'}/groups`)} className="header-button">
-            <ArrowLeft size={16} /> Back
-          </button>
-          <div className="w-12 h-12 gradient-bg rounded-2xl flex items-center justify-center text-2xl shadow-glow">
-            {group?.icon || '📚'}
-          </div>
-          <div className="min-w-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-1">
+            <button onClick={() => navigate(`/${user?.role === 'manager' ? 'manager' : 'teacher'}/groups`)} className="header-button flex-shrink-0">
+              <ArrowLeft size={16} /> Back
+            </button>
             <span className="dashboard-badge"><Users size={12} /> Abdora AI</span>
-            <h1>{group?.name}</h1>
-            <p>{getSubjectLabel(group?.subject)}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 gradient-bg rounded-2xl flex items-center justify-center text-2xl shadow-glow flex-shrink-0">
+              {group?.icon || '📚'}
+            </div>
+            <div className="min-w-0">
+              <h1>{group?.name}</h1>
+              <p>{getSubjectLabel(group?.subject)}</p>
+            </div>
           </div>
         </div>
       </header>

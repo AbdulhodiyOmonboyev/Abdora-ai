@@ -40,15 +40,15 @@ export default function ReceptionTeacherDetail() {
   return (
     <div className="dashboard-shell max-w-5xl mx-auto">
       <header className="dashboard-header">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <button onClick={() => navigate(-1)} className="header-button">
-            <ArrowLeft size={16} /> Orqaga
-          </button>
-          <div className="min-w-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-1">
+            <button onClick={() => navigate(-1)} className="header-button flex-shrink-0">
+              <ArrowLeft size={16} /> Orqaga
+            </button>
             <span className="dashboard-badge"><Users2 size={12} /> Abdora AI</span>
-            <h1>{data?.teacher?.name}</h1>
-            <p>O'qituvchi ma'lumotlari</p>
           </div>
+          <h1>{data?.teacher?.name}</h1>
+          <p>O'qituvchi ma'lumotlari</p>
         </div>
       </header>
 

@@ -439,21 +439,21 @@ export default function LessonDetail() {
     <div className="dashboard-shell max-w-5xl mx-auto space-y-4">
       {/* Header */}
       <header className="dashboard-header">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <Link to={user?.role === 'teacher' ? '/teacher/lessons' : '/student/lessons'} className="header-button">
-            <ArrowLeft size={16} /> Orqaga
-          </Link>
-          <div className="min-w-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-1">
+            <Link to={user?.role === 'teacher' ? '/teacher/lessons' : '/student/lessons'} className="header-button flex-shrink-0">
+              <ArrowLeft size={16} /> Orqaga
+            </Link>
             <span className="dashboard-badge"><BookOpen size={12} /> Abdora AI</span>
-            <h1>{lesson?.title}</h1>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className={`badge ${getSubjectBadgeClass(lesson?.subject)}`}>
-                {getSubjectIcon(lesson?.subject)} {getSubjectLabel(lesson?.subject)}
-              </span>
-              <span className={`badge ${isDone ? 'bg-primary/10 text-primary' : isGenerating ? 'bg-yellow-100 text-yellow-700' : isError ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
-                {isDone ? '✓ AI Ready' : isGenerating ? '⏳ Generating...' : isError ? '⚠ Error' : '• Pending'}
-              </span>
-            </div>
+          </div>
+          <h1>{lesson?.title}</h1>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span className={`badge ${getSubjectBadgeClass(lesson?.subject)}`}>
+              {getSubjectIcon(lesson?.subject)} {getSubjectLabel(lesson?.subject)}
+            </span>
+            <span className={`badge ${isDone ? 'bg-primary/10 text-primary' : isGenerating ? 'bg-yellow-100 text-yellow-700' : isError ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+              {isDone ? '✓ AI Ready' : isGenerating ? '⏳ Generating...' : isError ? '⚠ Error' : '• Pending'}
+            </span>
           </div>
         </div>
         {(isError || isDone) && (
