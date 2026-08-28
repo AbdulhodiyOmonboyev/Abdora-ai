@@ -6,6 +6,7 @@ const { generateUsername, generatePassword, getPhoneCode } = require('../utils/g
 // Reception accounts should only ever see their OWN branches' data (admin
 // sees everything) - see utils/branchScope.js.
 const { getOwnBranchIds } = require('../utils/branchScope');
+const { getCenterId } = require('../utils/centerScope');
 const cache = require('../utils/simpleCache');
 
 const getStats = async (req, res, next) => {
@@ -158,6 +159,16 @@ const createTeacher = async (req, res, next) => {
     const branchErr = await assertBranchAccess(branchId, req.user);
     if (branchErr) return error(res, branchErr, branchErr.startsWith('Forbidden') ? 403 : 404);
 
+    // Resolve centerId: reception/manager always use their own centre;
+    // admin has none of their own, so it's derived from the chosen branch.
+    // Without this, teachers were created with centerId: null and silently
+    // disappeared from every centre-scoped list (getTeachers filters by it).
+    let centerId = getCenterId(req);
+    if (!centerId && branchId) {
+      const branch = await prisma.branch.findUnique({ where: { id: branchId }, select: { centerId: true } });
+      centerId = branch?.centerId || null;
+    }
+
     const code = generatePassword(phone, password);
     let username = generateUsername(name, phone);
 
@@ -167,7 +178,7 @@ const createTeacher = async (req, res, next) => {
     const passwordHash = await bcrypt.hash(code, 10);
 
     const user = await prisma.user.create({
-      data: { name, email, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', branchId: branchId || null },
+      data: { name, email, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', branchId: branchId || null, centerId },
       select: { id: true, name: true, username: true, email: true, phone: true, role: true, createdAt: true, branch: { select: { id: true, name: true } } },
     });
 
