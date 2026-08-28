@@ -95,7 +95,9 @@ const getGroups = async (req, res, next) => {
 // (admin sees all, for oversight).
 const getMyBranches = async (req, res, next) => {
   try {
-    const where = req.user.role === 'reception' ? { receptionId: req.user.userId } : {};
+    const where = req.user.role === 'reception'
+      ? { id: { in: (await getOwnBranchIds(req.user)) || [] } }
+      : {};
     const branches = await prisma.branch.findMany({
       where: { ...where, isActive: true },
       include: {

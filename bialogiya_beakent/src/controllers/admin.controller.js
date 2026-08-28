@@ -125,15 +125,23 @@ const getTeachers = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// Reception can only assign a teacher to one of their own branches; admin
-// can use any branch. Same rule as group.controller.js's createGroup.
+// Reception/manager can only assign to one of their own branches (as returned
+// by getOwnBranchIds, which covers both being the branch's assigned
+// reception/manager AND the branch matching the user's own branchId field);
+// admin can use any branch. This is the single source of truth for "is this
+// branch mine" — it must stay in sync with getOwnBranchIds, or a branch that
+// shows up in a reception/manager's own branch list (and therefore in their
+// UI dropdowns) could get rejected here with a false 403.
 const assertBranchAccess = async (branchId, user) => {
   if (!branchId) return user.role === 'manager' ? 'Branch is required' : null;
   const branch = await prisma.branch.findUnique({ where: { id: branchId } });
   if (!branch) return 'Branch not found';
-  if (user.role !== 'admin' && branch.centerId !== user.centerId) return 'Forbidden: not your center';
-  if (user.role === 'reception' && branch.receptionId !== user.userId) return 'Forbidden: not your branch';
-  if (user.role === 'manager' && branch.managerId !== user.userId) return 'Forbidden: not your branch';
+  if (user.role === 'admin') return null;
+  if (branch.centerId !== user.centerId) return 'Forbidden: not your center';
+  if (user.role === 'reception' || user.role === 'manager') {
+    const ownBranchIds = await getOwnBranchIds(user);
+    if (!ownBranchIds?.includes(branch.id)) return 'Forbidden: not your branch';
+  }
   return null;
 };
 
