@@ -11,6 +11,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import api from '../../config/axios';
 import { getLevelProgress, formatDate, getScoreBg } from '../../utils/format';
+import StatCard from '../../components/ui/StatCard';
 
 const MOTIVATIONS = [
   "Har bir dars — kelajagingizga bitta qadam! 🚀",
@@ -19,24 +20,6 @@ const MOTIVATIONS = [
   "Hech qachon o'rganishni to'xtatmang! 🧠",
   "Siz bunga qodirсiz! Oldinga! 🎯",
 ];
-
-const StatCard = ({ icon: Icon, label, value, color, bg, delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay }}
-    className="dashboard-stat-card"
-  >
-    <div className="stat-icon-wrap">
-      <Icon size={18} className={color} />
-    </div>
-    <div className="stat-copy">
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </div>
-    <div className="stat-trend"><TrendingUp size={14} /></div>
-  </motion.div>
-);
 
 export default function StudentDashboard() {
   const { user } = useAuthStore();

@@ -1,11 +1,13 @@
 import { getSubjectBadgeClass } from '../../utils/subjects';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Users, BookOpen, ClipboardList, FileText } from 'lucide-react';
 import api from '../../config/axios';
+import StatCard from '../../components/ui/StatCard';
 
 export default function TeacherDashboard() {
+  const navigate = useNavigate();
 
   const { data: groups = [] } = useQuery({ 
     queryKey: ['my-groups'], 
@@ -93,19 +95,8 @@ export default function TeacherDashboard() {
       </header>
 
       <section className="stats-grid">
-        {stats.map(({ icon: Icon, label, value, color, bg, link }, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-            <Link to={link} className="dashboard-stat-card">
-              <div className="stat-icon-wrap">
-                <Icon size={18} className={color} />
-              </div>
-              <div className="stat-copy">
-                <strong>{value}</strong>
-                <span>{label}</span>
-              </div>
-              <div className="stat-trend"><BookOpen size={14} /></div>
-            </Link>
-          </motion.div>
+        {stats.map(({ icon, label, value, color, bg, link }, i) => (
+          <StatCard key={i} icon={icon} label={label} value={value} color={color} bg={bg} onClick={() => navigate(link)} delay={i * 0.05} />
         ))}
       </section>
 
