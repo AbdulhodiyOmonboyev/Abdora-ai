@@ -19,7 +19,7 @@ services:
         value: 15m
       - key: JWT_REFRESH_EXPIRES
         value: 7d
-      - key: AQ.Ab8RN6JQt_-FHRPTjQgg8vc0Q4zY1zcE_vtFGt--2j4h_bEevQ
+      - key: AQ.Ab8RN6KB9VjFjStqiYswFsZvF_UJsII7_XF9R0N1uvdGu7keJA
         sync: false
       - key: CLIENT_URL
         sync: false
