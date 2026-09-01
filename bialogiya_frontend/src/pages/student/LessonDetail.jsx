@@ -481,27 +481,21 @@ export default function LessonDetail() {
       </AnimatePresence>
 
       {/* Tabs */}
-      <div className="relative -mx-1 px-1">
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              disabled={tab.id !== 'overview' && !isDone}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex-shrink-0
-                ${activeTab === tab.id ? 'gradient-bg text-white shadow-glow' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50'}
-                ${tab.id !== 'overview' && !isDone ? 'opacity-40 cursor-not-allowed' : ''}
-              `}
-            >
-              <tab.icon size={13} />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        {/* Soft fade hints on either edge — signals there's more to scroll
-            without showing a raw scrollbar. */}
-        <div className="pointer-events-none absolute left-0 top-0 bottom-1 w-8 bg-gradient-to-r from-[var(--background)] to-transparent" />
-        <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-[var(--background)] to-transparent" />
+      <div className="flex flex-wrap gap-1.5">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            disabled={tab.id !== 'overview' && !isDone}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all
+              ${activeTab === tab.id ? 'gradient-bg text-white shadow-glow' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50'}
+              ${tab.id !== 'overview' && !isDone ? 'opacity-40 cursor-not-allowed' : ''}
+            `}
+          >
+            <tab.icon size={12} />
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Tab content */}
