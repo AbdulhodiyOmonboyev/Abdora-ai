@@ -45,6 +45,65 @@ const createLesson = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+<<<<<<< HEAD
+const generateLessonFromPDF = async (req, res, next) => {
+  try {
+    const { title, groupId, subject, aiEnabled, language } = req.body;
+    if (!title) return error(res, 'Title required', 400);
+    if (!groupId) return error(res, 'groupId required', 400);
+    if (!req.file) return error(res, 'PDF or text file is required', 400);
+
+    const centerId = getCenterId(req) || req.body.centerId || null;
+    const group = await prisma.group.findFirst({
+      where: { id: groupId, ...(centerId ? { centerId } : {}) },
+      select: { id: true, centerId: true },
+    });
+    if (!group) return error(res, 'Group not found', 404);
+
+    const wantsAI = aiEnabled !== 'false' && aiEnabled !== false;
+
+    let extractedText;
+    try {
+      extractedText = await extractTextFromFile(req.file);
+    } catch (e) {
+      return error(res, `Fayldan matn o'qib bo'lmadi: ${e.message}`, 400);
+    }
+
+    const content = extractedText?.trim() || '';
+    if (content.length < 30) {
+      return error(res, 'Faylda yetarli matn topilmadi', 400);
+    }
+
+    const lesson = await prisma.lesson.create({
+      data: {
+        title,
+        content: content.slice(0, 20000),
+        subject: subject || 'other',
+        groupId,
+        teacherId: req.user.userId,
+        centerId: group.centerId || centerId,
+        attachments: [],
+        aiEnabled: wantsAI,
+        aiContent: wantsAI ? { status: 'pending' } : { status: 'disabled' },
+      },
+      include: { group: { select: { id: true, name: true } }, teacher: { select: { id: true, name: true } } },
+    });
+
+    if (wantsAI) {
+      setImmediate(() => generateLessonAI(lesson.id, title, content, language || 'uz').catch(console.error));
+    }
+
+    return success(res, {
+      ...lesson,
+      extractedTextPreview: content.slice(0, 800),
+    }, 'PDF content extracted and lesson generation started', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+=======
+>>>>>>> main
 const getLessons = async (req, res, next) => {
   try {
     const { groupId } = req.query;
@@ -334,4 +393,20 @@ const generateTestFromPDF = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+<<<<<<< HEAD
+module.exports = {
+  createLesson,
+  generateLessonFromPDF,
+  getLessons,
+  getLessonById,
+  updateLesson,
+  deleteLesson,
+  removeAttachment,
+  getAIContent,
+  regenerateAI,
+  generateTestFromPDF,
+  extractTextFromFile,
+};
+=======
 module.exports = { createLesson, getLessons, getLessonById, updateLesson, deleteLesson, removeAttachment, getAIContent, regenerateAI, generateTestFromPDF };
+>>>>>>> main

@@ -41,6 +41,107 @@ const CHAT_STYLES = [
   { id: 'with_examples', label: 'With Examples' },
 ];
 
+<<<<<<< HEAD
+const EXPLAIN_STEPS = [
+  'Kirish',
+  'Asosiy tushuncha',
+  'Misollar',
+  'Mashqlar',
+  'Xulosa',
+];
+
+function ExplanationShowcase({ description }) {
+  return (
+    <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#090f1d] shadow-[0_32px_90px_rgba(2,6,23,0.8)]">
+      <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="relative overflow-hidden p-6 md:p-8 xl:p-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(57,98,255,0.16),transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(249,115,22,0.22),transparent_28%)]" />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between text-xs uppercase tracking-[0.22em] text-[#ffb37b]">
+              <span>Darslik</span>
+            </div>
+
+            <h2 className="mt-5 text-3xl font-bold text-white md:text-4xl">Oddiy tushuntirish</h2>
+            <p className="mt-4 max-w-md text-sm leading-6 text-slate-300">
+              {description || "Bu bo'limda mavzu oddiy, aniq va oson tushuncha tilida yoritiladi. Asosiy g'oyalarni tushunib, keyingi bosqichlarga qulay tayyorlaning."}
+            </p>
+
+            <div className="relative mt-10 h-60 w-full max-w-[520px]">
+              <div className="absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ff8a2a]/15 blur-3xl" />
+              {[...Array(7)].map((_, i) => (
+                <span
+                  key={i}
+                  className="absolute block h-1.5 w-1.5 rounded-full bg-[#fbbf24] shadow-[0_0_12px_rgba(251,191,36,0.9)]"
+                  style={{
+                    left: `${16 + i * 11}%`,
+                    top: `${18 + (i % 3) * 16}%`,
+                    opacity: 0.8 + i * 0.04,
+                  }}
+                />
+              ))}
+
+              <div className="absolute inset-x-10 bottom-0 h-20 rounded-[32px] bg-gradient-to-r from-[#f8bd82] via-[#dc7b1e] to-[#8d3b0f] shadow-[0_20px_30px_rgba(249,115,22,0.35)]" style={{ transform: 'skewY(-8deg)' }} />
+              <div className="absolute inset-x-12 bottom-10 h-28 rounded-[30px] border border-white/30 bg-gradient-to-br from-[#f9e5d2] via-[#f2c48f] to-[#ba5313] shadow-[0_18px_36px_rgba(0,0,0,0.25)]" style={{ transform: 'skewY(-8deg)' }}>
+                <div className="absolute inset-[10px] rounded-[24px] bg-gradient-to-br from-[#fff8f2] via-[#f8ce9d] to-[#d26d22] opacity-80" />
+                <div className="absolute inset-0 flex items-center justify-center text-[82px] font-black text-[#ff8a2a] drop-shadow-[0_8px_16px_rgba(255,138,42,0.35)]">A</div>
+              </div>
+
+              <div className="absolute bottom-20 left-16 h-10 w-10 rounded-full border border-white/20 bg-white/10 shadow-[0_0_20px_rgba(255,255,255,0.2)]" />
+              <div className="absolute bottom-24 right-16 h-8 w-8 rounded-full border border-white/15 bg-white/10 shadow-[0_0_16px_rgba(255,255,255,0.18)]" />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-white/10 bg-[#0f172a]/90 p-6 md:p-8 lg:border-l lg:border-t-0">
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-slate-400">
+            <span>Bob</span>
+            <span>/</span>
+            <span>Mavzu</span>
+            <span>/</span>
+            <span>O'zbek</span>
+          </div>
+
+          <div className="mt-7 space-y-5">
+            {EXPLAIN_STEPS.map((step, index) => {
+              const active = index === 0;
+              const isDone = index < 1;
+
+              return (
+                <div key={step} className="flex items-center gap-4">
+                  <div
+                    className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-full border text-xs font-semibold ${
+                      active
+                        ? 'border-[#ff8a2a] bg-[#ff8a2a] text-[#1e293b] shadow-[0_0_18px_rgba(255,138,42,0.5)]'
+                        : isDone
+                          ? 'border-[#fbbf24] bg-[#fbbf24]/10 text-[#fbbf24]'
+                          : 'border-slate-600 bg-slate-800/70 text-slate-400'
+                    }`}
+                  >
+                    {String(index + 1).padStart(2, '0')}
+                  </div>
+
+                  <div className="flex-1">
+                    <div className={`text-sm font-medium ${active ? 'text-white' : 'text-slate-300'}`}>
+                      {step}
+                    </div>
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-700/80">
+                      <div
+                        className={`h-full rounded-full ${active ? 'w-full bg-gradient-to-r from-[#ff8a2a] to-[#fbbf24]' : isDone ? 'w-full bg-slate-500' : 'w-0 bg-slate-600'}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+=======
+>>>>>>> main
 // Flashcard component
 function FlashcardDeck({ cards }) {
   const [idx, setIdx] = useState(0);
@@ -481,18 +582,30 @@ export default function LessonDetail() {
       </AnimatePresence>
 
       {/* Tabs */}
+<<<<<<< HEAD
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+=======
       <div className="flex flex-wrap gap-1.5">
+>>>>>>> main
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             disabled={tab.id !== 'overview' && !isDone}
+<<<<<<< HEAD
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all
+=======
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all
+>>>>>>> main
               ${activeTab === tab.id ? 'gradient-bg text-white shadow-glow' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50'}
               ${tab.id !== 'overview' && !isDone ? 'opacity-40 cursor-not-allowed' : ''}
             `}
           >
+<<<<<<< HEAD
+            <tab.icon size={13} />
+=======
             <tab.icon size={12} />
+>>>>>>> main
             {tab.label}
           </button>
         ))}
@@ -533,8 +646,12 @@ export default function LessonDetail() {
           )}
           {activeTab === 'explain' && (
             <div>
+<<<<<<< HEAD
+              <ExplanationShowcase description={ai?.simpleExplanation} />
+=======
               <h2 className="text-lg font-bold mb-4 gradient-text">Oddiy tushuntirish</h2>
               <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.simpleExplanation}</div>
+>>>>>>> main
             </div>
           )}
           {activeTab === 'tricks' && (
