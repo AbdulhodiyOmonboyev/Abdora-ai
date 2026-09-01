@@ -480,34 +480,17 @@ export default function LessonDetail() {
         )}
       </AnimatePresence>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-1.5">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            disabled={tab.id !== 'overview' && !isDone}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all
-              ${activeTab === tab.id ? 'gradient-bg text-white shadow-glow' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50'}
-              ${tab.id !== 'overview' && !isDone ? 'opacity-40 cursor-not-allowed' : ''}
-            `}
+      {/* Content + section navigator */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 items-start">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="panel-card"
           >
-            <tab.icon size={12} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
-          className="panel-card"
-        >
           {activeTab === 'overview' && (
             <div>
               <h2 className="text-lg font-bold mb-4">{lesson?.title}</h2>
@@ -589,8 +572,43 @@ export default function LessonDetail() {
           {activeTab === 'video' && <ExplainerVideoPlayer lessonId={id} />}
           {activeTab === 'speaking' && <SpeakingPractice lessonId={id} topic={lesson?.title} />}
           {activeTab === 'chat' && <AIChatSection lessonId={id} i18nLanguage={i18n.language} />}
-        </motion.div>
-      </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Section navigator — vertical stepper through the same tabs */}
+        <div className="panel-card">
+          <span className="panel-kicker">Bo'lim</span>
+          <h3 className="panel-title mb-3">{lesson?.title || getSubjectLabel(lesson?.subject)}</h3>
+          <div className="relative">
+            <div className="absolute right-[5px] top-3 bottom-3 w-px bg-[var(--border)]" />
+            <div className="space-y-2">
+              {TABS.map((tab, i) => {
+                const locked = tab.id !== 'overview' && !isDone;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    disabled={locked}
+                    onClick={() => setActiveTab(tab.id)}
+                    className="w-full flex items-center gap-3 text-left"
+                  >
+                    <span className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm transition-all
+                      ${active ? 'bg-primary/10 border-primary/40 text-primary font-semibold' : 'border-[var(--border)] text-[var(--text-secondary)]'}
+                      ${locked ? 'opacity-40 cursor-not-allowed' : 'hover:border-primary/30'}`}
+                    >
+                      <span className={`text-xs font-bold ${active ? 'text-primary' : 'text-[var(--text-muted)]'}`}>
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      {tab.label}
+                    </span>
+                    <span className={`relative z-10 w-2.5 h-2.5 rounded-full flex-shrink-0 ${active ? 'bg-primary' : 'bg-[var(--border)]'}`} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
