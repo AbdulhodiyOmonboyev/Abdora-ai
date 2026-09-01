@@ -45,6 +45,7 @@ const createLesson = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+<<<<<<< HEAD
 const generateLessonFromPDF = async (req, res, next) => {
   try {
     const { title, groupId, subject, aiEnabled, language } = req.body;
@@ -101,6 +102,8 @@ const generateLessonFromPDF = async (req, res, next) => {
   }
 };
 
+=======
+>>>>>>> main
 const getLessons = async (req, res, next) => {
   try {
     const { groupId } = req.query;
@@ -390,6 +393,7 @@ const generateTestFromPDF = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+<<<<<<< HEAD
 module.exports = {
   createLesson,
   generateLessonFromPDF,
@@ -403,3 +407,6 @@ module.exports = {
   generateTestFromPDF,
   extractTextFromFile,
 };
+=======
+module.exports = { createLesson, getLessons, getLessonById, updateLesson, deleteLesson, removeAttachment, getAIContent, regenerateAI, generateTestFromPDF };
+>>>>>>> main

@@ -1525,3 +1525,17 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+<<<<<<< HEAD
+=======
+
+/* Fully hides the scrollbar track/thumb while keeping the element
+   scrollable (mouse-wheel, touch, keyboard) — used for horizontal
+   tab/chip strips where a visible scrollbar looks noisy. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+>>>>>>> main

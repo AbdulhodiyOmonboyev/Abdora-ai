@@ -41,6 +41,7 @@ const CHAT_STYLES = [
   { id: 'with_examples', label: 'With Examples' },
 ];
 
+<<<<<<< HEAD
 const EXPLAIN_STEPS = [
   'Kirish',
   'Asosiy tushuncha',
@@ -139,6 +140,8 @@ function ExplanationShowcase({ description }) {
   );
 }
 
+=======
+>>>>>>> main
 // Flashcard component
 function FlashcardDeck({ cards }) {
   const [idx, setIdx] = useState(0);
@@ -579,18 +582,30 @@ export default function LessonDetail() {
       </AnimatePresence>
 
       {/* Tabs */}
+<<<<<<< HEAD
       <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+=======
+      <div className="flex flex-wrap gap-1.5">
+>>>>>>> main
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             disabled={tab.id !== 'overview' && !isDone}
+<<<<<<< HEAD
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all
+=======
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all
+>>>>>>> main
               ${activeTab === tab.id ? 'gradient-bg text-white shadow-glow' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50'}
               ${tab.id !== 'overview' && !isDone ? 'opacity-40 cursor-not-allowed' : ''}
             `}
           >
+<<<<<<< HEAD
             <tab.icon size={13} />
+=======
+            <tab.icon size={12} />
+>>>>>>> main
             {tab.label}
           </button>
         ))}
@@ -631,7 +646,12 @@ export default function LessonDetail() {
           )}
           {activeTab === 'explain' && (
             <div>
+<<<<<<< HEAD
               <ExplanationShowcase description={ai?.simpleExplanation} />
+=======
+              <h2 className="text-lg font-bold mb-4 gradient-text">Oddiy tushuntirish</h2>
+              <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.simpleExplanation}</div>
+>>>>>>> main
             </div>
           )}
           {activeTab === 'tricks' && (

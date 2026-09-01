@@ -3,6 +3,7 @@ const router = express.Router();
 const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const upload = require('../middleware/upload.middleware');
 const { pdfUpload } = require('../middleware/upload.middleware');
+<<<<<<< HEAD
 const {
   createLesson,
   getLessons,
@@ -15,6 +16,9 @@ const {
   generateLessonFromPDF,
   generateTestFromPDF,
 } = require('../controllers/lesson.controller');
+=======
+const { createLesson, getLessons, getLessonById, updateLesson, deleteLesson, removeAttachment, regenerateAI, getAIContent, generateTestFromPDF } = require('../controllers/lesson.controller');
+>>>>>>> main
 const {
   chatMessage, getChatHistory, generateQuizForLesson,
   getStoryAudio, getVoiceAudio, generateExplainerVideo, getExplainerVideo, getExplainerSlideAudio, getExplainerSlideImage,
@@ -28,7 +32,10 @@ router.put('/:id', verifyToken, requireRole('teacher', 'admin'), upload.array('f
 router.delete('/:id', verifyToken, requireRole('teacher', 'admin'), deleteLesson);
 router.delete('/:id/attachments/:attachmentId', verifyToken, requireRole('teacher', 'admin'), removeAttachment);
 router.post('/:id/regenerate-ai', verifyToken, requireRole('teacher', 'admin'), regenerateAI);
+<<<<<<< HEAD
 router.post('/generate-from-pdf', verifyToken, requireRole('teacher', 'admin'), pdfUpload.single('pdf'), generateLessonFromPDF);
+=======
+>>>>>>> main
 router.post('/generate-test-from-pdf', verifyToken, requireRole('teacher', 'admin'), pdfUpload.single('pdf'), generateTestFromPDF);
 router.post('/:lessonId/ai-chat', verifyToken, chatMessage);
 router.get('/:lessonId/ai-chat/history', verifyToken, getChatHistory);
