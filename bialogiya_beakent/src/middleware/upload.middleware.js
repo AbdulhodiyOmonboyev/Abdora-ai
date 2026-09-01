@@ -1,0 +1,72 @@
+const multer = require('multer');
+
+const allowedMimes = [
+  'application/pdf',
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'video/mp4', 'video/webm',
+  'text/plain',
+];
+
+// Memory storage for lesson/homework attachments and submissions - same
+// reasoning as resourceUpload below: Render's disk is ephemeral, so files
+// must end up as DB bytes (via UploadedFile), never written to disk.
+const storage = multer.memoryStorage();
+
+const fileFilter = (req, file, cb) => {
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Fayl turiga ruxsat berilmagan: ${file.mimetype}`), false);
+  }
+};
+
+const maxSize = parseInt(process.env.MAX_FILE_SIZE_MB || '50') * 1024 * 1024;
+
+const upload = multer({ storage, fileFilter, limits: { fileSize: maxSize } });
+
+// Memory storage for AI file processing (PDF, DOCX, TXT, images)
+const aiFileMimes = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+];
+
+const fileUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    if (aiFileMimes.includes(file.mimetype)) cb(null, true);
+    else cb(new Error(`Qo'llab-quvvatlanmaydigan fayl turi: ${file.mimetype}`), false);
+  },
+  limits: { fileSize: maxSize },
+});
+
+// Memory storage for Resources — Render's free web service disk is ephemeral
+// (wiped on every restart/deploy), so uploaded files are stored as DB bytes instead.
+const resourceUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter,
+  limits: { fileSize: maxSize },
+});
+
+// Memory storage for voice-clone sample uploads (short audio recordings)
+const audioMimes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/ogg'];
+const voiceSampleUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    if (audioMimes.includes(file.mimetype)) cb(null, true);
+    else cb(new Error(`Qo'llab-quvvatlanmaydigan audio turi: ${file.mimetype}`), false);
+  },
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB is plenty for a 1-3 min sample
+});
+
+module.exports = upload;
+module.exports.pdfUpload = fileUpload;
+module.exports.fileUpload = fileUpload;
+module.exports.resourceUpload = resourceUpload;
+module.exports.voiceSampleUpload = voiceSampleUpload;

@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /.git
+Disallow: /node_modules
+Disallow: /.env
+Disallow: /.env.example
+
+# Google bot
+User-agent: Googlebot
+Allow: /
+
+# Bing bot
+User-agent: Bingbot
+Allow: /
+
+# Sitemap
+Sitemap: https://github.com/AbdulhodiyOmonboyev/Abdora-ai/sitemap.xml
