@@ -1,0 +1,567 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  manager
+  teacher
+  student
+  reception
+}
+
+enum Language {
+  uz
+  ru
+  en
+}
+
+model Center {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  branches  Branch[]
+  groups    Group[]
+  payments  Payment[]
+  expenses  Expense[]
+  leads     Lead[]
+  lessons   Lesson[]
+  homework  Homework[]
+  tests     Test[]
+  attendance Attendance[]
+  resources Resource[]
+  notifications Notification[]
+  aiChats   AIChat[]
+  files     UploadedFile[]
+  submissions Submission[]
+  results   Result[]
+
+  @@index([name])
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String
+  email            String?   @unique
+  username         String    @unique
+  passwordHash     String
+  role             Role      @default(student)
+  avatar           String?
+  phone            String?
+  gender           String?
+  age              Int?
+  address          String?
+  studyLocation    String?
+  residence        String?
+  alternativeWorkplace String?
+  birthDate        DateTime?
+  language         Language  @default(uz)
+  xp               Int       @default(0)
+  coins            Int       @default(0)
+  level            Int       @default(1)
+  streakCurrent    Int       @default(0)
+  streakLongest    Int       @default(0)
+  streakLastDate   DateTime?
+  achievements     Json      @default("[]")
+  refreshTokenHash String?
+  isActive         Boolean   @default(true)
+  isFrozen         Boolean   @default(false)
+  lastLogin        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  groupId   String?
+  group     Group?  @relation("StudentGroup", fields: [groupId], references: [id])
+
+  clonedVoiceId   String?
+  clonedVoiceName String?
+
+  // Teacher payroll terms, set by the manager. `salaryShare` is the percentage
+  // of their students' fees the teacher keeps: 33 for 1/3, 50 for 50/50,
+  // 67 for 2/3. Only read when salaryType = 'percent'.
+  salaryType  String @default("percent") // percent | hourly | fixed
+  salaryShare Int    @default(50)
+  hourlyRate  Int?
+  fixedSalary Int?
+
+  branches    Branch[] @relation("ReceptionBranches")
+  managedBranches Branch[] @relation("ManagerBranches")
+  maxBranches Int      @default(3) // only relevant for role='reception', set by admin
+
+  branchId String?
+  branch   Branch? @relation("TeacherBranch", fields: [branchId], references: [id])
+
+  teacherId String?
+  teacher   User?   @relation("StudentTeacher", fields: [teacherId], references: [id])
+  students  User[]  @relation("StudentTeacher")
+
+  taughtGroups  Group[]        @relation("TeacherGroup")
+  lessons       Lesson[]
+  homework      Homework[]
+  tests         Test[]
+  submissions   Submission[]
+  results       Result[]
+  notifications Notification[]
+  aiChats       AIChat[]
+  resources     Resource[]
+  attendances   Attendance[]
+  payments      Payment[]      @relation("StudentPayments")
+  managedLeads  Lead[]         @relation("ManagerLeads")
+  expenses      Expense[]      @relation("UserExpenses")
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  subject     String   @default("other")
+  icon        String?
+  color       String?
+  isActive    Boolean  @default(true)
+  monthlyFee  Int?
+  weekDays    String?  // JSON array stored as string: ["mon","wed","fri"]
+  startTime   String?  // "HH:MM"  e.g. "09:00"
+  endTime     String?  // "HH:MM"  e.g. "10:30"
+  room        String?  // e.g. "101-xona", "2-kat"
+  // Course progress: how many lessons the course has in total, and the level
+  // being taught. Reception uses these to answer "how far along is this group?"
+  // when placing a new student.
+  totalLessons Int?
+  level        String?  // e.g. "Elementary", "Pre-Intermediate"
+  startDate    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teacherId String
+  teacher   User   @relation("TeacherGroup", fields: [teacherId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  students    User[]       @relation("StudentGroup")
+  lessons     Lesson[]
+  homework    Homework[]
+  tests       Test[]
+  attendances Attendance[]
+  resources   Resource[]
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+}
+
+// A physical location/campus. Only reception accounts can create branches,
+// and each reception account may own at most 3 (enforced in the controller,
+// not the schema).
+model Branch {
+  id              String   @id @default(cuid())
+  name            String
+  address         String?
+  latitude        Float?
+  longitude       Float?
+  studentCapacity Int?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  receptionId String?
+  reception   User?  @relation("ReceptionBranches", fields: [receptionId], references: [id])
+  managerId   String?
+  manager     User?  @relation("ManagerBranches", fields: [managerId], references: [id])
+
+  groups   Group[]
+  teachers User[]  @relation("TeacherBranch")
+  leads    Lead[]
+  expenses Expense[]
+  payments Payment[]
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+}
+
+model Lesson {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?  @db.Text
+  subject   String   @default("other")
+  order     Int      @default(0)
+  views     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  groupId   String
+  group     Group  @relation(fields: [groupId], references: [id])
+  teacherId String
+  teacher   User   @relation(fields: [teacherId], references: [id])
+
+  // AI output lives in aiContent only — `content` and `attachments` are the
+  // teacher's own material and are never written by a generation job. When a
+  // teacher turns aiEnabled off, no generation runs for this lesson at all.
+  attachments Json    @default("[]")
+
+    centerId String?
+    center   Center? @relation(fields: [centerId], references: [id])
+  aiContent   Json    @default("{\"status\":\"pending\"}")
+  aiEnabled   Boolean @default(true)
+
+  homework Homework[]
+  aiChats  AIChat[]
+  media    LessonMedia[]
+
+  @@index([centerId])
+}
+
+// Cached AI-generated audio (story narration + explainer-video slide narration).
+// Generated lazily on first request and reused after that, so the AI/TTS APIs
+// are called at most once per lesson/slide instead of on every playback.
+model LessonMedia {
+  id         String   @id @default(cuid())
+  lessonId   String
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  kind       String   // 'story' | 'explainer_slide'
+  slideIndex Int      @default(-1) // -1 for 'story'/'voice', slide position (0+) for 'explainer_slide'
+  data       Bytes
+  mimeType   String   @default("audio/mpeg")
+  voice      String?
+  createdAt  DateTime @default(now())
+
+  @@unique([lessonId, kind, slideIndex])
+}
+
+model Homework {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  dueDate     DateTime
+  maxScore    Int      @default(100)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  groupId   String
+  group     Group  @relation(fields: [groupId], references: [id])
+  teacherId String
+  teacher   User   @relation(fields: [teacherId], references: [id])
+  lessonId  String?
+  lesson    Lesson? @relation(fields: [lessonId], references: [id])
+
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+  attachments Json         @default("[]")
+  submissions Submission[]
+
+  @@index([centerId])
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  answerText  String?  @db.Text
+  filePaths   Json     @default("[]")
+  content     String?  @db.Text
+  isLate      Boolean  @default(false)
+  status      String   @default("submitted")
+  finalScore  Int?
+  aiGrade     Json?
+  teacherGrade Json?
+  // When the student last pressed submit. Distinct from createdAt, which stays
+  // pinned to the first attempt even after a re-submission.
+  submittedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  homeworkId String
+  homework   Homework @relation(fields: [homeworkId], references: [id])
+  studentId  String
+  student    User     @relation(fields: [studentId], references: [id])
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@unique([homeworkId, studentId])
+  @@index([centerId])
+}
+
+model Test {
+  id             String    @id @default(cuid())
+  title          String
+  type           String    @default("topic")
+  timeLimit      Int       @default(30)
+  passingScore   Int       @default(60)
+  totalPoints    Int       @default(0)
+  availableFrom  DateTime?
+  availableUntil DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // How the test was built and, for AI builds, whether generation has finished.
+  // The upload endpoint returns as soon as the row exists so the teacher is not
+  // blocked on a 60s+ model call; the client polls until aiStatus leaves 'generating'.
+  source   String  @default("manual") // manual | ai_file | file_import
+  aiStatus String  @default("ready")  // ready | generating | error
+  aiError  String?
+
+  groupId   String
+  group     Group  @relation(fields: [groupId], references: [id])
+  teacherId String
+  teacher   User   @relation(fields: [teacherId], references: [id])
+  lessonId  String?
+
+  questions Question[]
+  results   Result[]
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@index([centerId])
+}
+
+model Question {
+  id          String  @id @default(cuid())
+  text        String  @db.Text
+  type        String  @default("mcq")
+  options     Json    @default("[]")
+  difficulty  String  @default("medium")
+  points      Int     @default(1)
+  explanation String? @db.Text
+
+  testId String
+  test   Test   @relation(fields: [testId], references: [id], onDelete: Cascade)
+}
+
+model Result {
+  id          String   @id @default(cuid())
+  answers     Json     @default("[]")
+  score       Int      @default(0)
+  percentage  Int      @default(0)
+  passed      Boolean  @default(false)
+  timeTaken   Int?
+  aiAnalysis  Json?
+  completedAt DateTime @default(now())
+
+  testId    String
+  test      Test   @relation(fields: [testId], references: [id])
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@index([centerId])
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  records   Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  groupId   String
+  group     Group  @relation(fields: [groupId], references: [id])
+  teacherId String
+  teacher   User   @relation(fields: [teacherId], references: [id])
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@unique([groupId, date])
+  @@index([centerId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  type      String    @default("info")
+  title     String
+  message   String
+  link      String?
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([centerId])
+}
+
+model AIChat {
+  id        String   @id @default(cuid())
+  messages  Json     @default("[]")
+  style     String   @default("normal")
+  language  String   @default("uz")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lessonId  String
+  lesson    Lesson @relation(fields: [lessonId], references: [id])
+  studentId String
+  student   User   @relation(fields: [studentId], references: [id])
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@unique([lessonId, studentId])
+  @@index([centerId])
+}
+
+// Generic file storage for lesson/homework attachments and homework
+// submissions. Render's free web service disk is ephemeral (wiped on every
+// restart/deploy) - files must be stored as DB bytes, same as the Resource
+// model already does for materials.
+model UploadedFile {
+  id        String   @id @default(cuid())
+  name      String
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@index([centerId])
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  filePath    String
+  fileUrl     String?
+  fileData    Bytes?
+  mimeType    String?
+  type        String   @default("other")
+  downloads   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  groupId   String?
+  group     Group?  @relation(fields: [groupId], references: [id])
+  teacherId String
+  teacher   User    @relation(fields: [teacherId], references: [id])
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@index([centerId])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  month     String
+  // isPaid is kept for backwards compatibility with existing rows/UI; `status`
+  // is the source of truth because a month can be partially covered.
+  isPaid    Boolean  @default(true)
+  status    String   @default("paid") // paid | partial | unpaid
+  // What the student owed this month vs what actually came in. Reception needs
+  // "to'ladi/to'lamadi" to be a number, not a boolean.
+  expectedAmount Int  @default(0)
+  amount         Int  @default(0)
+  method    String   @default("cash") // cash | click | payme | bank | other
+  // Free-text reason when the month is unpaid or short - "nimaga to'lamadi".
+  note      String?
+  paidAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  studentId String
+  student   User   @relation("StudentPayments", fields: [studentId], references: [id])
+  teacherId String
+
+  branchId  String?
+  branch    Branch? @relation(fields: [branchId], references: [id])
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@unique([studentId, month])
+  @@index([month])
+  @@index([status])
+  @@index([centerId])
+}
+
+// A prospective student tracked by the manager before they become a User.
+// Statuses drive the manager's board: new -> contacted -> trial -> enrolled,
+// with frozen/archived/lost as exits.
+model Lead {
+  id           String    @id @default(cuid())
+  name         String
+  phone        String
+  source       String    @default("other") // instagram | telegram | referral | walkin | landing | other
+  status       String    @default("new")   // new | contacted | trial | enrolled | frozen | archived | lost
+  interestedIn String?
+  note         String?
+  frozenUntil  DateTime?
+  // Set when status becomes archived/lost, so "chiqib ketganlar" can be dated.
+  closedAt     DateTime?
+  closeReason  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  branchId  String?
+  branch    Branch? @relation(fields: [branchId], references: [id])
+  managerId String?
+  manager   User?   @relation("ManagerLeads", fields: [managerId], references: [id])
+  // Set once the lead converts into a real student account.
+  studentId String?
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([centerId])
+}
+
+// Operating costs (rent, utilities, marketing, equipment) and one-off payouts.
+// Teacher salaries are computed from Payment rows instead - see payroll.
+model Expense {
+  id       String   @id @default(cuid())
+  category String   // rent | utilities | marketing | equipment | salary | tax | other
+  title    String
+  amount   Int
+  date     DateTime @default(now())
+  note     String?
+  method   String   @default("cash") // cash | click | payme | bank | other
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("UserExpenses", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id])
+
+  @@index([date])
+  @@index([category])
+  @@index([centerId])
+}
+
+// Public lead/application form submissions from the landing page (people
+// interested in enrolling, submitted without needing a login/CRM account).
+model Application {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  message   String?
+  status    String   @default("new") // new | contacted | converted | rejected
+  createdAt DateTime @default(now())
+}

@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: abdora-ai-backend
+    runtime: node
+    region: frankfurt
+    rootDir: bialogiya_beakent
+    buildCommand: npm install && npx prisma generate && npx prisma db push
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES
+        value: 7d
+      - key: GIMINI_AI_API_KEY
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: MAX_FILE_SIZE_MB
+        value: "50"
+      - key: UPLOAD_DIR
+        value: uploads/
+
+  - type: web
+    name: abdora-ai-frontend
+    runtime: static
+    region: frankfurt
+    rootDir: bialogiya_frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false

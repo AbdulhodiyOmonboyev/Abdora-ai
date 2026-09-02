@@ -1,0 +1,41 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies (Frontend)
+      run: cd bialogiya_frontend && npm ci
+    
+    - name: Install dependencies (Backend)
+      run: cd bialogiya_beakent && npm ci
+    
+    - name: Run linter (Frontend)
+      run: cd bialogiya_frontend && npm run lint --if-present
+      continue-on-error: true
+    
+    - name: Build Frontend
+      run: cd bialogiya_frontend && npm run build
+    
+    - name: Run tests (Frontend)
+      run: cd bialogiya_frontend && npm test --if-present
+      continue-on-error: true
