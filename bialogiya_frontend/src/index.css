@@ -1359,14 +1359,6 @@
     font-size: 0.7rem;
     font-weight: 700;
   }
-  .header-status::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: currentColor;
-    animation: pulseSoft 2s infinite;
-  }
 
   /* ── Settings layout ── */
   .settings-shell {
