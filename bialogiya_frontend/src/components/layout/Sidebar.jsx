@@ -126,8 +126,8 @@ export default function Sidebar({ isOpen, onClose }) {
         <div style={{ borderColor: 'var(--border)' }} className="px-5 py-4 border-b flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             {/* Logo mark */}
-            <div className="w-8 h-8 gradient-bg rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-              <span className="text-white font-bold text-sm font-['Space_Grotesk']">A</span>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
+              <img src="/brand/logo-icon.png" alt="Abdora AI" className="w-full h-full object-contain" />
             </div>
             <div className="min-w-0">
               <div

@@ -25,7 +25,7 @@ export default function PublicLayout({ children }) {
       <div className={`public-shell ${dark ? 'theme-dark' : 'theme-light'}`}>
         <header className="public-header">
           <nav className="public-nav">
-            <Link to="/" className="public-brand" onClick={() => setMenuOpen(false)}><span className="public-logo">A</span><span>Abdora <b>AI</b></span></Link>
+            <Link to="/" className="public-brand" onClick={() => setMenuOpen(false)}><img src="/brand/logo-icon.png" alt="Abdora AI" className="public-logo" /><span>Abdora <b>AI</b></span></Link>
             <div className={`public-nav-links ${menuOpen ? 'open' : ''}`}>
               <NavLink end to="/" className={navClass} onClick={() => setMenuOpen(false)}>Bosh sahifa</NavLink>
               <NavLink to="/services" className={navClass} onClick={() => setMenuOpen(false)}>Xizmatlar</NavLink>
@@ -37,7 +37,7 @@ export default function PublicLayout({ children }) {
           </nav>
         </header>
         <div className="public-content">{children || <Outlet />}</div>
-        <footer className="public-footer"><div><span className="public-brand"><span className="public-logo">A</span><span>Abdora <b>AI</b></span></span><p>AI yordamida o‘qishni osonlashtiramiz.</p></div><div className="public-footer-links"><NavLink to="/">Bosh sahifa</NavLink><NavLink to="/services">Xizmatlar</NavLink><NavLink to="/documents">Hujjatlar</NavLink><NavLink to="/contact">Aloqa</NavLink><span>© 2025 Abdora AI</span></div></footer>
+        <footer className="public-footer"><div><span className="public-brand"><img src="/brand/logo-icon.png" alt="Abdora AI" className="public-logo" /><span>Abdora <b>AI</b></span></span><p>AI yordamida o‘qishni osonlashtiramiz.</p></div><div className="public-footer-links"><NavLink to="/">Bosh sahifa</NavLink><NavLink to="/services">Xizmatlar</NavLink><NavLink to="/documents">Hujjatlar</NavLink><NavLink to="/contact">Aloqa</NavLink><span>© 2025 Abdora AI</span></div></footer>
       </div>
     </ThemeContext.Provider>
   );

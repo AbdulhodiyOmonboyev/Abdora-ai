@@ -10,7 +10,7 @@ const features = [[Brain, 'AI dars generatori', 'Mavzuga mos darslarni avtomatik
 function DashboardPreview() {
   return <motion.div className="dashboard-wrap" initial={{ opacity: 0, scale: .94 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: .15 }}>
     <div className="dashboard-preview">
-      <div className="dashboard-top"><span><b>A</b> Abdora AI</span><em>AI faol</em></div>
+      <div className="dashboard-top"><span><b><img src="/brand/logo-icon.png" alt="" /></b> Abdora AI</span><em>AI faol</em></div>
       <div className="dashboard-body">
         <aside><small>MENU</small><strong>Darslar</strong><span>Hujjatlar</span><span>Testlar</span><span>Statistika</span></aside>
         <div className="dashboard-main"><small>Bugungi progress</small><div className="dashboard-number">84% <BarChart3 size={20} /></div><div className="bars"><i /><i /><i /><i /><i /></div><div className="ai-note"><Brain size={16} /> AI yordamchi tayyor</div></div>
