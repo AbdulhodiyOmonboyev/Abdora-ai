@@ -6,7 +6,7 @@ const { getCenterId } = require('../utils/centerScope');
 
 const findAccessibleLesson = (id, user) => prisma.lesson.findFirst({
   where: { id, ...(user.role !== 'admin' ? { centerId: user.centerId } : {}) },
-  select: { id: true, aiContent: true, aiEnabled: true, title: true, content: true, groupId: true, teacherId: true, centerId: true },
+  select: { id: true, aiContent: true, aiEnabled: true, title: true, content: true, sourceText: true, groupId: true, teacherId: true, centerId: true },
 });
 
 const canAccessLesson = async (lesson, user) => {
@@ -28,17 +28,24 @@ const createLesson = async (req, res, next) => {
     // multipart/form-data sends booleans as strings.
     const wantsAI = aiEnabled !== 'false' && aiEnabled !== false;
 
+    // Pull text out of any uploaded PDFs/DOCX/images so the AI lesson is
+    // grounded in the teacher's own material, not just the title. A single
+    // bad file (unsupported/corrupt) must never block lesson creation, so
+    // extraction failures are skipped rather than thrown.
+    const sourceText = await extractSourceTextFromFiles(req.files);
+
     const lesson = await prisma.lesson.create({
       data: {
         title, content, subject: subject || 'other', groupId,
         teacherId: req.user.userId, centerId, attachments, aiEnabled: wantsAI,
+        sourceText: sourceText || null,
         aiContent: wantsAI ? { status: 'pending' } : { status: 'disabled' },
       },
       include: { group: { select: { id: true, name: true } }, teacher: { select: { id: true, name: true } } },
     });
 
     if (wantsAI) {
-      setImmediate(() => generateLessonAI(lesson.id, title, content || '').catch(console.error));
+      setImmediate(() => generateLessonAI(lesson.id, title, content || '', 'uz', sourceText).catch(console.error));
     }
 
     return success(res, lesson, 'Lesson created', 201);
@@ -90,7 +97,7 @@ const updateLesson = async (req, res, next) => {
 
     const existing = await prisma.lesson.findFirst({
       where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
-      select: { attachments: true, aiEnabled: true },
+      select: { attachments: true, aiEnabled: true, sourceText: true },
     });
     if (!existing) return error(res, 'Lesson not found', 404);
 
@@ -98,6 +105,11 @@ const updateLesson = async (req, res, next) => {
     // Newly uploaded files are appended — an edit must never drop the files the
     // teacher attached earlier.
     const merged = [...(Array.isArray(existing.attachments) ? existing.attachments : []), ...newAttachments];
+
+    // Extract text from any newly-added files and append to what we already
+    // had, so a later "regenerate AI" can draw on all attached material.
+    const newSourceText = await extractSourceTextFromFiles(req.files);
+    const mergedSourceText = [existing.sourceText, newSourceText].filter(Boolean).join('\n\n').slice(0, 20000);
 
     const wantsAI = aiEnabled === undefined ? existing.aiEnabled : (aiEnabled !== 'false' && aiEnabled !== false);
 
@@ -108,6 +120,7 @@ const updateLesson = async (req, res, next) => {
       ...(order !== undefined && { order: parseInt(order, 10) || 0 }),
       ...(groupId !== undefined && { groupId }),
       ...(newAttachments.length > 0 && { attachments: merged }),
+      ...(newSourceText && { sourceText: mergedSourceText }),
       ...(aiEnabled !== undefined && { aiEnabled: wantsAI }),
     };
 
@@ -165,7 +178,7 @@ const regenerateAI = async (req, res, next) => {
     if (!(await canAccessLesson(lesson, req.user))) return error(res, 'Forbidden', 403);
     if (!lesson.aiEnabled) return error(res, 'Bu dars uchun AI o\'chirilgan', 400);
     await prisma.lesson.update({ where: { id: lesson.id }, data: { aiContent: { status: 'generating' } } });
-    setImmediate(() => generateLessonAI(lesson.id, lesson.title, lesson.content || '').catch(console.error));
+    setImmediate(() => generateLessonAI(lesson.id, lesson.title, lesson.content || '', 'uz', lesson.sourceText || '').catch(console.error));
     return success(res, { status: 'generating' });
   } catch (err) { next(err); }
 };
@@ -213,6 +226,27 @@ const extractTextFromFile = async (file) => {
   }
 
   throw new Error('Qo\'llab-quvvatlanmaydigan fayl turi');
+};
+
+// Extracts and concatenates text from every uploaded lesson attachment so it
+// can be fed into the AI prompt. A single unsupported/corrupt file must never
+// block lesson creation — failures are logged and that file is skipped.
+const extractSourceTextFromFiles = async (files) => {
+  const list = files || [];
+  if (list.length === 0) return '';
+
+  const parts = [];
+  for (const f of list) {
+    try {
+      const text = (await extractTextFromFile(f))?.trim();
+      if (text) parts.push(`--- ${f.originalname} ---\n${text}`);
+    } catch (err) {
+      console.error(`Lesson attachment text extraction failed for "${f.originalname}":`, err.message);
+    }
+  }
+  // Keep the prompt a sane size — Gemini has a large context window, but a
+  // huge textbook dump would still be wasteful and slow to generate from.
+  return parts.join('\n\n').slice(0, 20000);
 };
 
 // Runs after the HTTP response has been sent — see `source`/`aiStatus` on Test.

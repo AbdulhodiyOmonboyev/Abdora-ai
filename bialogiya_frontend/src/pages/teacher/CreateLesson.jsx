@@ -151,6 +151,7 @@ export default function CreateLesson() {
           <label className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all block">
             <Upload size={24} className="mx-auto mb-2 text-gray-400" />
             <span className="text-sm text-gray-500">Qo'shimcha fayllarni yuklash</span>
+            <span className="block text-xs text-gray-400 mt-1">PDF, Word yoki rasm — AI dars mazmunini shu hujjat asosida yaratadi</span>
             <input type="file" multiple className="hidden" onChange={e => setFiles(Array.from(e.target.files))} />
           </label>
           {id && <p className="text-xs text-gray-400 mt-1">Yangi fayllar qo'shiladi — eskilari o'chib ketmaydi.</p>}

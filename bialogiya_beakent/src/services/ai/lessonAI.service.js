@@ -3,12 +3,17 @@ const { prisma } = require('../../config/db');
 const { LESSON_SYSTEM_PROMPT, getLessonGenerationPrompt } = require('./prompts');
 const { sanitizeAiContent } = require('../../utils/sanitizeAiText');
 
-const generateLessonAI = async (lessonId, title, content, language = 'uz') => {
+const generateLessonAI = async (lessonId, title, content, language = 'uz', sourceText = '') => {
   await prisma.lesson.update({ where: { id: lessonId }, data: { aiContent: { status: 'generating' } } });
 
   try {
     const model = getModel(true);
-    const prompt = `${LESSON_SYSTEM_PROMPT}\n\n${getLessonGenerationPrompt(title, content || title, language)}`;
+    // When the teacher attached a PDF/DOCX/image, its extracted text is the
+    // authoritative material — the lesson must be built from it, not just
+    // from the title. Plain typed `content` still gets included alongside it.
+    const combinedContent = [content, sourceText ? `[Yuklangan hujjatdan olingan material]:\n${sourceText}` : '']
+      .filter(Boolean).join('\n\n') || title;
+    const prompt = `${LESSON_SYSTEM_PROMPT}\n\n${getLessonGenerationPrompt(title, combinedContent, language, !!sourceText)}`;
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     const parsed = sanitizeAiContent(JSON.parse(text));

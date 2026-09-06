@@ -243,6 +243,13 @@ const runMigrations = async () => {
         ADD COLUMN IF NOT EXISTS "latitude"  DOUBLE PRECISION,
         ADD COLUMN IF NOT EXISTS "longitude" DOUBLE PRECISION
     `);
+
+    // Text extracted from a lesson's uploaded PDF/DOCX/image attachments,
+    // used to ground the AI-generated lesson content in the teacher's own
+    // reference material instead of general knowledge only.
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "Lesson" ADD COLUMN IF NOT EXISTS "sourceText" TEXT
+    `);
     await prisma.$executeRawUnsafe(`
       DO $$ BEGIN
         IF NOT EXISTS (

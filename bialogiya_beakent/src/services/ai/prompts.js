@@ -2,15 +2,24 @@ const LESSON_SYSTEM_PROMPT = `You are Abdora AI, an expert academic tutor for hi
 Your job is to transform lesson content into rich, engaging educational materials.
 Always respond in valid JSON format. Be creative, detailed, and educational.`;
 
-const getLessonGenerationPrompt = (title, content, language = 'uz') => {
+const getLessonGenerationPrompt = (title, content, language = 'uz', hasSourceMaterial = false) => {
   const langInstructions = {
     uz: "Barcha tushuntirishlarni O'zbek tilida yozing.",
     ru: 'Все объяснения пишите на Русском языке.',
     en: 'Write all explanations in English.',
   };
 
-  return `${langInstructions[language] || langInstructions['uz']}
+  const sourceMaterialInstruction = hasSourceMaterial
+    ? `\nIMPORTANT: The lesson content below includes a section labeled "[Yuklangan hujjatdan olingan material]" —
+this is text extracted from a document the teacher uploaded (PDF/DOCX/image). Treat it as the
+authoritative source of truth for this lesson. Base all facts, definitions, examples and quiz
+questions primarily on that material rather than on general knowledge, and do not contradict it.
+If the uploaded material is incomplete on some point, you may fill gaps with accurate general
+knowledge on the same topic, but always prefer and stay consistent with what the document says.\n`
+    : '';
 
+  return `${langInstructions[language] || langInstructions['uz']}
+${sourceMaterialInstruction}
 IMPORTANT FORMATTING RULE: Never use markdown syntax anywhere in the JSON
 values below - no **bold**, no # headers, no markdown bullets like "- " or
 "* ". Write plain, clean text. Wherever a field should contain multiple

@@ -211,6 +211,10 @@ model Lesson {
   // teacher's own material and are never written by a generation job. When a
   // teacher turns aiEnabled off, no generation runs for this lesson at all.
   attachments Json    @default("[]")
+  // Text extracted from uploaded PDF/DOCX/image attachments, fed into the AI
+  // prompt alongside `content` so the generated lesson is grounded in the
+  // teacher's own reference material rather than general knowledge only.
+  sourceText  String? @db.Text
 
     centerId String?
     center   Center? @relation(fields: [centerId], references: [id])
