@@ -1,13 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { User, Phone, Globe, KeyRound, Save, Flame, Trophy, Users, BookOpen, Building2 } from 'lucide-react';
+import { User, Phone, Globe, KeyRound, Save, Flame, Trophy, Users, BookOpen, Building2, Camera, Loader2 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
 import { getLevelProgress } from '../../utils/format';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import ThemeBuilder from '../../components/ui/ThemeBuilder';
+
+// Resizes/compresses an image client-side before it's sent to the server as
+// a base64 data URI — keeps the payload small (a few dozen KB) regardless of
+// how large the original photo was.
+const resizeImageToDataUrl = (file, maxSize = 320, quality = 0.85) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onerror = () => reject(new Error("Faylni o'qib bo'lmadi"));
+  reader.onload = () => {
+    const img = new Image();
+    img.onerror = () => reject(new Error("Rasmni ochib bo'lmadi"));
+    img.onload = () => {
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
 
 const roleLabel = (role) => ({
   student: "O'quvchi", teacher: "O'qituvchi", reception: 'Qabulxona', manager: 'Manager', admin: 'Admin',
@@ -17,6 +40,8 @@ export default function ProfilePage() {
   const { user, updateUser } = useAuthStore();
   const [form, setForm] = useState({ name: '', phone: '', language: 'uz', studyLocation: '', residence: '', alternativeWorkplace: '', birthDate: '' });
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -35,6 +60,32 @@ export default function ProfilePage() {
     },
     onError: (err) => toast.error(friendlyAiErrorMessage(err)),
   });
+
+  const avatarMutation = useMutation({
+    mutationFn: (avatar) => api.put('/users/profile', { avatar }),
+    onSuccess: ({ data }) => {
+      updateUser(data.data);
+      toast.success('Profil rasmi yangilandi');
+    },
+    onError: (err) => toast.error(friendlyAiErrorMessage(err)),
+    onSettled: () => setAvatarUploading(false),
+  });
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return toast.error('Faqat rasm fayli tanlang');
+    if (file.size > 8 * 1024 * 1024) return toast.error("Rasm hajmi 8 MB dan oshmasin");
+    setAvatarUploading(true);
+    try {
+      const dataUrl = await resizeImageToDataUrl(file);
+      avatarMutation.mutate(dataUrl);
+    } catch (err) {
+      setAvatarUploading(false);
+      toast.error(err.message || "Rasmni qayta ishlab bo'lmadi");
+    }
+  };
 
   const pwMutation = useMutation({
     mutationFn: (d) => api.post('/users/change-password', d),
@@ -58,9 +109,24 @@ export default function ProfilePage() {
     <div className="max-w-5xl mx-auto space-y-5 px-4 sm:px-6 lg:px-8">
       {/* Header card */}
       <div className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white font-bold text-2xl flex-shrink-0 shadow-glow">
-          {me?.name?.charAt(0) || <User size={24} />}
-        </div>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="relative w-16 h-16 rounded-full flex-shrink-0 group flex-shrink-0"
+          title="Profil rasmini o'zgartirish"
+        >
+          {me?.avatar ? (
+            <img src={me.avatar} alt={me?.name} className="w-16 h-16 rounded-full object-cover" />
+          ) : (
+            <div className="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-glow">
+              {me?.name?.charAt(0) || <User size={24} />}
+            </div>
+          )}
+          <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            {avatarUploading ? <Loader2 size={18} className="text-white animate-spin" /> : <Camera size={18} className="text-white" />}
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+        </button>
         <div className="flex-1 min-w-0">
           <div className="font-bold text-lg text-gray-800 dark:text-white truncate">{me?.name}</div>
           <div className="text-sm text-gray-400">@{me?.username}</div>

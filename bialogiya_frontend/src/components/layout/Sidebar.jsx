@@ -225,8 +225,8 @@ export default function Sidebar({ isOpen, onClose }) {
 
           {/* User info row */}
           <div className="flex items-center gap-2.5 p-2 rounded-xl group">
-            <div className="avatar avatar-sm flex-shrink-0" style={{ width: '2.1rem', height: '2.1rem', fontSize: '0.78rem' }}>
-              {initials}
+            <div className="avatar avatar-sm flex-shrink-0 overflow-hidden" style={{ width: '2.1rem', height: '2.1rem', fontSize: '0.78rem' }}>
+              {user?.avatar ? <img src={user.avatar} alt={user?.name} className="w-full h-full object-cover rounded-full" /> : initials}
             </div>
             <div className="flex-1 min-w-0">
               <div

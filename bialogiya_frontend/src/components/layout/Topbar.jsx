@@ -384,8 +384,8 @@ export default function Topbar({ onMenuClick }) {
               onClick={() => { closeAll(); setShowProfile(v => !v); }}
               className="flex items-center gap-2 btn-ghost py-1.5 px-2 rounded-xl"
             >
-              <div className="avatar avatar-sm" style={{ width: '1.875rem', height: '1.875rem', fontSize: '0.7rem' }}>
-                {initials}
+              <div className="avatar avatar-sm overflow-hidden" style={{ width: '1.875rem', height: '1.875rem', fontSize: '0.7rem' }}>
+                {user?.avatar ? <img src={user.avatar} alt={user?.name} className="w-full h-full object-cover rounded-full" /> : initials}
               </div>
               <div className="hidden sm:flex flex-col items-start min-w-0">
                 <span className="text-xs font-semibold truncate max-w-[90px] leading-tight" style={{ color: 'var(--text-primary)' }}>
