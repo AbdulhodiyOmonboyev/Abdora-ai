@@ -99,7 +99,7 @@ const createTeacher = async (req, res, next) => {
 
     const centerId = getCenterId(req) || req.body.centerId || null;
     const user = await prisma.user.create({
-      data: { name, email, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', centerId },
+      data: { name, email: email || null, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', centerId },
     });
 
     return success(res, { user: safeUser(user), credentials: { username, password: code } }, 'Teacher created', 201);
@@ -269,7 +269,7 @@ const updateUser = async (req, res, next) => {
     }
     const user = await prisma.user.update({
       where: { id: req.params.id },
-      data: { name, email, isActive, groupId, language, phone, gender, age: age ? Number(age) : null, address, studyLocation, residence, alternativeWorkplace, birthDate: birthDate ? new Date(birthDate) : null },
+      data: { name, email: email || null, isActive, groupId, language, phone, gender, age: age ? Number(age) : null, address, studyLocation, residence, alternativeWorkplace, birthDate: birthDate ? new Date(birthDate) : null },
     });
     return success(res, safeUser(user));
   } catch (err) { next(err); }

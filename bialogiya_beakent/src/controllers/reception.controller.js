@@ -23,7 +23,7 @@ const createTeacher = async (req, res, next) => {
     const passwordHash = await bcrypt.hash(code, 10);
 
     const user = await prisma.user.create({
-      data: { name, email, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', branchId: effectiveBranchId },
+      data: { name, email: email || null, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', branchId: effectiveBranchId },
       select: { id: true, name: true, username: true, email: true, phone: true, role: true, createdAt: true, branch: { select: { id: true, name: true } } },
     });
 

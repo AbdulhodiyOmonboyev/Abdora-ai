@@ -151,19 +151,36 @@ const createTeacher = async (req, res, next) => {
     let { name, email, phone, language, branchId, password } = req.body;
     if (!name) return error(res, 'Name required', 400);
 
-    const ownBranchIds = await getOwnBranchIds(req.user);
+    // Self-heal legacy reception/manager accounts that ended up with no
+    // centerId on their record (a now-fixed bug in createReceptionUser /
+    // updateBranch used to allow this) — derive it from their own branch
+    // and persist it so this account never hits the problem again.
+    let effectiveUser = req.user;
+    if (!req.user.centerId && (req.user.role === 'reception' || req.user.role === 'manager')) {
+      const ownField = req.user.role === 'reception' ? 'receptionId' : 'managerId';
+      const ownBranch = await prisma.branch.findFirst({
+        where: { [ownField]: req.user.userId, isActive: true },
+        select: { centerId: true },
+      });
+      if (ownBranch?.centerId) {
+        await prisma.user.update({ where: { id: req.user.userId }, data: { centerId: ownBranch.centerId } });
+        effectiveUser = { ...req.user, centerId: ownBranch.centerId };
+      }
+    }
+
+    const ownBranchIds = await getOwnBranchIds(effectiveUser);
     if (!branchId && ownBranchIds && ownBranchIds.length > 0) {
       branchId = ownBranchIds[0];
     }
 
-    const branchErr = await assertBranchAccess(branchId, req.user);
+    const branchErr = await assertBranchAccess(branchId, effectiveUser);
     if (branchErr) return error(res, branchErr, branchErr.startsWith('Forbidden') ? 403 : 404);
 
     // Resolve centerId: reception/manager always use their own centre;
     // admin has none of their own, so it's derived from the chosen branch.
     // Without this, teachers were created with centerId: null and silently
     // disappeared from every centre-scoped list (getTeachers filters by it).
-    let centerId = getCenterId(req);
+    let centerId = effectiveUser.role === 'admin' ? null : effectiveUser.centerId || null;
     if (!centerId && branchId) {
       const branch = await prisma.branch.findUnique({ where: { id: branchId }, select: { centerId: true } });
       centerId = branch?.centerId || null;
@@ -178,7 +195,7 @@ const createTeacher = async (req, res, next) => {
     const passwordHash = await bcrypt.hash(code, 10);
 
     const user = await prisma.user.create({
-      data: { name, email, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', branchId: branchId || null, centerId },
+      data: { name, email: email || null, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', branchId: branchId || null, centerId },
       select: { id: true, name: true, username: true, email: true, phone: true, role: true, createdAt: true, branch: { select: { id: true, name: true } } },
     });
 
@@ -208,7 +225,7 @@ const updateTeacher = async (req, res, next) => {
     const updated = await prisma.user.update({
       where: { id: req.params.id },
       data: {
-        ...(name && { name }), phone: phone ?? teacher.phone, ...(email !== undefined && { email }),
+        ...(name && { name }), phone: phone ?? teacher.phone, ...(email !== undefined && { email: email || null }),
         ...(branchId !== undefined && { branchId: branchId || null }),
       },
       select: { id: true, name: true, username: true, email: true, phone: true, isActive: true, branch: { select: { id: true, name: true } } },
@@ -261,10 +278,16 @@ const createReceptionUser = async (req, res, next) => {
     const existing = await prisma.user.findUnique({ where: { username } });
     if (existing) username = `${username}${Math.floor(10 + Math.random() * 90)}`;
 
+    // A reception account must always have a centerId, or every scoped
+    // action they take later (creating teachers, listing branches, etc.)
+    // throws "Center context missing". The creating admin has none of
+    // their own, so it's derived from the branch being assigned here.
+    let centerId = req.user?.role === 'admin' ? null : req.user?.centerId || null;
     if (branchId) {
       const branch = await prisma.branch.findUnique({ where: { id: branchId } });
       if (!branch) return error(res, 'Branch not found', 404);
       if (branch.receptionId) return error(res, 'Branch already assigned to another reception', 400);
+      centerId = branch.centerId || centerId;
     }
 
     const passwordHash = await bcrypt.hash(code, 10);
@@ -272,12 +295,13 @@ const createReceptionUser = async (req, res, next) => {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: email || null,
         phone: phone || null,
         username,
         passwordHash,
         role: 'reception',
         language: language || 'uz',
+        centerId,
         maxBranches: Number.isFinite(Number(maxBranches)) && Number(maxBranches) > 0 ? Number(maxBranches) : 3,
       },
       select: { id: true, name: true, username: true, email: true, phone: true, role: true, maxBranches: true, createdAt: true },
@@ -519,6 +543,17 @@ const updateBranch = async (req, res, next) => {
         _count: { select: { groups: true, teachers: true } },
       },
     });
+
+    // A reception account assigned to a branch must carry that branch's
+    // centerId, or every scoped action they take afterwards (creating
+    // teachers, listing their own branches) throws "Center context missing".
+    if (receptionId) {
+      await prisma.user.updateMany({
+        where: { id: receptionId, role: 'reception', centerId: null },
+        data: { centerId: branch.centerId },
+      });
+    }
+
     return success(res, updated, 'Branch updated');
   } catch (err) { next(err); }
 };
