@@ -1,11 +1,11 @@
-import { ArrowRight, BarChart3, BookOpen, Brain, FileText, GraduationCap, MessageCircle, PlayCircle, Sparkles, Trophy, Users, Zap } from 'lucide-react';
+import { ArrowRight, BarChart3, BookOpen, Brain, FileText, GraduationCap, MessageCircle, PlayCircle, Sparkles, Trophy, Users, UserPlus, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import './public.css';
 import './home.css';
 
 const stats = [['10K+', 'Foydalanuvchilar', Users], ['50K+', 'Yaratilgan darslar', BookOpen], ['98%', 'Qoniqish darajasi', Trophy], ['24/7', 'Yordam xizmati', Zap]];
-const features = [[Brain, 'AI dars generatori', 'Mavzuga mos darslarni avtomatik yarating.'], [FileText, 'Hujjatlar yuklash', 'PDF, Word va boshqa hujjatlarni tahlil qiling.'], [PlayCircle, 'Video darslar', 'Tushunarli video darslar va misollar.'], [MessageCircle, 'Jonli savol-javob', 'Savollaringizga tez va aniq javob oling.'], [Trophy, 'Test va baholash', 'Bilimingizni tekshirib, natijani ko‘ring.'], [BarChart3, 'Statistika va progress', 'O‘qish jarayoningizni kuzatib boring.']];
+const features = [[Brain, 'AI dars generatori', 'Mavzuga mos darslarni avtomatik yarating.'], [FileText, 'Hujjatlar yuklash', 'PDF, Word va boshqa hujjatlarni tahlil qiling.'], [PlayCircle, 'Video darslar', 'Tushunarli video darslar va misollar.'], [UserPlus, 'CRM tizimi', 'Lidlarni yig\u2018ing, kuzating va mijozga aylantiring — barchasi bitta joyda.'], [MessageCircle, 'Jonli savol-javob', 'Savollaringizga tez va aniq javob oling.'], [Trophy, 'Test va baholash', 'Bilimingizni tekshirib, natijani ko\u2018ring.'], [BarChart3, 'Statistika va progress', 'O\u2018qish jarayoningizni kuzatib boring.']];
 
 function DashboardPreview() {
   return <motion.div className="dashboard-wrap" initial={{ opacity: 0, scale: .94 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: .15 }}>
