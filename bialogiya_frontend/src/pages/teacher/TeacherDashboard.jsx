@@ -89,7 +89,6 @@ export default function TeacherDashboard() {
           <p>Mavjud o'quvchilar, bu oy yig'ilgan daromad va o'z natijalaringiz.</p>
         </div>
         <div className="dashboard-header-actions">
-          <span className="header-status">Live</span>
           <Link to="/teacher/groups" className="header-button">Guruhlar</Link>
         </div>
       </header>

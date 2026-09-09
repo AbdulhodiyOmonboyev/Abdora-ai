@@ -92,7 +92,6 @@ export default function ManagerDashboard() {
         subtitle="Markazingizning kundalik faoliyatini bir joydan boshqaring"
         actions={
           <div className="flex items-center gap-2">
-            <span className="header-status">Live</span>
             <Link to="/manager/branches" className="btn-primary btn-sm">
               Filiallarni ko'rish <ArrowUpRight size={14} />
             </Link>

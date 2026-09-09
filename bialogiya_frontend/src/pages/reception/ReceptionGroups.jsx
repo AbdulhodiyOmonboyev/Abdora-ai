@@ -134,7 +134,6 @@ export default function ReceptionGroups() {
         subtitle="Guruh yarating, jadval va xona belgilang."
         actions={
           <>
-            <span className="header-status">Live</span>
             <button onClick={openCreate} className="btn-primary flex items-center gap-2">
               <Plus size={14} /> Guruh yaratish
             </button>

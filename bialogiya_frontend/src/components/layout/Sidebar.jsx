@@ -136,11 +136,6 @@ export default function Sidebar({ isOpen, onClose }) {
               >
                 Abdora AI
               </div>
-              <span
-                className={cn('badge text-[10px] mt-0.5', ROLE_COLORS[user?.role] || 'badge-gray')}
-              >
-                {ROLE_LABELS[user?.role] || user?.role}
-              </span>
             </div>
           </div>
           {/* Mobile close */}

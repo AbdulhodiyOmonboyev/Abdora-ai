@@ -121,7 +121,6 @@ export default function AdminDashboard() {
         subtitle={subtitle}
         actions={
           <div className="flex items-center gap-2">
-            <span className="header-status">Live</span>
             <button
               type="button"
               onClick={() => navigate(`/${baseRole}/dashboard`)}
