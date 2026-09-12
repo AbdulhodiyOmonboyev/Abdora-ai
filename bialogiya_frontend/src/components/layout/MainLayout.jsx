@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import MobileBottomNav from './MobileBottomNav';
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,10 +28,12 @@ export default function MainLayout() {
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar onMenuClick={() => setSidebarOpen(s => !s)} />
-        <main className="app-main">
+        <main className="app-main pb-16 md:pb-0">
           <Outlet />
         </main>
       </div>
+
+      <MobileBottomNav onMoreClick={() => setSidebarOpen(true)} />
     </div>
   );
 }

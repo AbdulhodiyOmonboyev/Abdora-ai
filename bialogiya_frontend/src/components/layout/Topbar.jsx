@@ -156,14 +156,6 @@ export default function Topbar({ onMenuClick }) {
       <header className="app-topbar">
         {/* Left */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={onMenuClick}
-            className="btn-icon md:hidden"
-            aria-label="Toggle menu"
-          >
-            <Menu size={20} style={{ color: 'var(--text-secondary)' }} />
-          </button>
-
           <div className="hidden md:flex flex-col justify-center">
             <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
               {new Date().toLocaleDateString(
