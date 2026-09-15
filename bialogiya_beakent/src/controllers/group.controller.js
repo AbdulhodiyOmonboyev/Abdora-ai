@@ -249,4 +249,107 @@ const removeStudentFromGroup = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createGroup, getMyGroups, getAllGroups, getGroupById, updateGroup, deleteGroup, addStudentToGroup, removeStudentFromGroup };
+const getGroupGradebook = async (req, res, next) => {
+  try {
+    const { id: groupId } = req.params;
+    const { month } = req.query;
+
+    const group = await prisma.group.findUnique({
+      where: { id: groupId },
+      include: {
+        students: {
+          where: { isActive: true },
+          select: { id: true, name: true, avatar: true },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+
+    if (!group) return error(res, 'Guruh topilmadi', 404);
+
+    let lessonWhere = { groupId, isActive: true };
+    if (month && month.match(/^\d{4}-\d{2}$/)) {
+      const [year, mon] = month.split('-').map(Number);
+      const start = new Date(Date.UTC(year, mon - 1, 1));
+      const end = new Date(Date.UTC(year, mon, 1));
+      lessonWhere.createdAt = { gte: start, lt: end };
+    }
+
+    let lessons = await prisma.lesson.findMany({
+      where: lessonWhere,
+      include: {
+        homework: {
+          include: {
+            submissions: {
+              select: {
+                studentId: true,
+                finalScore: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { order: 'asc' },
+    });
+
+    // If month filter yielded no lessons, fallback to all group lessons so the table isn't empty
+    if (lessons.length === 0 && month) {
+      lessons = await prisma.lesson.findMany({
+        where: { groupId, isActive: true },
+        include: {
+          homework: {
+            include: {
+              submissions: {
+                select: {
+                  studentId: true,
+                  finalScore: true,
+                  status: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { order: 'asc' },
+        take: 20,
+      });
+    }
+
+    const formattedLessons = lessons.map((les) => {
+      const gradeMap = {};
+      les.homework.forEach((hw) => {
+        hw.submissions.forEach((sub) => {
+          if (sub.finalScore !== null && sub.finalScore !== undefined) {
+            gradeMap[sub.studentId] = sub.finalScore;
+          }
+        });
+      });
+
+      const grades = group.students.map((st) => ({
+        studentId: st.id,
+        score: gradeMap[st.id] !== undefined ? gradeMap[st.id] : null,
+      }));
+
+      return {
+        id: les.id,
+        title: les.title,
+        orderIndex: les.order,
+        date: les.createdAt,
+        grades,
+      };
+    });
+
+    return success(res, {
+      students: group.students,
+      lessons: formattedLessons,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  createGroup, getMyGroups, getAllGroups, getGroupById,
+  updateGroup, deleteGroup, addStudentToGroup, removeStudentFromGroup,
+  getGroupGradebook,
+};

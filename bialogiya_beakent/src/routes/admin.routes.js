@@ -40,4 +40,14 @@ router.post('/reception', ...adminOnly, createReceptionUser);
 router.put('/reception/:id', ...adminOnly, updateReceptionUser);
 router.delete('/reception/:id', ...adminOnly, deleteReceptionUser);
 
+// AI Agents
+const {
+  getAIAgents, createAIAgent, updateAIAgent, deleteAIAgent
+} = require('../controllers/ai-agents.controller');
+
+router.get('/ai-agents', ...adminOnly, getAIAgents);
+router.post('/ai-agents', ...adminOnly, createAIAgent);
+router.put('/ai-agents/:id', ...adminOnly, updateAIAgent);
+router.delete('/ai-agents/:id', ...adminOnly, deleteAIAgent);
+
 module.exports = router;

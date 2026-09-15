@@ -22,6 +22,7 @@ import LessonDetail from './pages/student/LessonDetail';
 
 // Leads CRM + Finance (manager / admin / reception)
 import ManagerLeads from './pages/manager/ManagerLeads';
+import CrmDashboard from './pages/crm/CrmDashboard';
 import FinanceDashboard from './pages/finance/FinanceDashboard';
 import FinanceExpenses from './pages/finance/FinanceExpenses';
 import FinancePayroll from './pages/finance/FinancePayroll';
@@ -35,6 +36,8 @@ import StudentAttendance from './pages/student/StudentAttendance';
 import StudentAchievements from './pages/student/StudentAchievements';
 import StudentLeaderboard from './pages/student/StudentLeaderboard';
 import StudentAnalytics from './pages/student/StudentAnalytics';
+import StudentProgress from './pages/student/StudentProgress';
+import CertificatePage from './pages/student/CertificatePage';
 
 // Teacher pages
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
@@ -56,6 +59,7 @@ import TeacherVoice from './pages/teacher/TeacherVoice';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminAIAgents from './pages/admin/AdminAIAgents';
 import AdminTeachers from './pages/admin/AdminTeachers';
 import AdminReception from './pages/admin/AdminReception';
 import AdminApplications from './pages/admin/AdminApplications';
@@ -73,6 +77,15 @@ import ManagerDashboard from './pages/manager/ManagerDashboard';
 import ManagerBranches from './pages/manager/ManagerBranches';
 import ManagerBranchDetail from './pages/manager/ManagerBranchDetail';
 import ManagerPayments from './pages/manager/ManagerPayments';
+
+// ERP pages
+import RoomsPage from './pages/erp/RoomsPage';
+import TimetablePage from './pages/erp/TimetablePage';
+import CashboxPage from './pages/erp/CashboxPage';
+import PaymentReceiptPage from './pages/erp/PaymentReceiptPage';
+
+// LMS extra
+import GradebookPage from './pages/teacher/GradebookPage';
 
 // Reception pages
 import ReceptionGroups from './pages/reception/ReceptionGroups';
@@ -134,6 +147,8 @@ export default function App() {
           <Route path="achievements" element={<StudentAchievements />} />
           <Route path="leaderboard" element={<StudentLeaderboard />} />
           <Route path="analytics" element={<StudentAnalytics />} />
+          <Route path="progress" element={<StudentProgress />} />
+          <Route path="certificates" element={<CertificatePage />} />
         </Route>
 
         {/* Teacher Routes */}
@@ -154,6 +169,7 @@ export default function App() {
           <Route path="tests/create" element={<CreateTest />} />
           <Route path="tests/:id/results" element={<TestResultsPage />} />
           <Route path="attendance" element={<AttendancePage />} />
+          <Route path="gradebook" element={<GradebookPage />} />
           <Route path="resources" element={<TeacherResources />} />
           <Route path="analytics" element={<TeacherAnalytics />} />
           <Route path="voice" element={<TeacherVoice />} />
@@ -170,6 +186,7 @@ export default function App() {
         {/* Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute role="admin"><MainLayout /></ProtectedRoute>}>
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="ai-agents" element={<AdminAIAgents />} />
           <Route path="applications" element={<AdminApplications />} />
           <Route path="branches" element={<AdminBranches />} />
           <Route path="branches/:id" element={<AdminBranchDetail />} />
@@ -196,8 +213,12 @@ export default function App() {
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
-        {/* Leads CRM and Finance are shared by the management roles; the backend
-            scopes every query to the branches the caller actually runs. */}
+        {/* CRM Dashboard */}
+        <Route path="/crm" element={<ProtectedRoute role={['manager', 'admin', 'reception']}><MainLayout /></ProtectedRoute>}>
+          <Route path="dashboard" element={<CrmDashboard />} />
+        </Route>
+
+        {/* Leads CRM and Finance are shared by the management roles */}
         <Route path="/leads" element={<ProtectedRoute role={['manager', 'admin', 'reception']}><MainLayout /></ProtectedRoute>}>
           <Route index element={<ManagerLeads />} />
         </Route>
@@ -205,6 +226,14 @@ export default function App() {
           <Route index element={<FinanceDashboard />} />
           <Route path="expenses" element={<FinanceExpenses />} />
         </Route>
+        {/* ERP Routes */}
+        <Route path="/erp" element={<ProtectedRoute role={['admin', 'manager', 'reception']}><MainLayout /></ProtectedRoute>}>
+          <Route path="rooms" element={<RoomsPage />} />
+          <Route path="timetable" element={<TimetablePage />} />
+          <Route path="cashbox" element={<CashboxPage />} />
+          <Route path="receipt/:id" element={<PaymentReceiptPage />} />
+        </Route>
+
         <Route path="/finance/payroll" element={<ProtectedRoute role={['manager']}><MainLayout /></ProtectedRoute>}>
           <Route index element={<FinancePayroll />} />
         </Route>

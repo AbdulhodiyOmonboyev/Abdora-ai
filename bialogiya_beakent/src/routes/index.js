@@ -19,5 +19,8 @@ router.use('/leads', require('./lead.routes'));
 router.use('/speaking', require('./speaking.routes'));
 router.use('/voice', require('./voice.routes'));
 router.use('/applications', require('./application.routes'));
+router.use('/rooms', require('./room.routes'));
+router.use('/schedule', require('./schedule.routes'));
+router.use('/student', require('./student.routes'));
 
 module.exports = router;

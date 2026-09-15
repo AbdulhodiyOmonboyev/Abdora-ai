@@ -58,7 +58,7 @@ export default function LoginPage() {
               transition={{ delay: 0.1 }}
               className="login-logo"
             >
-              <img src="/brand/logo-icon.png" alt="Abdora AI" />
+              <span>A</span>
             </motion.div>
             <p className="login-kicker">Abdora AI</p>
             <h1>{t('app_name')}</h1>

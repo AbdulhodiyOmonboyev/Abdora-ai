@@ -3,7 +3,7 @@ const router = express.Router();
 const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const {
   createGroup, getMyGroups, getGroupById, updateGroup, deleteGroup,
-  addStudentToGroup, removeStudentFromGroup, getAllGroups
+  addStudentToGroup, removeStudentFromGroup, getAllGroups, getGroupGradebook
 } = require('../controllers/group.controller');
 
 // Teachers can only VIEW their groups - creating/editing/deleting groups
@@ -11,6 +11,7 @@ const {
 router.get('/all', verifyToken, requireRole('admin', 'reception', 'manager'), getAllGroups);
 router.get('/', verifyToken, requireRole('teacher'), getMyGroups);
 router.get('/:id', verifyToken, getGroupById);
+router.get('/:id/gradebook', verifyToken, requireRole('teacher', 'admin', 'manager', 'reception'), getGroupGradebook);
 router.post('/', verifyToken, requireRole('admin', 'reception', 'manager'), createGroup);
 router.put('/:id', verifyToken, requireRole('admin', 'reception', 'manager'), updateGroup);
 router.delete('/:id', verifyToken, requireRole('admin', 'reception', 'manager'), deleteGroup);

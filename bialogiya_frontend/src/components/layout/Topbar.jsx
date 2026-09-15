@@ -156,6 +156,14 @@ export default function Topbar({ onMenuClick }) {
       <header className="app-topbar">
         {/* Left */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={onMenuClick}
+            className="btn-icon md:hidden"
+            aria-label="Toggle menu"
+          >
+            <Menu size={20} style={{ color: 'var(--text-secondary)' }} />
+          </button>
+
           <div className="hidden md:flex flex-col justify-center">
             <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
               {new Date().toLocaleDateString(
@@ -376,8 +384,8 @@ export default function Topbar({ onMenuClick }) {
               onClick={() => { closeAll(); setShowProfile(v => !v); }}
               className="flex items-center gap-2 btn-ghost py-1.5 px-2 rounded-xl"
             >
-              <div className="avatar avatar-sm overflow-hidden" style={{ width: '1.875rem', height: '1.875rem', fontSize: '0.7rem' }}>
-                {user?.avatar ? <img src={user.avatar} alt={user?.name} className="w-full h-full object-cover rounded-full" /> : initials}
+              <div className="avatar avatar-sm" style={{ width: '1.875rem', height: '1.875rem', fontSize: '0.7rem' }}>
+                {initials}
               </div>
               <div className="hidden sm:flex flex-col items-start min-w-0">
                 <span className="text-xs font-semibold truncate max-w-[90px] leading-tight" style={{ color: 'var(--text-primary)' }}>

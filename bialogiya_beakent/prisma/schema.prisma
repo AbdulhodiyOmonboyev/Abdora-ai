@@ -30,8 +30,11 @@ model Center {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  settings  Json     @default("{}")
+
   users     User[]
   branches  Branch[]
+  rooms     Room[]
   groups    Group[]
   payments  Payment[]
   expenses  Expense[]
@@ -43,6 +46,7 @@ model Center {
   resources Resource[]
   notifications Notification[]
   aiChats   AIChat[]
+  aiAgents  AIAgent[]
   files     UploadedFile[]
   submissions Submission[]
   results   Result[]
@@ -118,6 +122,7 @@ model User {
   attendances   Attendance[]
   payments      Payment[]      @relation("StudentPayments")
   managedLeads  Lead[]         @relation("ManagerLeads")
+  leadActivities LeadActivity[]
   expenses      Expense[]      @relation("UserExpenses")
 
   centerId String?
@@ -136,7 +141,9 @@ model Group {
   weekDays    String?  // JSON array stored as string: ["mon","wed","fri"]
   startTime   String?  // "HH:MM"  e.g. "09:00"
   endTime     String?  // "HH:MM"  e.g. "10:30"
-  room        String?  // e.g. "101-xona", "2-kat"
+  room        String?  // Legacy text room
+  roomId      String?
+  roomRel     Room?    @relation(fields: [roomId], references: [id])
   // Course progress: how many lessons the course has in total, and the level
   // being taught. Reception uses these to answer "how far along is this group?"
   // when placing a new student.
@@ -182,6 +189,7 @@ model Branch {
   manager     User?  @relation("ManagerBranches", fields: [managerId], references: [id])
 
   groups   Group[]
+  rooms    Room[]
   teachers User[]  @relation("TeacherBranch")
   leads    Lead[]
   expenses Expense[]
@@ -211,10 +219,6 @@ model Lesson {
   // teacher's own material and are never written by a generation job. When a
   // teacher turns aiEnabled off, no generation runs for this lesson at all.
   attachments Json    @default("[]")
-  // Text extracted from uploaded PDF/DOCX/image attachments, fed into the AI
-  // prompt alongside `content` so the generated lesson is grounded in the
-  // teacher's own reference material rather than general knowledge only.
-  sourceText  String? @db.Text
 
     centerId String?
     center   Center? @relation(fields: [centerId], references: [id])
@@ -528,6 +532,8 @@ model Lead {
   centerId String?
   center   Center? @relation(fields: [centerId], references: [id])
 
+  activities LeadActivity[]
+
   @@index([status])
   @@index([createdAt])
   @@index([centerId])
@@ -537,8 +543,9 @@ model Lead {
 // Teacher salaries are computed from Payment rows instead - see payroll.
 model Expense {
   id       String   @id @default(cuid())
-  category String   // rent | utilities | marketing | equipment | salary | tax | other
-  title    String
+  type     String   @default("expense") // income | expense
+  category String   @default("other")
+  title    String?
   amount   Int
   date     DateTime @default(now())
   note     String?
@@ -568,4 +575,50 @@ model Application {
   message   String?
   status    String   @default("new") // new | contacted | converted | rejected
   createdAt DateTime @default(now())
+}
+
+model Room {
+  id        String   @id @default(cuid())
+  name      String
+  capacity  Int?
+  color     String?
+  amenities Json     @default("[]") // ["projector", "wifi", "whiteboard", "speaker", "ac"]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  centerId  String?
+  center    Center?  @relation(fields: [centerId], references: [id])
+
+  groups    Group[]
+}
+
+model LeadActivity {
+  id          String   @id @default(cuid())
+  type        String   // call | note | meeting | sms | task
+  content     String   @db.Text
+  scheduledAt DateTime?
+  createdAt   DateTime @default(now())
+
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model AIAgent {
+  id        String   @id @default(cuid())
+  name      String
+  provider  String   // gemini | openai | anthropic | custom
+  model     String
+  apiKey    String
+  useCases  Json     @default("[]") // ["chat", "grading", "generation", "speaking"]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  centerId  String?
+  center    Center?  @relation(fields: [centerId], references: [id])
 }
