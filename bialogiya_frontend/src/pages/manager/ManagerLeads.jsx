@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, X, Phone, UserPlus, Snowflake, Archive, TrendingUp, Trash2
+  Plus, X, LayoutGrid, List, TrendingUp, UserPlus,
+  Users, ArrowRight, RefreshCw, Check, Filter,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -14,51 +15,58 @@ import StatCard from '../../components/ui/StatCard';
 import StatusBadge from '../../components/ui/StatusBadge';
 import SearchInput from '../../components/ui/SearchInput';
 import EmptyState from '../../components/ui/EmptyState';
+import Modal from '../../components/ui/Modal';
+import KanbanColumn from '../../components/ui/KanbanColumn';
+import LeadDetail from '../crm/LeadDetail';
 
 const STATUSES = [
-  { value: 'new', label: 'Yangi' },
-  { value: 'contacted', label: "Bog'lanildi" },
-  { value: 'trial', label: 'Sinov darsi' },
-  { value: 'enrolled', label: "O'qishga kirdi" },
-  { value: 'frozen', label: 'Muzlatilgan' },
-  { value: 'archived', label: 'Arxiv' },
-  { value: 'lost', label: 'Chiqib ketdi' },
+  { value: 'new',       label: 'Yangi',          color: '#3B82F6' },
+  { value: 'contacted', label: "Bog'lanildi",    color: '#8B5CF6' },
+  { value: 'trial',     label: 'Sinov darsi',    color: '#F59E0B' },
+  { value: 'enrolled',  label: "O'qishga kirdi", color: '#10B981' },
+  { value: 'frozen',    label: 'Muzlatilgan',    color: '#64748B' },
+  { value: 'archived',  label: 'Arxiv',          color: '#94A3B8' },
+  { value: 'lost',      label: 'Chiqib ketdi',   color: '#EF4444' },
 ];
 
 const SOURCES = [
-  { value: 'instagram', label: 'Instagram' },
-  { value: 'telegram', label: 'Telegram' },
-  { value: 'referral', label: 'Tanish orqali' },
-  { value: 'walkin', label: "O'zi keldi" },
-  { value: 'landing', label: 'Sayt' },
-  { value: 'other', label: 'Boshqa' },
+  { value: 'instagram', label: 'Instagram', icon: '📸' },
+  { value: 'telegram',  label: 'Telegram',  icon: '✈️' },
+  { value: 'referral',  label: 'Tanish orqali', icon: '👥' },
+  { value: 'walkin',    label: "O'zi keldi",    icon: '🚶' },
+  { value: 'landing',   label: 'Sayt',          icon: '🌐' },
+  { value: 'other',     label: 'Boshqa',        icon: '📌' },
 ];
 
-const sourceLabel = (value) => SOURCES.find(s => s.value === value)?.label || value;
+const emptyForm = () => ({
+  name: '', phone: '', source: 'instagram', interestedIn: '', note: '',
+  parentName: '', parentPhone: '',
+});
 
-const TABS = [
-  { key: 'all', label: 'Hammasi' },
-  { key: 'new', label: 'Yangi' },
+const LIST_TABS = [
+  { key: 'all',       label: 'Hammasi' },
+  { key: 'new',       label: 'Yangi' },
   { key: 'contacted', label: "Bog'lanildi" },
-  { key: 'trial', label: 'Sinov' },
-  { key: 'enrolled', label: 'Kirdi' },
-  { key: 'frozen', label: 'Muzlatilgan' },
-  { key: 'archived', label: 'Arxiv' },
-  { key: 'lost', label: 'Chiqib ketgan' },
+  { key: 'trial',     label: 'Sinov' },
+  { key: 'enrolled',  label: 'Kirdi' },
+  { key: 'frozen',    label: 'Muzlatilgan' },
+  { key: 'archived',  label: 'Arxiv' },
+  { key: 'lost',      label: 'Chiqib ketgan' },
 ];
-
-const emptyForm = () => ({ name: '', phone: '', source: 'instagram', interestedIn: '', note: '' });
 
 export default function ManagerLeads() {
   const qc = useQueryClient();
   const [searchParams] = useSearchParams();
   const branchId = searchParams.get('branchId') || undefined;
-  const branchName = searchParams.get('branchName') || '';
+
+  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'list'
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(emptyForm());
+  const [selectedLeadId, setSelectedLeadId] = useState(null);
 
+  /* ── Queries ── */
   const statsQuery = useQuery({
     queryKey: ['lead-stats', branchId],
     queryFn: () => api.get('/leads/stats', { params: { branchId } }).then(r => r.data.data),
@@ -75,8 +83,9 @@ export default function ManagerLeads() {
     qc.invalidateQueries({ queryKey: ['lead-stats'] });
   };
 
+  /* ── Mutations ── */
   const createMutation = useMutation({
-    mutationFn: (payload) => api.post('/leads', { ...payload, branchId }),
+    mutationFn: (d) => api.post('/leads', { ...d, branchId }),
     onSuccess: () => {
       invalidate();
       toast.success("Lid muvaffaqiyatli qo'shildi");
@@ -98,278 +107,280 @@ export default function ManagerLeads() {
     onError: (e) => toast.error(e.response?.data?.message || 'Xato'),
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) return toast.error('Ismni kiriting');
-    if (!form.phone.trim()) return toast.error('Telefon raqamni kiriting');
-    createMutation.mutate({ ...form, name: form.name.trim(), phone: form.phone.trim() });
-  };
-
+  /* ── Grouped data for kanban ── */
+  const leads = Array.isArray(leadsQuery.data) ? leadsQuery.data : [];
   const stats = statsQuery.data;
-  const leads = leadsQuery.data || [];
+
+  const kanbanGroups = STATUSES.reduce((acc, s) => {
+    acc[s.value] = leads.filter(l => l.status === s.value);
+    return acc;
+  }, {});
+
+  /* ── Filtered leads for list view ── */
+  const filteredLeads = tab === 'all' ? leads : leads.filter(l => l.status === tab);
+
+  const sourceLabel = (v) => SOURCES.find(s => s.value === v)?.label || v;
+  const sourceIcon  = (v) => SOURCES.find(s => s.value === v)?.icon || '📌';
+  const statusCfg   = (v) => STATUSES.find(s => s.value === v) || { label: v, color: '#64748B' };
 
   return (
-    <div className="dashboard-shell">
+    <div className="dashboard-shell max-w-full">
       <PageHeader
-        title="Lidlar CRM"
-        subtitle={branchName ? `${branchName} filiali lidlari` : "Yangi mijozlar, murojaatlar va konversiya nazorati"}
+        title="Lidlar (CRM)"
+        subtitle="Potentsial o'quvchilarni boshqarish"
         actions={
-          <button onClick={() => setModalOpen(true)} className="btn-primary">
-            <Plus size={16} /> Lid qo'shish
-          </button>
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
+              <button
+                onClick={() => setViewMode('kanban')}
+                className="px-3 py-2 flex items-center gap-1.5 text-sm transition-colors"
+                style={{
+                  background: viewMode === 'kanban' ? 'var(--primary)' : 'var(--card)',
+                  color: viewMode === 'kanban' ? 'white' : 'var(--text-secondary)',
+                }}
+              >
+                <LayoutGrid size={15} /> Kanban
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className="px-3 py-2 flex items-center gap-1.5 text-sm transition-colors"
+                style={{
+                  background: viewMode === 'list' ? 'var(--primary)' : 'var(--card)',
+                  color: viewMode === 'list' ? 'white' : 'var(--text-secondary)',
+                }}
+              >
+                <List size={15} /> Ro'yxat
+              </button>
+            </div>
+            <button onClick={() => setModalOpen(true)} className="btn-primary">
+              <Plus size={15} /> Yangi lid
+            </button>
+          </div>
         }
       />
 
-      {/* KPI Cards */}
-      <section className="stats-grid">
-        <StatCard
-          icon={TrendingUp}
-          label="Bu hafta keldi"
-          value={stats?.thisWeek ?? 0}
-          iconColor="var(--primary)"
-          iconBg="rgba(240, 100, 19, 0.1)"
-          trend="up"
-        />
-        <StatCard
-          icon={UserPlus}
-          label="Faol lidlar"
-          value={stats?.active ?? 0}
-          iconColor="var(--secondary)"
-          iconBg="rgba(37, 99, 235, 0.1)"
-        />
-        <StatCard
-          icon={Snowflake}
-          label="Muzlatilgan"
-          value={stats?.counts?.frozen ?? 0}
-          iconColor="var(--accent)"
-          iconBg="rgba(124, 58, 237, 0.1)"
-        />
-        <StatCard
-          icon={Archive}
-          label="Arxiv / Chiqib ketgan"
-          value={(stats?.counts?.archived || 0) + (stats?.counts?.lost || 0)}
-          iconColor="var(--text-muted)"
-          iconBg="var(--secondary-background)"
-          trendValue={stats?.conversionRate > 0 ? `${stats.conversionRate}% konversiya` : null}
-        />
-      </section>
-
-      {/* Filter and Search */}
-      <div className="space-y-3">
-        <div className="filter-bar">
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Ism yoki telefon bo'yicha qidirish..."
-          />
+      {/* Stats */}
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <StatCard icon={Users} label="Jami lidlar" value={stats.total}
+            iconColor="var(--primary)" iconBg="rgba(240,100,19,0.1)" />
+          <StatCard icon={TrendingUp} label="Faol lidlar" value={stats.active}
+            iconColor="var(--secondary)" iconBg="rgba(37,99,235,0.1)" />
+          <StatCard icon={UserPlus} label="Bu hafta" value={stats.thisWeek}
+            iconColor="var(--success)" iconBg="rgba(22,163,74,0.1)" />
+          <StatCard icon={ArrowRight} label="Konversiya" value={`${stats.conversionRate}%`}
+            iconColor="var(--accent)" iconBg="rgba(124,58,237,0.1)" />
         </div>
-
-        {/* Tab List */}
-        <div className="tab-bar">
-          {TABS.map(t => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setTab(t.key)}
-              className={`tab-item ${tab === t.key ? 'active' : ''}`}
-            >
-              {t.label}
-              {stats && t.key !== 'all' && stats.counts[t.key] > 0 && (
-                <span className="ml-1.5 opacity-70">({stats.counts[t.key]})</span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {leadsQuery.isError && <ErrorState error={leadsQuery.error} onRetry={leadsQuery.refetch} />}
-      {leadsQuery.isLoading && <div className="space-y-2"><RowSkeleton count={4} /></div>}
-
-      {!leadsQuery.isLoading && !leadsQuery.isError && leads.length === 0 && (
-        <EmptyState
-          icon={UserPlus}
-          title={search ? 'Lid topilmadi' : 'Bu bo\'limda lidlar mavjud emas'}
-          description={search
-            ? 'Boshqa ism yoki raqam bilan qidirib ko\'ring.'
-            : 'Yangi mijozlar qo\'ng\'iroq qilganda shu yerga qo\'shib boring.'}
-          action={!search && (
-            <button
-              type="button"
-              onClick={() => setModalOpen(true)}
-              className="btn-primary btn-sm"
-            >
-              <Plus size={14} /> Birinchi lidni qo'shish
-            </button>
-          )}
-        />
       )}
 
-      {/* Leads list */}
-      <div className="space-y-3">
-        {leads.map((lead, i) => (
-          <motion.div
-            key={lead.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.2 }}
-            className="panel-card"
-          >
-            <div className="flex flex-wrap items-start gap-3">
-              <div className="avatar avatar-md flex-shrink-0">
-                {lead.name?.charAt(0)?.toUpperCase()}
-              </div>
+      {/* Search */}
+      <div className="mb-4">
+        <SearchInput value={search} onChange={setSearch} placeholder="Ism yoki telefon bo'yicha qidirish..." />
+      </div>
 
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                    {lead.name}
-                  </span>
-                  <StatusBadge status={lead.status} />
-                </div>
+      {leadsQuery.isError && (
+        <ErrorState error={leadsQuery.error} onRetry={() => qc.invalidateQueries({ queryKey: ['leads'] })} />
+      )}
 
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  <a
-                    href={`tel:${lead.phone}`}
-                    className="inline-flex items-center gap-1 font-medium hover:underline"
-                    style={{ color: 'var(--primary)' }}
-                  >
-                    <Phone size={11} /> {lead.phone}
-                  </a>
-                  <span className="badge badge-gray text-[10px]">{sourceLabel(lead.source)}</span>
-                  {lead.interestedIn && <span>• {lead.interestedIn}</span>}
-                  <span style={{ color: 'var(--text-muted)' }}>• {new Date(lead.createdAt).toLocaleDateString('uz-UZ')}</span>
-                </div>
-
-                {lead.note && (
-                  <p className="mt-2 p-2 rounded-lg text-xs" style={{ backgroundColor: 'var(--secondary-background)', color: 'var(--text-secondary)' }}>
-                    {lead.note}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => deleteMutation.mutate(lead.id)}
-                disabled={deleteMutation.isPending}
-                className="btn-icon"
-                title="O'chirish"
-              >
-                <Trash2 size={14} style={{ color: 'var(--error)' }} />
-              </button>
+      {/* ═══════ KANBAN VIEW ═══════ */}
+      {viewMode === 'kanban' && (
+        <div className="overflow-x-auto pb-4">
+          {leadsQuery.isLoading ? (
+            <div className="flex gap-4">
+              {STATUSES.map(s => (
+                <div key={s.value} className="flex-shrink-0 w-64 h-64 rounded-2xl"
+                  style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)' }} />
+              ))}
             </div>
-
-            {/* Change Status Fast Buttons */}
-            <div className="mt-3 flex flex-wrap gap-1.5 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-              {STATUSES.filter(s => s.value !== lead.status).map(s => (
-                <button
+          ) : (
+            <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
+              {STATUSES.map(s => (
+                <KanbanColumn
                   key={s.value}
-                  type="button"
-                  onClick={() => statusMutation.mutate({ id: lead.id, status: s.value })}
-                  disabled={statusMutation.isPending}
-                  className="btn-ghost btn-sm text-xs py-1 px-2.5"
+                  status={s.value}
+                  leads={kanbanGroups[s.value] || []}
+                  count={stats?.counts?.[s.value] ?? (kanbanGroups[s.value]?.length || 0)}
+                  onCardClick={(lead) => setSelectedLeadId(lead.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════ LIST VIEW ═══════ */}
+      {viewMode === 'list' && (
+        <div>
+          {/* Status tabs */}
+          <div className="flex gap-1 flex-wrap mb-4">
+            {LIST_TABS.map(t => {
+              const count = t.key === 'all' ? leads.length : (stats?.counts?.[t.key] ?? 0);
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                  style={tab === t.key
+                    ? { background: 'var(--primary)', color: 'white' }
+                    : { background: 'var(--secondary-background)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
+                  }
                 >
-                  {s.label}
+                  {t.label}
+                  {count > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+                      style={tab === t.key
+                        ? { background: 'rgba(255,255,255,0.25)', color: 'white' }
+                        : { background: 'var(--border)', color: 'var(--text-muted)' }
+                      }>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {leadsQuery.isLoading ? (
+            <div className="space-y-2"><RowSkeleton count={6} /></div>
+          ) : filteredLeads.length === 0 ? (
+            <EmptyState icon={Users} title="Lid topilmadi" subtitle="Yangi lid qo'shing yoki filterlarni o'zgartiring" />
+          ) : (
+            <div className="space-y-2">
+              <AnimatePresence>
+                {filteredLeads.map(lead => {
+                  const sc = statusCfg(lead.status);
+                  return (
+                    <motion.div
+                      key={lead.id}
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="panel-card flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => setSelectedLeadId(lead.id)}
+                    >
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0"
+                        style={{ background: sc.color + '15', color: sc.color }}>
+                        {lead.name?.charAt(0)?.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{lead.name}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{lead.phone}</div>
+                      </div>
+                      {lead.interestedIn && (
+                        <div className="hidden sm:block text-xs truncate max-w-32" style={{ color: 'var(--text-muted)' }}>
+                          🎯 {lead.interestedIn}
+                        </div>
+                      )}
+                      <div className="hidden sm:block text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {sourceIcon(lead.source)} {sourceLabel(lead.source)}
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0"
+                        style={{ background: sc.color + '15', color: sc.color }}>
+                        {sc.label}
+                      </span>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Lead Detail Drawer ── */}
+      <LeadDetail
+        leadId={selectedLeadId}
+        open={!!selectedLeadId}
+        onClose={() => setSelectedLeadId(null)}
+        onConverted={() => {
+          setSelectedLeadId(null);
+          invalidate();
+        }}
+      />
+
+      {/* ── Create Lead Modal ── */}
+      <Modal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setForm(emptyForm()); }}
+        title="Yangi lid qo'shish"
+        subtitle="Potentsial o'quvchi ma'lumotlarini kiriting"
+        size="md"
+        footer={
+          <>
+            <button onClick={() => { setModalOpen(false); setForm(emptyForm()); }} className="btn-ghost">
+              Bekor qilish
+            </button>
+            <button
+              onClick={() => createMutation.mutate(form)}
+              disabled={createMutation.isPending || !form.name.trim() || !form.phone.trim()}
+              className="btn-primary"
+            >
+              {createMutation.isPending
+                ? <><RefreshCw size={14} className="animate-spin" />Qo'shilmoqda...</>
+                : <><Check size={14} />Qo'shish</>
+              }
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="form-label">Ism *</label>
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                className="input-field" placeholder="Abdulloh Karimov" />
+            </div>
+            <div>
+              <label className="form-label">Telefon *</label>
+              <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                className="input-field" placeholder="+998 90 123 45 67" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="form-label">Ota-ona ismi</label>
+              <input value={form.parentName} onChange={e => setForm(f => ({ ...f, parentName: e.target.value }))}
+                className="input-field" placeholder="Karim Karimov" />
+            </div>
+            <div>
+              <label className="form-label">Ota-ona telefoni</label>
+              <input value={form.parentPhone} onChange={e => setForm(f => ({ ...f, parentPhone: e.target.value }))}
+                className="input-field" placeholder="+998 90 000 00 00" />
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label">Manba</label>
+            <div className="grid grid-cols-3 gap-2">
+              {SOURCES.map(s => (
+                <button key={s.value} type="button"
+                  onClick={() => setForm(f => ({ ...f, source: s.value }))}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+                    form.source === s.value ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)]' : 'border-[var(--border)] text-[var(--text-secondary)]'
+                  }`}>
+                  {s.icon} {s.label}
                 </button>
               ))}
             </div>
-          </motion.div>
-        ))}
-      </div>
+          </div>
 
-      {/* Create Modal */}
-      <AnimatePresence>
-        {modalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="modal-backdrop"
-            onClick={e => e.target === e.currentTarget && setModalOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.96, y: 10, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.96, y: 8, opacity: 0 }}
-              className="modal-panel"
-            >
-              <div className="modal-header">
-                <div>
-                  <h2 className="modal-title">Yangi lid qo'shish</h2>
-                  <p className="modal-subtitle">Mijoz ma'lumotlarini to'ldiring</p>
-                </div>
-                <button type="button" onClick={() => setModalOpen(false)} className="btn-icon flex-shrink-0">
-                  <X size={18} />
-                </button>
-              </div>
+          <div>
+            <label className="form-label">Qiziqish yo'nalishi</label>
+            <input value={form.interestedIn} onChange={e => setForm(f => ({ ...f, interestedIn: e.target.value }))}
+              className="input-field" placeholder="Ingliz tili, Matematika..." />
+          </div>
 
-              <form onSubmit={handleSubmit} className="space-y-3.5">
-                <div>
-                  <label className="form-label">Ism *</label>
-                  <input
-                    autoFocus
-                    value={form.name}
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="Ali Valiyev"
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Telefon *</label>
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                    placeholder="+998 90 123 45 67"
-                    className="input-field font-mono"
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="form-label">Kelish manbai</label>
-                    <select
-                      value={form.source}
-                      onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
-                      className="input-field"
-                    >
-                      {SOURCES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="form-label">Qiziqqan yo'nalish</label>
-                    <input
-                      value={form.interestedIn}
-                      onChange={e => setForm(f => ({ ...f, interestedIn: e.target.value }))}
-                      placeholder="Masalan: IELTS, Matematika"
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label">Izoh / Eslatma</label>
-                  <textarea
-                    rows={2}
-                    value={form.note}
-                    onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
-                    placeholder="Kechki guruh qiziqtirmoqda..."
-                    className="input-field resize-none"
-                  />
-                </div>
-
-                <div className="modal-footer">
-                  <button type="button" onClick={() => setModalOpen(false)} className="btn-ghost">Bekor qilish</button>
-                  <button
-                    type="submit"
-                    disabled={createMutation.isPending}
-                    className="btn-primary"
-                  >
-                    {createMutation.isPending ? 'Saqlanmoqda...' : 'Qo\'shish'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <div>
+            <label className="form-label">Izoh</label>
+            <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+              className="input-field resize-none" rows={2}
+              placeholder="Qo'shimcha ma'lumot..." />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

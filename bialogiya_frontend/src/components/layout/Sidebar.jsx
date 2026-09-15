@@ -4,7 +4,7 @@ import {
   X, LayoutDashboard, BookOpen, ClipboardList, FileText, BarChart2,
   Users, FolderOpen, Calendar, Trophy, Star, Settings,
   GraduationCap, BookMarked, UserCheck, Upload, Mic, Wallet, UserCog, Inbox, Building2,
-  PieChart, Receipt, UserPlus, LogOut,
+  PieChart, Receipt, UserPlus, LogOut, Bot,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
@@ -22,9 +22,10 @@ const studentLinks = [
   { to: '/student/results', icon: BarChart2, key: 'results' },
   { to: '/student/resources', icon: FolderOpen, key: 'resources' },
   { to: '/student/attendance', icon: UserCheck, key: 'attendance' },
-  { to: '/student/achievements', icon: Trophy, key: 'achievements' },
-  { to: '/student/leaderboard', icon: Star, key: 'leaderboard' },
-  { to: '/student/analytics', icon: BarChart2, key: 'analytics' },
+  { to: '/student/progress', icon: BarChart2, key: 'progress', label: 'Progress' },
+  { to: '/student/certificates', icon: Trophy, key: 'certificates', label: 'Sertifikatlar' },
+  { to: '/student/achievements', icon: Star, key: 'achievements' },
+  { to: '/student/leaderboard', icon: Users, key: 'leaderboard' },
 ];
 
 const teacherLinks = [
@@ -35,42 +36,57 @@ const teacherLinks = [
   { to: '/teacher/homework', icon: ClipboardList, key: 'homework' },
   { to: '/teacher/tests', icon: FileText, key: 'tests' },
   { to: '/teacher/attendance', icon: Calendar, key: 'attendance' },
+  { to: '/teacher/gradebook', icon: FileText, key: 'gradebook', label: 'Jurnal' },
   { to: '/teacher/resources', icon: Upload, key: 'resources' },
   { to: '/teacher/voice', icon: Mic, key: 'voice' },
   { to: '/teacher/analytics', icon: BarChart2, key: 'analytics' },
 ];
 
 const adminLinks = [
-  { to: '/admin/dashboard', icon: LayoutDashboard, key: 'dashboard' },
-  { to: '/admin/applications', icon: Inbox, key: 'applications' },
-  { to: '/admin/branches', icon: Building2, key: 'branches' },
-  { to: '/admin/managers', icon: UserCheck, key: 'managers' },
-  { to: '/admin/settings', icon: Settings, key: 'settings' },
+  { to: '/admin/dashboard',   icon: LayoutDashboard, key: 'dashboard' },
+  { to: '/admin/applications', icon: Inbox,          key: 'applications' },
+  { to: '/admin/branches',    icon: Building2,        key: 'branches' },
+  { to: '/erp/rooms',         icon: BookOpen,         key: 'rooms',    label: 'Xonalar' },
+  { to: '/erp/timetable',     icon: Calendar,         key: 'timetable',label: 'Jadval' },
+  { to: '/admin/managers',    icon: UserCheck,        key: 'managers' },
+  { to: '/admin/teachers',    icon: BookMarked,       key: 'teachers', label: "O'qituvchilar" },
+  { to: '/admin/students',    icon: GraduationCap,    key: 'students', label: "O'quvchilar" },
+  { to: '/admin/groups',      icon: Users,            key: 'groups',  label: 'Guruhlar' },
+  { to: '/admin/ai-agents',   icon: Bot,              key: 'aiAgents', label: 'AI Agentlar' },
+  { to: '/admin/settings',    icon: Settings,         key: 'settings' },
 ];
 
 const managerLinks = [
-  { to: '/manager/dashboard', icon: LayoutDashboard, key: 'dashboard' },
-  { to: '/leads', icon: UserPlus, key: 'leads', label: 'Lidlar' },
-  { to: '/manager/branches', icon: Building2, key: 'branches', label: 'Filiallar' },
-  { to: '/manager/reception', icon: UserCog, key: 'reception' },
-  { to: '/manager/teachers', icon: BookMarked, key: 'teachers' },
-  { to: '/manager/groups', icon: Users, key: 'groups' },
-  { to: '/manager/students', icon: GraduationCap, key: 'students' },
-  { to: '/manager/payments', icon: Wallet, key: 'payments', label: "To'lovlar" },
-  { to: '/finance', icon: PieChart, key: 'finance', label: 'Moliya' },
-  { to: '/finance/payroll', icon: Receipt, key: 'payroll', label: 'Ish haqi' },
-  { to: '/manager/settings', icon: Settings, key: 'settings' },
+  { to: '/manager/dashboard',  icon: LayoutDashboard, key: 'dashboard' },
+  { to: '/crm/dashboard',      icon: Bot,             key: 'crmDashboard', label: 'CRM Dashboard' },
+  { to: '/leads',              icon: UserPlus,        key: 'leads',    label: 'Lidlar' },
+  { to: '/manager/branches',   icon: Building2,       key: 'branches', label: 'Filiallar' },
+  { to: '/erp/rooms',          icon: BookOpen,        key: 'rooms',    label: 'Xonalar' },
+  { to: '/erp/timetable',      icon: Calendar,        key: 'timetable',label: 'Jadval' },
+  { to: '/manager/reception',  icon: UserCog,         key: 'reception' },
+  { to: '/manager/teachers',   icon: BookMarked,      key: 'teachers' },
+  { to: '/manager/groups',     icon: Users,           key: 'groups' },
+  { to: '/manager/students',   icon: GraduationCap,   key: 'students' },
+  { to: '/manager/payments',   icon: Wallet,          key: 'payments', label: "To'lovlar" },
+  { to: '/finance',            icon: PieChart,        key: 'finance',  label: 'Moliya' },
+  { to: '/erp/cashbox',        icon: Wallet,          key: 'cashbox',  label: 'Kassa' },
+  { to: '/finance/payroll',    icon: Receipt,         key: 'payroll',  label: 'Ish haqi' },
+  { to: '/manager/settings',   icon: Settings,        key: 'settings' },
 ];
 
 const receptionLinks = [
   { to: '/reception/dashboard', icon: LayoutDashboard, key: 'dashboard' },
-  { to: '/reception/teachers', icon: BookMarked, key: 'teachers' },
-  { to: '/reception/groups', icon: Users, key: 'groups' },
-  { to: '/reception/students', icon: GraduationCap, key: 'students' },
-  { to: '/reception/payments', icon: Wallet, key: 'payments' },
-  { to: '/finance', icon: PieChart, key: 'finance', label: 'Moliya' },
-  { to: '/leads', icon: UserPlus, key: 'leads', label: 'Lidlar' },
-  { to: '/reception/settings', icon: Settings, key: 'settings' },
+  { to: '/crm/dashboard',       icon: Bot,             key: 'crmDashboard', label: 'CRM Dashboard' },
+  { to: '/leads',               icon: UserPlus,        key: 'leads',    label: 'Lidlar' },
+  { to: '/erp/rooms',           icon: BookOpen,        key: 'rooms',    label: 'Xonalar' },
+  { to: '/erp/timetable',       icon: Calendar,        key: 'timetable',label: 'Jadval' },
+  { to: '/reception/teachers',  icon: BookMarked,      key: 'teachers' },
+  { to: '/reception/groups',    icon: Users,           key: 'groups' },
+  { to: '/reception/students',  icon: GraduationCap,   key: 'students' },
+  { to: '/reception/payments',  icon: Wallet,          key: 'payments' },
+  { to: '/finance',             icon: PieChart,        key: 'finance',  label: 'Moliya' },
+  { to: '/erp/cashbox',         icon: Wallet,          key: 'cashbox',  label: 'Kassa' },
+  { to: '/reception/settings',  icon: Settings,        key: 'settings' },
 ];
 
 const ROLE_LABELS = {
@@ -126,8 +142,8 @@ export default function Sidebar({ isOpen, onClose }) {
         <div style={{ borderColor: 'var(--border)' }} className="px-5 py-4 border-b flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             {/* Logo mark */}
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
-              <img src="/brand/logo-icon.png" alt="Abdora AI" className="w-full h-full object-contain" />
+            <div className="w-8 h-8 gradient-bg rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+              <span className="text-white font-bold text-sm font-['Space_Grotesk']">A</span>
             </div>
             <div className="min-w-0">
               <div
@@ -136,6 +152,11 @@ export default function Sidebar({ isOpen, onClose }) {
               >
                 Abdora AI
               </div>
+              <span
+                className={cn('badge badge-dot text-[10px] mt-0.5', ROLE_COLORS[user?.role] || 'badge-gray')}
+              >
+                {ROLE_LABELS[user?.role] || user?.role}
+              </span>
             </div>
           </div>
           {/* Mobile close */}
@@ -220,8 +241,8 @@ export default function Sidebar({ isOpen, onClose }) {
 
           {/* User info row */}
           <div className="flex items-center gap-2.5 p-2 rounded-xl group">
-            <div className="avatar avatar-sm flex-shrink-0 overflow-hidden" style={{ width: '2.1rem', height: '2.1rem', fontSize: '0.78rem' }}>
-              {user?.avatar ? <img src={user.avatar} alt={user?.name} className="w-full h-full object-cover rounded-full" /> : initials}
+            <div className="avatar avatar-sm flex-shrink-0" style={{ width: '2.1rem', height: '2.1rem', fontSize: '0.78rem' }}>
+              {initials}
             </div>
             <div className="flex-1 min-w-0">
               <div

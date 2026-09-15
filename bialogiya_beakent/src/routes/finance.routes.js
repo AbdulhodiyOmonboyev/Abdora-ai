@@ -5,6 +5,7 @@ const {
   createExpense, getExpenses, updateExpense, deleteExpense,
   getPayroll, setTeacherSalary,
   getSummary, getGroupRevenue, getCashReport, getFinancialAdvice,
+  getCashbox, createCashboxTransaction,
 } = require('../controllers/finance.controller');
 
 // Finance is management-only: teachers and students never see it.
@@ -16,6 +17,9 @@ router.get('/summary', verifyToken, requireRole(...FINANCE_ROLES), getSummary);
 router.get('/by-group', verifyToken, requireRole(...FINANCE_ROLES), getGroupRevenue);
 router.get('/cash', verifyToken, requireRole(...FINANCE_ROLES), getCashReport);
 router.get('/advice', verifyToken, requireRole(...FINANCE_ROLES), getFinancialAdvice);
+
+router.get('/cashbox', verifyToken, requireRole(...FINANCE_ROLES), getCashbox);
+router.post('/cashbox/transaction', verifyToken, requireRole(...FINANCE_ROLES), createCashboxTransaction);
 
 router.get('/expenses', verifyToken, requireRole(...FINANCE_ROLES), getExpenses);
 router.post('/expenses', verifyToken, requireRole(...FINANCE_ROLES), createExpense);

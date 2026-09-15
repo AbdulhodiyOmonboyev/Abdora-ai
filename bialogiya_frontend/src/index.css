@@ -861,7 +861,6 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    width: 100%;
     max-width: 1400px;
     margin: 0 auto;
   }
@@ -1359,6 +1358,14 @@
     color: var(--success);
     font-size: 0.7rem;
     font-weight: 700;
+  }
+  .header-status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    animation: pulseSoft 2s infinite;
   }
 
   /* ── Settings layout ── */

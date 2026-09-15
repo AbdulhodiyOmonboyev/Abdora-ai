@@ -549,9 +549,159 @@ const getFinancialAdvice = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+/* ------------------------------------------------------------- Cashbox & Accounts */
+
+// GET /finance/cashbox?month=YYYY-MM&method=...&type=...
+const getCashbox = async (req, res, next) => {
+  try {
+    const month = req.query.month || monthKey(new Date());
+    const { method: filterMethod, type: filterType, branchId } = req.query;
+    const { start, end } = monthRange(month);
+
+    const centerScope = req.user.role !== 'admin' && req.user.centerId ? { centerId: req.user.centerId } : {};
+    const bId = branchId || (req.user.branchId || null);
+
+    // 1. Get all payments in this month (all payments are income)
+    const paymentWhere = {
+      ...centerScope,
+      paidAt: { gte: start, lt: end },
+      isPaid: true,
+    };
+    if (filterMethod) paymentWhere.method = filterMethod;
+    if (bId) paymentWhere.branchId = bId;
+
+    const payments = await prisma.payment.findMany({
+      where: paymentWhere,
+      include: {
+        student: { select: { id: true, name: true } },
+      },
+      orderBy: { paidAt: 'desc' },
+    });
+
+    // 2. Get all expenses/transactions in this month
+    const expenseWhere = {
+      ...centerScope,
+      date: { gte: start, lt: end },
+    };
+    if (filterMethod) expenseWhere.method = filterMethod;
+    if (filterType) expenseWhere.type = filterType;
+    if (bId) expenseWhere.branchId = bId;
+
+    const expenses = await prisma.expense.findMany({
+      where: expenseWhere,
+      include: {
+        createdBy: { select: { id: true, name: true } },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    // 3. Compute balances per payment method
+    const methods = ['cash', 'click', 'payme', 'bank', 'other'];
+    const balances = {};
+    methods.forEach(m => {
+      balances[m] = { balance: 0, income: 0, expense: 0 };
+    });
+
+    // Add payments to income & balance
+    payments.forEach(p => {
+      const m = methods.includes(p.method) ? p.method : 'other';
+      const amt = Number(p.amount) || 0;
+      balances[m].income += amt;
+      balances[m].balance += amt;
+    });
+
+    // Add expenses to income or expense depending on type
+    expenses.forEach(e => {
+      const m = methods.includes(e.method) ? e.method : 'other';
+      const amt = Number(e.amount) || 0;
+      if (e.type === 'income') {
+        balances[m].income += amt;
+        balances[m].balance += amt;
+      } else {
+        balances[m].expense += amt;
+        balances[m].balance -= amt;
+      }
+    });
+
+    // 4. Combine into a unified transaction list
+    const transactions = [];
+
+    if (!filterType || filterType === 'income') {
+      payments.forEach(p => {
+        transactions.push({
+          id: `pay-${p.id}`,
+          type: 'income',
+          method: p.method || 'cash',
+          amount: p.amount,
+          description: p.note || `To'lov: ${p.student?.name || 'Talaba'} (${p.month})`,
+          category: 'payment',
+          date: p.paidAt,
+          studentName: p.student?.name,
+        });
+      });
+    }
+
+    expenses.forEach(e => {
+      transactions.push({
+        id: `exp-${e.id}`,
+        type: e.type || 'expense',
+        method: e.method || 'cash',
+        amount: e.amount,
+        description: e.note || e.title || (e.type === 'income' ? 'Kassa kirimi' : 'Kassa chiqimi'),
+        category: e.category || 'other',
+        date: e.date,
+        createdByName: e.createdBy?.name,
+      });
+    });
+
+    // Sort by date desc
+    transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    return success(res, {
+      balances,
+      transactions,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /finance/cashbox/transaction
+const createCashboxTransaction = async (req, res, next) => {
+  try {
+    const { type, method, amount, description, date, branchId } = req.body;
+    const parsedAmount = parseInt(amount, 10);
+    if (!parsedAmount || parsedAmount <= 0) return error(res, 'Summa 0 dan katta bo\'lishi kerak', 400);
+
+    const transaction = await prisma.expense.create({
+      data: {
+        type: type === 'income' ? 'income' : 'expense',
+        method: method || 'cash',
+        amount: parsedAmount,
+        title: description || (type === 'income' ? 'Kassa kirimi' : 'Kassa chiqimi'),
+        note: description || null,
+        category: type === 'income' ? 'income' : 'other',
+        date: date ? new Date(date) : new Date(),
+        branchId: branchId || req.user.branchId || null,
+        createdById: req.user.userId,
+        centerId: req.user.centerId || null,
+      },
+      include: {
+        createdBy: { select: { id: true, name: true } },
+      },
+    });
+
+    return success(res, transaction, 'Tranzaksiya muvaffaqiyatli saqlandi', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createExpense, getExpenses, updateExpense, deleteExpense,
   getPayroll, setTeacherSalary,
   getSummary, getGroupRevenue, getCashReport, getFinancialAdvice,
+  getCashbox, createCashboxTransaction,
   EXPENSE_CATEGORIES,
 };
+

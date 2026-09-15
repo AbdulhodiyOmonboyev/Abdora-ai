@@ -139,6 +139,110 @@ const updateLead = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const getLeadById = async (req, res, next) => {
+  try {
+    const lead = await prisma.lead.findFirst({
+      where: { id: req.params.id, ...scopeFor(req.user) },
+      include: {
+        branch: { select: { id: true, name: true } },
+        manager: { select: { id: true, name: true } },
+      },
+    });
+    if (!lead) return error(res, 'Lid topilmadi', 404);
+    return success(res, lead);
+  } catch (err) { next(err); }
+};
+
+const getLeadActivities = async (req, res, next) => {
+  try {
+    const activities = await prisma.leadActivity.findMany({
+      where: { leadId: req.params.id },
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return success(res, activities);
+  } catch (err) { next(err); }
+};
+
+const createLeadActivity = async (req, res, next) => {
+  try {
+    const { type, content, scheduledAt } = req.body;
+    if (!content?.trim()) return error(res, 'Izoh matni kiritilmagan', 400);
+
+    const activity = await prisma.leadActivity.create({
+      data: {
+        leadId: req.params.id,
+        userId: req.user.userId,
+        type: type || 'call',
+        content: content.trim(),
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+      },
+      include: {
+        user: { select: { id: true, name: true, role: true } },
+      },
+    });
+    return success(res, activity, 'Faoliyat qo\'shildi', 201);
+  } catch (err) { next(err); }
+};
+
+const bcrypt = require('bcryptjs');
+const { generateUsername, generatePassword } = require('../utils/generateCredentials');
+
+const convertLead = async (req, res, next) => {
+  try {
+    const { groupId, startDate } = req.body;
+    const lead = await prisma.lead.findUnique({ where: { id: req.params.id } });
+    if (!lead) return error(res, 'Lid topilmadi', 404);
+
+    let group = null;
+    if (groupId) {
+      group = await prisma.group.findUnique({ where: { id: groupId } });
+      if (!group) return error(res, 'Tanlangan guruh topilmadi', 404);
+    }
+
+    // Generate credentials
+    const username = generateUsername(lead.name, lead.phone);
+    const rawPass = generatePassword(lead.phone);
+    const passwordHash = await bcrypt.hash(rawPass, 10);
+
+    // Create student user
+    const student = await prisma.user.create({
+      data: {
+        name: lead.name,
+        username,
+        passwordHash,
+        phone: lead.phone,
+        role: 'student',
+        groupId: groupId || null,
+        branchId: lead.branchId || group?.branchId || null,
+        centerId: lead.centerId || null,
+        studyLocation: lead.interestedIn || null,
+        createdAt: startDate ? new Date(startDate) : new Date(),
+      },
+    });
+
+    // Mark lead as enrolled
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: {
+        status: 'enrolled',
+        studentId: student.id,
+        closedAt: new Date(),
+      },
+    });
+
+    return success(res, {
+      student,
+      credentials: {
+        username,
+        password: rawPass,
+      },
+    }, 'Talaba muvaffaqiyatli ro\'yxatdan o\'tkazildi');
+  } catch (err) { next(err); }
+};
+
 const deleteLead = async (req, res, next) => {
   try {
     const existing = await prisma.lead.findFirst({ where: { id: req.params.id, ...scopeFor(req.user) } });
@@ -151,4 +255,9 @@ const deleteLead = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createLead, getLeads, getLeadStats, updateLead, deleteLead, STATUSES, SOURCES };
+module.exports = {
+  createLead, getLeads, getLeadStats, getLeadById, updateLead, deleteLead,
+  getLeadActivities, createLeadActivity, convertLead,
+  STATUSES, SOURCES,
+};
+

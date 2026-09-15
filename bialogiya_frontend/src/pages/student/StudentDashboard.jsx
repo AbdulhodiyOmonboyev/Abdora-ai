@@ -77,6 +77,7 @@ export default function StudentDashboard() {
           <p>{motivation}</p>
         </div>
         <div className="dashboard-header-actions">
+          <span className="header-status">Live</span>
           <Link to="/student/results" className="header-button">Natijalar</Link>
         </div>
       </header>
