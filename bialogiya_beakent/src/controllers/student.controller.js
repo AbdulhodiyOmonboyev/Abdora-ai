@@ -93,6 +93,8 @@ const getStudentCertificates = async (req, res, next) => {
       include: { group: true },
     });
 
+    if (!student) return error(res, 'Talaba topilmadi', 404);
+
     const cert = {
       id: `CERT-2026-${student.id.slice(-4).toUpperCase()}`,
       courseName: student.group?.name || 'Full-Stack Kursi',

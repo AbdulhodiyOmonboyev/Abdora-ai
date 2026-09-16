@@ -17,7 +17,7 @@ const verifyToken = async (req, res, next) => {
     });
     if (!user || !user.isActive) return error(res, 'Account is inactive', 403);
     if (user.isFrozen && user.role === 'student') return error(res, 'Hisobingiz muzlatilgan', 403);
-    req.user = { ...decoded, role: user.role, centerId: user.centerId, branchId: user.branchId };
+    req.user = { ...decoded, id: user.id, userId: user.id, role: user.role, centerId: user.centerId, branchId: user.branchId };
     next();
   } catch (err) {
     return error(res, 'Invalid or expired token', 401);

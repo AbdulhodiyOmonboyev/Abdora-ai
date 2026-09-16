@@ -4,323 +4,315 @@ const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
 });
 
-const runMigrations = async () => {
+const safeRun = async (sql) => {
   try {
-    // Tenant foundation. Columns stay nullable during rollout so this remains
-    // safe against databases containing legacy rows; all new API writes set the
-    // authenticated user's center explicitly.
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "Center" (
-        "id" TEXT NOT NULL,
-        "name" TEXT NOT NULL,
-        "address" TEXT,
-        "phone" TEXT,
-        "isActive" BOOLEAN NOT NULL DEFAULT true,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "Center_pkey" PRIMARY KEY ("id")
-      )
-    `);
-    const tenantTables = ['User', 'Branch', 'Group', 'Lesson', 'Homework', 'Submission', 'Test', 'Result', 'Attendance', 'Notification', 'AIChat', 'UploadedFile', 'Resource', 'Payment', 'Lead', 'Expense'];
-    for (const table of tenantTables) {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
-      await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "${table}_centerId_idx" ON "${table}" ("centerId")`);
-    }
-    await prisma.$executeRawUnsafe(`
-      INSERT INTO "Center" ("id", "name")
-      SELECT 'legacy-center', 'Legacy Center'
-      WHERE NOT EXISTS (SELECT 1 FROM "Center")
-    `);
-    await prisma.$executeRawUnsafe(`UPDATE "User" SET "centerId" = 'legacy-center' WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Branch" SET "centerId" = COALESCE((SELECT "centerId" FROM "User" WHERE "User"."id" = "Branch"."receptionId" OR "User"."id" = "Branch"."managerId" LIMIT 1), 'legacy-center') WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Group" SET "centerId" = COALESCE((SELECT "centerId" FROM "User" WHERE "User"."id" = "Group"."teacherId"), (SELECT "centerId" FROM "Branch" WHERE "Branch"."id" = "Group"."branchId"), 'legacy-center') WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Lesson" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Lesson"."groupId") WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Homework" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Homework"."groupId") WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Test" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Test"."groupId") WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Attendance" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Attendance"."groupId") WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Resource" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Resource"."teacherId") WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Payment" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Payment"."studentId") WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Lead" SET "centerId" = COALESCE((SELECT "centerId" FROM "Branch" WHERE "Branch"."id" = "Lead"."branchId"), (SELECT "centerId" FROM "User" WHERE "User"."id" = "Lead"."managerId"), 'legacy-center') WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Expense" SET "centerId" = COALESCE((SELECT "centerId" FROM "Branch" WHERE "Branch"."id" = "Expense"."branchId"), (SELECT "centerId" FROM "User" WHERE "User"."id" = "Expense"."createdById"), 'legacy-center') WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Submission" SET "centerId" = (SELECT "centerId" FROM "Homework" WHERE "Homework"."id" = "Submission"."homeworkId") WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Result" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Result"."studentId") WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "Notification" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Notification"."userId") WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "AIChat" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "AIChat"."studentId") WHERE "centerId" IS NULL`);
-    await prisma.$executeRawUnsafe(`UPDATE "UploadedFile" SET "centerId" = 'legacy-center' WHERE "centerId" IS NULL`);
-
-    // Add isFrozen to User if missing
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isFrozen" BOOLEAN NOT NULL DEFAULT false
-    `);
-
-    // Add fileUrl to Resource if missing
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Resource" ADD COLUMN IF NOT EXISTS "fileUrl" TEXT
-    `);
-
-    // Add fileData/mimeType to Resource if missing (store file bytes in DB —
-    // Render's free web service disk is ephemeral and wipes uploads on restart)
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Resource" ADD COLUMN IF NOT EXISTS "fileData" BYTEA
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Resource" ADD COLUMN IF NOT EXISTS "mimeType" TEXT
-    `);
-
-    // Add phone, gender, age, and address to User if missing
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "phone" TEXT
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "gender" TEXT
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "age" INTEGER
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "address" TEXT
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User"
-        ADD COLUMN IF NOT EXISTS "studyLocation" TEXT,
-        ADD COLUMN IF NOT EXISTS "residence" TEXT,
-        ADD COLUMN IF NOT EXISTS "alternativeWorkplace" TEXT,
-        ADD COLUMN IF NOT EXISTS "birthDate" TIMESTAMP(3)
-    `);
-
-    // Create Payment table if missing
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "Payment" (
-        "id"        TEXT NOT NULL,
-        "month"     TEXT NOT NULL,
-        "isPaid"    BOOLEAN NOT NULL DEFAULT true,
-        "note"      TEXT,
-        "paidAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "studentId" TEXT NOT NULL,
-        "teacherId" TEXT NOT NULL,
-        CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
-      )
-    `);
-
-    // Add unique constraint on Payment (studentId, month) if missing
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'Payment_studentId_month_key'
-        ) THEN
-          ALTER TABLE "Payment" ADD CONSTRAINT "Payment_studentId_month_key" UNIQUE ("studentId", "month");
-        END IF;
-      END $$
-    `);
-
-    // Add FK on Payment.studentId if missing
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'Payment_studentId_fkey'
-        ) THEN
-          ALTER TABLE "Payment" ADD CONSTRAINT "Payment_studentId_fkey"
-            FOREIGN KEY ("studentId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-        END IF;
-      END $$
-    `);
-
-    // Create LessonMedia table if missing (cached TTS audio for story narration
-    // and explainer-video slides)
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "LessonMedia" (
-        "id"         TEXT NOT NULL,
-        "lessonId"   TEXT NOT NULL,
-        "kind"       TEXT NOT NULL,
-        "slideIndex" INTEGER NOT NULL DEFAULT -1,
-        "data"       BYTEA NOT NULL,
-        "mimeType"   TEXT NOT NULL DEFAULT 'audio/mpeg',
-        "voice"      TEXT,
-        "createdAt"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "LessonMedia_pkey" PRIMARY KEY ("id")
-      )
-    `);
-    // Fix up tables created before slideIndex became non-nullable: Prisma
-    // can't filter a composite @@unique key by null (Postgres NULL != NULL),
-    // so 'story'/'voice' rows use -1 as a sentinel instead of null.
-    await prisma.$executeRawUnsafe(`
-      UPDATE "LessonMedia" SET "slideIndex" = -1 WHERE "slideIndex" IS NULL
-    `).catch(() => {});
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "LessonMedia" ALTER COLUMN "slideIndex" SET DEFAULT -1
-    `).catch(() => {});
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "LessonMedia" ALTER COLUMN "slideIndex" SET NOT NULL
-    `).catch(() => {});
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'LessonMedia_lessonId_fkey'
-        ) THEN
-          ALTER TABLE "LessonMedia" ADD CONSTRAINT "LessonMedia_lessonId_fkey"
-            FOREIGN KEY ("lessonId") REFERENCES "Lesson"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-        END IF;
-      END $$
-    `);
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'LessonMedia_lessonId_kind_slideIndex_key'
-        ) THEN
-          ALTER TABLE "LessonMedia" ADD CONSTRAINT "LessonMedia_lessonId_kind_slideIndex_key"
-            UNIQUE ("lessonId", "kind", "slideIndex");
-        END IF;
-      END $$
-    `);
-
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "clonedVoiceId" TEXT,
-      ADD COLUMN IF NOT EXISTS "clonedVoiceName" TEXT
-    `);
-
-    // Add 'reception' to the Role enum (admin-only role: can create teacher
-    // accounts and manage student payments, nothing else).
-    await prisma.$executeRawUnsafe(`
-      ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'reception'
-    `).catch(() => {});
-
-    // Branch (filial) table - other accounts can create these too, and a
-    // branch may be unassigned to a reception while it is managed by a
-    // manager or later linked to a reception.
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "Branch" (
-        "id"              TEXT NOT NULL,
-        "name"            TEXT NOT NULL,
-        "address"         TEXT,
-        "studentCapacity" INTEGER,
-        "isActive"        BOOLEAN NOT NULL DEFAULT true,
-        "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "receptionId"     TEXT,
-        "managerId"       TEXT,
-        CONSTRAINT "Branch_pkey" PRIMARY KEY ("id")
-      )
-    `);
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'Branch_receptionId_fkey'
-        ) THEN
-          ALTER TABLE "Branch" ADD CONSTRAINT "Branch_receptionId_fkey"
-            FOREIGN KEY ("receptionId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-        END IF;
-      END $$
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Branch" ADD COLUMN IF NOT EXISTS "managerId" TEXT
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Branch" ALTER COLUMN "receptionId" DROP NOT NULL
-    `).catch(() => {});
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'Branch_managerId_fkey'
-        ) THEN
-          ALTER TABLE "Branch" ADD CONSTRAINT "Branch_managerId_fkey"
-            FOREIGN KEY ("managerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-        END IF;
-      END $$
-    `);
-
-    // Group gets a branch link + a monthly fee amount (for payment accounting)
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "branchId" TEXT,
-      ADD COLUMN IF NOT EXISTS "monthlyFee" INTEGER
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Branch" ADD COLUMN IF NOT EXISTS "studentCapacity" INTEGER
-    `);
-
-    // Branch's map location (used by the branch-creation location picker)
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Branch"
-        ADD COLUMN IF NOT EXISTS "latitude"  DOUBLE PRECISION,
-        ADD COLUMN IF NOT EXISTS "longitude" DOUBLE PRECISION
-    `);
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'Group_branchId_fkey'
-        ) THEN
-          ALTER TABLE "Group" ADD CONSTRAINT "Group_branchId_fkey"
-            FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-        END IF;
-      END $$
-    `);
-
-    // Teacher's assigned branch (so reception can filter teachers/students
-    // by branch, and pick a branch when creating a teacher).
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "branchId" TEXT
-    `);
-    await prisma.$executeRawUnsafe(`
-      DO $$ BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'User_branchId_fkey'
-        ) THEN
-          ALTER TABLE "User" ADD CONSTRAINT "User_branchId_fkey"
-            FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-        END IF;
-      END $$
-    `);
-
-    // Schedule info on Group: which days, what time, which room
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Group"
-        ADD COLUMN IF NOT EXISTS "weekDays"  TEXT,
-        ADD COLUMN IF NOT EXISTS "startTime" TEXT,
-        ADD COLUMN IF NOT EXISTS "endTime"   TEXT,
-        ADD COLUMN IF NOT EXISTS "room"      TEXT
-    `);
-
-    // Public lead-form submissions from the landing page
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "Application" (
-        "id"        TEXT NOT NULL,
-        "name"      TEXT NOT NULL,
-        "phone"     TEXT NOT NULL,
-        "message"   TEXT,
-        "status"    TEXT NOT NULL DEFAULT 'new',
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "Application_pkey" PRIMARY KEY ("id")
-      )
-    `);
-
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "UploadedFile" (
-        "id"        TEXT NOT NULL,
-        "name"      TEXT NOT NULL,
-        "mimeType"  TEXT NOT NULL,
-        "data"      BYTEA NOT NULL,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "UploadedFile_pkey" PRIMARY KEY ("id")
-      )
-    `);
-
-    // Platform is no longer subject-specific - new groups/lessons default to
-    // 'other' instead of 'biology'. Only touches the column default for
-    // future rows; existing 'biology' rows are untouched (still valid data).
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Group" ALTER COLUMN "subject" SET DEFAULT 'other'
-    `).catch(() => {});
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "Lesson" ALTER COLUMN "subject" SET DEFAULT 'other'
-    `).catch(() => {});
-
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "maxBranches" INTEGER NOT NULL DEFAULT 3
-    `);
-
-    console.log('✅ Schema migrations applied');
+    await prisma.$executeRawUnsafe(sql);
   } catch (err) {
-    console.warn('⚠️  Migration warning (non-fatal):', err.message);
+    // Non-fatal, e.g. already exists or harmless warning
   }
+};
+
+const runMigrations = async () => {
+  console.log('🔄 Checking and applying schema migrations...');
+
+  // 1. Center table & columns
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "Center" (
+      "id" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "address" TEXT,
+      "phone" TEXT,
+      "email" TEXT,
+      "website" TEXT,
+      "isActive" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "settings" JSONB NOT NULL DEFAULT '{}',
+      CONSTRAINT "Center_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`ALTER TABLE "Center" ADD COLUMN IF NOT EXISTS "address" TEXT`);
+  await safeRun(`ALTER TABLE "Center" ADD COLUMN IF NOT EXISTS "phone" TEXT`);
+  await safeRun(`ALTER TABLE "Center" ADD COLUMN IF NOT EXISTS "email" TEXT`);
+  await safeRun(`ALTER TABLE "Center" ADD COLUMN IF NOT EXISTS "website" TEXT`);
+  await safeRun(`ALTER TABLE "Center" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`);
+  await safeRun(`ALTER TABLE "Center" ADD COLUMN IF NOT EXISTS "settings" JSONB NOT NULL DEFAULT '{}'`);
+  await safeRun(`ALTER TABLE "Center" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Center_name_idx" ON "Center"("name")`);
+
+  // 2. AIAgent table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "AIAgent" (
+      "id" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "provider" TEXT NOT NULL,
+      "model" TEXT NOT NULL,
+      "apiKey" TEXT NOT NULL,
+      "useCases" JSONB NOT NULL DEFAULT '[]',
+      "isActive" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "centerId" TEXT,
+      CONSTRAINT "AIAgent_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`ALTER TABLE "AIAgent" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+
+  // 3. Room table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "Room" (
+      "id" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "capacity" INTEGER,
+      "color" TEXT,
+      "amenities" JSONB NOT NULL DEFAULT '[]',
+      "isActive" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "branchId" TEXT,
+      "centerId" TEXT,
+      CONSTRAINT "Room_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`ALTER TABLE "Room" ADD COLUMN IF NOT EXISTS "branchId" TEXT`);
+  await safeRun(`ALTER TABLE "Room" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+
+  // 4. Lead table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "Lead" (
+      "id" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "phone" TEXT NOT NULL,
+      "source" TEXT NOT NULL DEFAULT 'other',
+      "status" TEXT NOT NULL DEFAULT 'new',
+      "interestedIn" TEXT,
+      "note" TEXT,
+      "frozenUntil" TIMESTAMP(3),
+      "closedAt" TIMESTAMP(3),
+      "closeReason" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "branchId" TEXT,
+      "managerId" TEXT,
+      "studentId" TEXT,
+      "centerId" TEXT,
+      CONSTRAINT "Lead_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "branchId" TEXT`);
+  await safeRun(`ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "managerId" TEXT`);
+  await safeRun(`ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "studentId" TEXT`);
+  await safeRun(`ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Lead_status_idx" ON "Lead"("status")`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Lead_createdAt_idx" ON "Lead"("createdAt")`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Lead_centerId_idx" ON "Lead"("centerId")`);
+
+  // 5. LeadActivity table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "LeadActivity" (
+      "id" TEXT NOT NULL,
+      "type" TEXT NOT NULL,
+      "content" TEXT NOT NULL,
+      "scheduledAt" TIMESTAMP(3),
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "leadId" TEXT NOT NULL,
+      "userId" TEXT NOT NULL,
+      CONSTRAINT "LeadActivity_pkey" PRIMARY KEY ("id")
+    )
+  `);
+
+  // 6. Expense table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "Expense" (
+      "id" TEXT NOT NULL,
+      "type" TEXT NOT NULL DEFAULT 'expense',
+      "category" TEXT NOT NULL DEFAULT 'other',
+      "title" TEXT,
+      "amount" INTEGER NOT NULL,
+      "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "note" TEXT,
+      "method" TEXT NOT NULL DEFAULT 'cash',
+      "branchId" TEXT,
+      "createdById" TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "centerId" TEXT,
+      CONSTRAINT "Expense_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`ALTER TABLE "Expense" ADD COLUMN IF NOT EXISTS "branchId" TEXT`);
+  await safeRun(`ALTER TABLE "Expense" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Expense_date_idx" ON "Expense"("date")`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Expense_category_idx" ON "Expense"("category")`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Expense_centerId_idx" ON "Expense"("centerId")`);
+
+  // 7. Tenant centerId columns across all tables
+  const tenantTables = ['User', 'Branch', 'Group', 'Lesson', 'Homework', 'Submission', 'Test', 'Result', 'Attendance', 'Notification', 'AIChat', 'UploadedFile', 'Resource', 'Payment', 'Lead', 'Expense', 'Room', 'AIAgent'];
+  for (const table of tenantTables) {
+    await safeRun(`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+    await safeRun(`CREATE INDEX IF NOT EXISTS "${table}_centerId_idx" ON "${table}" ("centerId")`);
+  }
+
+  // 8. Legacy center seeding and mapping
+  await safeRun(`
+    INSERT INTO "Center" ("id", "name", "settings")
+    SELECT 'legacy-center', 'Legacy Center', '{}'::jsonb
+    WHERE NOT EXISTS (SELECT 1 FROM "Center")
+  `);
+  await safeRun(`UPDATE "User" SET "centerId" = 'legacy-center' WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Branch" SET "centerId" = COALESCE((SELECT "centerId" FROM "User" WHERE "User"."id" = "Branch"."receptionId" OR "User"."id" = "Branch"."managerId" LIMIT 1), 'legacy-center') WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Group" SET "centerId" = COALESCE((SELECT "centerId" FROM "User" WHERE "User"."id" = "Group"."teacherId"), (SELECT "centerId" FROM "Branch" WHERE "Branch"."id" = "Group"."branchId"), 'legacy-center') WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Lesson" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Lesson"."groupId") WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Homework" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Homework"."groupId") WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Test" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Test"."groupId") WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Attendance" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Attendance"."groupId") WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Resource" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Resource"."teacherId") WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Payment" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Payment"."studentId") WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Lead" SET "centerId" = COALESCE((SELECT "centerId" FROM "Branch" WHERE "Branch"."id" = "Lead"."branchId"), (SELECT "centerId" FROM "User" WHERE "User"."id" = "Lead"."managerId"), 'legacy-center') WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Expense" SET "centerId" = COALESCE((SELECT "centerId" FROM "Branch" WHERE "Branch"."id" = "Expense"."branchId"), (SELECT "centerId" FROM "User" WHERE "User"."id" = "Expense"."createdById"), 'legacy-center') WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Submission" SET "centerId" = (SELECT "centerId" FROM "Homework" WHERE "Homework"."id" = "Submission"."homeworkId") WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Result" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Result"."studentId") WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "Notification" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "Notification"."userId") WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "AIChat" SET "centerId" = (SELECT "centerId" FROM "User" WHERE "User"."id" = "AIChat"."studentId") WHERE "centerId" IS NULL`);
+  await safeRun(`UPDATE "UploadedFile" SET "centerId" = 'legacy-center' WHERE "centerId" IS NULL`);
+
+  // 9. User columns
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isFrozen" BOOLEAN NOT NULL DEFAULT false`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "phone" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "gender" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "age" INTEGER`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "address" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "studyLocation" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "residence" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "alternativeWorkplace" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "birthDate" TIMESTAMP(3)`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "clonedVoiceId" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "clonedVoiceName" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "maxBranches" INTEGER NOT NULL DEFAULT 3`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "salaryType" TEXT NOT NULL DEFAULT 'percent'`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "salaryShare" INTEGER NOT NULL DEFAULT 50`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "hourlyRate" INTEGER`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "fixedSalary" INTEGER`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "branchId" TEXT`);
+
+  // 10. Resource columns
+  await safeRun(`ALTER TABLE "Resource" ADD COLUMN IF NOT EXISTS "fileUrl" TEXT`);
+  await safeRun(`ALTER TABLE "Resource" ADD COLUMN IF NOT EXISTS "fileData" BYTEA`);
+  await safeRun(`ALTER TABLE "Resource" ADD COLUMN IF NOT EXISTS "mimeType" TEXT`);
+
+  // 11. Payment table & columns
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "Payment" (
+      "id"        TEXT NOT NULL,
+      "month"     TEXT NOT NULL,
+      "isPaid"    BOOLEAN NOT NULL DEFAULT true,
+      "status"    TEXT NOT NULL DEFAULT 'paid',
+      "expectedAmount" INTEGER NOT NULL DEFAULT 0,
+      "amount"    INTEGER NOT NULL DEFAULT 0,
+      "method"    TEXT NOT NULL DEFAULT 'cash',
+      "note"      TEXT,
+      "paidAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "studentId" TEXT NOT NULL,
+      "teacherId" TEXT NOT NULL,
+      CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'paid'`);
+  await safeRun(`ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "expectedAmount" INTEGER NOT NULL DEFAULT 0`);
+  await safeRun(`ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "amount" INTEGER NOT NULL DEFAULT 0`);
+  await safeRun(`ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "method" TEXT NOT NULL DEFAULT 'cash'`);
+  await safeRun(`ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+  await safeRun(`ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "branchId" TEXT`);
+  await safeRun(`ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Payment_month_idx" ON "Payment"("month")`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Payment_status_idx" ON "Payment"("status")`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Payment_centerId_idx" ON "Payment"("centerId")`);
+
+  // 12. LessonMedia table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "LessonMedia" (
+      "id"         TEXT NOT NULL,
+      "lessonId"   TEXT NOT NULL,
+      "kind"       TEXT NOT NULL,
+      "slideIndex" INTEGER NOT NULL DEFAULT -1,
+      "data"       BYTEA NOT NULL,
+      "mimeType"   TEXT NOT NULL DEFAULT 'audio/mpeg',
+      "voice"      TEXT,
+      "createdAt"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "LessonMedia_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`UPDATE "LessonMedia" SET "slideIndex" = -1 WHERE "slideIndex" IS NULL`);
+
+  // 13. Role enum
+  await safeRun(`ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'reception'`);
+  await safeRun(`ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'manager'`);
+
+  // 14. Branch table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "Branch" (
+      "id"              TEXT NOT NULL,
+      "name"            TEXT NOT NULL,
+      "address"         TEXT,
+      "latitude"        DOUBLE PRECISION,
+      "longitude"       DOUBLE PRECISION,
+      "studentCapacity" INTEGER,
+      "isActive"        BOOLEAN NOT NULL DEFAULT true,
+      "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "receptionId"     TEXT,
+      "managerId"       TEXT,
+      "centerId"        TEXT,
+      CONSTRAINT "Branch_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`ALTER TABLE "Branch" ADD COLUMN IF NOT EXISTS "managerId" TEXT`);
+  await safeRun(`ALTER TABLE "Branch" ADD COLUMN IF NOT EXISTS "latitude" DOUBLE PRECISION`);
+  await safeRun(`ALTER TABLE "Branch" ADD COLUMN IF NOT EXISTS "longitude" DOUBLE PRECISION`);
+  await safeRun(`ALTER TABLE "Branch" ADD COLUMN IF NOT EXISTS "studentCapacity" INTEGER`);
+  await safeRun(`ALTER TABLE "Branch" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+
+  // 15. Group columns
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "branchId" TEXT`);
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "monthlyFee" INTEGER`);
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "weekDays" TEXT`);
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "startTime" TEXT`);
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "endTime" TEXT`);
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "room" TEXT`);
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "roomId" TEXT`);
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "totalLessons" INTEGER`);
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "level" TEXT`);
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "startDate" TIMESTAMP(3)`);
+  await safeRun(`ALTER TABLE "Group" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+  await safeRun(`ALTER TABLE "Group" ALTER COLUMN "subject" SET DEFAULT 'other'`);
+  await safeRun(`ALTER TABLE "Lesson" ALTER COLUMN "subject" SET DEFAULT 'other'`);
+
+  // 16. Application & UploadedFile tables
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "Application" (
+      "id"        TEXT NOT NULL,
+      "name"      TEXT NOT NULL,
+      "phone"     TEXT NOT NULL,
+      "message"   TEXT,
+      "status"    TEXT NOT NULL DEFAULT 'new',
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "Application_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "UploadedFile" (
+      "id"        TEXT NOT NULL,
+      "name"      TEXT NOT NULL,
+      "mimeType"  TEXT NOT NULL,
+      "data"      BYTEA NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "centerId"  TEXT,
+      CONSTRAINT "UploadedFile_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`ALTER TABLE "UploadedFile" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+
+  console.log('✅ All schema migrations verified and applied');
 };
 
 const connectDB = async () => {
