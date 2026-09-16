@@ -427,27 +427,89 @@ const toggleUserStatus = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const resolveSettingsCenter = async (req) => {
+  // 1. If a specific centerId is passed in query, body, or headers:
+  const targetId = req.query?.centerId || req.body?.centerId || req.headers?.['x-center-id'] || req.user?.centerId;
+  if (targetId) {
+    const center = await prisma.center.findUnique({ where: { id: targetId } });
+    if (center) return center;
+  }
+
+  // 2. If user has a centerId:
+  if (req.user?.centerId) {
+    const center = await prisma.center.findUnique({ where: { id: req.user.centerId } });
+    if (center) return center;
+  }
+
+  // 3. Fallback to first active center:
+  let center = await prisma.center.findFirst({
+    where: { isActive: true },
+    orderBy: { createdAt: 'asc' }
+  });
+  if (center) return center;
+
+  // 4. Fallback to any center:
+  center = await prisma.center.findFirst({ orderBy: { createdAt: 'asc' } });
+  if (center) return center;
+
+  // 5. If no center exists at all in database, create the primary center:
+  center = await prisma.center.create({
+    data: {
+      name: req.body?.centerName || 'Abdora AI Markazi',
+      settings: {}
+    }
+  });
+  return center;
+};
+
 const getSettings = async (req, res, next) => {
   try {
-    const centerId = getCenterId(req);
-    const center = await prisma.center.findUnique({
-      where: { id: centerId },
-      select: { settings: true }
-    });
-    return success(res, center?.settings || {});
+    const center = await resolveSettingsCenter(req);
+    const rawSettings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
+    const merged = {
+      ...rawSettings,
+      centerName: rawSettings.centerName || center.name || 'Abdora AI Markazi',
+      centerAddress: rawSettings.centerAddress || center.address || '',
+      centerPhone: rawSettings.centerPhone || center.phone || '',
+      centerEmail: rawSettings.centerEmail || center.email || '',
+      centerWebsite: rawSettings.centerWebsite || center.website || '',
+      centerId: center.id,
+    };
+    return success(res, merged);
   } catch (err) { next(err); }
 };
 
 const updateSettings = async (req, res, next) => {
   try {
-    const centerId = getCenterId(req);
-    // Since settings is JSON, we can just replace the entire object, or merge it. 
-    // The frontend sends the entire settings object.
+    const center = await resolveSettingsCenter(req);
+    const newSettings = req.body || {};
+
+    const updateData = {
+      settings: newSettings,
+    };
+    if (newSettings.centerName) updateData.name = newSettings.centerName;
+    if (newSettings.centerAddress !== undefined) updateData.address = newSettings.centerAddress;
+    if (newSettings.centerPhone !== undefined) updateData.phone = newSettings.centerPhone;
+    if (newSettings.centerEmail !== undefined) updateData.email = newSettings.centerEmail;
+    if (newSettings.centerWebsite !== undefined) updateData.website = newSettings.centerWebsite;
+
     const updated = await prisma.center.update({
-      where: { id: centerId },
-      data: { settings: req.body }
+      where: { id: center.id },
+      data: updateData
     });
-    return success(res, updated.settings, 'Sozlamalar muvaffaqiyatli saqlandi');
+
+    const rawSettings = typeof updated.settings === 'object' && updated.settings !== null ? updated.settings : {};
+    const merged = {
+      ...rawSettings,
+      centerName: updated.name,
+      centerAddress: updated.address || '',
+      centerPhone: updated.phone || '',
+      centerEmail: updated.email || '',
+      centerWebsite: updated.website || '',
+      centerId: updated.id,
+    };
+
+    return success(res, merged, 'Sozlamalar muvaffaqiyatli saqlandi');
   }
   catch (err) { next(err); }
 };

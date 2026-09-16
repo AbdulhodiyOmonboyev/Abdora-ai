@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -11,6 +11,7 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/ui/PageHeader';
 import ToggleSwitch from '../../components/ui/ToggleSwitch';
+import { useThemeStore } from '../../store/themeStore';
 
 /* ─── Sidebar nav items ─────────────────────────────────────── */
 const NAV_ITEMS = [
@@ -200,26 +201,31 @@ const DEFAULT_SETTINGS = {
 /* ─── Main Component ──────────────────────────────────────────── */
 export default function AdminSettings() {
   const qc = useQueryClient();
+  const applyTheme = useThemeStore(s => s.applyTheme);
   const [activeTab, setActiveTab] = useState('center');
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
 
-  // Load settings from backend
-  useQuery({
+  // Load settings from backend (React Query v5 compliant)
+  const { data: serverSettings, isLoading } = useQuery({
     queryKey: ['admin-settings'],
     queryFn: () => api.get('/admin/settings').then(r => r.data?.data),
-    onSuccess: (data) => {
-      if (data && typeof data === 'object') {
-        setSettings(prev => ({ ...prev, ...data }));
-      }
-    },
   });
+
+  useEffect(() => {
+    if (serverSettings && typeof serverSettings === 'object' && Object.keys(serverSettings).length > 0) {
+      setSettings(prev => ({ ...prev, ...serverSettings }));
+    }
+  }, [serverSettings]);
 
   const saveMutation = useMutation({
     mutationFn: (d) => api.put('/admin/settings', d),
-    onSuccess: () => {
+    onSuccess: (res) => {
       toast.success('Sozlamalar muvaffaqiyatli saqlandi!');
       qc.invalidateQueries({ queryKey: ['admin-settings'] });
+      if (res?.data?.data) {
+        setSettings(prev => ({ ...prev, ...res.data.data }));
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     },
@@ -991,7 +997,11 @@ export default function AdminSettings() {
                         return (
                           <button
                             key={value}
-                            onClick={() => set('theme', value)}
+                            onClick={() => {
+                              set('theme', value);
+                              if (value === 'dark') applyTheme('preset-dark');
+                              else if (value === 'light') applyTheme('preset-light');
+                            }}
                             className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
                               active ? 'border-[var(--primary)]' : 'border-[var(--border)]'
                             }`}
@@ -1017,6 +1027,27 @@ export default function AdminSettings() {
 
             </motion.div>
           </AnimatePresence>
+
+          {/* Bottom Save Bar */}
+          <div className="flex items-center justify-between p-4 rounded-2xl border"
+            style={{ background: 'var(--card-background)', borderColor: 'var(--border)' }}>
+            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+              O'zgarishlar kiritilganidan so'ng saqlash tugmasini bosing
+            </span>
+            <button
+              onClick={() => saveMutation.mutate(settings)}
+              disabled={saveMutation.isPending}
+              className="btn-primary"
+            >
+              {saveMutation.isPending ? (
+                <><RefreshCw size={14} className="animate-spin" /> Saqlanmoqda...</>
+              ) : saved ? (
+                <><Check size={14} /> Saqlandi</>
+              ) : (
+                <><Save size={14} /> Saqlash</>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
