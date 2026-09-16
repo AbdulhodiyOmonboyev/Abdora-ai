@@ -170,9 +170,58 @@ const deleteCenter = async (req, res, next) => {
   }
 };
 
+// GET /admin/centers/:id
+const getCenterDetail = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const center = await prisma.center.findUnique({
+      where: { id },
+      include: {
+        branches: {
+          where: { isActive: true },
+          include: {
+            manager: { select: { id: true, name: true, phone: true } },
+            _count: { select: { groups: true, teachers: true } },
+          },
+        },
+        users: {
+          where: { role: 'manager', isActive: true },
+          select: { id: true, name: true, username: true, phone: true, createdAt: true },
+        },
+        _count: {
+          select: {
+            users: true,
+            groups: true,
+            branches: true,
+            leads: true,
+            payments: true,
+          },
+        },
+      },
+    });
+
+    if (!center) return error(res, 'O\'quv markaz topilmadi', 404);
+
+    const [studentsCount, teachersCount] = await Promise.all([
+      prisma.user.count({ where: { role: 'student', centerId: id, isActive: true } }),
+      prisma.user.count({ where: { role: 'teacher', centerId: id, isActive: true } }),
+    ]);
+
+    return success(res, {
+      ...center,
+      studentsCount,
+      teachersCount,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getCenters,
+  getCenterDetail,
   createCenter,
   updateCenter,
   deleteCenter,
 };
+

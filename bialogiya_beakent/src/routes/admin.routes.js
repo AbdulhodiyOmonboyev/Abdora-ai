@@ -29,10 +29,11 @@ router.put('/settings', ...adminOrReception, updateSettings);
 
 // Centers (O'quv Markazlar) - Superadmin only
 const {
-  getCenters, createCenter, updateCenter, deleteCenter
+  getCenters, getCenterDetail, createCenter, updateCenter, deleteCenter
 } = require('../controllers/center.controller');
 
 router.get('/centers', ...adminOnly, getCenters);
+router.get('/centers/:id', ...adminOnly, getCenterDetail);
 router.post('/centers', ...adminOnly, createCenter);
 router.put('/centers/:id', ...adminOnly, updateCenter);
 router.delete('/centers/:id', ...adminOnly, deleteCenter);

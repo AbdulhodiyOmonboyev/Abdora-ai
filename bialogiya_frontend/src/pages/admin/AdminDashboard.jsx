@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
-import { Users, GraduationCap, UserCheck, BarChart2, Building2, Inbox, ArrowRight } from 'lucide-react';
+import { Users, GraduationCap, UserCheck, BarChart2, Building2, Inbox, ArrowRight, GitBranch, Bot } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { motion } from 'framer-motion';
 import api from '../../config/axios';
@@ -62,24 +62,24 @@ export default function AdminDashboard() {
   const stats = [
     ...(baseRole === 'admin' ? [
       {
-        icon: Building2, label: "O'quv Markazlar", value: data?.totalCenters ?? data?.totalBranches ?? 0,
+        icon: Building2, label: "O'quv Markazlar", value: data?.totalCenters ?? 0,
         iconColor: 'var(--primary)', iconBg: 'rgba(240, 100, 19, 0.1)',
+        path: '/admin/centers',
+      },
+      {
+        icon: GitBranch, label: 'Jami filiallar', value: data?.totalBranches ?? 0,
+        iconColor: 'var(--secondary)', iconBg: 'rgba(37, 99, 235, 0.1)',
         path: '/admin/centers',
       },
       {
         icon: UserCheck, label: 'Managerlar', value: data?.totalManagers ?? 0,
         iconColor: 'var(--accent)', iconBg: 'rgba(124, 58, 237, 0.1)',
-        path: '/admin/managers',
+        path: '/admin/centers',
       },
       {
-        icon: GraduationCap, label: "O'quvchilar", value: data?.totalStudents ?? 0,
-        iconColor: 'var(--secondary)', iconBg: 'rgba(37, 99, 235, 0.1)',
-        path: '/admin/students',
-      },
-      {
-        icon: BarChart2, label: 'Bugun faol', value: data?.activeToday ?? 0,
+        icon: Bot, label: 'AI Agentlar', value: data?.totalAIAgents ?? 0,
         iconColor: 'var(--success)', iconBg: 'rgba(22, 163, 74, 0.1)',
-        path: '/admin/students',
+        path: '/admin/ai-agents',
       },
     ] : [
       {
@@ -232,9 +232,9 @@ export default function AdminDashboard() {
             </div>
             {baseRole === 'admin' && (
               <div className="mini-metric">
-                <span className="mini-metric-label">Jami o'qituvchilar</span>
+                <span className="mini-metric-label">Jami filiallar</span>
                 <span className="mini-metric-value" style={{ color: 'var(--accent)' }}>
-                  {isLoading ? '—' : data?.totalTeachers ?? 0}
+                  {isLoading ? '—' : data?.totalBranches ?? 0}
                 </span>
               </div>
             )}
@@ -246,11 +246,12 @@ export default function AdminDashboard() {
               Tezkor havolalar
             </p>
             {[
+              { label: "O'quv Markazlar", path: '/admin/centers', show: baseRole === 'admin' },
+              { label: 'AI Agentlar', path: '/admin/ai-agents', show: baseRole === 'admin' },
               { label: 'Arizalar', path: '/admin/applications', show: baseRole === 'admin' },
-              { label: 'Markazlar', path: '/admin/branches', show: baseRole === 'admin' },
-              { label: 'Managerlar', path: '/admin/managers', show: baseRole === 'admin' },
-              { label: "O'qituvchilar", path: `/${baseRole}/teachers` },
-              { label: "O'quvchilar", path: `/${baseRole}/students` },
+              { label: 'Sozlamalar', path: '/admin/settings', show: baseRole === 'admin' },
+              { label: "O'qituvchilar", path: `/${baseRole}/teachers`, show: baseRole !== 'admin' },
+              { label: "O'quvchilar", path: `/${baseRole}/students`, show: baseRole !== 'admin' },
             ].filter(l => l.show !== false).map(l => (
               <Link
                 key={l.path}
