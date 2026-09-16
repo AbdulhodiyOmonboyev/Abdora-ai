@@ -2,7 +2,7 @@ import { getSubjectIcon } from '../../utils/subjects';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { BookOpen, ChevronRight, Brain, Clock } from 'lucide-react';
+import { BookOpen, ChevronRight, Brain, Clock, Sparkles, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../config/axios';
 import { formatDate } from '../../utils/format';
@@ -48,8 +48,14 @@ export default function StudentLessons() {
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-800 dark:text-white truncate">{lesson.title}</h3>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className={`badge text-xs ${lesson.aiContent?.status === 'done' ? 'bg-primary/10 text-primary' : lesson.aiContent?.status === 'generating' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {lesson.aiContent?.status === 'done' ? '🤖 AI Ready' : lesson.aiContent?.status === 'generating' ? '⏳ Generating' : '• Pending'}
+                    <span className={`badge text-xs inline-flex items-center gap-1 ${lesson.aiContent?.status === 'done' ? 'bg-primary/10 text-primary' : lesson.aiContent?.status === 'generating' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {lesson.aiContent?.status === 'done' ? (
+                        <><Sparkles size={11} /> AI Tayyor</>
+                      ) : lesson.aiContent?.status === 'generating' ? (
+                        <><Loader2 size={11} className="animate-spin" /> Tayyorlanmoqda</>
+                      ) : (
+                        '• Kutilmoqda'
+                      )}
                     </span>
                     <span className="text-xs text-gray-400 flex items-center gap-1"><Clock size={11} /> {formatDate(lesson.createdAt)}</span>
                     <span className="text-xs text-gray-400">{lesson.views} views</span>
