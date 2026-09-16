@@ -45,13 +45,7 @@ const teacherLinks = [
 const adminLinks = [
   { to: '/admin/dashboard',   icon: LayoutDashboard, key: 'dashboard' },
   { to: '/admin/applications', icon: Inbox,          key: 'applications' },
-  { to: '/admin/branches',    icon: Building2,        key: 'branches' },
-  { to: '/erp/rooms',         icon: BookOpen,         key: 'rooms',    label: 'Xonalar' },
-  { to: '/erp/timetable',     icon: Calendar,         key: 'timetable',label: 'Jadval' },
-  { to: '/admin/managers',    icon: UserCheck,        key: 'managers' },
-  { to: '/admin/teachers',    icon: BookMarked,       key: 'teachers', label: "O'qituvchilar" },
-  { to: '/admin/students',    icon: GraduationCap,    key: 'students', label: "O'quvchilar" },
-  { to: '/admin/groups',      icon: Users,            key: 'groups',  label: 'Guruhlar' },
+  { to: '/admin/centers',     icon: Building2,        key: 'centers',  label: "O'quv Markazlar" },
   { to: '/admin/ai-agents',   icon: Bot,              key: 'aiAgents', label: 'AI Agentlar' },
   { to: '/admin/settings',    icon: Settings,         key: 'settings' },
 ];

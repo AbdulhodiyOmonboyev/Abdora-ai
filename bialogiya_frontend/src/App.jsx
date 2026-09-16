@@ -70,6 +70,7 @@ import AdminManagers from './pages/admin/AdminManagers';
 import AdminManagerDetail from './pages/admin/AdminManagerDetail';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminBranchDetail from './pages/admin/AdminBranchDetail';
+import AdminCenters from './pages/admin/AdminCenters';
 import UserDetail from './pages/shared/UserDetail';
 
 // Manager pages
@@ -188,13 +189,7 @@ export default function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="ai-agents" element={<AdminAIAgents />} />
           <Route path="applications" element={<AdminApplications />} />
-          <Route path="branches" element={<AdminBranches />} />
-          <Route path="branches/:id" element={<AdminBranchDetail />} />
-          <Route path="managers" element={<AdminManagers />} />
-          <Route path="managers/:id" element={<AdminManagerDetail />} />
-          <Route path="teachers" element={<AdminTeachers />} />
-          <Route path="students" element={<AdminStudents />} />
-          <Route path="groups" element={<AdminGroups />} />
+          <Route path="centers" element={<AdminCenters />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 

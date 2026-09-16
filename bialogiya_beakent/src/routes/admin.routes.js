@@ -27,6 +27,16 @@ router.put('/users/:id/toggle', ...adminOrReception, toggleUserStatus);
 router.get('/settings', ...adminOrReception, getSettings);
 router.put('/settings', ...adminOrReception, updateSettings);
 
+// Centers (O'quv Markazlar) - Superadmin only
+const {
+  getCenters, createCenter, updateCenter, deleteCenter
+} = require('../controllers/center.controller');
+
+router.get('/centers', ...adminOnly, getCenters);
+router.post('/centers', ...adminOnly, createCenter);
+router.put('/centers/:id', ...adminOnly, updateCenter);
+router.delete('/centers/:id', ...adminOnly, deleteCenter);
+
 // Branches - admin only
 router.get('/branches', ...adminOnly, getBranches);
 router.post('/branches', ...adminOnly, createBranch);

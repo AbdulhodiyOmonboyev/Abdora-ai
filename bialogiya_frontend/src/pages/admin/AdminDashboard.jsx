@@ -62,9 +62,9 @@ export default function AdminDashboard() {
   const stats = [
     ...(baseRole === 'admin' ? [
       {
-        icon: Building2, label: 'Markazlar', value: data?.totalBranches ?? 0,
+        icon: Building2, label: "O'quv Markazlar", value: data?.totalCenters ?? data?.totalBranches ?? 0,
         iconColor: 'var(--primary)', iconBg: 'rgba(240, 100, 19, 0.1)',
-        path: '/admin/branches',
+        path: '/admin/centers',
       },
       {
         icon: UserCheck, label: 'Managerlar', value: data?.totalManagers ?? 0,
@@ -284,31 +284,31 @@ export default function AdminDashboard() {
         >
           <div className="panel-header">
             <div>
-              <span className="panel-kicker">Markazlar</span>
+              <span className="panel-kicker">O'quv Markazlar</span>
               <h2 className="panel-title">Markazlar ro'yxati</h2>
             </div>
-            <Link to="/admin/branches" className="panel-link">
+            <Link to="/admin/centers" className="panel-link">
               Barchasi <ArrowRight size={13} />
             </Link>
           </div>
 
-          {Array.isArray(data?.branches) && data.branches.length > 0 ? (
+          {Array.isArray(data?.centers) && data.centers.length > 0 ? (
             <div className="table-shell">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Markaz</th>
+                    <th>Markaz nomi</th>
                     <th>Manzil</th>
-                    <th>O'qituvchilar</th>
+                    <th>Filiallar</th>
                     <th>O'quvchilar</th>
                     <th>Holat</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.branches.map((b) => (
+                  {data.centers.map((c) => (
                     <tr
-                      key={b.id}
-                      onClick={() => navigate(`/admin/branches/${b.id}`)}
+                      key={c.id}
+                      onClick={() => navigate(`/admin/centers`)}
                       style={{ cursor: 'pointer' }}
                     >
                       <td>
@@ -320,23 +320,23 @@ export default function AdminDashboard() {
                             <Building2 size={14} style={{ color: 'var(--primary)' }} />
                           </div>
                           <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                            {b.name}
+                            {c.name}
                           </span>
                         </div>
                       </td>
                       <td>
                         <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                          {b.address || '—'}
+                          {c.address || '—'}
                         </span>
                       </td>
                       <td>
-                        <span className="font-medium text-sm">{b.teachersCount || 0}</span>
+                        <span className="font-medium text-sm">{c._count?.branches || 0}</span>
                       </td>
                       <td>
-                        <span className="font-medium text-sm">{b.studentsCount || 0}</span>
+                        <span className="font-medium text-sm">{c._count?.students || 0}</span>
                       </td>
                       <td>
-                        <StatusBadge status={b.isActive === false ? 'nofaol' : 'faol'} />
+                        <StatusBadge status={c.isActive === false ? 'nofaol' : 'faol'} />
                       </td>
                     </tr>
                   ))}
@@ -347,9 +347,9 @@ export default function AdminDashboard() {
             <EmptyState
               icon={Building2}
               title="Hali markazlar qo'shilmagan"
-              description="Birinchi markazni qo'shish uchun Markazlar sahifasiga o'ting"
+              description="Birinchi O'quv Markazni qo'shish uchun Markazlar sahifasiga o'ting"
               action={
-                <Link to="/admin/branches" className="btn-primary btn-sm">
+                <Link to="/admin/centers" className="btn-primary btn-sm">
                   Markaz qo'shish
                 </Link>
               }

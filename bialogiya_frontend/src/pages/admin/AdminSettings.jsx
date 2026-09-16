@@ -5,6 +5,7 @@ import {
   Save, Globe, Bot, Shield, CreditCard, BookOpen, Building2,
   Bell, Palette, Upload, Phone, MapPin, Mail, Clock, Users,
   ChevronRight, Check, AlertCircle, RefreshCw, Image, FileText, X,
+  Coins, Smartphone, Target, ShoppingBag, Award, Sparkles, MessageCircle,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -13,14 +14,17 @@ import ToggleSwitch from '../../components/ui/ToggleSwitch';
 
 /* ─── Sidebar nav items ─────────────────────────────────────── */
 const NAV_ITEMS = [
-  { id: 'center',    label: 'Markaz ma\'lumotlari', icon: Building2 },
-  { id: 'platform',  label: 'Platforma',            icon: Globe },
-  { id: 'payments',  label: 'To\'lovlar',            icon: CreditCard },
-  { id: 'lms',       label: 'LMS Sozlamalari',      icon: BookOpen },
-  { id: 'ai',        label: 'AI Funksiyalari',       icon: Bot },
-  { id: 'notifications', label: 'Bildirishnomalar', icon: Bell },
-  { id: 'security',  label: 'Xavfsizlik',           icon: Shield },
-  { id: 'appearance',label: 'Ko\'rinish',            icon: Palette },
+  { id: 'center',        label: 'Markaz ma\'lumotlari',     icon: Building2 },
+  { id: 'platform',      label: 'Platforma',                icon: Globe },
+  { id: 'payments',      label: 'To\'lovlar',                icon: CreditCard },
+  { id: 'lms',           label: 'LMS Sozlamalari',          icon: BookOpen },
+  { id: 'gamification',  label: 'Tangalar (Coins) & Gamifikatsiya', icon: Coins },
+  { id: 'crm_settings',  label: 'CRM Konfiguratsiyasi',      icon: Target },
+  { id: 'integrations',  label: 'SMS va Telegram',           icon: Smartphone },
+  { id: 'ai',            label: 'AI Funksiyalari',           icon: Bot },
+  { id: 'notifications', label: 'Bildirishnomalar',         icon: Bell },
+  { id: 'security',      label: 'Xavfsizlik',               icon: Shield },
+  { id: 'appearance',    label: 'Ko\'rinish',                icon: Palette },
 ];
 
 /* ─── Reusable sub-components ─────────────────────────────────── */
@@ -134,6 +138,36 @@ const DEFAULT_SETTINGS = {
   xpPerTest: 20,
   certificatesEnabled: true,
   lessonProgressTracking: true,
+
+  // Tangalar (Coins) & Gamifikatsiya
+  coinsEnabled: true,
+  coinsPerLesson: 5,
+  coinsPerHomework: 10,
+  coinsPerTest: 15,
+  coinsPerStreakDay: 3,
+  coinExchangeRate: 100, // 1 tanga = 100 so'm
+  allowCoinsForPayment: true,
+  maxCoinPaymentPercent: 20,
+  coinShopEnabled: true,
+  leaderboardPublic: true,
+
+  // CRM Konfiguratsiyasi
+  leadSources: ['Instagram', 'Telegram', 'Tavsiya', 'Ko\'cha reklama', 'Veb-sayt', 'Boshqa'],
+  freeTrialEnabled: true,
+  autoAssignLeads: true,
+  inactiveLeadDays: 14,
+  requireLeadPhone: true,
+
+  // Integratsiyalar (SMS & Telegram)
+  smsProvider: 'eskiz',
+  smsEmail: '',
+  smsToken: '',
+  smsSenderName: '4546',
+  telegramBotToken: '',
+  telegramBotUsername: '',
+  autoSmsOnAbsence: false,
+  autoSmsOnPaymentDue: true,
+  autoSmsOnPaymentSuccess: true,
 
   // AI
   aiEnabled: true,
@@ -688,6 +722,210 @@ export default function AdminSettings() {
                         <ToggleSwitch checked={settings[key]} onChange={v => set(key, v)} />
                       </SettingRow>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ═══════════════ GAMIFIKATSIYA & TANGALAR ═══════════════ */}
+              {activeTab === 'gamification' && (
+                <div className="space-y-4">
+                  <div className="panel-card space-y-5">
+                    <SectionHeader
+                      kicker="Gamifikatsiya"
+                      title="Tanga va mukofot tizimi"
+                      subtitle="O'quvchilarni rag'batlantirish uchun tanga (coin) va ball tizimini sozlang"
+                    />
+                    <SettingRow label="Tanga tizimini yoqish" hint="O'quvchilar faollik uchun tanga to'playdi">
+                      <ToggleSwitch checked={settings.coinsEnabled} onChange={v => set('coinsEnabled', v)} />
+                    </SettingRow>
+                    {settings.coinsEnabled && (
+                      <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <FormGroup label="Dars uchun tanga" hint="Har bir o'tilgan dars uchun">
+                          <input type="number" min={0} max={100} value={settings.coinsPerLesson}
+                            onChange={e => set('coinsPerLesson', +e.target.value)} className="input-field w-32" />
+                        </FormGroup>
+                        <FormGroup label="Uy vazifasi uchun tanga" hint="Topshirilgan har bir uy vazifasi uchun">
+                          <input type="number" min={0} max={100} value={settings.coinsPerHomework}
+                            onChange={e => set('coinsPerHomework', +e.target.value)} className="input-field w-32" />
+                        </FormGroup>
+                        <FormGroup label="Test uchun tanga" hint="Har bir tugatilgan test uchun">
+                          <input type="number" min={0} max={100} value={settings.coinsPerTest}
+                            onChange={e => set('coinsPerTest', +e.target.value)} className="input-field w-32" />
+                        </FormGroup>
+                        <FormGroup label="Streak uchun tanga/kun" hint="Ketma-ket kelish uchun qo'shimcha bonus">
+                          <input type="number" min={0} max={50} value={settings.coinsPerStreakDay}
+                            onChange={e => set('coinsPerStreakDay', +e.target.value)} className="input-field w-32" />
+                        </FormGroup>
+                        <FormGroup label="Tanga kursi (so'm)" hint="1 tanga = necha so'm (to'lovda ishlatish uchun)">
+                          <input type="number" min={1} value={settings.coinExchangeRate}
+                            onChange={e => set('coinExchangeRate', +e.target.value)} className="input-field w-36" />
+                        </FormGroup>
+                        <FormGroup label="Maksimal tanga foizi" hint="To'lovda tangalar bilan to'lash mumkin bo'lgan maksimal foiz">
+                          <div className="flex items-center gap-2">
+                            <input type="number" min={0} max={100} value={settings.maxCoinPaymentPercent}
+                              onChange={e => set('maxCoinPaymentPercent', +e.target.value)} className="input-field w-24" />
+                            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>%</span>
+                          </div>
+                        </FormGroup>
+                      </motion.div>
+                    )}
+                  </div>
+                  {settings.coinsEnabled && (
+                    <div className="panel-card space-y-4">
+                      <SectionHeader title="Qo'shimcha optsiyalar" subtitle="Tangalar bilan bog'liq qo'shimcha imkoniyatlar" />
+                      <div className="space-y-0 divide-y" style={{ borderColor: 'var(--border)' }}>
+                        <SettingRow label="To'lovda tanga ishlatish" hint="O'quvchilar yig'gan tangani o'quv to'loviga hisoblay oladi">
+                          <ToggleSwitch checked={settings.allowCoinsForPayment} onChange={v => set('allowCoinsForPayment', v)} />
+                        </SettingRow>
+                        <SettingRow label="Tanga do'koni" hint="O'quvchilar tangaga sovg'a, chegirma va imtiyozlar sotib olishi">
+                          <ToggleSwitch checked={settings.coinShopEnabled} onChange={v => set('coinShopEnabled', v)} />
+                        </SettingRow>
+                        <SettingRow label="Ochiq liderlar jadvali" hint="O'quvchilar bir-birining reytingini ko'rishi mumkin" noBorder>
+                          <ToggleSwitch checked={settings.leaderboardPublic} onChange={v => set('leaderboardPublic', v)} />
+                        </SettingRow>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ═══════════════ CRM SOZLAMALARI ═══════════════ */}
+              {activeTab === 'crm_settings' && (
+                <div className="space-y-4">
+                  <div className="panel-card space-y-5">
+                    <SectionHeader
+                      kicker="CRM"
+                      title="CRM konfiguratsiyasi"
+                      subtitle="Lidlar (potentsial o'quvchilar) boshqaruvi qoidalari va sozlamalari"
+                    />
+                    <div className="space-y-0 divide-y" style={{ borderColor: 'var(--border)' }}>
+                      <SettingRow label="Bepul sinov darsini yoqish" hint="Yangi lidlarga bepul sinov darsi taklif qilish imkoniyati">
+                        <ToggleSwitch checked={settings.freeTrialEnabled} onChange={v => set('freeTrialEnabled', v)} />
+                      </SettingRow>
+                      <SettingRow label="Lidlarni avtomatik belgilash" hint="Yangi lid kelib tushganda, mavjud menejerlar orasida avtomatik taqsimlash">
+                        <ToggleSwitch checked={settings.autoAssignLeads} onChange={v => set('autoAssignLeads', v)} />
+                      </SettingRow>
+                      <SettingRow label="Telefon raqam majburiy" hint="Lid qo'shishda telefon raqam kiritmasdan bo'lmaydi" noBorder>
+                        <ToggleSwitch checked={settings.requireLeadPhone} onChange={v => set('requireLeadPhone', v)} />
+                      </SettingRow>
+                    </div>
+                    <FormGroup label="Faolsiz lid muddati (kun)" hint="Necha kundan keyin lid 'sovuq' deb belgilanadi">
+                      <input type="number" min={1} max={90} value={settings.inactiveLeadDays}
+                        onChange={e => set('inactiveLeadDays', +e.target.value)} className="input-field w-32" />
+                    </FormGroup>
+                  </div>
+                  <div className="panel-card space-y-4">
+                    <SectionHeader title="Lid manbalari" subtitle="Qaysi kanallardan kelgan lidlar tizimda qayd etiladi" />
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {(settings.leadSources || []).map(src => (
+                        <div key={src} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-white"
+                          style={{ backgroundColor: 'var(--primary)' }}>
+                          {src}
+                          <button onClick={() => set('leadSources', settings.leadSources.filter(s => s !== src))}
+                            className="hover:text-red-200 transition-colors ml-1">
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input type="text" id="newLeadSourceInput" placeholder="Yangi manba (masalan: Radio)" className="input-field text-sm"
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && e.target.value.trim()) {
+                            e.preventDefault();
+                            if (!(settings.leadSources || []).includes(e.target.value.trim())) {
+                              set('leadSources', [...(settings.leadSources || []), e.target.value.trim()]);
+                            }
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                      <button className="btn-primary btn-sm whitespace-nowrap"
+                        onClick={() => {
+                          const input = document.getElementById('newLeadSourceInput');
+                          if (input.value.trim() && !(settings.leadSources || []).includes(input.value.trim())) {
+                            set('leadSources', [...(settings.leadSources || []), input.value.trim()]);
+                            input.value = '';
+                          }
+                        }}>
+                        Qo'shish
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ═══════════════ INTEGRATSIYALAR ═══════════════ */}
+              {activeTab === 'integrations' && (
+                <div className="space-y-4">
+                  <div className="panel-card space-y-5">
+                    <SectionHeader
+                      kicker="SMS"
+                      title="SMS xabar tizimi"
+                      subtitle="Eskiz yoki SmsPro orqali avtomatik SMS yuborish sozlamalari"
+                    />
+                    <FormGroup label="SMS provayder" hint="Qaysi SMS xizmati orqali yuboriladi">
+                      <select className="input-field" value={settings.smsProvider}
+                        onChange={e => set('smsProvider', e.target.value)}>
+                        <option value="eskiz">Eskiz.uz</option>
+                        <option value="smspro">SmsPro.uz</option>
+                        <option value="none">O'chirilgan</option>
+                      </select>
+                    </FormGroup>
+                    {settings.smsProvider !== 'none' && (
+                      <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormGroup label="Login / Email" hint="Eskiz yoki SmsPro akkaunt emaili">
+                          <input className="input-field" placeholder="email@eskiz.uz" value={settings.smsEmail}
+                            onChange={e => set('smsEmail', e.target.value)} />
+                        </FormGroup>
+                        <FormGroup label="API Token" hint="Provayder API kaliti (maxfiy)">
+                          <input className="input-field" type="password" placeholder="••••••••••••••" value={settings.smsToken}
+                            onChange={e => set('smsToken', e.target.value)} />
+                        </FormGroup>
+                        <FormGroup label="Yuboruvchi nomi (Sender)" hint="SMS da ko'rinuvchi nom (odatda 4-11 belgi)">
+                          <input className="input-field" placeholder="ABDORA" value={settings.smsSenderName}
+                            onChange={e => set('smsSenderName', e.target.value)} />
+                        </FormGroup>
+                      </motion.div>
+                    )}
+                    {settings.smsProvider !== 'none' && (
+                      <div className="space-y-0 divide-y" style={{ borderColor: 'var(--border)' }}>
+                        <SettingRow label="Davomat qoldirilganda SMS" hint="O'quvchi darsga kelmasa, ota-onaga avtomatik SMS">
+                          <ToggleSwitch checked={settings.autoSmsOnAbsence} onChange={v => set('autoSmsOnAbsence', v)} />
+                        </SettingRow>
+                        <SettingRow label="To'lov muddati kelganda SMS" hint="O'quv haqi to'lash muddati yaqinlashsa xabar">
+                          <ToggleSwitch checked={settings.autoSmsOnPaymentDue} onChange={v => set('autoSmsOnPaymentDue', v)} />
+                        </SettingRow>
+                        <SettingRow label="To'lov qilinganda SMS" hint="To'lov muvaffaqiyatli qilingandan keyin tasdiqlash xabari" noBorder>
+                          <ToggleSwitch checked={settings.autoSmsOnPaymentSuccess} onChange={v => set('autoSmsOnPaymentSuccess', v)} />
+                        </SettingRow>
+                      </div>
+                    )}
+                  </div>
+                  <div className="panel-card space-y-5">
+                    <SectionHeader
+                      kicker="Telegram"
+                      title="Telegram Bot integratsiyasi"
+                      subtitle="Markaz uchun Telegram bot orqali bildirishnomalar va o'quvchilar bilan muloqot"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormGroup label="Bot Token" hint="@BotFather dan olingan token">
+                        <input className="input-field" type="password" placeholder="1234567890:AAABBB..." value={settings.telegramBotToken}
+                          onChange={e => set('telegramBotToken', e.target.value)} />
+                      </FormGroup>
+                      <FormGroup label="Bot username" hint="Bot nomi (@belgisisiz)">
+                        <input className="input-field" placeholder="abdora_bot" value={settings.telegramBotUsername}
+                          onChange={e => set('telegramBotUsername', e.target.value)} />
+                      </FormGroup>
+                    </div>
+                    {settings.telegramBotToken && (
+                      <div className="flex items-center gap-2 p-3 rounded-xl text-xs"
+                        style={{ background: 'var(--primary-50)', color: 'var(--primary-600)' }}>
+                        ✅ Bot sozlangan: @{settings.telegramBotUsername || 'bot'}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

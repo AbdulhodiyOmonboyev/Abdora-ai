@@ -57,8 +57,11 @@ const getStats = async (req, res, next) => {
     let totalManagers = 0;
     let pendingApplications = 0;
 
+    let centers = [];
+    let totalCenters = 0;
+
     if (req.user.role === 'admin') {
-      const [branchRows, managersCount, applicationsCount] = await Promise.all([
+      const [branchRows, managersCount, applicationsCount, centerRows] = await Promise.all([
         prisma.branch.findMany({
           where: { isActive: true },
           select: {
@@ -70,7 +73,27 @@ const getStats = async (req, res, next) => {
         }),
         prisma.user.count({ where: { role: 'manager', isActive: true } }),
         prisma.application.count({ where: { status: 'new' } }),
+        prisma.center.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          select: {
+            id: true, name: true, address: true, phone: true, email: true,
+            website: true, isActive: true, createdAt: true,
+            _count: { select: { branches: true, groups: true } },
+          },
+        }),
       ]);
+
+      // count students per center
+      const centerStudentCounts = await Promise.all(
+        centerRows.map((c) => prisma.user.count({ where: { role: 'student', centerId: c.id, isActive: true } }))
+      );
+
+      centers = centerRows.map((c, i) => ({
+        ...c,
+        _count: { ...c._count, students: centerStudentCounts[i] },
+      }));
+      totalCenters = await prisma.center.count();
 
       const studentCounts = await Promise.all(
         branchRows.map((b) => prisma.user.count({ where: { role: 'student', isActive: true, OR: [{ branchId: b.id }, { group: { branchId: b.id } }] } }))
@@ -93,6 +116,7 @@ const getStats = async (req, res, next) => {
     return success(res, {
       totalTeachers, totalStudents, totalGroups, aiLessons, activeToday, newThisWeek, recentUsers,
       branches, totalManagers, pendingApplications, totalBranches: branches.length,
+      centers, totalCenters,
     });
   } catch (err) { next(err); }
 };
