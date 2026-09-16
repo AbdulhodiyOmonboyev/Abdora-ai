@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -38,10 +38,10 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading }) {
             </div>
             <div>
               <div className="font-bold text-base" style={{ color: "var(--text-primary)" }}>
-                {isEdit ? "Markazni tahrirlash" : "Yangi O\u2019quv Markaz"}
+                {isEdit ? "Markazni tahrirlash" : "Yangi O'quv Markaz"}
               </div>
               <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                {isEdit ? "Ma\u2019lumotlarni o\u2019zgartiring" : "Markaz va manager akkauntini yarating"}
+                {isEdit ? "Ma'lumotlarni o'zgartiring" : "Markaz va manager akkauntini yarating"}
               </div>
             </div>
           </div>
@@ -53,12 +53,12 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading }) {
         <div className="p-5 overflow-y-auto max-h-[70vh] space-y-5">
           <div>
             <div className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>
-              Markaz ma&#x2BC;lumotlari
+              Markaz ma'lumotlari
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Markaz nomi *</label>
-                <input className="input-field" placeholder="Masalan: Najot Ta\u2019lim" value={form.name} onChange={e => f("name", e.target.value)} />
+                <input className="input-field" placeholder="Masalan: Najot Ta'lim" value={form.name} onChange={e => f("name", e.target.value)} />
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Telefon</label>
@@ -85,7 +85,7 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading }) {
                 Manager akkaunt
               </div>
               <div className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-                Bu ma\u2019lumotlar bilan markaz manageri tizimga kiradi
+                Bu ma'lumotlar bilan markaz manageri tizimga kiradi
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -168,7 +168,7 @@ function CenterCard({ center, onEdit, onDelete }) {
         <div className="grid grid-cols-3 gap-2 mb-4">
           {[
             { icon: GitBranch, label: "Filiallar", value: center._count?.branches ?? 0 },
-            { icon: Users, label: "O\u2019quvchilar", value: center._count?.students ?? 0 },
+            { icon: Users, label: "O'quvchilar", value: center._count?.students ?? 0 },
             { icon: BookOpen, label: "Guruhlar", value: center._count?.groups ?? 0 },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="rounded-xl p-2.5 text-center" style={{ background: "var(--secondary-background)" }}>
@@ -198,7 +198,7 @@ function CenterCard({ center, onEdit, onDelete }) {
           </div>
           <Link to={`/admin/centers/${center.id}`}
             className="flex items-center gap-1 text-xs font-medium hover:underline" style={{ color: "var(--primary)" }}>
-            Ko\u2019rish <ChevronRight size={13} />
+            Ko'rish <ChevronRight size={13} />
           </Link>
         </div>
       </div>
@@ -220,7 +220,7 @@ export default function AdminCenters() {
   const createMut = useMutation({
     mutationFn: (d) => api.post("/admin/centers", d),
     onSuccess: () => {
-      toast.success("O\u2019quv markaz yaratildi!");
+      toast.success("O'quv markaz yaratildi!");
       qc.invalidateQueries({ queryKey: ["admin-centers"] });
       setModalOpen(false);
     },
@@ -240,7 +240,7 @@ export default function AdminCenters() {
   const deleteMut = useMutation({
     mutationFn: (id) => api.delete(`/admin/centers/${id}`),
     onSuccess: () => {
-      toast.success("O\u2019quv markaz o\u2019chirildi");
+      toast.success("O'quv markaz o'chirildi");
       qc.invalidateQueries({ queryKey: ["admin-centers"] });
     },
     onError: (e) => toast.error(e.response?.data?.message || "Xato yuz berdi"),
@@ -253,7 +253,7 @@ export default function AdminCenters() {
   );
 
   const handleDelete = (center) => {
-    if (window.confirm(`"${center.name}" markazini o\u2019chirishni xohlaysizmi? Bu jarayon qaytarilmas!`)) {
+    if (window.confirm(`"${center.name}" markazini o'chirishni xohlaysizmi? Bu jarayon qaytarilmas!`)) {
       deleteMut.mutate(center.id);
     }
   };
@@ -262,8 +262,8 @@ export default function AdminCenters() {
     <div className="min-h-screen p-4 sm:p-6" style={{ background: "var(--background)" }}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>O\u2019quv Markazlar</h1>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Platforma mijozlari — O\u2019quv markazlarni boshqaring</p>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>O'quv Markazlar</h1>
+          <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Platforma mijozlari — O'quv markazlarni boshqaring</p>
         </div>
         <button onClick={() => setModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 shadow-md"
@@ -276,7 +276,7 @@ export default function AdminCenters() {
         {[
           { label: "Jami markazlar", value: centers.length, color: "#6366f1" },
           { label: "Jami filiallar", value: centers.reduce((s, c) => s + (c._count?.branches ?? 0), 0), color: "#f59e0b" },
-          { label: "Jami o\u2019quvchilar", value: centers.reduce((s, c) => s + (c._count?.students ?? 0), 0), color: "#10b981" },
+          { label: "Jami o'quvchilar", value: centers.reduce((s, c) => s + (c._count?.students ?? 0), 0), color: "#10b981" },
           { label: "Jami guruhlar", value: centers.reduce((s, c) => s + (c._count?.groups ?? 0), 0), color: "#3b82f6" },
         ].map(({ label, value, color }) => (
           <div key={label} className="rounded-2xl p-4" style={{ background: "var(--card-background)", border: "1px solid var(--border)" }}>
@@ -288,7 +288,7 @@ export default function AdminCenters() {
 
       <div className="relative mb-5">
         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
-        <input className="input-field pl-9 text-sm" placeholder="Markaz nomi, email yoki manzil bo\u2019yicha qidiring..."
+        <input className="input-field pl-9 text-sm" placeholder="Markaz nomi, email yoki manzil bo'yicha qidiring..."
           value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
@@ -300,7 +300,7 @@ export default function AdminCenters() {
         <div className="text-center py-20">
           <Building2 size={48} className="mx-auto mb-4 opacity-20" style={{ color: "var(--text-muted)" }} />
           <div className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
-            {search ? "Qidiruvga mos markaz topilmadi" : "Hali birorta markaz qo\u2019shilmagan"}
+            {search ? "Qidiruvga mos markaz topilmadi" : "Hali birorta markaz qo'shilmagan"}
           </div>
           {!search && (
             <button onClick={() => setModalOpen(true)}
