@@ -8,11 +8,14 @@ import {
   Coins, Smartphone, Target, ShoppingBag, Award, Sparkles, MessageCircle,
   Banknote, Wallet, CheckCircle2, FileEdit,
   ShieldCheck, Lock, Unlock, PieChart, GraduationCap, BookMarked, Calendar,
+  Plus, Trash2, Pencil, UserCog, Copy,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/ui/PageHeader';
 import ToggleSwitch from '../../components/ui/ToggleSwitch';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import { useSearchParams } from 'react-router-dom';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
@@ -23,7 +26,7 @@ import { cleanPhone } from '../../utils/formatPhone';
 const NAV_ITEMS = [
   { id: 'center',          label: 'Markaz ma\'lumotlari',     icon: Building2 },
   { id: 'platform',        label: 'Platforma',                icon: Globe },
-  { id: 'reception_perms', label: 'Qabulxona huquqlari',      icon: ShieldCheck, roles: ['admin', 'manager'] },
+  { id: 'reception_perms', label: 'Qabulxona (Reception)',    icon: ShieldCheck, roles: ['admin', 'manager'] },
   { id: 'payments',        label: 'To\'lovlar',                icon: CreditCard },
   { id: 'lms',             label: 'LMS Sozlamalari',          icon: BookOpen },
   { id: 'gamification',    label: 'Tangalar (Coins) & Gamifikatsiya', icon: Coins },
@@ -287,8 +290,123 @@ export default function AdminSettings() {
     });
   };
 
+  // ─── Reception Management in Settings ───
+  const EMPTY_RECEPTION_FORM = { name: '', phone: '+998 ', email: '', language: 'uz', branchId: '' };
+  const [showReceptionModal, setShowReceptionModal] = useState(false);
+  const [editingReceptionId, setEditingReceptionId] = useState(null);
+  const [receptionForm, setReceptionForm] = useState(EMPTY_RECEPTION_FORM);
+  const [receptionNewCreds, setReceptionNewCreds] = useState(null);
+  const [receptionConfirm, setReceptionConfirm] = useState(null);
+
+  const { data: receptionUsers = [], isLoading: isReceptionLoading } = useQuery({
+    queryKey: ['admin-reception'],
+    queryFn: () => api.get('/admin/reception').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
+    enabled: activeTab === 'reception_perms',
+  });
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ['admin-branches'],
+    queryFn: () => api.get('/admin/branches').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }),
+    enabled: activeTab === 'reception_perms',
+  });
+
+  const createReceptionMutation = useMutation({
+    mutationFn: (d) => api.post('/admin/reception', d),
+    onSuccess: ({ data }) => {
+      qc.invalidateQueries({ queryKey: ['admin-reception'] });
+      qc.invalidateQueries({ queryKey: ['admin-branches'] });
+      setReceptionNewCreds(data?.data?.credentials || null);
+      setReceptionForm(EMPTY_RECEPTION_FORM);
+      toast.success("Qabulxona hisobi muvaffaqiyatli yaratildi");
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Xatolik yuz berdi");
+    }
+  });
+
+  const updateReceptionMutation = useMutation({
+    mutationFn: ({ id, data }) => api.put(`/admin/reception/${id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-reception'] });
+      qc.invalidateQueries({ queryKey: ['admin-branches'] });
+      closeReceptionModal();
+      toast.success("Qabulxona ma'lumotlari muvaffaqiyatli yangilandi");
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Xatolik yuz berdi");
+    }
+  });
+
+  const deleteReceptionMutation = useMutation({
+    mutationFn: (id) => api.delete(`/admin/reception/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-reception'] });
+      qc.invalidateQueries({ queryKey: ['admin-branches'] });
+      toast.success("Qabulxona hisobi o'chirildi");
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Xatolik yuz berdi");
+    }
+  });
+
+  const openReceptionEdit = (u) => {
+    setEditingReceptionId(u.id);
+    setReceptionForm({
+      name: u.name || '',
+      phone: u.phone || '+998 ',
+      email: u.email || '',
+      language: 'uz',
+      branchId: u.branches?.[0]?.id || u.branchId || '',
+    });
+    setReceptionNewCreds(null);
+    setShowReceptionModal(true);
+  };
+
+  const closeReceptionModal = () => {
+    setShowReceptionModal(false);
+    setEditingReceptionId(null);
+    setReceptionNewCreds(null);
+    setReceptionForm(EMPTY_RECEPTION_FORM);
+  };
+
+  const handleReceptionSubmit = () => {
+    if (!receptionForm.name) return;
+    const phone = cleanPhone(receptionForm.phone);
+    if (editingReceptionId) {
+      updateReceptionMutation.mutate({
+        id: editingReceptionId,
+        data: {
+          name: receptionForm.name,
+          phone,
+          email: receptionForm.email || undefined,
+          branchId: receptionForm.branchId || null
+        }
+      });
+    } else {
+      createReceptionMutation.mutate({
+        ...receptionForm,
+        phone,
+      });
+    }
+  };
+
+  const handleDeleteReception = (u) => {
+    setReceptionConfirm({
+      title: `"${u.name}"ni o'chirish`,
+      message: "Qabulxona xodimi tizimga kira olmaydi.",
+      onConfirm: () => deleteReceptionMutation.mutate(u.id),
+    });
+  };
+
   return (
     <div className="dashboard-shell max-w-6xl w-full mx-auto">
+      <ConfirmDialog confirm={receptionConfirm} onClose={() => setReceptionConfirm(null)} />
       <PageHeader
         title="Sozlamalar"
         subtitle="Tizimning barcha parametrlarini boshqarish"
@@ -540,6 +658,12 @@ export default function AdminSettings() {
                                 canViewCashbox: !newBlocked,
                               };
                               set('receptionPermissions', updatedPerms);
+                              api.put('/admin/settings', { receptionPermissions: updatedPerms })
+                                .then(() => {
+                                  qc.invalidateQueries({ queryKey: ['admin-settings'] });
+                                  qc.invalidateQueries({ queryKey: ['center-settings'] });
+                                })
+                                .catch(() => {});
                               toast.success(newBlocked ? 'Moliya va Kassa qabulxona uchun yopildi!' : 'Moliya va Kassa qabulxona uchun ochildi!');
                             }}
                             className={`px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors flex-shrink-0 ${
@@ -657,16 +781,141 @@ export default function AdminSettings() {
                             <ToggleSwitch
                               checked={isChecked}
                               onChange={(val) => {
-                                set('receptionPermissions', {
+                                const updatedPerms = {
                                   ...(settings.receptionPermissions || {}),
                                   [key]: val,
-                                });
+                                };
+                                set('receptionPermissions', updatedPerms);
+                                api.put('/admin/settings', { receptionPermissions: updatedPerms })
+                                  .then(() => {
+                                    qc.invalidateQueries({ queryKey: ['admin-settings'] });
+                                    qc.invalidateQueries({ queryKey: ['center-settings'] });
+                                  })
+                                  .catch(() => {});
                               }}
                             />
                           </div>
                         );
                       })}
                     </div>
+                  </div>
+
+                  {/* ── Qabulxona xodimlari ro'yxati ── */}
+                  <div className="pt-6 border-t space-y-4" style={{ borderColor: 'var(--border)' }}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          Qabulxona xodimlari ro'yxati
+                        </h3>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                          Filiallarga biriktirilgan qabulxona hisoblari va ularning kirish ma'lumotlari
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingReceptionId(null);
+                          setReceptionForm(EMPTY_RECEPTION_FORM);
+                          setReceptionNewCreds(null);
+                          setShowReceptionModal(true);
+                        }}
+                        className="btn-primary flex items-center gap-2 self-start sm:self-auto text-xs py-2 px-3.5"
+                      >
+                        <Plus size={15} /> Hisob qo'shish
+                      </button>
+                    </div>
+
+                    {isReceptionLoading ? (
+                      <div className="py-8 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
+                        <RefreshCw size={18} className="animate-spin mx-auto mb-2 opacity-50" />
+                        Yuklanmoqda...
+                      </div>
+                    ) : receptionUsers.length > 0 ? (
+                      <div className="space-y-2.5">
+                        {receptionUsers.map((u) => {
+                          const branchName = u.branches?.[0]?.name || u.branch?.name;
+                          return (
+                            <div
+                              key={u.id}
+                              className="p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
+                              style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                                  {u.name?.charAt(0)?.toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                                      {u.name}
+                                    </span>
+                                    <span className={`badge text-[11px] ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
+                                      {u.isActive ? 'Faol' : 'Nofaol'}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs flex items-center gap-3 flex-wrap mt-1" style={{ color: 'var(--text-secondary)' }}>
+                                    <span className="font-medium text-primary-600 dark:text-primary-400">@{u.username}</span>
+                                    {u.phone && (
+                                      <span className="flex items-center gap-1 font-mono">
+                                        <Phone size={11} /> {u.phone}
+                                      </span>
+                                    )}
+                                    <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                                      <Building2 size={11} />
+                                      {branchName ? branchName : (u._count?.branches > 0 ? `${u._count.branches} ta filial` : 'Filial biriktirilmagan')}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 self-end sm:self-auto flex-shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => openReceptionEdit(u)}
+                                  className="btn-ghost p-2 rounded-lg"
+                                  title="Tahrirlash"
+                                >
+                                  <Pencil size={15} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteReception(u)}
+                                  className="btn-ghost p-2 rounded-lg text-red-500 hover:bg-red-500/10"
+                                  title="O'chirish"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div
+                        className="text-center py-10 rounded-2xl border border-dashed"
+                        style={{ borderColor: 'var(--border)', background: 'var(--secondary-background)' }}
+                      >
+                        <UserCog size={36} className="mx-auto mb-2 opacity-30" style={{ color: 'var(--text-muted)' }} />
+                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                          Hali qabulxona hisoblari yo'q
+                        </p>
+                        <p className="text-xs mt-1 max-w-sm mx-auto" style={{ color: 'var(--text-secondary)' }}>
+                          Markazingiz filiali uchun yangi qabulxona xodimini qo'shing. Ular o'quvchilar va darslarni boshqaradilar.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingReceptionId(null);
+                            setReceptionForm(EMPTY_RECEPTION_FORM);
+                            setReceptionNewCreds(null);
+                            setShowReceptionModal(true);
+                          }}
+                          className="btn-primary text-xs py-2 px-4 mt-3.5 inline-flex items-center gap-1.5"
+                        >
+                          <Plus size={14} /> Yangi hisob qo'shish
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1285,6 +1534,178 @@ export default function AdminSettings() {
           </div>
         </div>
       </div>
+
+      {/* ── Reception Create/Edit Modal ── */}
+      <AnimatePresence>
+        {showReceptionModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="modal-backdrop"
+            onClick={(e) => e.target === e.currentTarget && closeReceptionModal()}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 8, opacity: 0 }}
+              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
+              className="rounded-3xl border p-6 sm:p-7 w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
+                    {editingReceptionId ? "Hisobni tahrirlash" : "Qabulxona hisobi qo'shish"}
+                  </h2>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                    {editingReceptionId ? "Qabulxona xodimi ma'lumotlarini yangilash" : "Yangi qabulxona hisobini yaratish"}
+                  </p>
+                </div>
+                <button onClick={closeReceptionModal} className="btn-icon flex-shrink-0" aria-label="Yopish">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {receptionNewCreds ? (
+                <div>
+                  <div className="text-center mb-5">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-2.5">
+                      <CheckCircle2 size={26} />
+                    </div>
+                    <h3 className="font-bold text-base text-emerald-600 dark:text-emerald-400">
+                      Hisob muvaffaqiyatli yaratildi!
+                    </h3>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                      Ushbu kirish ma'lumotlarini xodimga taqdim eting
+                    </p>
+                  </div>
+                  <div
+                    className="rounded-2xl p-4 space-y-3"
+                    style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)' }}
+                  >
+                    {[
+                      ['Login', receptionNewCreds.username],
+                      ['Parol', receptionNewCreds.password],
+                    ].map(([label, val]) => (
+                      <div key={label} className="flex items-center justify-between">
+                        <div>
+                          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {label}
+                          </div>
+                          <div className="font-mono font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                            {val}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(val);
+                            toast.success(`${label} nusxalandi!`);
+                          }}
+                          className="btn-icon"
+                          title="Nusxalash"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={closeReceptionModal} className="btn-primary w-full mt-5">
+                    Yopish
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                      To'liq ismi *
+                    </label>
+                    <input
+                      value={receptionForm.name}
+                      onChange={(e) => setReceptionForm((f) => ({ ...f, name: e.target.value }))}
+                      placeholder="Xodim ismi"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                      Telefon raqami
+                    </label>
+                    <PhoneInput
+                      value={receptionForm.phone}
+                      onChange={(e) => setReceptionForm((f) => ({ ...f, phone: e.target.value }))}
+                      placeholder="+998 90 123 45 67"
+                      className="input-field font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                      Email (ixtiyoriy)
+                    </label>
+                    <input
+                      value={receptionForm.email}
+                      onChange={(e) => setReceptionForm((f) => ({ ...f, email: e.target.value }))}
+                      placeholder="reception@example.com"
+                      type="email"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                      Filial
+                    </label>
+                    <select
+                      value={receptionForm.branchId}
+                      onChange={(e) => setReceptionForm((f) => ({ ...f, branchId: e.target.value }))}
+                      className="input-field"
+                    >
+                      <option value="">Filial biriktirmaslik</option>
+                      {branches
+                        .filter((b) => !b.receptionId || b.receptionId === editingReceptionId)
+                        .map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                    </select>
+                    <p className="text-xs mt-1.5" style={{ color: 'var(--text-secondary)' }}>
+                      Agar filial tanlangan bo'lsa, bu qabulxona shu filialga biriktiriladi.
+                    </p>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={closeReceptionModal} className="btn-ghost flex-1">
+                      Bekor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleReceptionSubmit}
+                      disabled={
+                        !receptionForm.name ||
+                        createReceptionMutation.isPending ||
+                        updateReceptionMutation.isPending
+                      }
+                      className="btn-primary flex-1 disabled:opacity-40"
+                    >
+                      {createReceptionMutation.isPending || updateReceptionMutation.isPending
+                        ? "Saqlanmoqda..."
+                        : editingReceptionId
+                        ? 'Saqlash'
+                        : "Qo'shish"}
+                    </button>
+                  </div>
+                  {(createReceptionMutation.error || updateReceptionMutation.error) && (
+                    <p className="text-xs text-red-500 text-center">
+                      {friendlyAiErrorMessage(
+                        createReceptionMutation.error || updateReceptionMutation.error
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

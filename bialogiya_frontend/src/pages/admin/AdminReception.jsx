@@ -73,26 +73,37 @@ export default function AdminReception() {
   const createMutation = useMutation({
     mutationFn: (d) => api.post('/admin/reception', d),
     onSuccess: ({ data }) => {
-      qc.invalidateQueries(['admin-reception']);
+      qc.invalidateQueries({ queryKey: ['admin-reception'] });
+      qc.invalidateQueries({ queryKey: ['admin-branches'] });
       setNewCreds(data.data.credentials);
       setForm(EMPTY_FORM);
+      toast.success("Qabulxona hisobi muvaffaqiyatli yaratildi");
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => api.put(`/admin/reception/${id}`, data),
     onSuccess: () => {
-      qc.invalidateQueries(['admin-reception']);
+      qc.invalidateQueries({ queryKey: ['admin-reception'] });
+      qc.invalidateQueries({ queryKey: ['admin-branches'] });
       closeModal();
+      toast.success("Qabulxona ma'lumotlari yangilandi");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/admin/reception/${id}`),
-    onSuccess: () => qc.invalidateQueries(['admin-reception']),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-reception'] });
+      qc.invalidateQueries({ queryKey: ['admin-branches'] });
+      toast.success("Qabulxona hisobi o'chirildi");
+    },
   });
 
-  const copy = (text) => navigator.clipboard.writeText(text);
+  const copy = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Nusxalandi");
+  };
 
   const closeModal = () => {
     setShowCreate(false);
@@ -103,7 +114,13 @@ export default function AdminReception() {
 
   const openEdit = (u) => {
     setEditingId(u.id);
-    setForm({ name: u.name, phone: u.phone || '+998 ', email: u.email || '', language: 'uz', branchId: u.branchId || '' });
+    setForm({
+      name: u.name,
+      phone: u.phone || '+998 ',
+      email: u.email || '',
+      language: 'uz',
+      branchId: u.branches?.[0]?.id || u.branchId || ''
+    });
     setShowCreate(true);
   };
 
@@ -301,7 +318,10 @@ export default function AdminReception() {
               <div className="text-xs text-gray-400 flex items-center gap-2 flex-wrap">
                 <span>@{u.username}</span>
                 {u.phone && <span className="flex items-center gap-0.5"><Phone size={10} /> {u.phone}</span>}
-                <span className="flex items-center gap-0.5"><Building2 size={10} /> {u._count?.branches || 0} filial</span>
+                <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                  <Building2 size={11} />
+                  {u.branches?.[0]?.name ? u.branches[0].name : (u.branches?.length > 1 ? `${u.branches.length} filial` : 'Filial biriktirilmagan')}
+                </span>
               </div>
             </div>
             <span className={`badge text-xs ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
