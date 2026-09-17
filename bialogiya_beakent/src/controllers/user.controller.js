@@ -426,4 +426,406 @@ const getManagerBranches = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createStudent, createTeacher, createManager, getManagers, updateManager, deleteManager, getManagerBranches, getStudentsByTeacher, getAllUsers, getUserById, updateProfile, updateUser, deleteUser, resetStudentPassword, freezeStudent, changePassword };
+const getStudentHistory = async (req, res, next) => {
+  try {
+    const studentId = req.params.id;
+    const student = await prisma.user.findFirst({
+      where: {
+        id: studentId,
+        role: 'student',
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        phone: true,
+        avatar: true,
+        role: true,
+        gender: true,
+        age: true,
+        birthDate: true,
+        address: true,
+        studyLocation: true,
+        residence: true,
+        isActive: true,
+        isFrozen: true,
+        xp: true,
+        coins: true,
+        level: true,
+        streakCurrent: true,
+        streakLongest: true,
+        streakLastDate: true,
+        achievements: true,
+        createdAt: true,
+        lastLogin: true,
+        groupId: true,
+        teacherId: true,
+        branchId: true,
+        branch: { select: { id: true, name: true } },
+        teacher: { select: { id: true, name: true, username: true, phone: true } },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            subject: true,
+            monthlyFee: true,
+            weekDays: true,
+            startTime: true,
+            endTime: true,
+            room: true,
+            level: true,
+            totalLessons: true,
+            startDate: true,
+            branch: { select: { id: true, name: true } },
+            teacher: { select: { id: true, name: true, phone: true } },
+            _count: { select: { students: true } },
+          },
+        },
+      },
+    });
+
+    if (!student) return error(res, "O'quvchi topilmadi", 404);
+
+    // 1. Payments
+    const payments = await prisma.payment.findMany({
+      where: { studentId: student.id },
+      orderBy: [{ month: 'desc' }, { paidAt: 'desc' }],
+      select: {
+        id: true,
+        month: true,
+        amount: true,
+        expectedAmount: true,
+        status: true,
+        method: true,
+        note: true,
+        paidAt: true,
+        createdAt: true,
+      },
+    });
+
+    // 2. Test results
+    const testResults = await prisma.result.findMany({
+      where: { studentId: student.id },
+      orderBy: { completedAt: 'desc' },
+      take: 50,
+      include: {
+        test: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            totalPoints: true,
+            passingScore: true,
+            timeLimit: true,
+          },
+        },
+      },
+    });
+
+    // 3. Homework submissions
+    const submissions = await prisma.submission.findMany({
+      where: { studentId: student.id },
+      orderBy: { submittedAt: 'desc' },
+      take: 50,
+      include: {
+        homework: {
+          select: {
+            id: true,
+            title: true,
+            maxScore: true,
+            dueDate: true,
+          },
+        },
+      },
+    });
+
+    // 4. Attendance
+    let attendanceList = [];
+    if (student.groupId) {
+      const attendances = await prisma.attendance.findMany({
+        where: { groupId: student.groupId },
+        orderBy: { date: 'desc' },
+        take: 60,
+        select: {
+          id: true,
+          date: true,
+          records: true,
+          group: { select: { name: true } },
+        },
+      });
+
+      attendanceList = attendances.map((a) => {
+        const recs = Array.isArray(a.records) ? a.records : [];
+        const rec = recs.find((r) => r.studentId === student.id);
+        return {
+          id: a.id,
+          date: a.date,
+          groupName: a.group?.name || student.group?.name,
+          status: rec?.status || 'absent',
+          note: rec?.note || '',
+        };
+      });
+    }
+
+    // 5. Notes and Custom transactions stored in achievements
+    let notes = [];
+    let customTransactions = [];
+    if (student.achievements) {
+      if (Array.isArray(student.achievements)) {
+        notes = student.achievements.filter((x) => x && x.type === 'note');
+        customTransactions = student.achievements.filter((x) => x && x.type === 'coin_transaction');
+      } else if (typeof student.achievements === 'object') {
+        notes = Array.isArray(student.achievements.notes) ? student.achievements.notes : [];
+        customTransactions = Array.isArray(student.achievements.coinTransactions) ? student.achievements.coinTransactions : [];
+      }
+    }
+
+    // 6. Chronological Coin & XP History
+    const coinHistory = [];
+
+    // From tests
+    testResults.forEach((r) => {
+      coinHistory.push({
+        id: `test_${r.id}`,
+        type: 'test',
+        title: `Test: ${r.test?.title || 'Sinov'} (${r.percentage}%)`,
+        coins: r.passed ? (r.percentage === 100 ? 15 : 10) : 0,
+        xp: r.score || (r.passed ? 40 : 10),
+        date: r.completedAt,
+        status: r.passed ? 'Muvaffaqiyatli' : 'Yiqildi',
+      });
+    });
+
+    // From homework
+    submissions.forEach((s) => {
+      const isGood = (s.finalScore || 0) >= 80;
+      coinHistory.push({
+        id: `hw_${s.id}`,
+        type: 'homework',
+        title: `Uyga vazifa: ${s.homework?.title || 'Topshiriq'}`,
+        coins: isGood ? 10 : 5,
+        xp: s.finalScore || 20,
+        date: s.submittedAt,
+        status: s.status || 'Topshirildi',
+      });
+    });
+
+    // From attendance
+    attendanceList.forEach((a) => {
+      if (a.status === 'present') {
+        coinHistory.push({
+          id: `att_${a.id}`,
+          type: 'attendance',
+          title: `Dars davomati (${a.groupName || 'Guruh'})`,
+          coins: 3,
+          xp: 15,
+          date: a.date,
+          status: 'Qatnashdi',
+        });
+      }
+    });
+
+    // Custom bonuses
+    customTransactions.forEach((ct) => {
+      coinHistory.push({
+        id: ct.id || `custom_${Math.random()}`,
+        type: 'bonus',
+        title: ct.title || "O'qituvchi/Admin bonusi",
+        coins: ct.coins || 0,
+        xp: ct.xp || 0,
+        date: ct.date || ct.createdAt,
+        status: 'Bonus',
+        authorName: ct.authorName,
+      });
+    });
+
+    // Sort by date descending
+    coinHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // 7. Financial Summary
+    const monthlyFee = student.group?.monthlyFee || 0;
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const currentPayment = payments.find((p) => p.month === currentMonth);
+    const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalDebt = payments.reduce((sum, p) => sum + Math.max(0, (p.expectedAmount || 0) - (p.amount || 0)), 0);
+
+    // 8. Attendance Summary
+    const totalLessons = attendanceList.length;
+    const presentCount = attendanceList.filter((a) => a.status === 'present').length;
+    const absentCount = attendanceList.filter((a) => a.status === 'absent').length;
+    const lateCount = attendanceList.filter((a) => a.status === 'late').length;
+    const excusedCount = attendanceList.filter((a) => a.status === 'excused').length;
+    const attendanceRate = totalLessons > 0 ? Math.round((presentCount / totalLessons) * 100) : 100;
+
+    return success(res, {
+      student,
+      group: student.group,
+      payments,
+      attendance: attendanceList,
+      tests: testResults,
+      homework: submissions,
+      coinHistory,
+      notes,
+      summary: {
+        totalPaid,
+        totalDebt,
+        monthlyFee,
+        currentMonth,
+        isCurrentMonthPaid: currentPayment?.status === 'paid',
+        currentPayment,
+        totalLessons,
+        presentCount,
+        absentCount,
+        lateCount,
+        excusedCount,
+        attendanceRate,
+        totalTests: testResults.length,
+        passedTests: testResults.filter((t) => t.passed).length,
+        totalHomework: submissions.length,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const addStudentNote = async (req, res, next) => {
+  try {
+    const studentId = req.params.id;
+    const { text } = req.body;
+    if (!text || !text.trim()) return error(res, 'Eslatma matni kiritilmadi', 400);
+
+    const student = await prisma.user.findFirst({ where: { id: studentId, role: 'student' } });
+    if (!student) return error(res, "O'quvchi topilmadi", 404);
+
+    const existingAchievements = student.achievements && typeof student.achievements === 'object' && !Array.isArray(student.achievements)
+      ? student.achievements
+      : { badges: Array.isArray(student.achievements) ? student.achievements : [], notes: [], coinTransactions: [] };
+
+    const notes = Array.isArray(existingAchievements.notes) ? existingAchievements.notes : [];
+    const newNote = {
+      id: 'note_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      text: text.trim(),
+      authorName: req.user.name || req.user.username || 'Xodim',
+      authorRole: req.user.role,
+      createdAt: new Date().toISOString(),
+    };
+    notes.unshift(newNote);
+
+    await prisma.user.update({
+      where: { id: studentId },
+      data: {
+        achievements: {
+          ...existingAchievements,
+          notes,
+        },
+      },
+    });
+
+    return success(res, newNote, 'Eslatma saqlandi', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteStudentNote = async (req, res, next) => {
+  try {
+    const { id: studentId, noteId } = req.params;
+    const student = await prisma.user.findFirst({ where: { id: studentId, role: 'student' } });
+    if (!student) return error(res, "O'quvchi topilmadi", 404);
+
+    const existingAchievements = student.achievements && typeof student.achievements === 'object' && !Array.isArray(student.achievements)
+      ? student.achievements
+      : { badges: [], notes: [], coinTransactions: [] };
+
+    const notes = (Array.isArray(existingAchievements.notes) ? existingAchievements.notes : []).filter((n) => n.id !== noteId);
+
+    await prisma.user.update({
+      where: { id: studentId },
+      data: {
+        achievements: {
+          ...existingAchievements,
+          notes,
+        },
+      },
+    });
+
+    return success(res, null, "Eslatma o'chirildi");
+  } catch (err) {
+    next(err);
+  }
+};
+
+const awardStudentCoins = async (req, res, next) => {
+  try {
+    const studentId = req.params.id;
+    const { coins, xp, reason } = req.body;
+    const coinAmount = Number(coins) || 0;
+    const xpAmount = Number(xp) || 0;
+
+    if (coinAmount === 0 && xpAmount === 0) return error(res, 'Tanga yoki XP miqdorini kiriting', 400);
+
+    const student = await prisma.user.findFirst({ where: { id: studentId, role: 'student' } });
+    if (!student) return error(res, "O'quvchi topilmadi", 404);
+
+    const existingAchievements = student.achievements && typeof student.achievements === 'object' && !Array.isArray(student.achievements)
+      ? student.achievements
+      : { badges: Array.isArray(student.achievements) ? student.achievements : [], notes: [], coinTransactions: [] };
+
+    const coinTransactions = Array.isArray(existingAchievements.coinTransactions) ? existingAchievements.coinTransactions : [];
+    const newTx = {
+      id: 'tx_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      type: 'coin_transaction',
+      title: reason || "O'qituvchi/Admin bonusi",
+      coins: coinAmount,
+      xp: xpAmount,
+      authorName: req.user.name || req.user.username || 'Xodim',
+      date: new Date().toISOString(),
+    };
+    coinTransactions.unshift(newTx);
+
+    const newCoins = Math.max(0, (student.coins || 0) + coinAmount);
+    const newXP = Math.max(0, (student.xp || 0) + xpAmount);
+
+    const updated = await prisma.user.update({
+      where: { id: studentId },
+      data: {
+        coins: newCoins,
+        xp: newXP,
+        achievements: {
+          ...existingAchievements,
+          coinTransactions,
+        },
+      },
+      select: { id: true, name: true, coins: true, xp: true, level: true },
+    });
+
+    return success(res, { updated, transaction: newTx }, 'Tangalar hisoblandi');
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  createStudent,
+  createTeacher,
+  createManager,
+  getManagers,
+  updateManager,
+  deleteManager,
+  getManagerBranches,
+  getStudentsByTeacher,
+  getAllUsers,
+  getUserById,
+  updateProfile,
+  updateUser,
+  deleteUser,
+  resetStudentPassword,
+  freezeStudent,
+  changePassword,
+  getStudentHistory,
+  addStudentNote,
+  deleteStudentNote,
+  awardStudentCoins,
+};

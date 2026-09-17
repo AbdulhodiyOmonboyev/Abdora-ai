@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { GraduationCap, Trophy } from 'lucide-react';
@@ -74,19 +75,19 @@ export default function AdminStudents() {
                     transition={{ delay: i * 0.02 }}
                   >
                     <td>
-                      <div className="flex items-center gap-3">
-                        <div className="avatar avatar-md">
+                      <Link to={`/users/${s.id}`} className="flex items-center gap-3 group">
+                        <div className="avatar avatar-md group-hover:scale-105 transition-transform">
                           {s.name?.charAt(0)?.toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                          <div className="font-semibold text-sm group-hover:text-primary transition-colors" style={{ color: 'var(--text-primary)' }}>
                             {s.name}
                           </div>
                           <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                             @{s.username}
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     </td>
                     <td>
                       <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>

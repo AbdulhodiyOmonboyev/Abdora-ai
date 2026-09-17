@@ -199,6 +199,7 @@ export default function App() {
           <Route path="resources" element={<TeacherResources />} />
           <Route path="analytics" element={<TeacherAnalytics />} />
           <Route path="voice" element={<TeacherVoice />} />
+          <Route path="students/:id" element={<UserDetail />} />
         </Route>
 
         {/* Shared - any authenticated role */}
@@ -216,6 +217,8 @@ export default function App() {
           <Route path="applications" element={<AdminApplications />} />
           <Route path="centers" element={<AdminCenters />} />
           <Route path="centers/:id" element={<AdminCenterDetail />} />
+          <Route path="students" element={<AdminStudents />} />
+          <Route path="students/:id" element={<UserDetail />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
@@ -228,6 +231,7 @@ export default function App() {
           <Route path="teachers" element={<AdminTeachers />} />
           <Route path="teachers/:id" element={<ReceptionTeacherDetail />} />
           <Route path="students" element={<AdminStudents />} />
+          <Route path="students/:id" element={<UserDetail />} />
           <Route path="groups" element={<AdminGroups />} />
           <Route path="groups/:id" element={<GroupDetail />} />
           <Route path="payments" element={<ManagerPayments />} />
@@ -267,6 +271,7 @@ export default function App() {
           <Route path="groups/:id" element={<ProtectedRoute role="reception" permission="canManageGroups"><ReceptionGroupDetail /></ProtectedRoute>} />
           <Route path="teachers/:id" element={<ProtectedRoute role="reception" permission="canManageTeachers"><ReceptionTeacherDetail /></ProtectedRoute>} />
           <Route path="students" element={<ProtectedRoute role="reception" permission="canManageStudents"><ReceptionStudents /></ProtectedRoute>} />
+          <Route path="students/:id" element={<ProtectedRoute role="reception" permission="canManageStudents"><UserDetail /></ProtectedRoute>} />
           <Route path="payments" element={<ProtectedRoute role="reception" permission="canManagePayments"><ReceptionPayments /></ProtectedRoute>} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>

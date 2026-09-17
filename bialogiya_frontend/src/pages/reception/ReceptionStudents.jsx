@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Copy, X, GraduationCap, Trash2, Search, Phone, Users, CheckCircle2 } from 'lucide-react';
@@ -146,28 +147,30 @@ export default function ReceptionStudents() {
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
               className="panel-card flex items-center gap-3">
-              <div className="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                {s.name?.charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm text-[var(--text-primary)] flex items-center gap-2">
-                  <span>{s.name}</span>
-                  <span className="badge bg-primary/10 text-primary text-[11px] font-medium">Lv.{level}</span>
+              <Link to={`/users/${s.id}`} className="flex-1 min-w-0 flex items-center gap-3 group">
+                <div className="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 group-hover:scale-105 transition-transform">
+                  {s.name?.charAt(0)}
                 </div>
-                <div className="text-xs text-[var(--text-muted)] flex items-center gap-2 flex-wrap mt-0.5">
-                  <span>@{s.username}</span>
-                  {s.group ? (
-                    <span className="flex items-center gap-1 text-primary">
-                      <Users size={11} /> {s.group.name}
-                    </span>
-                  ) : <span className="italic text-amber-500">Guruhsiz</span>}
-                  {s.phone && (
-                    <span className="flex items-center gap-0.5">
-                      <Phone size={10} /> {s.phone}
-                    </span>
-                  )}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-primary transition-colors flex items-center gap-2">
+                    <span>{s.name}</span>
+                    <span className="badge bg-primary/10 text-primary text-[11px] font-medium">Lv.{level}</span>
+                  </div>
+                  <div className="text-xs text-[var(--text-muted)] flex items-center gap-2 flex-wrap mt-0.5">
+                    <span>@{s.username}</span>
+                    {s.group ? (
+                      <span className="flex items-center gap-1 text-primary">
+                        <Users size={11} /> {s.group.name}
+                      </span>
+                    ) : <span className="italic text-amber-500">Guruhsiz</span>}
+                    {s.phone && (
+                      <span className="flex items-center gap-0.5">
+                        <Phone size={10} /> {s.phone}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </Link>
               <button onClick={() => handleDelete(s)} className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10" title="O'chirish">
                 <Trash2 size={14} />
               </button>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Copy, X, GraduationCap, Phone, Users, Star, Zap, Pencil, Trash2, Save, ChevronRight, Search, Snowflake, CheckCircle2 } from 'lucide-react';
@@ -8,6 +9,7 @@ import PhoneInput from '../../components/ui/PhoneInput';
 import { cleanPhone } from '../../utils/formatPhone';
 
 export default function ManageStudents() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: '', groupId: '', phone: '+998 ', language: 'uz' });
@@ -301,6 +303,13 @@ export default function ManageStudents() {
                   </div>
                 </div>
               </div>
+
+              <button
+                onClick={() => navigate(`/users/${selectedStudent.id}`)}
+                className="btn-primary w-full flex items-center justify-center gap-2 text-sm mb-2"
+              >
+                <GraduationCap size={15} /> To'liq profil va tarixni ko'rish
+              </button>
 
               <button onClick={() => freezeMutation.mutate(selectedStudent.id)} disabled={freezeMutation.isPending}
                 className="btn-outline w-full flex items-center justify-center gap-2 text-sm disabled:opacity-50">
