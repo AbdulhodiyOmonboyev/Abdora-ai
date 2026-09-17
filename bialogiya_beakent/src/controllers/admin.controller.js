@@ -428,31 +428,52 @@ const toggleUserStatus = async (req, res, next) => {
 };
 
 const resolveSettingsCenter = async (req) => {
-  // 1. If a specific centerId is passed in query, body, or headers:
-  const targetId = req.query?.centerId || req.body?.centerId || req.headers?.['x-center-id'] || req.user?.centerId;
+  // 1. If a specific centerId is explicitly passed in query, body, or headers:
+  const targetId = req.query?.centerId || req.body?.centerId || req.headers?.['x-center-id'];
   if (targetId) {
     const center = await prisma.center.findUnique({ where: { id: targetId } });
     if (center) return center;
   }
 
-  // 2. If user has a centerId:
-  if (req.user?.centerId) {
-    const center = await prisma.center.findUnique({ where: { id: req.user.centerId } });
-    if (center) return center;
+  // 2. Lookup the authenticated user from the database
+  const userId = req.user?.userId || req.user?.id;
+  if (userId) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, username: true, centerId: true, role: true }
+    });
+
+    if (dbUser?.centerId) {
+      const center = await prisma.center.findUnique({ where: { id: dbUser.centerId } });
+      if (center) return center;
+    }
+
+    // 3. User does not have a center assigned yet.
+    // Auto-create a dedicated, isolated center for this user/admin so their settings
+    // NEVER overwrite or get overwritten by another user's settings!
+    const newCenter = await prisma.center.create({
+      data: {
+        name: req.body?.centerName || `${dbUser?.name || dbUser?.username || 'Asosiy'} O'quv Markazi`,
+        settings: {}
+      }
+    });
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { centerId: newCenter.id }
+    });
+
+    if (req.user) req.user.centerId = newCenter.id;
+    return newCenter;
   }
 
-  // 3. Fallback to first active center:
+  // 4. Fallback if called without auth context
   let center = await prisma.center.findFirst({
     where: { isActive: true },
     orderBy: { createdAt: 'asc' }
   });
   if (center) return center;
 
-  // 4. Fallback to any center:
-  center = await prisma.center.findFirst({ orderBy: { createdAt: 'asc' } });
-  if (center) return center;
-
-  // 5. If no center exists at all in database, create the primary center:
   center = await prisma.center.create({
     data: {
       name: req.body?.centerName || 'Abdora AI Markazi',

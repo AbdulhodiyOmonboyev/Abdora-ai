@@ -12,7 +12,9 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/ui/PageHeader';
 import ToggleSwitch from '../../components/ui/ToggleSwitch';
+import { useSearchParams } from 'react-router-dom';
 import { useThemeStore } from '../../store/themeStore';
+import { useAuthStore } from '../../store/authStore';
 import PhoneInput from '../../components/ui/PhoneInput';
 import { cleanPhone } from '../../utils/formatPhone';
 
@@ -204,20 +206,35 @@ const DEFAULT_SETTINGS = {
 /* ─── Main Component ──────────────────────────────────────────── */
 export default function AdminSettings() {
   const qc = useQueryClient();
+  const { user } = useAuthStore();
   const applyTheme = useThemeStore(s => s.applyTheme);
-  const [activeTab, setActiveTab] = useState('center');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const [activeTab, setActiveTabState] = useState(() => {
+    return urlTab || localStorage.getItem('admin_settings_tab') || 'center';
+  });
+
+  const setActiveTab = (tabId) => {
+    setActiveTabState(tabId);
+    setSearchParams({ tab: tabId }, { replace: true });
+    try {
+      localStorage.setItem('admin_settings_tab', tabId);
+    } catch (e) {}
+  };
+
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
 
-  // Load settings from backend (React Query v5 compliant)
+  // Load settings strictly isolated for this specific user & center
   const { data: serverSettings, isLoading } = useQuery({
-    queryKey: ['admin-settings'],
+    queryKey: ['admin-settings', user?.id, user?.centerId],
     queryFn: () => api.get('/admin/settings').then(r => r.data?.data),
+    enabled: !!user,
   });
 
   useEffect(() => {
     if (serverSettings && typeof serverSettings === 'object' && Object.keys(serverSettings).length > 0) {
-      setSettings(prev => ({ ...prev, ...serverSettings }));
+      setSettings(prev => ({ ...DEFAULT_SETTINGS, ...serverSettings }));
     }
   }, [serverSettings]);
 
@@ -225,9 +242,9 @@ export default function AdminSettings() {
     mutationFn: (d) => api.put('/admin/settings', d),
     onSuccess: (res) => {
       toast.success('Sozlamalar muvaffaqiyatli saqlandi!');
-      qc.invalidateQueries({ queryKey: ['admin-settings'] });
+      qc.invalidateQueries({ queryKey: ['admin-settings', user?.id, user?.centerId] });
       if (res?.data?.data) {
-        setSettings(prev => ({ ...prev, ...res.data.data }));
+        setSettings(prev => ({ ...DEFAULT_SETTINGS, ...res.data.data }));
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);

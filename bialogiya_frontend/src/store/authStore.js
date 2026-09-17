@@ -25,6 +25,7 @@ export const useAuthStore = create(
         try {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
+          localStorage.removeItem('admin_settings_tab');
         } catch (err) {
           console.warn('Unable to clear auth tokens', err);
         }
