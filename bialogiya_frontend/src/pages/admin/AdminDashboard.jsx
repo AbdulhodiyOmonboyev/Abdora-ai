@@ -11,6 +11,7 @@ import StatCard from '../../components/ui/StatCard';
 import ChartCard from '../../components/ui/ChartCard';
 import EmptyState from '../../components/ui/EmptyState';
 import StatusBadge from '../../components/ui/StatusBadge';
+import TimetableWidget from '../../components/timetable/TimetableWidget';
 
 // Theme-aware chart tooltip
 function ChartTooltip({ active, payload, label }) {
@@ -152,56 +153,60 @@ export default function AdminDashboard() {
 
       {/* Analytics Grid */}
       <section className="dashboard-grid">
-        {/* Chart */}
-        <ChartCard
-          kicker="Faollik"
-          title="Kunlik faollik"
-          tag="7 kun"
-        >
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11, fill: tickColor }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: tickColor }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="students"
-                  stroke={lineColorOrange}
-                  strokeWidth={2.5}
-                  name="O'quvchilar"
-                  dot={{ r: 3, fill: lineColorOrange, strokeWidth: 0 }}
-                  activeDot={{ r: 5, strokeWidth: 0 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="teachers"
-                  stroke={lineColorBlue}
-                  strokeWidth={2.5}
-                  name="O'qituvchilar"
-                  dot={{ r: 3, fill: lineColorBlue, strokeWidth: 0 }}
-                  activeDot={{ r: 5, strokeWidth: 0 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <EmptyState
-              title="Faollik ma'lumotlari yo'q"
-              description="Hozircha kunlik faollik kuzatilmagan"
-            />
-          )}
-        </ChartCard>
+        {/* If reception, render TimetableWidget instead of 7-day activity chart */}
+        {baseRole === 'reception' ? (
+          <TimetableWidget />
+        ) : (
+          <ChartCard
+            kicker="Faollik"
+            title="Kunlik faollik"
+            tag="7 kun"
+          >
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: tickColor }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: tickColor }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={28}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="students"
+                    stroke={lineColorOrange}
+                    strokeWidth={2.5}
+                    name="O'quvchilar"
+                    dot={{ r: 3, fill: lineColorOrange, strokeWidth: 0 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="teachers"
+                    stroke={lineColorBlue}
+                    strokeWidth={2.5}
+                    name="O'qituvchilar"
+                    dot={{ r: 3, fill: lineColorBlue, strokeWidth: 0 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyState
+                title="Faollik ma'lumotlari yo'q"
+                description="Hozircha kunlik faollik kuzatilmagan"
+              />
+            )}
+          </ChartCard>
+        )}
 
         {/* Side panel */}
         <div className="panel-card">
@@ -250,6 +255,9 @@ export default function AdminDashboard() {
               { label: 'AI Agentlar', path: '/admin/ai-agents', show: baseRole === 'admin' },
               { label: 'Arizalar', path: '/admin/applications', show: baseRole === 'admin' },
               { label: 'Sozlamalar', path: '/admin/settings', show: baseRole === 'admin' },
+              { label: "Guruhlar", path: '/reception/groups', show: baseRole === 'reception' },
+              { label: "To'lovlar", path: '/reception/payments', show: baseRole === 'reception' },
+              { label: "Haftalik jadval", path: '/erp/timetable', show: baseRole === 'reception' },
               { label: "O'qituvchilar", path: `/${baseRole}/teachers`, show: baseRole !== 'admin' },
               { label: "O'quvchilar", path: `/${baseRole}/students`, show: baseRole !== 'admin' },
             ].filter(l => l.show !== false).map(l => (

@@ -113,7 +113,7 @@ const ProtectedRoute = ({ children, role, permission }) => {
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
     if (user?.role === 'student') return <Navigate to="/student/dashboard" replace />;
     if (user?.role === 'teacher') return <Navigate to="/teacher/dashboard" replace />;
-    if (user?.role === 'reception') return <Navigate to="/reception/teachers" replace />;
+    if (user?.role === 'reception') return <Navigate to="/reception/dashboard" replace />;
     if (user?.role === 'manager') return <Navigate to="/manager/dashboard" replace />;
     if (user?.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
   }
@@ -121,13 +121,13 @@ const ProtectedRoute = ({ children, role, permission }) => {
   if (user?.role === 'reception' && permission && serverSettings) {
     const perms = serverSettings.receptionPermissions || {};
     if (permission === 'canViewFinance' && perms.canViewFinance !== true) {
-      return <Navigate to="/reception/teachers" replace />;
+      return <Navigate to="/reception/dashboard" replace />;
     }
     if (permission === 'canViewCashbox' && perms.canViewCashbox !== true) {
-      return <Navigate to="/reception/teachers" replace />;
+      return <Navigate to="/reception/dashboard" replace />;
     }
     if (perms[permission] === false) {
-      return <Navigate to="/reception/teachers" replace />;
+      return <Navigate to="/reception/dashboard" replace />;
     }
   }
 
@@ -152,7 +152,7 @@ export default function App() {
         <Route path="/" element={
           user?.role === 'student' ? <Navigate to="/student/dashboard" replace /> :
           user?.role === 'teacher' ? <Navigate to="/teacher/dashboard" replace /> :
-          user?.role === 'reception' ? <Navigate to="/reception/teachers" replace /> :
+          user?.role === 'reception' ? <Navigate to="/reception/dashboard" replace /> :
           user?.role === 'manager' ? <Navigate to="/manager/dashboard" replace /> :
           user?.role === 'admin' ? <Navigate to="/admin/dashboard" replace /> :
           <PublicLayout><LandingPage /></PublicLayout>
