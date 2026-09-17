@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Users, ChevronRight, Calendar, Clock, DoorOpen } from 'lucide-react';
+import { Users, ChevronRight, Calendar, Clock, DoorOpen, BookOpen } from 'lucide-react';
 import api from '../../config/axios';
 import { getSubjectLabel, getSubjectBadgeClass } from '../../utils/subjects';
 
@@ -41,7 +41,9 @@ export default function ManageGroups() {
               onClick={() => navigate(`/teacher/groups/${g.id}`)}
               className="card hover:shadow-soft transition-all cursor-pointer hover:border-primary/30 hover:bg-primary/2 group">
               <div className="flex items-start gap-3 mb-3">
-                <div className="w-12 h-12 gradient-bg rounded-2xl flex items-center justify-center text-2xl">{g.icon || '📚'}</div>
+                <div className="w-12 h-12 gradient-bg rounded-2xl flex items-center justify-center text-white shadow-soft">
+                  <BookOpen size={22} />
+                </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-800 dark:text-white group-hover:text-primary transition-colors">{g.name}</h3>
                   <span className={`badge text-xs mt-0.5 ${getSubjectBadgeClass(g.subject)}`}>

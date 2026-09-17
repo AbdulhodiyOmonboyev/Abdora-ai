@@ -44,7 +44,9 @@ export default function StudentProgress() {
   if (!progress) {
     return (
       <div className="dashboard-shell max-w-4xl text-center py-10">
-        <div className="text-4xl mb-3">📈</div>
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
+          <TrendingUp size={32} />
+        </div>
         <div className="font-semibold text-lg mb-1">Progressingiz topilmadi</div>
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Hali o'quv guruhlarida faol bo'lmagansiz.</p>
       </div>

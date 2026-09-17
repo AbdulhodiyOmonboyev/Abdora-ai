@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BarChart2, AlertTriangle, Sparkles, Target, Lightbulb, Loader2 } from 'lucide-react';
+import { ArrowLeft, BarChart2, AlertTriangle, Sparkles, Target, Lightbulb, Loader2, CheckCircle2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import api from '../../config/axios';
 import { getScoreColor } from '../../utils/format';
@@ -92,7 +92,9 @@ export default function TestResultsPage() {
           )}
 
           {!analysisLoading && hardestQuestions.length === 0 && (
-            <p className="text-sm text-gray-400 py-4 text-center">Hamma savolga to'g'ri javob berilgan 🎉</p>
+            <p className="text-sm text-gray-400 py-4 text-center flex items-center justify-center gap-1.5">
+              <CheckCircle2 size={16} className="text-green-500" /> Hamma savolga to'g'ri javob berilgan
+            </p>
           )}
 
           <div className="space-y-3">

@@ -158,7 +158,7 @@ export default function TeacherDashboard() {
             {groups?.slice(0, 4).map(g => (
               <div key={g.id} className="branch-row">
                 <div className="branch-main">
-                  <div className="branch-dot">{g.icon || '📚'}</div>
+                  <div className="branch-dot flex items-center justify-center text-primary"><BookOpen size={16} /></div>
                   <div className="branch-copy">
                     <strong>{g.name}</strong>
                     <span>{g.students?.length || 0} o'quvchi</span>

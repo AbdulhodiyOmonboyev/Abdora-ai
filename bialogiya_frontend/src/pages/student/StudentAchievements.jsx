@@ -1,17 +1,17 @@
 import { motion } from 'framer-motion';
-import { Trophy, Zap, Flame, Star } from 'lucide-react';
+import { Trophy, Zap, Flame, Star, Target, GraduationCap, BookOpen, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { getLevelProgress } from '../../utils/format';
 
 const SAMPLE_BADGES = [
-  { icon: '🎯', name: 'First Lesson', desc: 'Completed your first lesson', earned: true, rarity: 'common' },
-  { icon: '🏆', name: 'Quiz Master', desc: 'Scored 100% on a quiz', earned: false, rarity: 'rare' },
-  { icon: '🔥', name: 'Week Streak', desc: '7-day learning streak', earned: false, rarity: 'epic' },
-  { icon: '⚡', name: 'Speed Learner', desc: 'Completed 5 lessons in one day', earned: false, rarity: 'rare' },
-  { icon: '🎓', name: 'Subject Master', desc: 'Mastered all topics in a subject', earned: false, rarity: 'legendary' },
-  { icon: '📚', name: 'Bookworm', desc: 'Opened 20 different lessons', earned: false, rarity: 'legendary' },
-  { icon: '💪', name: 'Homework Hero', desc: 'Submitted 10 assignments on time', earned: true, rarity: 'common' },
-  { icon: '🌟', name: 'Perfect Score', desc: 'Got 100% on a test', earned: false, rarity: 'epic' },
+  { icon: Target, name: 'First Lesson', desc: 'Completed your first lesson', earned: true, rarity: 'common' },
+  { icon: Trophy, name: 'Quiz Master', desc: 'Scored 100% on a quiz', earned: false, rarity: 'rare' },
+  { icon: Flame, name: 'Week Streak', desc: '7-day learning streak', earned: false, rarity: 'epic' },
+  { icon: Zap, name: 'Speed Learner', desc: 'Completed 5 lessons in one day', earned: false, rarity: 'rare' },
+  { icon: GraduationCap, name: 'Subject Master', desc: 'Mastered all topics in a subject', earned: false, rarity: 'legendary' },
+  { icon: BookOpen, name: 'Bookworm', desc: 'Opened 20 different lessons', earned: false, rarity: 'legendary' },
+  { icon: ShieldCheck, name: 'Homework Hero', desc: 'Submitted 10 assignments on time', earned: true, rarity: 'common' },
+  { icon: Star, name: 'Perfect Score', desc: 'Got 100% on a test', earned: false, rarity: 'epic' },
 ];
 
 const RARITY_COLORS = { common: 'from-gray-400 to-gray-500', rare: 'from-blue-400 to-blue-600', epic: 'from-purple-400 to-purple-600', legendary: 'from-yellow-400 to-orange-500' };
@@ -56,8 +56,8 @@ export default function StudentAchievements() {
         {SAMPLE_BADGES.map((badge, i) => (
           <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
             className={`card text-center p-4 ${!badge.earned ? 'opacity-40 grayscale' : ''}`}>
-            <div className={`w-14 h-14 bg-gradient-to-br ${RARITY_COLORS[badge.rarity]} rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl shadow-soft`}>
-              {badge.icon}
+            <div className={`w-14 h-14 bg-gradient-to-br ${RARITY_COLORS[badge.rarity]} rounded-2xl flex items-center justify-center mx-auto mb-3 text-white shadow-soft`}>
+              <badge.icon size={26} />
             </div>
             <div className="font-semibold text-sm text-gray-800 dark:text-white">{badge.name}</div>
             <div className="text-xs text-gray-400 mt-1">{badge.desc}</div>

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, BookOpen, Check, X, Download, RefreshCw,
-  ChevronLeft, ChevronRight, TrendingUp, Star,
+  ChevronLeft, ChevronRight, TrendingUp, Star, ClipboardList,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -140,7 +140,9 @@ export default function GradebookPage() {
 
       {!selectedGroup ? (
         <div className="panel-card text-center py-16">
-          <div className="text-4xl mb-3">📋</div>
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
+            <ClipboardList size={28} />
+          </div>
           <div className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Guruh tanlang</div>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             Baholash jurnalini ko'rish uchun guruhni tanlang
@@ -152,7 +154,9 @@ export default function GradebookPage() {
         </div>
       ) : !gradebook || students.length === 0 ? (
         <div className="panel-card text-center py-10">
-          <div className="text-3xl mb-2">📚</div>
+          <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-400 flex items-center justify-center mx-auto mb-2">
+            <BookOpen size={24} />
+          </div>
           <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Bu oyda ma'lumot yo'q</div>
         </div>
       ) : (

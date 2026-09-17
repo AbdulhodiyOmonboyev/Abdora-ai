@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, X, LayoutGrid, List, TrendingUp, UserPlus,
   Users, ArrowRight, RefreshCw, Check, Filter,
+  Camera, Send, UserCheck, Globe, Pin, Target,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -32,12 +33,12 @@ const STATUSES = [
 ];
 
 const SOURCES = [
-  { value: 'instagram', label: 'Instagram', icon: '📸' },
-  { value: 'telegram',  label: 'Telegram',  icon: '✈️' },
-  { value: 'referral',  label: 'Tanish orqali', icon: '👥' },
-  { value: 'walkin',    label: "O'zi keldi",    icon: '🚶' },
-  { value: 'landing',   label: 'Sayt',          icon: '🌐' },
-  { value: 'other',     label: 'Boshqa',        icon: '📌' },
+  { value: 'instagram', label: 'Instagram',     icon: Camera },
+  { value: 'telegram',  label: 'Telegram',      icon: Send },
+  { value: 'referral',  label: 'Tanish orqali', icon: Users },
+  { value: 'walkin',    label: "O'zi keldi",    icon: UserCheck },
+  { value: 'landing',   label: 'Sayt',          icon: Globe },
+  { value: 'other',     label: 'Boshqa',        icon: Pin },
 ];
 
 const emptyForm = () => ({
@@ -122,7 +123,7 @@ export default function ManagerLeads() {
   const filteredLeads = tab === 'all' ? leads : leads.filter(l => l.status === tab);
 
   const sourceLabel = (v) => SOURCES.find(s => s.value === v)?.label || v;
-  const sourceIcon  = (v) => SOURCES.find(s => s.value === v)?.icon || '📌';
+  const sourceIcon  = (v) => SOURCES.find(s => s.value === v)?.icon || Pin;
   const statusCfg   = (v) => STATUSES.find(s => s.value === v) || { label: v, color: '#64748B' };
 
   return (
@@ -271,12 +272,17 @@ export default function ManagerLeads() {
                         <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{lead.phone}</div>
                       </div>
                       {lead.interestedIn && (
-                        <div className="hidden sm:block text-xs truncate max-w-32" style={{ color: 'var(--text-muted)' }}>
-                          🎯 {lead.interestedIn}
+                        <div className="hidden sm:flex items-center gap-1 text-xs truncate max-w-32" style={{ color: 'var(--text-muted)' }}>
+                          <Target size={12} className="text-amber-500 flex-shrink-0" />
+                          <span className="truncate">{lead.interestedIn}</span>
                         </div>
                       )}
-                      <div className="hidden sm:block text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {sourceIcon(lead.source)} {sourceLabel(lead.source)}
+                      <div className="hidden sm:flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {(() => {
+                          const Icon = sourceIcon(lead.source);
+                          return <Icon size={13} className="flex-shrink-0" />;
+                        })()}
+                        <span>{sourceLabel(lead.source)}</span>
                       </div>
                       <span className="px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0"
                         style={{ background: sc.color + '15', color: sc.color }}>
@@ -357,15 +363,19 @@ export default function ManagerLeads() {
           <div>
             <label className="form-label">Manba</label>
             <div className="grid grid-cols-3 gap-2">
-              {SOURCES.map(s => (
-                <button key={s.value} type="button"
-                  onClick={() => setForm(f => ({ ...f, source: s.value }))}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
-                    form.source === s.value ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)]' : 'border-[var(--border)] text-[var(--text-secondary)]'
-                  }`}>
-                  {s.icon} {s.label}
-                </button>
-              ))}
+              {SOURCES.map(s => {
+                const Icon = s.icon;
+                return (
+                  <button key={s.value} type="button"
+                    onClick={() => setForm(f => ({ ...f, source: s.value }))}
+                    className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+                      form.source === s.value ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)]' : 'border-[var(--border)] text-[var(--text-secondary)]'
+                    }`}>
+                    <Icon size={14} />
+                    <span>{s.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { BarChart2, TrendingUp } from 'lucide-react';
+import { BarChart2, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts';
 import api from '../../config/axios';
 import { formatDate } from '../../utils/format';
@@ -62,7 +62,10 @@ export default function StudentAnalytics() {
             <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Zaif mavzular</h3>
             <div className="space-y-2">
               {data.weakTopics?.map((t, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 bg-red-50 rounded-xl text-sm text-red-700">⚠️ {t}</div>
+                <div key={i} className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-950/30 rounded-xl text-sm text-red-700 dark:text-red-400">
+                  <AlertTriangle size={14} className="flex-shrink-0" />
+                  <span>{t}</span>
+                </div>
               ))}
             </div>
           </div>
@@ -70,7 +73,10 @@ export default function StudentAnalytics() {
             <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Kuchli mavzular</h3>
             <div className="space-y-2">
               {data.strongTopics?.map((t, i) => (
-                <div key={i} className="flex items-center gap-2 p-2 bg-green-50 rounded-xl text-sm text-green-700">✅ {t}</div>
+                <div key={i} className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded-xl text-sm text-green-700 dark:text-green-400">
+                  <CheckCircle2 size={14} className="flex-shrink-0" />
+                  <span>{t}</span>
+                </div>
               ))}
             </div>
           </div>

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Calendar, CheckCircle, XCircle, Clock, Snowflake } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../config/axios';
 
@@ -28,8 +28,9 @@ export default function StudentAttendance() {
     <div className="max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Davomat</h1>
       {user?.isFrozen && (
-        <div className="mb-4 rounded-3xl border border-blue-200 bg-blue-50 p-4 text-blue-700">
-          ❄️ Sizning hisobingiz muzlatilgan. Iltimos, o'qituvchingiz bilan bog'laning.
+        <div className="mb-4 rounded-3xl border border-blue-200 bg-blue-50 dark:bg-blue-950/40 dark:border-blue-800 p-4 text-blue-700 dark:text-blue-300 flex items-center gap-2">
+          <Snowflake size={18} className="flex-shrink-0 text-blue-500 animate-pulse" />
+          <span>Sizning hisobingiz muzlatilgan. Iltimos, o'qituvchingiz bilan bog'laning.</span>
         </div>
       )}
       {total > 0 && (

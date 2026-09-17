@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Calendar, Users, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { AlertTriangle, Calendar, Users, ChevronLeft, ChevronRight, Filter, GraduationCap, Building2, Clock } from 'lucide-react';
 import api from '../../config/axios';
 import PageHeader from '../../components/ui/PageHeader';
 import { Skeleton } from '../../components/ui/Skeleton';
@@ -194,7 +194,7 @@ export default function TimetablePage() {
         <div className="space-y-3"><Skeleton className="h-64 rounded-2xl" /></div>
       ) : schedule.length === 0 && rooms.length === 0 ? (
         <div className="panel-card text-center py-16">
-          <div className="text-4xl mb-3">📅</div>
+          <Calendar size={40} className="mx-auto mb-3 text-gray-400" />
           <div className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Jadval bo'sh</div>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             Guruhlar va xonalar qo'shilgandan so'ng jadval bu yerda ko'rinadi
@@ -334,11 +334,15 @@ export default function TimetablePage() {
               <Calendar size={14} />
             </button>
           </div>
-          <div className="space-y-1.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
-            {selectedSlot.teacherName && <div>👨‍🏫 {selectedSlot.teacherName}</div>}
-            {selectedSlot.roomName && <div>🏫 {selectedSlot.roomName}</div>}
-            <div>📅 {DAYS[selectedSlot.dayOfWeek]}</div>
-            <div>⏰ {selectedSlot.startTime} – {selectedSlot.endTime}</div>
+          <div className="space-y-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            {selectedSlot.teacherName && (
+              <div className="flex items-center gap-1.5"><GraduationCap size={13} className="text-primary" /> <span>{selectedSlot.teacherName}</span></div>
+            )}
+            {selectedSlot.roomName && (
+              <div className="flex items-center gap-1.5"><Building2 size={13} className="text-primary" /> <span>{selectedSlot.roomName}</span></div>
+            )}
+            <div className="flex items-center gap-1.5"><Calendar size={13} className="text-primary" /> <span>{DAYS[selectedSlot.dayOfWeek]}</span></div>
+            <div className="flex items-center gap-1.5"><Clock size={13} className="text-primary" /> <span>{selectedSlot.startTime} – {selectedSlot.endTime}</span></div>
             {conflictIds.has(selectedSlot.id) && (
               <div className="flex items-center gap-1.5 text-red-500 font-medium mt-2">
                 <AlertTriangle size={12} />

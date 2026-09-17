@@ -14,11 +14,11 @@ import { getLevelProgress, formatDate, getScoreBg } from '../../utils/format';
 import StatCard from '../../components/ui/StatCard';
 
 const MOTIVATIONS = [
-  "Har bir dars — kelajagingizga bitta qadam! 🚀",
-  "Bilim — eng kuchli qurol! Davom eting! 💪",
-  "Bugungi harakatingiz ertangi muvaffaqiyatingiz! ⭐",
-  "Hech qachon o'rganishni to'xtatmang! 🧠",
-  "Siz bunga qodirсiz! Oldinga! 🎯",
+  "Har bir dars — kelajagingizga bitta qadam!",
+  "Bilim — eng kuchli qurol! Davom eting!",
+  "Bugungi harakatingiz ertangi muvaffaqiyatingiz!",
+  "Hech qachon o'rganishni to'xtatmang!",
+  "Siz bunga qodirsiz! Oldinga!",
 ];
 
 export default function StudentDashboard() {
@@ -74,7 +74,7 @@ export default function StudentDashboard() {
         <div>
           <span className="dashboard-badge"><Sparkles size={12} /> Abdora AI</span>
           <h1>{getGreeting()}, {user?.name}</h1>
-          <p>{motivation}</p>
+          <p className="flex items-center gap-1.5"><Sparkles size={14} className="text-primary inline flex-shrink-0" /> {motivation}</p>
         </div>
         <div className="dashboard-header-actions">
           <span className="header-status">Live</span>

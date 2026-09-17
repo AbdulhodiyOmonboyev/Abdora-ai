@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Plus, FileText, Clock, Trash2, BarChart2, Upload, X, Loader2, Sparkles, FileCheck, AlertTriangle } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, BarChart2, Upload, X, Loader2, Sparkles, FileCheck, AlertTriangle, Image as ImageIcon, Paperclip } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 
@@ -37,10 +37,10 @@ export default function ManageTests() {
       qc.invalidateQueries(['my-tests']);
       // 202 = row created, AI still writing the questions in the background.
       if (res.status === 202) {
-        toast.success('✅ Yuklandi. AI savollarni tayyorlamoqda — ro\'yxatda kuzating.');
+        toast.success('Yuklandi. AI savollarni tayyorlamoqda — ro\'yxatda kuzating.');
       } else {
-        toast.success(`✅ ${res.data.message || 'Test yaratildi'}`);
-        (res.data.data?.warnings || []).forEach(w => toast(w, { icon: '⚠️' }));
+        toast.success(res.data.message || 'Test yaratildi');
+        (res.data.data?.warnings || []).forEach(w => toast(w));
       }
       setShowPdfModal(false);
       setPdfFile(null);
@@ -60,13 +60,12 @@ export default function ManageTests() {
     pdfMutation.mutate(fd);
   };
 
-  const getFileIcon = (file) => {
+  const renderFileIcon = (file) => {
     if (!file) return null;
-    if (file.type === 'application/pdf') return '📄';
-    if (file.type.startsWith('image/')) return '🖼️';
-    if (file.type.includes('word')) return '📝';
-    if (file.type === 'text/plain') return '📃';
-    return '📎';
+    if (file.type === 'application/pdf') return <FileText size={32} className="text-red-500 mx-auto" />;
+    if (file.type.startsWith('image/')) return <ImageIcon size={32} className="text-blue-500 mx-auto" />;
+    if (file.type.includes('word')) return <FileText size={32} className="text-blue-600 mx-auto" />;
+    return <Paperclip size={32} className="text-gray-500 mx-auto" />;
   };
 
   return (
@@ -89,7 +88,9 @@ export default function ManageTests() {
             onClick={e => e.target === e.currentTarget && setShowPdfModal(false)}>
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-md">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="font-bold text-lg">📄 Fayldan test yaratish</h2>
+                <h2 className="font-bold text-lg flex items-center gap-2">
+                  <FileText size={20} className="text-primary" /> Fayldan test yaratish
+                </h2>
                 <button onClick={() => setShowPdfModal(false)} className="btn-ghost p-1.5 rounded-lg"><X size={16} /></button>
               </div>
               <div className="space-y-4">
@@ -132,7 +133,7 @@ export default function ManageTests() {
                       ${pdfFile ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary'}`}>
                     {pdfFile ? (
                       <div>
-                        <div className="text-2xl mb-1">{getFileIcon(pdfFile)}</div>
+                        <div className="mb-1">{renderFileIcon(pdfFile)}</div>
                         <div className="text-sm font-medium text-primary">{pdfFile.name}</div>
                         <div className="text-xs text-gray-400">{(pdfFile.size / 1024 / 1024).toFixed(1)} MB</div>
                         <button onClick={e => { e.stopPropagation(); setPdfFile(null); }}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Copy, X, GraduationCap, Phone, Users, Star, Zap, Pencil, Trash2, Save, ChevronRight, Search, Snowflake } from 'lucide-react';
+import { Copy, X, GraduationCap, Phone, Users, Star, Zap, Pencil, Trash2, Save, ChevronRight, Search, Snowflake, CheckCircle2 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import PhoneInput from '../../components/ui/PhoneInput';
@@ -247,7 +247,9 @@ export default function ManageStudents() {
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white">{selectedStudent.name}</h3>
                 <span className="text-sm text-gray-400 mt-0.5">@{selectedStudent.username}</span>
                 {selectedStudent.isFrozen && (
-                  <span className="mt-2 badge bg-blue-100 text-blue-600 text-xs">❄️ Muzlatilgan</span>
+                  <span className="mt-2 badge bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 text-xs inline-flex items-center gap-1">
+                    <Snowflake size={12} /> Muzlatilgan
+                  </span>
                 )}
               </div>
 
@@ -328,7 +330,9 @@ export default function ManageStudents() {
               {newCreds ? (
                 <div>
                   <div className="text-center mb-4">
-                    <div className="text-4xl mb-2">🎉</div>
+                    <div className="w-14 h-14 bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400 rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-soft">
+                      <CheckCircle2 size={28} />
+                    </div>
                     <h3 className="font-bold text-green-600">O'quvchi qo'shildi!</h3>
                     <p className="text-sm text-gray-500 mt-1">Bu ma'lumotlarni o'quvchiga bering</p>
                   </div>

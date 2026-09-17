@@ -13,7 +13,31 @@ export default function StudentLeaderboard() {
   });
 
   const leaderboard = data || [];
-  const medals = ['🥇', '🥈', '🥉'];
+
+  const renderRankBadge = (rank) => {
+    if (rank === 1) {
+      return (
+        <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-sm">
+          <Trophy size={15} />
+        </div>
+      );
+    }
+    if (rank === 2) {
+      return (
+        <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shadow-sm">
+          <Medal size={15} />
+        </div>
+      );
+    }
+    if (rank === 3) {
+      return (
+        <div className="w-7 h-7 rounded-full bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 flex items-center justify-center shadow-sm">
+          <Medal size={15} />
+        </div>
+      );
+    }
+    return <span className="text-gray-400 font-bold text-sm">#{rank}</span>;
+  };
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -30,7 +54,7 @@ export default function StudentLeaderboard() {
             return (
               <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                 className={`flex-1 flex flex-col items-center ${heights[i]}`}>
-                <div className="text-2xl mb-1">{medals[rank - 1]}</div>
+                <div className="mb-1">{renderRankBadge(rank)}</div>
                 <div className="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white font-bold text-sm mb-1">
                   {p.name?.charAt(0)}
                 </div>
@@ -52,8 +76,8 @@ export default function StudentLeaderboard() {
           return (
             <motion.div key={player.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
               className={`card flex items-center gap-3 py-3 ${isMe ? 'border-primary/30 bg-primary/5' : ''}`}>
-              <div className={`w-8 text-center font-bold text-sm ${i < 3 ? 'text-yellow-500' : 'text-gray-400'}`}>
-                {i < 3 ? medals[i] : `#${i + 1}`}
+              <div className="w-8 flex items-center justify-center font-bold text-sm">
+                {renderRankBadge(i + 1)}
               </div>
               <div className="w-9 h-9 gradient-bg rounded-xl flex items-center justify-center text-white font-semibold text-sm">
                 {player.name?.charAt(0)}

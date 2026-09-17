@@ -5,6 +5,7 @@ import {
   Phone, User, Tag, MapPin, Calendar, Clock, Snowflake,
   Archive, UserPlus, MessageSquare, ChevronDown, RefreshCw,
   Edit3, Check, X, Trash2, Plus, UserCheck, TrendingUp,
+  Camera, Send, Users, Globe, Pin, FileText, CheckCircle2,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -26,19 +27,19 @@ const STATUSES = [
 ];
 
 const SOURCES = [
-  { value: 'instagram', label: 'Instagram', icon: '📸' },
-  { value: 'telegram',  label: 'Telegram',  icon: '✈️' },
-  { value: 'referral',  label: 'Tanish orqali', icon: '👥' },
-  { value: 'walkin',    label: "O'zi keldi",    icon: '🚶' },
-  { value: 'landing',   label: 'Sayt',          icon: '🌐' },
-  { value: 'other',     label: 'Boshqa',        icon: '📌' },
+  { value: 'instagram', label: 'Instagram',     icon: Camera },
+  { value: 'telegram',  label: 'Telegram',      icon: Send },
+  { value: 'referral',  label: 'Tanish orqali', icon: Users },
+  { value: 'walkin',    label: "O'zi keldi",    icon: UserCheck },
+  { value: 'landing',   label: 'Sayt',          icon: Globe },
+  { value: 'other',     label: 'Boshqa',        icon: Pin },
 ];
 
 const ACTIVITY_TYPES = [
-  { value: 'call',    label: "Qo'ng'iroq", icon: '📞' },
-  { value: 'note',    label: 'Izoh',       icon: '📝' },
-  { value: 'meeting', label: 'Uchrashuv',  icon: '🤝' },
-  { value: 'sms',     label: 'SMS',        icon: '💬' },
+  { value: 'call',    label: "Qo'ng'iroq", icon: Phone },
+  { value: 'note',    label: 'Izoh',       icon: FileText },
+  { value: 'meeting', label: 'Uchrashuv',  icon: Users },
+  { value: 'sms',     label: 'SMS',        icon: MessageSquare },
 ];
 
 /**
@@ -248,7 +249,7 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
                       <label className="form-label">Manba</label>
                       <select value={editForm.source} onChange={e => setEditForm(f => ({ ...f, source: e.target.value }))}
                         className="input-field">
-                        {SOURCES.map(s => <option key={s.value} value={s.value}>{s.icon} {s.label}</option>)}
+                        {SOURCES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
                     </div>
                     <div>
@@ -286,7 +287,7 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
                       {[
                         { icon: User,   label: 'Ism',      value: lead.name },
                         { icon: Phone,  label: 'Telefon',  value: <a href={`tel:${lead.phone}`} className="hover:underline" style={{ color: 'var(--primary)' }}>{lead.phone}</a> },
-                        { icon: Tag,    label: 'Manba',    value: (currentSource?.icon + ' ' + currentSource?.label) },
+                        { icon: currentSource?.icon || Tag, label: 'Manba', value: currentSource?.label || '—' },
                         { icon: TrendingUp, label: 'Qiziqish', value: lead.interestedIn || '—' },
                       ].map(({ icon: Icon, label, value }) => (
                         <div key={label} className="flex items-start gap-3 py-3">
@@ -334,20 +335,24 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
                     Yangi faoliyat
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
-                    {ACTIVITY_TYPES.map(t => (
-                      <button
-                        key={t.value}
-                        onClick={() => setActivityForm(f => ({ ...f, type: t.value }))}
-                        className={`py-2 rounded-lg text-xs font-medium border transition-all ${
-                          activityForm.type === t.value
-                            ? 'border-transparent text-white'
-                            : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--primary)]/40'
-                        }`}
-                        style={activityForm.type === t.value ? { background: 'var(--primary)' } : {}}
-                      >
-                        {t.icon} {t.label}
-                      </button>
-                    ))}
+                    {ACTIVITY_TYPES.map(t => {
+                      const Icon = t.icon;
+                      return (
+                        <button
+                          key={t.value}
+                          onClick={() => setActivityForm(f => ({ ...f, type: t.value }))}
+                          className={`py-2 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition-all ${
+                            activityForm.type === t.value
+                              ? 'border-transparent text-white'
+                              : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--primary)]/40'
+                          }`}
+                          style={activityForm.type === t.value ? { background: 'var(--primary)' } : {}}
+                        >
+                          <Icon size={13} />
+                          <span>{t.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                   <textarea
                     value={activityForm.content}
@@ -453,11 +458,11 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
               className="input-field" />
           </div>
 
-          <div className="p-3 rounded-xl text-xs"
+          <div className="p-3 rounded-xl text-xs space-y-1.5"
             style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-            ✅ Talaba avtomatik login va parol oladi<br />
-            ✅ Lid statusi "O'qishga kirdi" ga o'tadi<br />
-            ✅ Talaba tanlangan guruhga qo'shiladi
+            <div className="flex items-center gap-2"><CheckCircle2 size={13} className="text-green-600 flex-shrink-0" /> <span>Talaba avtomatik login va parol oladi</span></div>
+            <div className="flex items-center gap-2"><CheckCircle2 size={13} className="text-green-600 flex-shrink-0" /> <span>Lid statusi "O'qishga kirdi" ga o'tadi</span></div>
+            <div className="flex items-center gap-2"><CheckCircle2 size={13} className="text-green-600 flex-shrink-0" /> <span>Talaba tanlangan guruhga qo'shiladi</span></div>
           </div>
         </div>
       </Modal>

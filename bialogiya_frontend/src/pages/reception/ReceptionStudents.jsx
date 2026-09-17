@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Copy, X, GraduationCap, Trash2, Search, Phone, Users } from 'lucide-react';
+import { Plus, Copy, X, GraduationCap, Trash2, Search, Phone, Users, CheckCircle2 } from 'lucide-react';
 import api from '../../config/axios';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -199,7 +199,9 @@ export default function ReceptionStudents() {
               {newCreds ? (
                 <div>
                   <div className="text-center mb-4">
-                    <div className="text-4xl mb-2">🎉</div>
+                    <div className="w-12 h-12 rounded-2xl bg-green-100 dark:bg-green-950/40 text-green-600 flex items-center justify-center mx-auto mb-2">
+                      <CheckCircle2 size={26} />
+                    </div>
                     <h3 className="font-bold text-green-600">O'quvchi qo'shildi!</h3>
                     <p className="text-sm text-gray-500 mt-1">Bu ma'lumotlarni o'quvchiga taqdim eting</p>
                   </div>

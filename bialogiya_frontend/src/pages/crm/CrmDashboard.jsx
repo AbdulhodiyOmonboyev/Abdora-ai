@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import {
   Users, TrendingUp, UserPlus, ArrowRight, Target,
   Phone, MessageSquare, Calendar,
+  Camera, Send, UserCheck, Globe, Pin,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -28,12 +29,12 @@ const STATUS_LABELS = {
 };
 
 const SOURCE_LABELS = {
-  instagram: { label: 'Instagram', icon: '📸', color: '#E4405F' },
-  telegram:  { label: 'Telegram',  icon: '✈️', color: '#2AABEE' },
-  referral:  { label: 'Tanish',    icon: '👥', color: '#10B981' },
-  walkin:    { label: "O'zi keldi",icon: '🚶', color: '#F59E0B' },
-  landing:   { label: 'Sayt',      icon: '🌐', color: '#8B5CF6' },
-  other:     { label: 'Boshqa',    icon: '📌', color: '#64748B' },
+  instagram: { label: 'Instagram', icon: Camera, color: '#E4405F' },
+  telegram:  { label: 'Telegram',  icon: Send, color: '#2AABEE' },
+  referral:  { label: 'Tanish',    icon: Users, color: '#10B981' },
+  walkin:    { label: "O'zi keldi",icon: UserCheck, color: '#F59E0B' },
+  landing:   { label: 'Sayt',      icon: Globe, color: '#8B5CF6' },
+  other:     { label: 'Boshqa',    icon: Pin, color: '#64748B' },
 };
 
 function ChartTooltip({ active, payload, label }) {
@@ -79,7 +80,7 @@ export default function CrmDashboard() {
     }, {})
   ).map(([key, count]) => ({
     name: SOURCE_LABELS[key]?.label || key,
-    icon: SOURCE_LABELS[key]?.icon || '📌',
+    icon: SOURCE_LABELS[key]?.icon || Pin,
     color: SOURCE_LABELS[key]?.color || '#64748B',
     count,
   })).sort((a, b) => b.count - a.count);
@@ -165,13 +166,15 @@ export default function CrmDashboard() {
             <EmptyState icon={Phone} title="Ma'lumot yo'q" />
           ) : (
             <div className="space-y-2.5">
-              {sourceData.map(({ name, icon, color, count }) => {
+              {sourceData.map(({ name, icon: Icon, color, count }) => {
                 const total = leads.length || 1;
                 const pct = Math.round((count / total) * 100);
                 return (
                   <div key={name}>
                     <div className="flex items-center justify-between mb-1 text-xs">
-                      <span style={{ color: 'var(--text-secondary)' }}>{icon} {name}</span>
+                      <span className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                        <Icon size={14} style={{ color }} /> {name}
+                      </span>
                       <span className="font-semibold" style={{ color }}>{count} ({pct}%)</span>
                     </div>
                     <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>

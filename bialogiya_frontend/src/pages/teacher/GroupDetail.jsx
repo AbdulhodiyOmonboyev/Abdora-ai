@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, Users, CreditCard, ChevronLeft, ChevronRight
+  ArrowLeft, Users, CreditCard, ChevronLeft, ChevronRight,
+  BookOpen, Snowflake, Phone
 } from 'lucide-react';
 import api from '../../config/axios';
 import { getSubjectLabel, getSubjectBadgeClass } from '../../utils/subjects';
@@ -71,8 +72,8 @@ export default function GroupDetail() {
             <span className="dashboard-badge"><Users size={12} /> Abdora AI</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 gradient-bg rounded-2xl flex items-center justify-center text-2xl shadow-glow flex-shrink-0">
-              {group?.icon || '📚'}
+            <div className="w-12 h-12 gradient-bg rounded-2xl flex items-center justify-center text-white shadow-glow flex-shrink-0">
+              <BookOpen size={24} />
             </div>
             <div className="min-w-0">
               <h1>{group?.name}</h1>
@@ -146,7 +147,7 @@ export default function GroupDetail() {
                   className="w-full text-left p-3 flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0
                     ${s.isFrozen ? 'bg-blue-400' : 'gradient-bg'}`}>
-                    {s.isFrozen ? '❄️' : s.name?.charAt(0)}
+                    {s.isFrozen ? <Snowflake size={16} /> : s.name?.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm text-gray-800 dark:text-white">{s.name}</div>
@@ -154,7 +155,7 @@ export default function GroupDetail() {
                       <span>@{s.username}</span>
                       <span>Lv.{s.level}</span>
                       <span>{s.xp} XP</span>
-                      {s.phone && <span>📞 {s.phone}</span>}
+                      {s.phone && <span className="flex items-center gap-1"><Phone size={11} /> {s.phone}</span>}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2 items-center text-xs">
                       <span className={`px-2 py-1 rounded-full ${isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>

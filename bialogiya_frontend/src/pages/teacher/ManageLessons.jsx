@@ -2,7 +2,7 @@ import { getSubjectIcon } from '../../utils/subjects';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Plus, BookOpen, Trash2, RefreshCw, Pencil, Eye, Search, X } from 'lucide-react';
+import { Plus, BookOpen, Trash2, RefreshCw, Pencil, Eye, Search, X, Check, Loader2, AlertTriangle, Clock } from 'lucide-react';
 import { useState } from 'react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -22,8 +22,21 @@ export default function ManageLessons() {
     onSuccess: () => { qc.invalidateQueries(['my-lessons']); toast.success('AI regeneration started'); },
   });
 
-  const STATUS = { done: '✓ AI Ready', generating: '⏳ Generating', pending: '• Pending', error: '⚠ Error', disabled: 'AI o\'chirilgan' };
-  const STATUS_COLOR = { done: 'bg-primary/10 text-primary', generating: 'bg-yellow-100 text-yellow-700', pending: 'bg-gray-100 text-gray-500', error: 'bg-red-100 text-red-600', disabled: 'bg-gray-100 text-gray-500' };
+  const renderStatusBadge = (status) => {
+    switch (status) {
+      case 'done':
+        return <span className="badge text-xs bg-primary/10 text-primary inline-flex items-center gap-1"><Check size={11} /> AI Ready</span>;
+      case 'generating':
+        return <span className="badge text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400 inline-flex items-center gap-1"><Loader2 size={11} className="animate-spin" /> Generating</span>;
+      case 'error':
+        return <span className="badge text-xs bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 inline-flex items-center gap-1"><AlertTriangle size={11} /> Error</span>;
+      case 'disabled':
+        return <span className="badge text-xs bg-gray-100 text-gray-500">AI o'chirilgan</span>;
+      case 'pending':
+      default:
+        return <span className="badge text-xs bg-gray-100 text-gray-500 inline-flex items-center gap-1"><Clock size={11} /> Pending</span>;
+    }
+  };
 
   const query = search.trim().toLowerCase();
   const filtered = (lessons || []).filter(l => !query
@@ -54,7 +67,7 @@ export default function ManageLessons() {
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-gray-800 dark:text-white truncate">{l.title}</div>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className={`badge text-xs ${STATUS_COLOR[l.aiContent?.status] || STATUS_COLOR.pending}`}>{STATUS[l.aiContent?.status] || 'Pending'}</span>
+                {renderStatusBadge(l.aiContent?.status)}
                 <span className="text-xs text-gray-400">{l.group?.name}</span>
                 <span className="text-xs text-gray-400">{l.views} views</span>
               </div>

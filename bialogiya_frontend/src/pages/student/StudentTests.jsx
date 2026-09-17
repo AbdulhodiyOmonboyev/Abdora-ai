@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FileText, Clock, ChevronRight } from 'lucide-react';
+import { FileText, Clock, ChevronRight, Check } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../config/axios';
 
@@ -37,8 +37,11 @@ export default function StudentTests() {
                 <div className="font-semibold text-gray-800 dark:text-white truncate">{test.title}</div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`badge text-xs ${typeColors[test.type] || 'bg-gray-100 text-gray-600'}`}>{test.type}</span>
-                  <span className="text-xs text-gray-400 flex items-center gap-1"><Clock size={11} /> {test.timeLimit} min</span>
-                  {done && result && <span className="badge bg-green-100 text-green-700 text-xs">✓ {result.percentage}%</span>}
+                  {done && result && (
+                    <span className="badge bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 text-xs inline-flex items-center gap-1">
+                      <Check size={12} /> {result.percentage}%
+                    </span>
+                  )}
                 </div>
               </div>
               {!done ? (

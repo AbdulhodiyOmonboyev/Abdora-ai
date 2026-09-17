@@ -5,9 +5,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
-  Brain, Lightbulb, BookOpen, Repeat, FileText, Map, Volume2,
+  Brain, Lightbulb, BookOpen, Repeat, FileText, Map, Volume2, VolumeX,
   MessageSquare, Users, ArrowLeft, RefreshCw, ChevronLeft, ChevronRight,
-  Send, Loader2, Play, Pause, Square, Check, X, Download, Clapperboard, Mic
+  Send, Loader2, Play, Pause, Square, Check, X, Download, Clapperboard, Mic,
+  Sparkles, HelpCircle, Layers, Award, CheckCircle, Clock, Flame,
+  ArrowRight, Trophy, ThumbsUp, AlertTriangle
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -109,7 +111,21 @@ function QuizSection({ questions }) {
   if (submitted) {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8">
-        <div className="text-6xl mb-4">{score >= questions.length * 0.8 ? '🏆' : score >= questions.length * 0.6 ? '👍' : '📚'}</div>
+        <div className="flex justify-center mb-4">
+          {score >= questions.length * 0.8 ? (
+            <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center">
+              <Trophy size={36} />
+            </div>
+          ) : score >= questions.length * 0.6 ? (
+            <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center">
+              <ThumbsUp size={36} />
+            </div>
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center">
+              <BookOpen size={36} />
+            </div>
+          )}
+        </div>
         <h3 className="text-2xl font-bold gradient-text">{score}/{questions.length}</h3>
         <p className="text-gray-500 mt-2">{Math.round((score / questions.length) * 100)}% correct</p>
         <div className="mt-6 space-y-3 text-left max-w-xl mx-auto">
@@ -120,7 +136,9 @@ function QuizSection({ questions }) {
               <div key={i} className={`p-3 rounded-xl border ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                 <div className="text-sm font-medium">{qi.text}</div>
                 {!isCorrect && (
-                  <div className="text-xs text-green-600 mt-1">✓ {qi.options?.[correctIdx]?.text}</div>
+                  <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <Check size={12} /> <span>{qi.options?.[correctIdx]?.text}</span>
+                  </div>
                 )}
                 {qi.explanation && <div className="text-xs text-gray-500 mt-1">{qi.explanation}</div>}
               </div>
@@ -452,7 +470,15 @@ export default function LessonDetail() {
               {getSubjectIcon(lesson?.subject)} {getSubjectLabel(lesson?.subject)}
             </span>
             <span className={`badge ${isDone ? 'bg-primary/10 text-primary' : isGenerating ? 'bg-yellow-100 text-yellow-700' : isError ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
-              {isDone ? '✓ AI Ready' : isGenerating ? '⏳ Generating...' : isError ? '⚠ Error' : '• Pending'}
+              {isDone ? (
+                <span className="inline-flex items-center gap-1"><Check size={12} /> AI Ready</span>
+              ) : isGenerating ? (
+                <span className="inline-flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Generating...</span>
+              ) : isError ? (
+                <span className="inline-flex items-center gap-1"><AlertTriangle size={12} /> Error</span>
+              ) : (
+                '• Pending'
+              )}
             </span>
           </div>
         </div>
@@ -528,7 +554,7 @@ export default function LessonDetail() {
           )}
           {activeTab === 'story' && (
             <div>
-              <h2 className="text-lg font-bold mb-4 gradient-text">Hikoya rejimi 📖</h2>
+              <h2 className="text-lg font-bold mb-4 gradient-text flex items-center gap-2">Hikoya rejimi <BookOpen size={18} className="text-primary inline" /></h2>
               {ai?.storyMode && <div className="mb-4"><StoryAudioPlayer lessonId={id} /></div>}
               <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.storyMode}</div>
             </div>

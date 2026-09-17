@@ -6,6 +6,7 @@ import {
   Bell, Palette, Upload, Phone, MapPin, Mail, Clock, Users,
   ChevronRight, Check, AlertCircle, RefreshCw, Image, FileText, X,
   Coins, Smartphone, Target, ShoppingBag, Award, Sparkles, MessageCircle,
+  Banknote, Wallet, CheckCircle2, FileEdit,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -67,11 +68,11 @@ function FormGroup({ label, hint, children, required }) {
 }
 
 const PAYMENT_METHODS = [
-  { key: 'cash',  label: 'Naqd pul',  icon: '💵' },
-  { key: 'click', label: 'Click',     icon: '📱' },
-  { key: 'payme', label: 'Payme',     icon: '💳' },
-  { key: 'bank',  label: 'Bank o\'tkazma', icon: '🏦' },
-  { key: 'other', label: 'Boshqa',    icon: '📌' },
+  { key: 'cash',  label: 'Naqd pul',      icon: Banknote },
+  { key: 'click', label: 'Click',         icon: Smartphone },
+  { key: 'payme', label: 'Payme',         icon: CreditCard },
+  { key: 'bank',  label: 'Bank o\'tkazma', icon: Building2 },
+  { key: 'other', label: 'Boshqa',        icon: Wallet },
 ];
 
 const LANGUAGES = [
@@ -460,7 +461,7 @@ export default function AdminSettings() {
                       Ruxsat etilgan to'lov usullari
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {PAYMENT_METHODS.map(({ key, label, icon }) => {
+                      {PAYMENT_METHODS.map(({ key, label, icon: Icon }) => {
                         const enabled = settings.enabledPaymentMethods.includes(key);
                         return (
                           <button
@@ -471,8 +472,8 @@ export default function AdminSettings() {
                             }`}
                             style={{ color: enabled ? 'var(--primary)' : 'var(--text-secondary)' }}
                           >
-                            <span className="text-lg">{icon}</span>
-                            {label}
+                            <Icon size={18} className="flex-shrink-0" />
+                            <span>{label}</span>
                             {enabled && <Check size={14} className="ml-auto" />}
                           </button>
                         );
@@ -563,12 +564,12 @@ export default function AdminSettings() {
                       <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>Har bir faoliyat uchun beriluvchi XP miqdori</p>
                       <div className="grid grid-cols-3 gap-3">
                         {[
-                          { label: 'Dars uchun XP', key: 'xpPerLesson', icon: '📚' },
-                          { label: 'Vazifa uchun XP', key: 'xpPerHomework', icon: '📝' },
-                          { label: 'Test uchun XP', key: 'xpPerTest', icon: '🎯' },
-                        ].map(({ label, key, icon }) => (
+                          { label: 'Dars uchun XP', key: 'xpPerLesson', icon: BookOpen },
+                          { label: 'Vazifa uchun XP', key: 'xpPerHomework', icon: FileEdit },
+                          { label: 'Test uchun XP', key: 'xpPerTest', icon: Target },
+                        ].map(({ label, key, icon: Icon }) => (
                           <div key={key} className="p-3 rounded-xl" style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)' }}>
-                            <div className="text-lg mb-1">{icon}</div>
+                            <div className="mb-1 text-[var(--primary)]"><Icon size={20} /></div>
                             <div className="text-xs mb-1.5" style={{ color: 'var(--text-secondary)' }}>{label}</div>
                             <input type="number" min={0} max={1000} value={settings[key]}
                               onChange={e => set(key, +e.target.value)}
@@ -938,7 +939,8 @@ export default function AdminSettings() {
                     {settings.telegramBotToken && (
                       <div className="flex items-center gap-2 p-3 rounded-xl text-xs"
                         style={{ background: 'var(--primary-50)', color: 'var(--primary-600)' }}>
-                        ✅ Bot sozlangan: @{settings.telegramBotUsername || 'bot'}
+                        <CheckCircle2 size={14} className="flex-shrink-0 text-green-600" />
+                        <span>Bot sozlangan: @{settings.telegramBotUsername || 'bot'}</span>
                       </div>
                     )}
                   </div>

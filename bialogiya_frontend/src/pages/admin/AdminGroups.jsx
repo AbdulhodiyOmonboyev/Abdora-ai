@@ -40,8 +40,8 @@ export default function AdminGroups() {
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center text-xl flex-shrink-0">
-                    {g.icon || '📚'}
+                  <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center flex-shrink-0 text-white">
+                    <BookOpen size={20} />
                   </div>
                   <div>
                     <h3 className="font-bold text-sm group-hover:text-primary transition-colors line-clamp-1" style={{ color: 'var(--text-primary)' }}>

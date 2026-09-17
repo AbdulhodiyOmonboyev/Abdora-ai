@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Printer, Download, ArrowLeft, Check, X } from 'lucide-react';
+import { Printer, Download, ArrowLeft, Check, X, Receipt } from 'lucide-react';
 import api from '../../config/axios';
 import { Skeleton } from '../../components/ui/Skeleton';
 
@@ -84,7 +84,7 @@ export default function PaymentReceiptPage() {
   if (!data) {
     return (
       <div className="max-w-md mx-auto p-8 text-center">
-        <div className="text-4xl mb-3">🧾</div>
+        <Receipt size={40} className="mx-auto mb-3 text-gray-400" />
         <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>To'lov topilmadi</div>
         <button onClick={() => navigate(-1)} className="btn-ghost mt-4"><ArrowLeft size={14} /> Orqaga</button>
       </div>

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Plus, Trash2, X, Copy, KeyRound, User,
-  Phone, Hash, RefreshCw, Loader2, CheckCircle2,
+  Phone, Hash, RefreshCw, Loader2, CheckCircle2, Snowflake,
   Calendar, Clock, DoorOpen, Building2, BookOpen, FileText, Eye, Download
 } from 'lucide-react';
 
@@ -370,7 +370,13 @@ export default function ReceptionGroupDetail() {
                   </div>
                   <div>
                     <div className="font-bold text-gray-800 dark:text-white">{selectedStudent.name}</div>
-                    <div className="text-xs text-gray-400">{selectedStudent.isFrozen ? '❄️ Muzlatilgan' : '✅ Faol'}</div>
+                    <div className="text-xs">
+                      {selectedStudent.isFrozen ? (
+                        <span className="flex items-center gap-1 text-sky-500"><Snowflake size={11} /> Muzlatilgan</span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-green-600"><CheckCircle2 size={11} /> Faol</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <button onClick={() => { setSelectedStudent(null); setCreds(null); }} className="btn-ghost p-1.5 rounded-lg">

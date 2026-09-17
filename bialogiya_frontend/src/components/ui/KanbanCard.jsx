@@ -1,5 +1,6 @@
 import { cn } from '../../utils/cn';
 import { motion } from 'framer-motion';
+import { Camera, Send, Users, UserCheck, Globe, Pin, Phone, Target, Snowflake } from 'lucide-react';
 
 const STATUS_CONFIG = {
   new:       { label: 'Yangi',          color: '#3B82F6', bg: '#EFF6FF' },
@@ -11,13 +12,13 @@ const STATUS_CONFIG = {
   lost:      { label: 'Chiqib ketdi',   color: '#EF4444', bg: '#FEF2F2' },
 };
 
-const SOURCE_EMOJI = {
-  instagram: '📸',
-  telegram:  '✈️',
-  referral:  '👥',
-  walkin:    '🚶',
-  landing:   '🌐',
-  other:     '📌',
+const SOURCE_ICONS = {
+  instagram: Camera,
+  telegram:  Send,
+  referral:  Users,
+  walkin:    UserCheck,
+  landing:   Globe,
+  other:     Pin,
 };
 
 function daysSince(dateStr) {
@@ -53,8 +54,11 @@ export default function KanbanCard({ lead, onClick, statusOptions = [] }) {
         <div className="font-semibold text-sm leading-tight line-clamp-1" style={{ color: 'var(--text-primary)' }}>
           {lead.name}
         </div>
-        <span className="text-base flex-shrink-0" title={lead.source}>
-          {SOURCE_EMOJI[lead.source] || '📌'}
+        <span className="text-muted flex-shrink-0" title={lead.source}>
+          {(() => {
+            const Icon = SOURCE_ICONS[lead.source] || Pin;
+            return <Icon size={14} />;
+          })()}
         </span>
       </div>
 
@@ -65,13 +69,15 @@ export default function KanbanCard({ lead, onClick, statusOptions = [] }) {
         className="flex items-center gap-1.5 text-xs mb-2.5 hover:underline"
         style={{ color: 'var(--text-secondary)' }}
       >
-        📞 {lead.phone}
+        <Phone size={12} style={{ color: 'var(--primary)' }} />
+        <span>{lead.phone}</span>
       </a>
 
       {/* interestedIn */}
       {lead.interestedIn && (
-        <div className="text-xs mb-2.5 truncate" style={{ color: 'var(--text-muted)' }}>
-          🎯 {lead.interestedIn}
+        <div className="flex items-center gap-1.5 text-xs mb-2.5 truncate" style={{ color: 'var(--text-muted)' }}>
+          <Target size={12} className="text-amber-500 flex-shrink-0" />
+          <span className="truncate">{lead.interestedIn}</span>
         </div>
       )}
 
@@ -81,8 +87,8 @@ export default function KanbanCard({ lead, onClick, statusOptions = [] }) {
           {days === 0 ? 'Bugun' : `${days} kun oldin`}
         </span>
         {lead.frozenUntil && lead.status === 'frozen' && (
-          <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-            ❄️ {new Date(lead.frozenUntil).toLocaleDateString('uz-UZ')}
+          <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-muted)' }}>
+            <Snowflake size={11} className="text-sky-500" /> {new Date(lead.frozenUntil).toLocaleDateString('uz-UZ')}
           </span>
         )}
         <span

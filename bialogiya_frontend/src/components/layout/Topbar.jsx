@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell, Sun, Moon, LogOut, Globe, ChevronDown, Menu,
   KeyRound, User, Eye, EyeOff, Search, X, Check,
+  BookOpen, FileEdit, Trophy, Snowflake,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -123,7 +124,7 @@ export default function Topbar({ onMenuClick }) {
   const changePwMutation = useMutation({
     mutationFn: (d) => api.post('/users/change-password', d),
     onSuccess: () => {
-      toast.success('✅ Parol muvaffaqiyatli o\'zgartirildi!');
+      toast.success('Parol muvaffaqiyatli o\'zgartirildi!');
       setShowChangePw(false);
       setPwForm({ current: '', newPw: '', confirm: '' });
     },
@@ -359,7 +360,10 @@ export default function Topbar({ onMenuClick }) {
                             className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-sm"
                             style={{ backgroundColor: 'var(--secondary-background)', border: '1px solid var(--border)' }}
                           >
-                            {n.type === 'homework' ? '📚' : n.type === 'exam' ? '✍️' : n.type === 'achievement' ? '🏆' : '📌'}
+                            {n.type === 'homework' ? <BookOpen size={14} style={{ color: 'var(--primary)' }} />
+                              : n.type === 'exam' ? <FileEdit size={14} className="text-purple-500" />
+                              : n.type === 'achievement' ? <Trophy size={14} className="text-amber-500" />
+                              : <Bell size={14} style={{ color: 'var(--text-muted)' }} />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold text-xs" style={{ color: 'var(--text-primary)' }}>{n.title}</div>
@@ -420,7 +424,10 @@ export default function Topbar({ onMenuClick }) {
                       {ROLE_LABELS[user?.role] || user?.role}
                     </span>
                     {user?.isFrozen && (
-                      <div className="mt-1.5 text-xs" style={{ color: 'var(--info)' }}>❄️ Hisobingiz muzlatilgan</div>
+                      <div className="mt-1.5 text-xs flex items-center gap-1.5" style={{ color: 'var(--info)' }}>
+                        <Snowflake size={12} className="text-sky-500" />
+                        <span>Hisobingiz muzlatilgan</span>
+                      </div>
                     )}
                   </div>
 

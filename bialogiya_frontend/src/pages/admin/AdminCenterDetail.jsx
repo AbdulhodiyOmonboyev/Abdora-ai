@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2, ArrowLeft, GitBranch, Users, BookOpen, UserCheck,
   Phone, Mail, Globe, MapPin, Pencil, Trash2, Check, X,
-  Loader2, Shield, Calendar, User, Eye,
+  Loader2, Shield, Calendar, User, Eye, Info,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../config/axios";
@@ -194,8 +194,8 @@ export default function AdminCenterDetail() {
         <div className="lg:col-span-2 space-y-6">
           {/* Main Info Card */}
           <div className="panel-card space-y-4">
-            <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
-              🏢 Markaz ma'lumotlari
+            <h2 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+              <Building2 size={18} className="text-primary" /> Markaz ma'lumotlari
             </h2>
 
             {!isEditing ? (
@@ -255,8 +255,8 @@ export default function AdminCenterDetail() {
           {/* Filiallar (Branches) Table */}
           <div className="panel-card space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
-                📍 Markazga qarashli filiallar ({center.branches?.length || 0})
+              <h2 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                <MapPin size={18} className="text-primary" /> Markazga qarashli filiallar ({center.branches?.length || 0})
               </h2>
             </div>
             {center.branches && center.branches.length > 0 ? (
@@ -299,8 +299,8 @@ export default function AdminCenterDetail() {
         {/* Right col: Manager Accounts */}
         <div className="space-y-6">
           <div className="panel-card space-y-4">
-            <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
-              👤 Boshqaruvchi (Manager) akkaunt
+            <h2 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+              <User size={18} className="text-primary" /> Boshqaruvchi (Manager) akkaunt
             </h2>
             {center.users && center.users.length > 0 ? (
               <div className="space-y-3">
@@ -336,8 +336,8 @@ export default function AdminCenterDetail() {
           </div>
 
           <div className="panel-card p-4 space-y-2 text-xs" style={{ color: "var(--text-muted)" }}>
-            <div className="font-semibold text-sm mb-1" style={{ color: "var(--text-primary)" }}>
-              ℹ️ SaaS Boshqaruvi haqida
+            <div className="font-semibold text-sm mb-1 flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+              <Info size={16} className="text-primary" /> SaaS Boshqaruvi haqida
             </div>
             <p>
               Siz platforma egasi (SuperAdmin) sifatida yangi o'quv markaz ochasiz va ularga manager hisobi taqdim etasiz.

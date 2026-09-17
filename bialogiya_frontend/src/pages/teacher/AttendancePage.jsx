@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Check, X, Clock, Save } from 'lucide-react';
+import { Check, X, Clock, Save, Snowflake } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 
@@ -103,7 +103,9 @@ export default function AttendancePage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-gray-900 dark:text-white">{student.name}</div>
                     {student.isFrozen && (
-                      <div className="text-xs text-blue-600 dark:text-blue-300">❄️ Muzlatilgan</div>
+                      <div className="text-xs text-blue-600 dark:text-blue-300 flex items-center gap-1">
+                        <Snowflake size={12} /> Muzlatilgan
+                      </div>
                     )}
                   </div>
                   <div className="flex gap-1.5">

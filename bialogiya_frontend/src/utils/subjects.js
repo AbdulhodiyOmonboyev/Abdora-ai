@@ -1,3 +1,9 @@
+import React from 'react';
+import {
+  Dna, FlaskConical, Atom, Calculator, Globe, Scroll,
+  BookOpen, Languages, Laptop, Microscope
+} from 'lucide-react';
+
 export const SUBJECTS = [
   'biology', 'chemistry', 'physics', 'math', 'geography', 'history',
   'literature', 'native_language', 'english', 'russian', 'informatics', 'both', 'other',
@@ -10,12 +16,23 @@ export const SUBJECT_LABELS = {
   informatics: 'Informatika', both: 'Biologiya + Kimyo', other: 'Boshqa',
 };
 
-export const SUBJECT_ICONS = {
-  biology: '🧬', chemistry: '⚗️', physics: '⚛️', math: '📐',
-  geography: '🌍', history: '📜', literature: '📖',
-  native_language: '🗣️', english: '🇬🇧', russian: '🇷🇺',
-  informatics: '💻', both: '🔬', other: '📚',
+export const SUBJECT_ICON_COMPONENTS = {
+  biology: Dna,
+  chemistry: FlaskConical,
+  physics: Atom,
+  math: Calculator,
+  geography: Globe,
+  history: Scroll,
+  literature: BookOpen,
+  native_language: Languages,
+  english: Languages,
+  russian: Languages,
+  informatics: Laptop,
+  both: Microscope,
+  other: BookOpen,
 };
+
+export const SUBJECT_ICONS = SUBJECT_ICON_COMPONENTS;
 
 export const SUBJECT_BADGE_CLASSES = {
   biology: 'bg-green-100 text-green-700', chemistry: 'bg-blue-100 text-blue-700',
@@ -28,5 +45,8 @@ export const SUBJECT_BADGE_CLASSES = {
 };
 
 export const getSubjectLabel = (subject) => SUBJECT_LABELS[subject] || subject;
-export const getSubjectIcon = (subject) => SUBJECT_ICONS[subject] || '📚';
+export const getSubjectIcon = (subject, props = { size: 16, className: 'inline-block' }) => {
+  const Icon = SUBJECT_ICON_COMPONENTS[subject] || BookOpen;
+  return React.createElement(Icon, props);
+};
 export const getSubjectBadgeClass = (subject) => SUBJECT_BADGE_CLASSES[subject] || SUBJECT_BADGE_CLASSES.other;

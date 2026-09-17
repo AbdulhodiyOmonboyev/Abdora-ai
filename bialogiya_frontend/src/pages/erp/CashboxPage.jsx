@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Wallet, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft,
-  Plus, RefreshCw, Check, Filter, Download,
+  Calendar, Filter, Plus, Check, RefreshCw, AlertCircle,
+  Banknote, Smartphone, CreditCard, Building2,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -12,11 +13,11 @@ import Modal from '../../components/ui/Modal';
 import { Skeleton } from '../../components/ui/Skeleton';
 
 const METHOD_CONFIG = {
-  cash:  { label: 'Naqd pul', icon: '💵', color: '#10B981', bg: '#ECFDF5' },
-  click: { label: 'Click',    icon: '📱', color: '#3B82F6', bg: '#EFF6FF' },
-  payme: { label: 'Payme',    icon: '💳', color: '#8B5CF6', bg: '#F5F3FF' },
-  bank:  { label: 'Bank',     icon: '🏦', color: '#F59E0B', bg: '#FFFBEB' },
-  other: { label: 'Boshqa',   icon: '📌', color: '#64748B', bg: '#F8FAFC' },
+  cash:  { label: 'Naqd pul', icon: Banknote,   color: '#10B981', bg: '#ECFDF5' },
+  click: { label: 'Click',    icon: Smartphone, color: '#3B82F6', bg: '#EFF6FF' },
+  payme: { label: 'Payme',    icon: CreditCard, color: '#8B5CF6', bg: '#F5F3FF' },
+  bank:  { label: 'Bank',     icon: Building2,  color: '#F59E0B', bg: '#FFFBEB' },
+  other: { label: 'Boshqa',   icon: Wallet,     color: '#64748B', bg: '#F8FAFC' },
 };
 
 const TX_TYPES = [
@@ -210,12 +211,13 @@ export default function CashboxPage() {
           ))
         ) : transactions.length === 0 ? (
           <div className="panel-card text-center py-10">
-            <div className="text-3xl mb-2">💳</div>
+            <CreditCard size={36} className="mx-auto mb-2 text-gray-400" />
             <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Bu oy tranzaksiyalar yo'q</div>
           </div>
         ) : (
           transactions.map((tx, i) => {
             const mc = METHOD_CONFIG[tx.method] || METHOD_CONFIG.other;
+            const Icon = mc.icon;
             const isIncome = tx.type === 'income';
             return (
               <motion.div
@@ -224,9 +226,9 @@ export default function CashboxPage() {
                 animate={{ opacity: 1 }}
                 className="panel-card flex items-center gap-3"
               >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
-                  style={{ background: mc.bg }}>
-                  {mc.icon}
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: mc.bg, color: mc.color }}>
+                  <Icon size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
@@ -288,15 +290,18 @@ export default function CashboxPage() {
           <div>
             <label className="form-label">To'lov usuli</label>
             <div className="grid grid-cols-3 gap-2">
-              {Object.entries(METHOD_CONFIG).map(([k, v]) => (
-                <button key={k} type="button" onClick={() => setF('method', k)}
-                  className={`flex flex-col items-center gap-1 py-2 rounded-xl border text-xs font-medium transition-all ${
-                    form.method === k ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)]' : 'border-[var(--border)] text-[var(--text-secondary)]'
-                  }`}>
-                  <span className="text-base">{v.icon}</span>
-                  {v.label}
-                </button>
-              ))}
+              {Object.entries(METHOD_CONFIG).map(([k, v]) => {
+                const Icon = v.icon;
+                return (
+                  <button key={k} type="button" onClick={() => setF('method', k)}
+                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                      form.method === k ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)]' : 'border-[var(--border)] text-[var(--text-secondary)]'
+                    }`}>
+                    <Icon size={18} style={{ color: form.method === k ? 'var(--primary)' : v.color }} />
+                    <span>{v.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

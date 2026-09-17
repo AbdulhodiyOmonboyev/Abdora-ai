@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Upload, Brain, Sparkles, Lock, Trash2, Paperclip } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { SUBJECTS, SUBJECT_LABELS, SUBJECT_ICONS } from '../../utils/subjects';
+import { SUBJECTS, SUBJECT_LABELS } from '../../utils/subjects';
 
 export default function CreateLesson() {
   const { id } = useParams();
@@ -115,7 +115,7 @@ export default function CreateLesson() {
             <label className="block text-sm font-medium mb-1.5">Subject *</label>
             <select value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} className="input-field">
               {SUBJECTS.map(s => (
-                <option key={s} value={s}>{SUBJECT_ICONS[s]} {SUBJECT_LABELS[s]}</option>
+                <option key={s} value={s}>{SUBJECT_LABELS[s]}</option>
               ))}
             </select>
           </div>
