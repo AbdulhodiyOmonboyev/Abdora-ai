@@ -30,7 +30,7 @@ const generateLessonAI = async (lessonId, title, content, language = 'uz') => {
         },
       },
     });
-    console.log(`✅ AI content generated for: ${title}`);
+    console.log(`[AI] Content generated for: ${title}`);
   } catch (err) {
     console.error('AI generation error:', err.message);
     await prisma.lesson.update({ where: { id: lessonId }, data: { aiContent: { status: 'error', errorMessage: err.message } } });

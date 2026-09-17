@@ -13,7 +13,7 @@ const safeRun = async (sql) => {
 };
 
 const runMigrations = async () => {
-  console.log('🔄 Checking and applying schema migrations...');
+  console.log('[DB] Checking and applying schema migrations...');
 
   // 1. Center table & columns
   await safeRun(`
@@ -312,16 +312,16 @@ const runMigrations = async () => {
   `);
   await safeRun(`ALTER TABLE "UploadedFile" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
 
-  console.log('✅ All schema migrations verified and applied');
+  console.log('[DB] All schema migrations verified and applied');
 };
 
 const connectDB = async () => {
   try {
     await prisma.$connect();
-    console.log('✅ PostgreSQL (Neon) connected via Prisma');
+    console.log('[DB] PostgreSQL (Neon) connected via Prisma');
     await runMigrations();
   } catch (err) {
-    console.error('❌ Database connection error:', err.message);
+    console.error('[DB] Database connection error:', err.message);
     process.exit(1);
   }
 };

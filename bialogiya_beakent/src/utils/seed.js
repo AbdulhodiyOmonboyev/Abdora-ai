@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 // reception create real student/group data from there. Change the
 // password immediately after first login.
 async function seed() {
-  console.log('🌱 Seeding database...');
+  console.log('[Seed] Seeding database...');
 
   const center = await prisma.center.upsert({
     where: { id: 'default-center' },
@@ -19,7 +19,7 @@ async function seed() {
 
   const adminExists = await prisma.user.findUnique({ where: { username: 'admin' } });
   if (adminExists) {
-    console.log('✅ Admin account already exists (username: admin). Nothing to do.');
+    console.log('[Seed] Admin account already exists (username: admin). Nothing to do.');
     return;
   }
 
@@ -29,9 +29,9 @@ async function seed() {
     data: { name: 'Super Admin', username: 'admin', email: 'admin@abdora.uz', passwordHash: adminHash, role: 'admin', centerId: center.id },
   });
 
-  console.log('\n✅ Seed completed!');
+  console.log('\n[Seed] Seed completed!');
   console.log('   Admin: admin / admin123');
-  console.log('   ⚠️  Change this password after first login.\n');
+  console.log('   [Notice] Change this password after first login.\n');
 }
 
 if (require.main === module) {

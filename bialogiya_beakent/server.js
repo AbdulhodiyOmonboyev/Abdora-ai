@@ -66,9 +66,9 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`\n🚀 Abdora AI Server running on http://localhost:${PORT}`);
-  console.log(`📚 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🤖 OpenAI Model: ${process.env.OPENAI_MODEL || 'gpt-4o'}\n`);
+  console.log(`\n[Server] Abdora AI Server running on http://localhost:${PORT}`);
+  console.log(`[Server] Environment: ${process.env.NODE_ENV}`);
+  console.log(`[Server] OpenAI Model: ${process.env.OPENAI_MODEL || 'gpt-4o'}\n`);
 });
 
 module.exports = app;
