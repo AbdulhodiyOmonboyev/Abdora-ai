@@ -23,7 +23,8 @@ export default function ConfirmDialog({ confirm, onClose }) {
           initial={{ scale: 0.92, y: 12 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.92, y: 12 }}
-          className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-sm shadow-xl"
+          style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
+          className="rounded-3xl border p-6 w-full max-w-sm shadow-xl"
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="w-11 h-11 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center flex-shrink-0">

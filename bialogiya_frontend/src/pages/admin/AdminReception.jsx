@@ -325,77 +325,110 @@ export default function AdminReception() {
 
       <AnimatePresence>
         {showCreate && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={e => e.target === e.currentTarget && closeModal()}>
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
-              className="creator-modal bg-white rounded-[28px] p-7 w-full max-w-xl shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-xl dark:text-slate-900">{editingId ? "Hisobni tahrirlash" : "Qabulxona hisobi qo'shish"}</h2>
-                <button onClick={closeModal} className="btn-ghost p-1.5 rounded-lg">
-                  <X size={16} />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="modal-backdrop"
+            onClick={e => e.target === e.currentTarget && closeModal()}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 8, opacity: 0 }}
+              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
+              className="rounded-3xl border p-6 sm:p-7 w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
+                    {editingId ? "Hisobni tahrirlash" : "Qabulxona hisobi qo'shish"}
+                  </h2>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                    {editingId ? "Qabulxona xodimi ma'lumotlarini yangilash" : "Yangi qabulxona hisobini yaratish"}
+                  </p>
+                </div>
+                <button onClick={closeModal} className="btn-icon flex-shrink-0" aria-label="Yopish">
+                  <X size={18} />
                 </button>
               </div>
 
               {newCreds ? (
                 <div>
-                  <div className="text-center mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-green-100 dark:bg-green-950/40 text-green-600 flex items-center justify-center mx-auto mb-2">
+                  <div className="text-center mb-5">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-2.5">
                       <CheckCircle2 size={26} />
                     </div>
-                    <h3 className="font-bold text-green-600">Hisob yaratildi!</h3>
-                    <p className="text-sm text-gray-500 mt-1">Bu ma'lumotlarni xodimga bering</p>
+                    <h3 className="font-bold text-base text-emerald-600 dark:text-emerald-400">Hisob muvaffaqiyatli yaratildi!</h3>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Ushbu kirish ma'lumotlarini xodimga taqdim eting</p>
                   </div>
-                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3">
+                  <div className="rounded-2xl p-4 space-y-3" style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)' }}>
                     {[['Login', newCreds.username], ['Parol', newCreds.password]].map(([label, val]) => (
                       <div key={label} className="flex items-center justify-between">
                         <div>
-                          <div className="text-xs text-gray-500">{label}</div>
-                          <div className="font-mono font-bold">{val}</div>
+                          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</div>
+                          <div className="font-mono font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{val}</div>
                         </div>
-                        <button onClick={() => copy(val)} className="btn-ghost p-1.5 rounded-lg"><Copy size={14} /></button>
+                        <button onClick={() => copy(val)} className="btn-icon" title="Nusxalash"><Copy size={14} /></button>
                       </div>
                     ))}
                   </div>
-                  <button onClick={closeModal} className="btn-primary w-full mt-4">Yopish</button>
+                  <button onClick={closeModal} className="btn-primary w-full mt-5">Yopish</button>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <label className="creator-label block text-sm font-medium mb-1.5">To'liq ismi *</label>
-                    <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                      placeholder="Xodim ismi" className="creator-field input-field" />
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>To'liq ismi *</label>
+                    <input
+                      value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="Xodim ismi"
+                      className="input-field"
+                    />
                   </div>
                   <div>
-                    <label className="creator-label block text-sm font-medium mb-1.5">Telefon raqami</label>
-                    <PhoneInput value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                      placeholder="+998 90 123 45 67" className="creator-field input-field font-mono" />
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Telefon raqami</label>
+                    <PhoneInput
+                      value={form.phone}
+                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                      placeholder="+998 90 123 45 67"
+                      className="input-field font-mono"
+                    />
                   </div>
                   <div>
-                    <label className="creator-label block text-sm font-medium mb-1.5">Email</label>
-                    <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                      placeholder="email@example.com" type="email" className="creator-field input-field" />
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Email</label>
+                    <input
+                      value={form.email}
+                      onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                      placeholder="email@example.com"
+                      type="email"
+                      className="input-field"
+                    />
                   </div>
                   <div>
-                    <label className="creator-label block text-sm font-medium mb-1.5">Filial</label>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Filial</label>
                     <select
                       value={form.branchId}
                       onChange={e => setForm(f => ({ ...f, branchId: e.target.value }))}
-                      className="creator-field input-field"
+                      className="input-field"
                     >
                       <option value="">Tanlang</option>
-                      {branches.filter((branch) => !branch.receptionId).map((branch) => (
+                      {branches.filter((branch) => !branch.receptionId || branch.receptionId === editingId).map((branch) => (
                         <option key={branch.id} value={branch.id}>{branch.name}</option>
                       ))}
                     </select>
-                    <p className="creator-hint text-xs mt-1">Agar filial tanlangan bo'lsa, bu qabulxona shu filialga bog'lanadi.</p>
+                    <p className="text-xs mt-1.5" style={{ color: 'var(--text-secondary)' }}>
+                      Agar filial tanlangan bo'lsa, bu qabulxona shu filialga bog'lanadi.
+                    </p>
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <button onClick={closeModal} className="btn-ghost flex-1">Bekor</button>
+                    <button type="button" onClick={closeModal} className="btn-ghost flex-1">Bekor</button>
                     <button
+                      type="button"
                       onClick={submit}
                       disabled={!form.name || isSaving}
-                      className="creator-submit btn-primary flex-1 disabled:opacity-40">
+                      className="btn-primary flex-1 disabled:opacity-40"
+                    >
                       {isSaving ? "Saqlanmoqda..." : editingId ? 'Saqlash' : "Qo'shish"}
                     </button>
                   </div>

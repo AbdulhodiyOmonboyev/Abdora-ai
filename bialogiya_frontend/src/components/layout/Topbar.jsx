@@ -28,7 +28,7 @@ const dropdownVariants = {
   exit: { opacity: 0, y: 4, scale: 0.97, transition: { duration: 0.1 } },
 };
 
-export default function Topbar({ onMenuClick }) {
+export default function Topbar({ onMenuClick, isSidebarOpen }) {
   const { user, clearAuth } = useAuthStore();
   const { theme, toggle } = useThemeStore();
   const { t, i18n } = useTranslation();
@@ -158,9 +158,11 @@ export default function Topbar({ onMenuClick }) {
         {/* Left */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
+            type="button"
             onClick={onMenuClick}
-            className="btn-icon md:hidden"
-            aria-label="Toggle menu"
+            className="btn-icon hover:bg-[var(--secondary-background)] transition-colors flex items-center justify-center"
+            aria-label="Sidebarni ochish/yopish"
+            title={isSidebarOpen ? "Sidebarni yopish" : "Sidebarni ochish"}
           >
             <Menu size={20} style={{ color: 'var(--text-secondary)' }} />
           </button>

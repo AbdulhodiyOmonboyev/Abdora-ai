@@ -5,7 +5,7 @@ import {
   X, LayoutDashboard, BookOpen, ClipboardList, FileText, BarChart2,
   Users, FolderOpen, Calendar, Trophy, Star, Settings,
   GraduationCap, BookMarked, UserCheck, Upload, Mic, Wallet, UserCog, Inbox, Building2,
-  PieChart, Receipt, UserPlus, LogOut, Bot,
+  PieChart, Receipt, UserPlus, LogOut, Bot, ChevronLeft,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
@@ -167,17 +167,23 @@ export default function Sidebar({ isOpen, onClose }) {
     <>
       {/* Sidebar panel */}
       <aside
-        style={{ backgroundColor: 'var(--sidebar-background)', borderColor: 'var(--border)', width: 'var(--sidebar-width, 256px)' }}
+        style={{
+          backgroundColor: 'var(--sidebar-background)',
+          borderColor: 'var(--border)',
+          width: isOpen ? 'var(--sidebar-width, 256px)' : '0px',
+        }}
         className={cn(
-          'flex-shrink-0 border-r flex flex-col h-full overflow-hidden',
-          'fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out',
-          'md:relative md:translate-x-0',
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+          'flex-shrink-0 flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out',
+          'fixed inset-y-0 left-0 z-40',
+          'md:relative',
+          isOpen
+            ? 'translate-x-0 border-r opacity-100'
+            : '-translate-x-full md:translate-x-0 border-r-0 opacity-0 md:w-0 pointer-events-none'
         )}
       >
         {/* ── Logo ── */}
         <div style={{ borderColor: 'var(--border)' }} className="px-5 py-4 border-b flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {/* Logo mark */}
             <div className="w-8 h-8 gradient-bg rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
               <span className="text-white font-bold text-sm font-['Space_Grotesk']">A</span>
@@ -185,7 +191,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="min-w-0">
               <div
                 style={{ color: 'var(--text-primary)', fontFamily: "'Space Grotesk', sans-serif" }}
-                className="font-bold text-sm leading-tight"
+                className="font-bold text-sm leading-tight truncate"
               >
                 Abdora AI
               </div>
@@ -196,13 +202,15 @@ export default function Sidebar({ isOpen, onClose }) {
               </span>
             </div>
           </div>
-          {/* Mobile close */}
+          {/* Close / Collapse button */}
           <button
             onClick={onClose}
-            className="btn-icon md:hidden"
-            aria-label="Close menu"
+            className="btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors flex-shrink-0"
+            aria-label="Sidebarni yopish"
+            title="Sidebarni yopish"
           >
-            <X size={18} />
+            <X size={18} className="md:hidden" />
+            <ChevronLeft size={18} className="hidden md:block" />
           </button>
         </div>
 
@@ -228,7 +236,11 @@ export default function Sidebar({ isOpen, onClose }) {
               <NavLink
                 to={to}
                 end={to === '/finance' || to === '/leads'}
-                onClick={onClose}
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                    onClose?.();
+                  }
+                }}
                 className={({ isActive }) =>
                   cn('sidebar-link', isActive && 'active')
                 }
