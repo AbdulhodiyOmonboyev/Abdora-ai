@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,6 +10,8 @@ import {
 import toast from "react-hot-toast";
 import api from "../../config/axios";
 import StatusBadge from "../../components/ui/StatusBadge";
+import PhoneInput from "../../components/ui/PhoneInput";
+import { cleanPhone } from "../../utils/formatPhone";
 
 export default function AdminCenterDetail() {
   const { id } = useParams();
@@ -22,19 +24,20 @@ export default function AdminCenterDetail() {
     queryKey: ["admin-center", id],
     queryFn: () => api.get(`/admin/centers/${id}`).then(r => r.data?.data || r.data),
     enabled: !!id,
-    onSuccess: (data) => {
-      if (data) {
-        setEditForm({
-          name: data.name || "",
-          phone: data.phone || "",
-          email: data.email || "",
-          address: data.address || "",
-          website: data.website || "",
-          isActive: data.isActive ?? true,
-        });
-      }
-    },
   });
+
+  useEffect(() => {
+    if (center) {
+      setEditForm({
+        name: center.name || "",
+        phone: center.phone || "+998 ",
+        email: center.email || "",
+        address: center.address || "",
+        website: center.website || "",
+        isActive: center.isActive ?? true,
+      });
+    }
+  }, [center]);
 
   const updateMutation = useMutation({
     mutationFn: (data) => api.put(`/admin/centers/${id}`, data),
@@ -85,7 +88,10 @@ export default function AdminCenterDetail() {
 
   const handleSave = () => {
     if (!editForm.name?.trim()) return toast.error("Markaz nomi kiritilishi shart");
-    updateMutation.mutate(editForm);
+    updateMutation.mutate({
+      ...editForm,
+      phone: cleanPhone(editForm.phone),
+    });
   };
 
   return (
@@ -228,7 +234,7 @@ export default function AdminCenterDetail() {
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Telefon</label>
-                  <input className="input-field" value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} />
+                  <PhoneInput className="input-field" value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Email</label>

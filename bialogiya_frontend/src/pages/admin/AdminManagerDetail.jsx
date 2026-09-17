@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import PageHeader from '../../components/ui/PageHeader';
 import StatusBadge from '../../components/ui/StatusBadge';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
 export default function AdminManagerDetail() {
   const { id } = useParams();
@@ -15,7 +17,7 @@ export default function AdminManagerDetail() {
   const qc = useQueryClient();
   const [confirm, setConfirm] = useState(null);
   const [showEdit, setShowEdit] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', gender: '', age: '', address: '' });
+  const [editForm, setEditForm] = useState({ name: '', phone: '+998 ', email: '', gender: '', age: '', address: '' });
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['admin-manager-detail', id],
@@ -25,32 +27,29 @@ export default function AdminManagerDetail() {
   const toggleMutation = useMutation({
     mutationFn: () => api.put(`/admin/users/${id}/toggle`),
     onSuccess: () => {
-      qc.invalidateQueries(['admin-managers']);
       qc.invalidateQueries(['admin-manager-detail', id]);
-      toast.success('Holat yangilandi');
+      qc.invalidateQueries(['admin-managers']);
+      toast.success('Status o\'zgartirildi');
     },
-    onError: (err) => toast.error(err.response?.data?.message || 'Xato'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => api.delete(`/users/${id}`),
+    mutationFn: () => api.delete(`/users/managers/${id}`),
     onSuccess: () => {
       qc.invalidateQueries(['admin-managers']);
-      toast.success("Manager o'chirildi");
+      toast.success('Manager o\'chirildi');
       navigate('/admin/managers');
     },
-    onError: (err) => toast.error(err.response?.data?.message || 'Xato'),
   });
 
   const updateMutation = useMutation({
     mutationFn: (data) => api.put(`/users/managers/${id}`, data),
     onSuccess: () => {
-      qc.invalidateQueries(['admin-managers']);
       qc.invalidateQueries(['admin-manager-detail', id]);
+      qc.invalidateQueries(['admin-managers']);
       setShowEdit(false);
-      toast.success('Manager maʼlumotlari yangilandi');
+      toast.success('Maʼlumotlar yangilandi');
     },
-    onError: (err) => toast.error(err.response?.data?.message || 'Xato'),
   });
 
   const copy = (text) => {
@@ -61,7 +60,7 @@ export default function AdminManagerDetail() {
   const openEdit = () => {
     setEditForm({
       name: user.name || '',
-      phone: user.phone || '',
+      phone: user.phone || '+998 ',
       email: user.email || '',
       gender: user.gender || '',
       age: user.age || '',
@@ -71,8 +70,9 @@ export default function AdminManagerDetail() {
   };
 
   const submitEdit = () => {
-    if (!editForm.name || !editForm.phone) return toast.error('Ism va telefon kiritilishi shart');
-    updateMutation.mutate(editForm);
+    const cleaned = cleanPhone(editForm.phone);
+    if (!editForm.name || !cleaned) return toast.error('Ism va telefon kiritilishi shart');
+    updateMutation.mutate({ ...editForm, phone: cleaned });
   };
 
   if (isLoading) {
@@ -248,12 +248,11 @@ export default function AdminManagerDetail() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="form-label">Telefon *</label>
-                    <input
+                    <PhoneInput
                       value={editForm.phone}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
                       className="input-field font-mono"
                       placeholder="+998 90 123 45 67"
-                      type="tel"
                     />
                   </div>
                   <div>

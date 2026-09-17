@@ -12,6 +12,8 @@ import Drawer from '../../components/ui/Drawer';
 import Modal from '../../components/ui/Modal';
 import TimelineItem from '../../components/ui/TimelineItem';
 import { RowSkeleton } from '../../components/ui/Skeleton';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
 const STATUSES = [
   { value: 'new',       label: 'Yangi',          color: '#3B82F6' },
@@ -78,7 +80,7 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
   };
 
   const updateMutation = useMutation({
-    mutationFn: (d) => api.put(`/leads/${leadId}`, d),
+    mutationFn: (d) => api.put(`/leads/${leadId}`, { ...d, phone: cleanPhone(d.phone) }),
     onSuccess: () => { invalidate(); toast.success('Yangilandi'); setEditing(false); },
     onError: (e) => toast.error(e.response?.data?.message || 'Xato'),
   });
@@ -107,7 +109,7 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
   const startEditing = () => {
     setEditForm({
       name: lead?.name || '',
-      phone: lead?.phone || '',
+      phone: lead?.phone || '+998 ',
       source: lead?.source || 'other',
       interestedIn: lead?.interestedIn || '',
       note: lead?.note || '',
@@ -239,7 +241,7 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
                     </div>
                     <div>
                       <label className="form-label">Telefon *</label>
-                      <input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
+                      <PhoneInput value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
                         className="input-field" />
                     </div>
                     <div>

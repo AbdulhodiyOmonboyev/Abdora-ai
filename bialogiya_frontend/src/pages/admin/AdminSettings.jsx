@@ -12,6 +12,8 @@ import toast from 'react-hot-toast';
 import PageHeader from '../../components/ui/PageHeader';
 import ToggleSwitch from '../../components/ui/ToggleSwitch';
 import { useThemeStore } from '../../store/themeStore';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
 /* ─── Sidebar nav items ─────────────────────────────────────── */
 const NAV_ITEMS = [
@@ -246,6 +248,13 @@ export default function AdminSettings() {
     set(field, arr.includes(item) ? arr.filter(i => i !== item) : [...arr, item]);
   };
 
+  const handleSave = () => {
+    saveMutation.mutate({
+      ...settings,
+      centerPhone: cleanPhone(settings.centerPhone),
+    });
+  };
+
   return (
     <div className="dashboard-shell max-w-6xl">
       <PageHeader
@@ -253,7 +262,7 @@ export default function AdminSettings() {
         subtitle="Tizimning barcha parametrlarini boshqarish"
         actions={
           <button
-            onClick={() => saveMutation.mutate(settings)}
+            onClick={handleSave}
             disabled={saveMutation.isPending}
             className="btn-primary"
           >
@@ -351,7 +360,7 @@ export default function AdminSettings() {
                     <FormGroup label="Telefon raqami">
                       <div className="relative">
                         <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                        <input value={settings.centerPhone} onChange={e => set('centerPhone', e.target.value)}
+                        <PhoneInput value={settings.centerPhone} onChange={e => set('centerPhone', e.target.value)}
                           className="input-field pl-9" placeholder="+998 90 123 45 67" />
                       </div>
                     </FormGroup>
@@ -1035,7 +1044,7 @@ export default function AdminSettings() {
               O'zgarishlar kiritilganidan so'ng saqlash tugmasini bosing
             </span>
             <button
-              onClick={() => saveMutation.mutate(settings)}
+              onClick={handleSave}
               disabled={saveMutation.isPending}
               className="btn-primary"
             >

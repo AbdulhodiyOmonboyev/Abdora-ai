@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { Search, UserCheck, UserPlus, ShieldCheck, Lock, Trash2, Edit, Save, X } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
 const ROLE_LABELS = {
   admin: 'Admin',
@@ -17,7 +19,7 @@ export default function AdminUsers() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [editingUser, setEditingUser] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', groupId: '' });
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '+998 ', groupId: '' });
 
   const { data: users = [] } = useQuery({
     queryKey: ['all-users'],
@@ -36,7 +38,7 @@ export default function AdminUsers() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }) => api.put(`/users/${id}`, payload),
+    mutationFn: ({ id, payload }) => api.put(`/users/${id}`, { ...payload, phone: cleanPhone(payload.phone) }),
     onSuccess: () => {
       qc.invalidateQueries(['all-users']);
       toast.success('User updated');
@@ -92,14 +94,14 @@ export default function AdminUsers() {
     setEditForm({
       name: user.name || '',
       email: user.email || '',
-      phone: user.phone || '',
+      phone: user.phone || '+998 ',
       groupId: user.groupId || '',
     });
   };
 
   const closeEdit = () => {
     setEditingUser(null);
-    setEditForm({ name: '', email: '', phone: '', groupId: '' });
+    setEditForm({ name: '', email: '', phone: '+998 ', groupId: '' });
   };
 
   return (
@@ -241,7 +243,7 @@ export default function AdminUsers() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-2">Telefon</label>
-                <input value={editForm.phone} onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))} className="input-field" />
+                <PhoneInput value={editForm.phone} onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))} className="input-field" />
               </div>
               {editingUser.role === 'student' && (
                 <div>

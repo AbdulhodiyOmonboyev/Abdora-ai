@@ -8,6 +8,8 @@ import { useAuthStore } from '../../store/authStore';
 import { getLevelProgress } from '../../utils/format';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import ThemeBuilder from '../../components/ui/ThemeBuilder';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
 const roleLabel = (role) => ({
   student: "O'quvchi", teacher: "O'qituvchi", reception: 'Qabulxona', manager: 'Manager', admin: 'Admin',
@@ -15,7 +17,7 @@ const roleLabel = (role) => ({
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuthStore();
-  const [form, setForm] = useState({ name: '', phone: '', language: 'uz', studyLocation: '', residence: '', alternativeWorkplace: '', birthDate: '' });
+  const [form, setForm] = useState({ name: '', phone: '+998 ', language: 'uz', studyLocation: '', residence: '', alternativeWorkplace: '', birthDate: '' });
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
 
   const { data: me } = useQuery({
@@ -24,11 +26,11 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    if (me) setForm({ name: me.name || '', phone: me.phone || '', language: me.language || 'uz', studyLocation: me.studyLocation || '', residence: me.residence || '', alternativeWorkplace: me.alternativeWorkplace || '', birthDate: me.birthDate ? me.birthDate.slice(0, 10) : '' });
+    if (me) setForm({ name: me.name || '', phone: me.phone || '+998 ', language: me.language || 'uz', studyLocation: me.studyLocation || '', residence: me.residence || '', alternativeWorkplace: me.alternativeWorkplace || '', birthDate: me.birthDate ? me.birthDate.slice(0, 10) : '' });
   }, [me]);
 
   const saveMutation = useMutation({
-    mutationFn: (d) => api.put('/users/profile', d),
+    mutationFn: (d) => api.put('/users/profile', { ...d, phone: cleanPhone(d.phone) }),
     onSuccess: ({ data }) => {
       updateUser(data.data);
       toast.success('Profil yangilandi');
@@ -113,7 +115,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1"><Phone size={11} /> Telefon raqami</label>
-            <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+998 90 123 45 67" type="tel" className="input-field" />
+            <PhoneInput value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="input-field" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1"><Globe size={11} /> Til</label>

@@ -6,8 +6,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
-const EMPTY_MANAGER_FORM = { name: '', phone: '', email: '', gender: '', address: '' };
+const EMPTY_MANAGER_FORM = { name: '', phone: '+998 ', email: '', gender: '', address: '' };
 
 export default function AdminBranchDetail() {
   const { id } = useParams();
@@ -61,8 +63,9 @@ export default function AdminBranchDetail() {
   });
 
   const submitCreateManager = () => {
-    if (!managerForm.name || !managerForm.phone) return toast.error('Ism va telefon kiritilishi shart');
-    createManagerMutation.mutate({ ...managerForm, branchId: id });
+    const cleaned = cleanPhone(managerForm.phone);
+    if (!managerForm.name || !cleaned) return toast.error('Ism va telefon kiritilishi shart');
+    createManagerMutation.mutate({ ...managerForm, phone: cleaned, branchId: id });
   };
 
   if (isLoading) {
@@ -309,12 +312,11 @@ export default function AdminBranchDetail() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Telefon *</label>
-                  <input
+                  <PhoneInput
                     value={managerForm.phone}
                     onChange={(e) => setManagerForm((prev) => ({ ...prev, phone: e.target.value }))}
-                    className="input-field w-full"
+                    className="input-field w-full font-mono"
                     placeholder="+998 90 123 45 67"
-                    type="tel"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

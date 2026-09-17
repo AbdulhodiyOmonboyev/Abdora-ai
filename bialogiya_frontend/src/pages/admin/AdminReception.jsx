@@ -5,8 +5,10 @@ import { Plus, Copy, X, UserCog, Phone, Trash2, Pencil, Building2 } from 'lucide
 import api from '../../config/axios';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
-const EMPTY_FORM = { name: '', phone: '', email: '', language: 'uz', branchId: '' };
+const EMPTY_FORM = { name: '', phone: '+998 ', email: '', language: 'uz', branchId: '' };
 
 export default function AdminReception() {
   const qc = useQueryClient();
@@ -65,14 +67,15 @@ export default function AdminReception() {
 
   const openEdit = (u) => {
     setEditingId(u.id);
-    setForm({ name: u.name, phone: u.phone || '', email: u.email || '', language: 'uz', branchId: u.branchId || '' });
+    setForm({ name: u.name, phone: u.phone || '+998 ', email: u.email || '', language: 'uz', branchId: u.branchId || '' });
     setShowCreate(true);
   };
 
   const submit = () => {
     if (!form.name) return;
-    if (editingId) updateMutation.mutate({ id: editingId, data: { name: form.name, phone: form.phone, email: form.email, branchId: form.branchId || null } });
-    else createMutation.mutate(form);
+    const phone = cleanPhone(form.phone);
+    if (editingId) updateMutation.mutate({ id: editingId, data: { name: form.name, phone, email: form.email, branchId: form.branchId || null } });
+    else createMutation.mutate({ ...form, phone });
   };
 
   const handleDelete = (u) => {
@@ -176,8 +179,8 @@ export default function AdminReception() {
                   </div>
                   <div>
                     <label className="creator-label block text-sm font-medium mb-1.5">Telefon raqami</label>
-                    <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                      placeholder="+998 90 123 45 67" type="tel" className="creator-field input-field" />
+                    <PhoneInput value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                      placeholder="+998 90 123 45 67" className="creator-field input-field font-mono" />
                   </div>
                   <div>
                     <label className="creator-label block text-sm font-medium mb-1.5">Email</label>

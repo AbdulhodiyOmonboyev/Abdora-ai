@@ -18,6 +18,8 @@ import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import KanbanColumn from '../../components/ui/KanbanColumn';
 import LeadDetail from '../crm/LeadDetail';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
 const STATUSES = [
   { value: 'new',       label: 'Yangi',          color: '#3B82F6' },
@@ -39,8 +41,8 @@ const SOURCES = [
 ];
 
 const emptyForm = () => ({
-  name: '', phone: '', source: 'instagram', interestedIn: '', note: '',
-  parentName: '', parentPhone: '',
+  name: '', phone: '+998 ', source: 'instagram', interestedIn: '', note: '',
+  parentName: '', parentPhone: '+998 ',
 });
 
 const LIST_TABS = [
@@ -85,7 +87,7 @@ export default function ManagerLeads() {
 
   /* ── Mutations ── */
   const createMutation = useMutation({
-    mutationFn: (d) => api.post('/leads', { ...d, branchId }),
+    mutationFn: (d) => api.post('/leads', { ...d, phone: cleanPhone(d.phone), parentPhone: cleanPhone(d.parentPhone), branchId }),
     onSuccess: () => {
       invalidate();
       toast.success("Lid muvaffaqiyatli qo'shildi");
@@ -334,8 +336,8 @@ export default function ManagerLeads() {
             </div>
             <div>
               <label className="form-label">Telefon *</label>
-              <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                className="input-field" placeholder="+998 90 123 45 67" />
+              <PhoneInput value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                className="input-field" />
             </div>
           </div>
 
@@ -347,8 +349,8 @@ export default function ManagerLeads() {
             </div>
             <div>
               <label className="form-label">Ota-ona telefoni</label>
-              <input value={form.parentPhone} onChange={e => setForm(f => ({ ...f, parentPhone: e.target.value }))}
-                className="input-field" placeholder="+998 90 000 00 00" />
+              <PhoneInput value={form.parentPhone} onChange={e => setForm(f => ({ ...f, parentPhone: e.target.value }))}
+                className="input-field" />
             </div>
           </div>
 

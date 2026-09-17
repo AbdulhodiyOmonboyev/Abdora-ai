@@ -7,14 +7,15 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
-import { formatUzPhone } from '../../utils/formatPhone';
+import { formatUzPhone, cleanPhone } from '../../utils/formatPhone';
+import PhoneInput from '../../components/ui/PhoneInput';
 import PageHeader from '../../components/ui/PageHeader';
 import SearchInput from '../../components/ui/SearchInput';
 import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
 
-const EMPTY_FORM = { name: '', phone: '', email: '', language: 'uz', gender: '', age: '', address: '', branchId: '' };
-const EMPTY_EDIT_FORM = { name: '', phone: '', email: '', gender: '', age: '', address: '' };
+const EMPTY_FORM = { name: '', phone: '+998 ', email: '', language: 'uz', gender: '', age: '', address: '', branchId: '' };
+const EMPTY_EDIT_FORM = { name: '', phone: '+998 ', email: '', gender: '', age: '', address: '' };
 
 export default function AdminManagers() {
   const navigate = useNavigate();
@@ -114,7 +115,7 @@ export default function AdminManagers() {
     setEditingManager(manager);
     setEditForm({
       name: manager.name,
-      phone: manager.phone || '',
+      phone: manager.phone || '+998 ',
       email: manager.email || '',
       gender: manager.gender || '',
       age: manager.age || '',
@@ -132,13 +133,15 @@ export default function AdminManagers() {
   };
 
   const submitForm = () => {
-    if (!form.name || !form.phone) return;
-    createMutation.mutate(form);
+    const cleaned = cleanPhone(form.phone);
+    if (!form.name || !cleaned) return toast.error('Telefon raqamni to‘liq kiriting');
+    createMutation.mutate({ ...form, phone: cleaned });
   };
 
   const submitEditForm = () => {
-    if (!editForm.name || !editForm.phone) return;
-    updateMutation.mutate(editForm);
+    const cleaned = cleanPhone(editForm.phone);
+    if (!editForm.name || !cleaned) return toast.error('Telefon raqamni to‘liq kiriting');
+    updateMutation.mutate({ ...editForm, phone: cleaned });
   };
 
   return (
@@ -331,13 +334,11 @@ export default function AdminManagers() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="form-label">Telefon raqam *</label>
-                      <input
-                        value={form.phone || '+998 '}
-                        onChange={(e) => setForm((prev) => ({ ...prev, phone: formatUzPhone(e.target.value) }))}
-                        onFocus={() => { if (!form.phone || form.phone.trim() === '+998') setForm((prev) => ({ ...prev, phone: '+998 ' })); }}
+                      <PhoneInput
+                        value={form.phone}
+                        onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
                         className="input-field font-mono"
-                        placeholder="+998 (90) 123-45-67"
-                        type="tel"
+                        placeholder="+998 90 123 45 67"
                       />
                     </div>
                     <div>
@@ -451,12 +452,11 @@ export default function AdminManagers() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="form-label">Telefon *</label>
-                    <input
+                    <PhoneInput
                       value={editForm.phone}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
                       className="input-field font-mono"
                       placeholder="+998 90 123 45 67"
-                      type="tel"
                     />
                   </div>
                   <div>

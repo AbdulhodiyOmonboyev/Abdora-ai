@@ -7,7 +7,8 @@ import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { getLevelProgress } from '../../utils/format';
 
-import { formatUzPhone } from '../../utils/formatPhone';
+import { formatUzPhone, cleanPhone } from '../../utils/formatPhone';
+import PhoneInput from '../../components/ui/PhoneInput';
 
 export default function ReceptionStudents() {
   const qc = useQueryClient();
@@ -53,14 +54,14 @@ export default function ReceptionStudents() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (d) => api.post('/users/create-student', d),
+    mutationFn: (d) => api.post('/users/create-student', { ...d, phone: cleanPhone(d.phone) }),
     onSuccess: ({ data }) => {
       qc.invalidateQueries(['reception-students']);
       qc.invalidateQueries(['reception-group-detail']);
       qc.invalidateQueries(['reception-groups']);
       qc.invalidateQueries(['all-students']);
       setNewCreds(data.data.credentials);
-      setForm({ name: '', groupId: form.groupId || '', phone: '', language: 'uz' });
+      setForm({ name: '', groupId: form.groupId || '', phone: '+998 ', language: 'uz' });
     },
   });
 
@@ -238,12 +239,9 @@ export default function ReceptionStudents() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5">Telefon raqami (Ixtiyoriy)</label>
-                    <input
-                      value={form.phone || '+998 '}
-                      onChange={e => setForm(f => ({ ...f, phone: formatUzPhone(e.target.value) }))}
-                      onFocus={e => { if (!form.phone || form.phone.trim() === '+998') setForm(f => ({ ...f, phone: '+998 ' })); }}
-                      placeholder="+998 (90) 200-20-20"
-                      type="tel"
+                    <PhoneInput
+                      value={form.phone}
+                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                       className="input-field font-mono"
                     />
                   </div>

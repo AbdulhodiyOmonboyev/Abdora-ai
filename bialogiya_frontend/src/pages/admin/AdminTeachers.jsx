@@ -7,7 +7,8 @@ import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useAuthStore } from '../../store/authStore';
-import { formatUzPhone } from '../../utils/formatPhone';
+import { formatUzPhone, cleanPhone } from '../../utils/formatPhone';
+import PhoneInput from '../../components/ui/PhoneInput';
 import PageHeader from '../../components/ui/PageHeader';
 import SearchInput from '../../components/ui/SearchInput';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -18,7 +19,7 @@ export default function AdminTeachers() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', email: '', language: 'uz' });
+  const [form, setForm] = useState({ name: '', phone: '+998 ', email: '', language: 'uz' });
   const [newCreds, setNewCreds] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [editingId, setEditingId] = useState(null);
@@ -44,7 +45,7 @@ export default function AdminTeachers() {
     onSuccess: ({ data }) => {
       qc.invalidateQueries({ queryKey: ['all-teachers'] });
       setNewCreds(data.data.credentials);
-      setForm({ name: '', phone: '', email: '', language: 'uz', branchId: '' });
+      setForm({ name: '', phone: '+998 ', email: '', language: 'uz', branchId: '' });
       toast.success("O'qituvchi muvaffaqiyatli qo'shildi");
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Xato'),
@@ -80,7 +81,7 @@ export default function AdminTeachers() {
 
   const openEdit = (t) => {
     setEditingId(t.id);
-    setEditForm({ name: t.name, phone: t.phone || '', email: t.email || '' });
+    setEditForm({ name: t.name, phone: t.phone || '+998 ', email: t.email || '' });
     setSelectedTeacher(null);
   };
 
@@ -165,7 +166,7 @@ export default function AdminTeachers() {
                             </div>
                             <div>
                               <label className="form-label">Telefon</label>
-                              <input
+                              <PhoneInput
                                 value={editForm.phone}
                                 onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
                                 className="input-field font-mono"
@@ -186,7 +187,7 @@ export default function AdminTeachers() {
                           <div className="flex justify-end gap-2 pt-2">
                             <button onClick={() => setEditingId(null)} className="btn-ghost btn-sm">Bekor qilish</button>
                             <button
-                              onClick={() => editForm.name && updateMutation.mutate({ id: t.id, data: editForm })}
+                              onClick={() => editForm.name && updateMutation.mutate({ id: t.id, data: { ...editForm, phone: cleanPhone(editForm.phone) } })}
                               disabled={!editForm.name || updateMutation.isPending}
                               className="btn-primary btn-sm"
                             >
@@ -460,13 +461,11 @@ export default function AdminTeachers() {
                   </div>
                   <div>
                     <label className="form-label">Telefon raqami</label>
-                    <input
-                      value={form.phone || '+998 '}
-                      onChange={e => setForm(f => ({ ...f, phone: formatUzPhone(e.target.value) }))}
-                      onFocus={() => { if (!form.phone || form.phone.trim() === '+998') setForm(f => ({ ...f, phone: '+998 ' })); }}
-                      placeholder="+998 (90) 200-20-20"
-                      type="tel"
+                    <PhoneInput
+                      value={form.phone}
+                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                       className="input-field font-mono"
+                      placeholder="+998 90 123 45 67"
                     />
                   </div>
                   <div>
@@ -508,7 +507,7 @@ export default function AdminTeachers() {
                   <div className="modal-footer">
                     <button onClick={() => setShowCreate(false)} className="btn-ghost">Bekor qilish</button>
                     <button
-                      onClick={() => form.name && createMutation.mutate(form)}
+                      onClick={() => form.name && createMutation.mutate({ ...form, phone: cleanPhone(form.phone) })}
                       disabled={!form.name || createMutation.isPending}
                       className="btn-primary"
                     >

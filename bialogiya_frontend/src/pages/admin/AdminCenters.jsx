@@ -9,10 +9,12 @@ import {
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../../config/axios";
+import PhoneInput from "../../components/ui/PhoneInput";
+import { cleanPhone } from "../../utils/formatPhone";
 
 const emptyCenter = {
-  name: "", phone: "", email: "", address: "", website: "",
-  managerName: "", managerPhone: "",
+  name: "", phone: "+998 ", email: "", address: "", website: "",
+  managerName: "", managerPhone: "+998 ",
   managerUsername: "", managerPassword: "",
 };
 
@@ -62,7 +64,7 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading }) {
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Telefon</label>
-                <input className="input-field" placeholder="+998 90 123 45 67" value={form.phone} onChange={e => f("phone", e.target.value)} />
+                <PhoneInput className="input-field" placeholder="+998 90 123 45 67" value={form.phone} onChange={e => f("phone", e.target.value)} />
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Email</label>
@@ -94,7 +96,7 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading }) {
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Manager telefoni</label>
-                  <input className="input-field" placeholder="+998 90 000 00 00" value={form.managerPhone} onChange={e => f("managerPhone", e.target.value)} />
+                  <PhoneInput className="input-field" placeholder="+998 90 000 00 00" value={form.managerPhone} onChange={e => f("managerPhone", e.target.value)} />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Username *</label>
@@ -321,10 +323,10 @@ export default function AdminCenters() {
       )}
 
       <AnimatePresence>
-        {modalOpen && <CenterModal onClose={() => setModalOpen(false)} onSave={d => createMut.mutate(d)} loading={createMut.isPending} />}
+        {modalOpen && <CenterModal onClose={() => setModalOpen(false)} onSave={d => createMut.mutate({ ...d, phone: cleanPhone(d.phone), managerPhone: cleanPhone(d.managerPhone) })} loading={createMut.isPending} />}
       </AnimatePresence>
       <AnimatePresence>
-        {editTarget && <CenterModal initial={editTarget} onClose={() => setEditTarget(null)} onSave={d => updateMut.mutate(d)} loading={updateMut.isPending} />}
+        {editTarget && <CenterModal initial={editTarget} onClose={() => setEditTarget(null)} onSave={d => updateMut.mutate({ ...d, phone: cleanPhone(d.phone), managerPhone: cleanPhone(d.managerPhone) })} loading={updateMut.isPending} />}
       </AnimatePresence>
     </div>
   );

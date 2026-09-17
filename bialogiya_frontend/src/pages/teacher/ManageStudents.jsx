@@ -4,11 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Copy, X, GraduationCap, Phone, Users, Star, Zap, Pencil, Trash2, Save, ChevronRight, Search, Snowflake } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
 export default function ManageStudents() {
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', groupId: '', phone: '', language: 'uz' });
+  const [form, setForm] = useState({ name: '', groupId: '', phone: '+998 ', language: 'uz' });
   const [newCreds, setNewCreds] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -26,11 +28,11 @@ export default function ManageStudents() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (d) => api.post('/users/create-student', d),
+    mutationFn: (d) => api.post('/users/create-student', { ...d, phone: cleanPhone(d.phone) }),
     onSuccess: ({ data }) => {
       qc.invalidateQueries({ queryKey: ['my-students'] });
       setNewCreds(data.data.credentials);
-      setForm({ name: '', groupId: '', phone: '', language: 'uz' });
+      setForm({ name: '', groupId: '', phone: '+998 ', language: 'uz' });
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Xato'),
   });
@@ -79,12 +81,12 @@ export default function ManageStudents() {
   const openEdit = (s, e) => {
     e.stopPropagation();
     setEditingStudent(s.id);
-    setEditForm({ name: s.name, phone: s.phone || '', groupId: s.group?.id || '' });
+    setEditForm({ name: s.name, phone: s.phone || '+998 ', groupId: s.group?.id || '' });
   };
 
   const handleUpdate = () => {
     if (!editForm.name) return toast.error('Ism kiritilmagan');
-    updateMutation.mutate({ id: editingStudent, data: editForm });
+    updateMutation.mutate({ id: editingStudent, data: { ...editForm, phone: cleanPhone(editForm.phone) } });
   };
 
   const handleDelete = (s, e) => {
@@ -140,8 +142,8 @@ export default function ManageStudents() {
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1 text-gray-500">Telefon</label>
-                      <input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
-                        className="input-field text-sm" placeholder="+998 90 123 45 67" />
+                      <PhoneInput value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
+                        className="input-field text-sm" />
                     </div>
                   </div>
                   <div>
@@ -358,8 +360,8 @@ export default function ManageStudents() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5">Telefon raqami</label>
-                    <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                      placeholder="+998 90 123 45 67" type="tel" className="input-field" />
+                    <PhoneInput value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                      className="input-field" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5">Til</label>

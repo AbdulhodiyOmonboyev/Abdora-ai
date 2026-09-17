@@ -22,6 +22,8 @@ const parseWeekDays = (raw) => {
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
 const fmt = (n) => n ? new Intl.NumberFormat('uz-UZ').format(n) : '0';
 
@@ -34,7 +36,7 @@ export default function ReceptionGroupDetail() {
   const [creds, setCreds] = useState(null);           // fetched creds for selected student
   const [showAdd, setShowAdd] = useState(false);
   const [confirm, setConfirm] = useState(null);
-  const [form, setForm] = useState({ name: '', phone: '', language: 'uz' });
+  const [form, setForm] = useState({ name: '', phone: '+998 ', language: 'uz' });
   const [newCreds, setNewCreds] = useState(null);
 
   const { data: group, isLoading } = useQuery({
@@ -89,11 +91,11 @@ export default function ReceptionGroupDetail() {
   };
 
   const addMutation = useMutation({
-    mutationFn: (d) => api.post('/users/create-student', { ...d, groupId: id }),
+    mutationFn: (d) => api.post('/users/create-student', { ...d, phone: cleanPhone(d.phone), groupId: id }),
     onSuccess: ({ data }) => {
       qc.invalidateQueries(['reception-group-detail', id]);
       setNewCreds(data.data.credentials);
-      setForm({ name: '', phone: '', language: 'uz' });
+      setForm({ name: '', phone: '+998 ', language: 'uz' });
     },
     onError: (err) => toast.error(err?.response?.data?.message || "Xato"),
   });
@@ -476,8 +478,8 @@ export default function ReceptionGroupDetail() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5">Telefon raqami * <span className="text-gray-400 text-xs">(login va parol uchun)</span></label>
-                    <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                      placeholder="+998 90 123 45 67" type="tel" className="input-field" />
+                    <PhoneInput value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                      className="input-field" />
                     {form.phone.replace(/\D/g, '').slice(-4).length === 4 && (
                       <p className="text-xs text-gray-400 mt-1">
                         Parol bo'ladi: <span className="font-mono font-semibold text-primary">{form.phone.replace(/\D/g, '').slice(-4)}</span>
