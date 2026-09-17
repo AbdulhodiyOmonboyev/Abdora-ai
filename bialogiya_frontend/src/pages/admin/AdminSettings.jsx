@@ -274,7 +274,7 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="dashboard-shell max-w-6xl">
+    <div className="dashboard-shell max-w-6xl w-full mx-auto">
       <PageHeader
         title="Sozlamalar"
         subtitle="Tizimning barcha parametrlarini boshqarish"
