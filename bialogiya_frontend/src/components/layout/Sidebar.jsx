@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -8,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../../config/axios';
 import { cn } from '../../utils/cn';
@@ -104,9 +105,51 @@ export default function Sidebar({ isOpen, onClose }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  const { data: serverSettings } = useQuery({
+    queryKey: ['center-settings', user?.centerId || user?.id],
+    queryFn: () => api.get('/admin/settings').then(r => r.data?.data || {}),
+    enabled: !!user && user.role === 'reception',
+    staleTime: 30 * 1000,
+  });
+
+  const perms = serverSettings?.receptionPermissions || {};
+
+  const activeReceptionLinks = useMemo(() => {
+    return [
+      { to: '/reception/dashboard', icon: LayoutDashboard, key: 'dashboard' },
+      ...(perms.canManageLeads !== false ? [
+        { to: '/crm/dashboard', icon: Bot, key: 'crmDashboard', label: 'CRM Dashboard' },
+        { to: '/leads', icon: UserPlus, key: 'leads', label: 'Lidlar' },
+      ] : []),
+      ...(perms.canManageTimetable !== false ? [
+        { to: '/erp/rooms', icon: BookOpen, key: 'rooms', label: 'Xonalar' },
+        { to: '/erp/timetable', icon: Calendar, key: 'timetable', label: 'Jadval' },
+      ] : []),
+      ...(perms.canManageTeachers !== false ? [
+        { to: '/reception/teachers', icon: BookMarked, key: 'teachers' },
+      ] : []),
+      ...(perms.canManageGroups !== false ? [
+        { to: '/reception/groups', icon: Users, key: 'groups' },
+      ] : []),
+      ...(perms.canManageStudents !== false ? [
+        { to: '/reception/students', icon: GraduationCap, key: 'students' },
+      ] : []),
+      ...(perms.canManagePayments !== false ? [
+        { to: '/reception/payments', icon: Wallet, key: 'payments' },
+      ] : []),
+      ...(perms.canViewFinance === true ? [
+        { to: '/finance', icon: PieChart, key: 'finance', label: 'Moliya' },
+      ] : []),
+      ...(perms.canViewCashbox === true ? [
+        { to: '/erp/cashbox', icon: Wallet, key: 'cashbox', label: 'Kassa' },
+      ] : []),
+      { to: '/reception/settings', icon: Settings, key: 'settings' },
+    ];
+  }, [perms]);
+
   const links = user?.role === 'student' ? studentLinks
     : user?.role === 'teacher' ? teacherLinks
-    : user?.role === 'reception' ? receptionLinks
+    : user?.role === 'reception' ? activeReceptionLinks
     : user?.role === 'manager' ? managerLinks
     : adminLinks;
 

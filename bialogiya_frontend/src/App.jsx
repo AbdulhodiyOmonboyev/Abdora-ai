@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import api from './config/axios';
 import { useAuthStore } from './store/authStore';
 import MainLayout from './components/layout/MainLayout';
 
@@ -96,8 +98,16 @@ import ReceptionTeacherDetail from './pages/reception/ReceptionTeacherDetail';
 import ReceptionStudents from './pages/reception/ReceptionStudents';
 import ReceptionPayments from './pages/reception/ReceptionPayments';
 
-const ProtectedRoute = ({ children, role }) => {
+const ProtectedRoute = ({ children, role, permission }) => {
   const { isAuthenticated, user } = useAuthStore();
+
+  const { data: serverSettings } = useQuery({
+    queryKey: ['center-settings', user?.centerId || user?.id],
+    queryFn: () => api.get('/admin/settings').then(r => r.data?.data || {}),
+    enabled: !!user && user.role === 'reception' && !!permission,
+    staleTime: 30 * 1000,
+  });
+
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   const allowedRoles = Array.isArray(role) ? role : role ? [role] : null;
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
@@ -107,6 +117,20 @@ const ProtectedRoute = ({ children, role }) => {
     if (user?.role === 'manager') return <Navigate to="/manager/dashboard" replace />;
     if (user?.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
   }
+
+  if (user?.role === 'reception' && permission && serverSettings) {
+    const perms = serverSettings.receptionPermissions || {};
+    if (permission === 'canViewFinance' && perms.canViewFinance !== true) {
+      return <Navigate to="/reception/teachers" replace />;
+    }
+    if (permission === 'canViewCashbox' && perms.canViewCashbox !== true) {
+      return <Navigate to="/reception/teachers" replace />;
+    }
+    if (perms[permission] === false) {
+      return <Navigate to="/reception/teachers" replace />;
+    }
+  }
+
   return children;
 };
 
@@ -216,18 +240,18 @@ export default function App() {
         </Route>
 
         {/* Leads CRM and Finance are shared by the management roles */}
-        <Route path="/leads" element={<ProtectedRoute role={['manager', 'admin', 'reception']}><MainLayout /></ProtectedRoute>}>
+        <Route path="/leads" element={<ProtectedRoute role={['manager', 'admin', 'reception']} permission="canManageLeads"><MainLayout /></ProtectedRoute>}>
           <Route index element={<ManagerLeads />} />
         </Route>
-        <Route path="/finance" element={<ProtectedRoute role={['admin', 'manager', 'reception']}><MainLayout /></ProtectedRoute>}>
+        <Route path="/finance" element={<ProtectedRoute role={['admin', 'manager', 'reception']} permission="canViewFinance"><MainLayout /></ProtectedRoute>}>
           <Route index element={<FinanceDashboard />} />
           <Route path="expenses" element={<FinanceExpenses />} />
         </Route>
         {/* ERP Routes */}
         <Route path="/erp" element={<ProtectedRoute role={['admin', 'manager', 'reception']}><MainLayout /></ProtectedRoute>}>
-          <Route path="rooms" element={<RoomsPage />} />
-          <Route path="timetable" element={<TimetablePage />} />
-          <Route path="cashbox" element={<CashboxPage />} />
+          <Route path="rooms" element={<ProtectedRoute role={['admin', 'manager', 'reception']} permission="canManageTimetable"><RoomsPage /></ProtectedRoute>} />
+          <Route path="timetable" element={<ProtectedRoute role={['admin', 'manager', 'reception']} permission="canManageTimetable"><TimetablePage /></ProtectedRoute>} />
+          <Route path="cashbox" element={<ProtectedRoute role={['admin', 'manager', 'reception']} permission="canViewCashbox"><CashboxPage /></ProtectedRoute>} />
           <Route path="receipt/:id" element={<PaymentReceiptPage />} />
         </Route>
 
@@ -235,18 +259,15 @@ export default function App() {
           <Route index element={<FinancePayroll />} />
         </Route>
 
-        {/* Reception Routes - has almost all of admin's operational
-            capabilities now (reuses the same Admin* components, which the
-            backend allows for the 'reception' role too), plus its own
-            groups/students/payments pages. */}
+        {/* Reception Routes - has operational capabilities bounded by permissions */}
         <Route path="/reception" element={<ProtectedRoute role="reception"><MainLayout /></ProtectedRoute>}>
           <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="teachers" element={<AdminTeachers />} />
-          <Route path="groups" element={<ReceptionGroups />} />
-          <Route path="groups/:id" element={<ReceptionGroupDetail />} />
-          <Route path="teachers/:id" element={<ReceptionTeacherDetail />} />
-          <Route path="students" element={<ReceptionStudents />} />
-          <Route path="payments" element={<ReceptionPayments />} />
+          <Route path="teachers" element={<ProtectedRoute role="reception" permission="canManageTeachers"><AdminTeachers /></ProtectedRoute>} />
+          <Route path="groups" element={<ProtectedRoute role="reception" permission="canManageGroups"><ReceptionGroups /></ProtectedRoute>} />
+          <Route path="groups/:id" element={<ProtectedRoute role="reception" permission="canManageGroups"><ReceptionGroupDetail /></ProtectedRoute>} />
+          <Route path="teachers/:id" element={<ProtectedRoute role="reception" permission="canManageTeachers"><ReceptionTeacherDetail /></ProtectedRoute>} />
+          <Route path="students" element={<ProtectedRoute role="reception" permission="canManageStudents"><ReceptionStudents /></ProtectedRoute>} />
+          <Route path="payments" element={<ProtectedRoute role="reception" permission="canManagePayments"><ReceptionPayments /></ProtectedRoute>} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 

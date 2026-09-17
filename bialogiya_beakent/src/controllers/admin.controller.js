@@ -295,6 +295,7 @@ const createReceptionUser = async (req, res, next) => {
       if (branch.receptionId) return error(res, 'Branch already assigned to another reception', 400);
     }
 
+    const creatorCenter = await resolveSettingsCenter(req);
     const passwordHash = await bcrypt.hash(code, 10);
 
     const user = await prisma.user.create({
@@ -306,9 +307,10 @@ const createReceptionUser = async (req, res, next) => {
         passwordHash,
         role: 'reception',
         language: language || 'uz',
+        centerId: creatorCenter?.id || null,
         maxBranches: Number.isFinite(Number(maxBranches)) && Number(maxBranches) > 0 ? Number(maxBranches) : 3,
       },
-      select: { id: true, name: true, username: true, email: true, phone: true, role: true, maxBranches: true, createdAt: true },
+      select: { id: true, name: true, username: true, email: true, phone: true, role: true, maxBranches: true, centerId: true, createdAt: true },
     });
 
     if (branchId) {
@@ -440,12 +442,34 @@ const resolveSettingsCenter = async (req) => {
   if (userId) {
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, username: true, centerId: true, role: true }
+      select: { id: true, name: true, username: true, centerId: true, role: true, branchId: true }
     });
 
     if (dbUser?.centerId) {
       const center = await prisma.center.findUnique({ where: { id: dbUser.centerId } });
       if (center) return center;
+    }
+
+    // For operational roles (reception, teacher, student), try finding the center via branch
+    if (['reception', 'teacher', 'student'].includes(dbUser?.role)) {
+      if (dbUser?.branchId) {
+        const branch = await prisma.branch.findUnique({ where: { id: dbUser.branchId }, select: { centerId: true } });
+        if (branch?.centerId) {
+          const center = await prisma.center.findUnique({ where: { id: branch.centerId } });
+          if (center) {
+            await prisma.user.update({ where: { id: userId }, data: { centerId: center.id } });
+            return center;
+          }
+        }
+      }
+      const recBranch = await prisma.branch.findFirst({ where: { receptionId: userId }, select: { centerId: true } });
+      if (recBranch?.centerId) {
+        const center = await prisma.center.findUnique({ where: { id: recBranch.centerId } });
+        if (center) {
+          await prisma.user.update({ where: { id: userId }, data: { centerId: center.id } });
+          return center;
+        }
+      }
     }
 
     // 3. User does not have a center assigned yet.
@@ -504,9 +528,26 @@ const updateSettings = async (req, res, next) => {
   try {
     const center = await resolveSettingsCenter(req);
     const newSettings = req.body || {};
+    const currentSettings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
+
+    // Security: reception accounts cannot modify receptionPermissions
+    if (req.user?.role === 'reception') {
+      newSettings.receptionPermissions = currentSettings.receptionPermissions;
+    }
+
+    const mergedSettings = {
+      ...currentSettings,
+      ...newSettings,
+      ...(newSettings.receptionPermissions && typeof newSettings.receptionPermissions === 'object' ? {
+        receptionPermissions: {
+          ...(currentSettings.receptionPermissions || {}),
+          ...newSettings.receptionPermissions,
+        }
+      } : {}),
+    };
 
     const updateData = {
-      settings: newSettings,
+      settings: mergedSettings,
     };
     if (newSettings.centerName) updateData.name = newSettings.centerName;
     if (newSettings.centerAddress !== undefined) updateData.address = newSettings.centerAddress;

@@ -7,6 +7,7 @@ import {
   ChevronRight, Check, AlertCircle, RefreshCw, Image, FileText, X,
   Coins, Smartphone, Target, ShoppingBag, Award, Sparkles, MessageCircle,
   Banknote, Wallet, CheckCircle2, FileEdit,
+  ShieldCheck, Lock, Unlock, PieChart, GraduationCap, BookMarked, Calendar,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -20,17 +21,18 @@ import { cleanPhone } from '../../utils/formatPhone';
 
 /* ─── Sidebar nav items ─────────────────────────────────────── */
 const NAV_ITEMS = [
-  { id: 'center',        label: 'Markaz ma\'lumotlari',     icon: Building2 },
-  { id: 'platform',      label: 'Platforma',                icon: Globe },
-  { id: 'payments',      label: 'To\'lovlar',                icon: CreditCard },
-  { id: 'lms',           label: 'LMS Sozlamalari',          icon: BookOpen },
-  { id: 'gamification',  label: 'Tangalar (Coins) & Gamifikatsiya', icon: Coins },
-  { id: 'crm_settings',  label: 'CRM Konfiguratsiyasi',      icon: Target },
-  { id: 'integrations',  label: 'SMS va Telegram',           icon: Smartphone },
-  { id: 'ai',            label: 'AI Funksiyalari',           icon: Bot },
-  { id: 'notifications', label: 'Bildirishnomalar',         icon: Bell },
-  { id: 'security',      label: 'Xavfsizlik',               icon: Shield },
-  { id: 'appearance',    label: 'Ko\'rinish',                icon: Palette },
+  { id: 'center',          label: 'Markaz ma\'lumotlari',     icon: Building2 },
+  { id: 'platform',        label: 'Platforma',                icon: Globe },
+  { id: 'reception_perms', label: 'Qabulxona huquqlari',      icon: ShieldCheck, roles: ['admin', 'manager'] },
+  { id: 'payments',        label: 'To\'lovlar',                icon: CreditCard },
+  { id: 'lms',             label: 'LMS Sozlamalari',          icon: BookOpen },
+  { id: 'gamification',    label: 'Tangalar (Coins) & Gamifikatsiya', icon: Coins },
+  { id: 'crm_settings',    label: 'CRM Konfiguratsiyasi',      icon: Target },
+  { id: 'integrations',    label: 'SMS va Telegram',           icon: Smartphone },
+  { id: 'ai',              label: 'AI Funksiyalari',           icon: Bot },
+  { id: 'notifications',   label: 'Bildirishnomalar',         icon: Bell },
+  { id: 'security',        label: 'Xavfsizlik',               icon: Shield },
+  { id: 'appearance',      label: 'Ko\'rinish',                icon: Palette },
 ];
 
 /* ─── Reusable sub-components ─────────────────────────────────── */
@@ -125,6 +127,18 @@ const DEFAULT_SETTINGS = {
   timezone: 'Asia/Tashkent',
   currency: 'UZS',
   dateFormat: 'DD.MM.YYYY',
+
+  // Qabulxona (Reception) huquqlari
+  receptionPermissions: {
+    canViewFinance: false,       // Odatiy: Moliya yopiq
+    canViewCashbox: false,       // Odatiy: Kassa yopiq
+    canManagePayments: true,     // To'lovlarni qabul qilish
+    canManageLeads: true,        // Lidlar va CRM
+    canManageTimetable: true,    // Jadval va xonalar
+    canManageGroups: true,       // Guruhlar ro'yxati
+    canManageStudents: true,     // O'quvchilar ro'yxati
+    canManageTeachers: true,     // O'qituvchilar ro'yxati
+  },
 
   // Payments
   enabledPaymentMethods: ['cash', 'click', 'payme'],
@@ -298,7 +312,7 @@ export default function AdminSettings() {
       <div className="settings-shell">
         {/* ── Left Nav ── */}
         <nav className="settings-nav space-y-0.5">
-          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+          {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(user?.role)).map(({ id, label, icon: Icon }) => {
             const isActive = activeTab === id;
             return (
               <button
@@ -460,6 +474,199 @@ export default function AdminSettings() {
                         <option value="YYYY-MM-DD">YYYY-MM-DD (2026-12-31)</option>
                       </select>
                     </FormGroup>
+                  </div>
+                </div>
+              )}
+
+              {/* ═══════════════ QABULXONA HUQUQLARI ═══════════════ */}
+              {activeTab === 'reception_perms' && (
+                <div className="panel-card space-y-6">
+                  <SectionHeader
+                    kicker="Xavfsizlik va kirish huquqlari"
+                    title="Qabulxona (Reception) huquqlari"
+                    subtitle="Qabulxona xodimlariga qaysi bo'limlar ko'rinishi va qaysi amallarni bajara olishini boshqaring"
+                  />
+
+                  {/* 1-bosishda Moliya va Kassani bloklash / ochish banneri */}
+                  {(() => {
+                    const isFinanceCashboxBlocked = !settings.receptionPermissions?.canViewFinance && !settings.receptionPermissions?.canViewCashbox;
+                    return (
+                      <div
+                        className="p-5 rounded-2xl border transition-all"
+                        style={{
+                          background: isFinanceCashboxBlocked
+                            ? 'rgba(239, 68, 68, 0.05)'
+                            : 'rgba(16, 185, 129, 0.05)',
+                          borderColor: isFinanceCashboxBlocked
+                            ? 'rgba(239, 68, 68, 0.25)'
+                            : 'rgba(16, 185, 129, 0.25)',
+                        }}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-start gap-3.5">
+                            <div
+                              className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                              style={{
+                                background: isFinanceCashboxBlocked ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                color: isFinanceCashboxBlocked ? '#ef4444' : '#10b981',
+                              }}
+                            >
+                              {isFinanceCashboxBlocked ? <Lock size={22} /> : <Unlock size={22} />}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                  Moliya va Kassa xavfsizligi
+                                </h3>
+                                <span className={`badge text-xs ${isFinanceCashboxBlocked ? 'badge-danger' : 'badge-success'}`}>
+                                  {isFinanceCashboxBlocked ? 'Moliya va Kassa yopiq (Bloklangan)' : 'Moliya va Kassa ochiq'}
+                                </span>
+                              </div>
+                              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                                {isFinanceCashboxBlocked
+                                  ? 'Qabulxona xodimlari Moliya dashboardi, hisobotlar va Kassani ko\'ra olmaydi.'
+                                  : 'Qabulxona xodimlariga Moliya va Kassa bo\'limlari ko\'rinib turibdi.'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newBlocked = !isFinanceCashboxBlocked;
+                              const updatedPerms = {
+                                ...(settings.receptionPermissions || {}),
+                                canViewFinance: !newBlocked,
+                                canViewCashbox: !newBlocked,
+                              };
+                              set('receptionPermissions', updatedPerms);
+                              toast.success(newBlocked ? 'Moliya va Kassa qabulxona uchun yopildi!' : 'Moliya va Kassa qabulxona uchun ochildi!');
+                            }}
+                            className={`px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors flex-shrink-0 ${
+                              isFinanceCashboxBlocked
+                                ? 'btn-primary'
+                                : 'bg-red-500 hover:bg-red-600 text-white'
+                            }`}
+                          >
+                            {isFinanceCashboxBlocked ? (
+                              <>
+                                <Unlock size={16} /> Moliya va Kassaga ruxsat berish
+                              </>
+                            ) : (
+                              <>
+                                <Lock size={16} /> 1 bosishda bloklash
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Barcha ruxsatlar bo'yicha batafsil sozlamalar */}
+                  <div className="space-y-3">
+                    <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      Qabulxona xodimlarining aniq ruxsatlari
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {[
+                        {
+                          key: 'canViewFinance',
+                          label: 'Moliya sahifasi va hisobotlari',
+                          hint: 'Moliya dashboardi, sof daromad, oylik statistika',
+                          icon: PieChart,
+                          color: '#6366f1',
+                        },
+                        {
+                          key: 'canViewCashbox',
+                          label: 'Kassa va naqd tushumlar',
+                          hint: 'Kassa qoldig\'i, kirim-chiqimlar va kassa jurnali',
+                          icon: Wallet,
+                          color: '#10b981',
+                        },
+                        {
+                          key: 'canManagePayments',
+                          label: "To'lovlarni qabul qilish",
+                          hint: "O'quvchilardan to'lov olish va kvitansiya chiqarish",
+                          icon: CreditCard,
+                          color: '#f59e0b',
+                        },
+                        {
+                          key: 'canManageLeads',
+                          label: 'Lidlar (CRM) bilan ishlash',
+                          hint: "Yangi murojaatlarni kiritish, qo'ng'iroqlar va statuslar",
+                          icon: Target,
+                          color: '#ec4899',
+                        },
+                        {
+                          key: 'canManageTimetable',
+                          label: 'Dars jadvali va xonalar',
+                          hint: "O'quv xonalari va dars jadvallarini ko'rish",
+                          icon: Calendar,
+                          color: '#06b6d4',
+                        },
+                        {
+                          key: 'canManageGroups',
+                          label: 'Guruhlar ro\'yxati',
+                          hint: "Guruhlar, dars kunlari va guruh tarkibini ko'rish",
+                          icon: Users,
+                          color: '#3b82f6',
+                        },
+                        {
+                          key: 'canManageStudents',
+                          label: "O'quvchilar ro'yxati",
+                          hint: "O'quvchilar ma'lumotlari va profilini ko'rish",
+                          icon: GraduationCap,
+                          color: '#8b5cf6',
+                        },
+                        {
+                          key: 'canManageTeachers',
+                          label: "O'qituvchilar ro'yxati",
+                          hint: "O'qituvchilar va ularning guruhlarini ko'rish",
+                          icon: BookMarked,
+                          color: '#14b8a6',
+                        },
+                      ].map(({ key, label, hint, icon: Icon, color }) => {
+                        const isChecked = settings.receptionPermissions?.[key] ?? (key === 'canViewFinance' || key === 'canViewCashbox' ? false : true);
+                        return (
+                          <div
+                            key={key}
+                            className="p-4 rounded-xl border flex items-center justify-between gap-3 transition-colors"
+                            style={{
+                              borderColor: 'var(--border)',
+                              background: isChecked ? 'var(--card)' : 'var(--secondary-background)',
+                              opacity: isChecked ? 1 : 0.75,
+                            }}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                                style={{ background: `${color}15`, color }}
+                              >
+                                <Icon size={18} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium leading-snug truncate" style={{ color: 'var(--text-primary)' }}>
+                                  {label}
+                                </div>
+                                <div className="text-xs leading-tight line-clamp-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                  {hint}
+                                </div>
+                              </div>
+                            </div>
+                            <ToggleSwitch
+                              checked={isChecked}
+                              onChange={(val) => {
+                                set('receptionPermissions', {
+                                  ...(settings.receptionPermissions || {}),
+                                  [key]: val,
+                                });
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}

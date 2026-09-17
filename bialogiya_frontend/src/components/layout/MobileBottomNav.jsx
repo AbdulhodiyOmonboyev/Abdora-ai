@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, ClipboardList, FileText, Trophy,
@@ -5,6 +6,8 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../config/axios';
 import { cn } from '../../utils/cn';
 
 // A curated 4-item subset per role for the mobile bottom bar — the full
@@ -47,7 +50,24 @@ const PRIMARY_LINKS = {
 export default function MobileBottomNav({ onMoreClick }) {
   const { user } = useAuthStore();
   const { t } = useTranslation();
-  const links = PRIMARY_LINKS[user?.role] || PRIMARY_LINKS.student;
+
+  const { data: serverSettings } = useQuery({
+    queryKey: ['center-settings', user?.centerId || user?.id],
+    queryFn: () => api.get('/admin/settings').then(r => r.data?.data || {}),
+    enabled: !!user && user.role === 'reception',
+    staleTime: 30 * 1000,
+  });
+
+  const perms = serverSettings?.receptionPermissions || {};
+
+  const receptionPrimaryLinks = useMemo(() => [
+    { to: '/reception/dashboard', icon: LayoutDashboard, key: 'dashboard' },
+    ...(perms.canManageGroups !== false ? [{ to: '/reception/groups', icon: Users, key: 'groups' }] : []),
+    ...(perms.canManageStudents !== false ? [{ to: '/reception/students', icon: GraduationCap, key: 'students' }] : []),
+    ...(perms.canManagePayments !== false ? [{ to: '/reception/payments', icon: Wallet, key: 'payments' }] : []),
+  ], [perms]);
+
+  const links = user?.role === 'reception' ? receptionPrimaryLinks : (PRIMARY_LINKS[user?.role] || PRIMARY_LINKS.student);
 
   return (
     <nav
