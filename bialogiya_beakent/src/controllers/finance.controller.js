@@ -558,17 +558,38 @@ const getCashbox = async (req, res, next) => {
     const { method: filterMethod, type: filterType, branchId } = req.query;
     const { start, end } = monthRange(month);
 
-    const centerScope = req.user.role !== 'admin' && req.user.centerId ? { centerId: req.user.centerId } : {};
+    let centerId = req.user.centerId;
+    if (!centerId && req.user.role !== 'admin') {
+      const u = await prisma.user.findUnique({
+        where: { id: req.user.userId || req.user.id },
+        select: { centerId: true, branch: { select: { centerId: true } } }
+      });
+      centerId = u?.centerId || u?.branch?.centerId;
+    }
+    const centerScope = req.user.role !== 'admin' && centerId ? { centerId } : {};
     const bId = branchId || (req.user.branchId || null);
 
-    // 1. Get all payments in this month (all payments are income)
+    // 1. Get all payments in this month (all payments with positive amount are income)
     const paymentWhere = {
       ...centerScope,
-      paidAt: { gte: start, lt: end },
-      isPaid: true,
+      OR: [
+        { paidAt: { gte: start, lt: end } },
+        { month }
+      ],
+      amount: { gt: 0 },
     };
     if (filterMethod) paymentWhere.method = filterMethod;
-    if (bId) paymentWhere.branchId = bId;
+    if (bId) {
+      paymentWhere.AND = [
+        {
+          OR: [
+            { branchId: bId },
+            { student: { branchId: bId } },
+            { student: { group: { branchId: bId } } }
+          ]
+        }
+      ];
+    }
 
     const payments = await prisma.payment.findMany({
       where: paymentWhere,

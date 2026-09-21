@@ -47,6 +47,8 @@ const adminLinks = [
   { to: '/admin/dashboard',   icon: LayoutDashboard, key: 'dashboard' },
   { to: '/admin/applications', icon: Inbox,          key: 'applications' },
   { to: '/admin/centers',     icon: Building2,        key: 'centers',  label: "O'quv Markazlar" },
+  { to: '/finance',            icon: PieChart,        key: 'finance',  label: 'Moliya' },
+  { to: '/erp/cashbox',        icon: Wallet,          key: 'cashbox',  label: 'Kassa' },
   { to: '/admin/ai-agents',   icon: Bot,              key: 'aiAgents', label: 'AI Agentlar' },
   { to: '/admin/settings',    icon: Settings,         key: 'settings' },
 ];

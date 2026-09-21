@@ -43,6 +43,7 @@ function monthOptions() {
 
 function BalanceCard({ method, balance, income, expense }) {
   const cfg = METHOD_CONFIG[method] || METHOD_CONFIG.other;
+  const Icon = cfg.icon;
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -51,15 +52,16 @@ function BalanceCard({ method, balance, income, expense }) {
     >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{cfg.icon}</span>
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: cfg.bg, color: cfg.color }}
+          >
+            <Icon size={18} />
+          </div>
           <div>
             <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{cfg.label}</div>
             <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Kassa</div>
           </div>
-        </div>
-        <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-          style={{ background: cfg.bg }}>
-          <Wallet size={14} style={{ color: cfg.color }} />
         </div>
       </div>
       <div className="text-2xl font-bold mb-3" style={{ color: cfg.color }}>
@@ -188,7 +190,7 @@ export default function CashboxPage() {
         <select value={filterMethod} onChange={e => setFilterMethod(e.target.value)} className="input-field w-auto text-sm">
           <option value="">Barcha usullar</option>
           {Object.entries(METHOD_CONFIG).map(([k, v]) => (
-            <option key={k} value={k}>{v.icon} {v.label}</option>
+            <option key={k} value={k}>{v.label}</option>
           ))}
         </select>
 
