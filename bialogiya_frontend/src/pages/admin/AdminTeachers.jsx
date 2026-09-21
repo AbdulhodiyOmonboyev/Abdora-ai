@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Copy, X, UserCheck, Pencil, Trash2, Save, Users, GraduationCap, Phone, BookOpen, ShieldCheck } from 'lucide-react';
+import { Plus, Copy, X, UserCheck, Pencil, Trash2, Save, Users, GraduationCap, Phone, BookOpen, ShieldCheck, Eye, ArrowUpRight, Wallet } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -27,6 +27,7 @@ export default function AdminTeachers() {
   const [confirm, setConfirm] = useState(null);
   const [search, setSearch] = useState('');
   const { user } = useAuthStore();
+  const baseRole = user?.role === 'manager' ? 'manager' : location.pathname.startsWith('/admin') ? 'admin' : 'reception';
 
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ['all-teachers'],
@@ -210,15 +211,17 @@ export default function AdminTeachers() {
                     <td>
                       <button
                         type="button"
-                        onClick={() => setSelectedTeacher(t)}
-                        className="flex items-center gap-3 text-left group"
+                        onClick={() => navigate(`/${baseRole}/teachers/${t.id}`)}
+                        className="flex items-center gap-3 text-left group cursor-pointer"
+                        title="O'qituvchi profilini ochish"
                       >
-                        <div className="avatar avatar-md">
+                        <div className="avatar avatar-md group-hover:scale-105 transition-transform">
                           {t.name?.charAt(0)?.toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-semibold text-sm group-hover:text-primary transition-colors" style={{ color: 'var(--text-primary)' }}>
-                            {t.name}
+                          <div className="font-semibold text-sm group-hover:text-[var(--primary)] transition-colors flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                            <span>{t.name}</span>
+                            <ArrowUpRight size={13} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)]" />
                           </div>
                           <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                             @{t.username}
@@ -251,6 +254,13 @@ export default function AdminTeachers() {
                     </td>
                     <td>
                       <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => navigate(`/${baseRole}/teachers/${t.id}`)}
+                          className="btn-icon"
+                          title="Profil va to'lovlar tarixi"
+                        >
+                          <Eye size={14} style={{ color: 'var(--primary)' }} />
+                        </button>
                         <button
                           onClick={() => openEdit(t)}
                           className="btn-icon"
@@ -383,6 +393,18 @@ export default function AdminTeachers() {
                   </button>
                 </div>
               </div>
+
+              <button
+                onClick={() => {
+                  const role = user?.role === 'manager' ? 'manager' : location.pathname.startsWith('/admin') ? 'admin' : 'reception';
+                  navigate(`/${role}/teachers/${selectedTeacher.id}`);
+                }}
+                className="btn-primary w-full justify-center text-xs py-2.5 mb-2 gap-2"
+              >
+                <Eye size={15} />
+                To'liq profil va to'lovlar sahifasi
+                <ArrowUpRight size={14} />
+              </button>
 
               <button
                 onClick={() => { toggleMutation.mutate(selectedTeacher.id); setSelectedTeacher(null); }}

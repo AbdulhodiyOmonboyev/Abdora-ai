@@ -217,6 +217,8 @@ export default function App() {
           <Route path="applications" element={<AdminApplications />} />
           <Route path="centers" element={<AdminCenters />} />
           <Route path="centers/:id" element={<AdminCenterDetail />} />
+          <Route path="teachers" element={<AdminTeachers />} />
+          <Route path="teachers/:id" element={<ReceptionTeacherDetail />} />
           <Route path="students" element={<AdminStudents />} />
           <Route path="students/:id" element={<UserDetail />} />
           <Route path="settings" element={<AdminSettings />} />

@@ -6,6 +6,7 @@ const {
   getStudents, getGroups, toggleUserStatus, getSettings, updateSettings,
   getReceptionUsers, createReceptionUser, updateReceptionUser, deleteReceptionUser, getTeacherOverview,
   getBranches, createBranch, updateBranch, deleteBranch, getBranchDetail,
+  recordTeacherPayout, updateTeacherSalaryTerms,
 } = require('../controllers/admin.controller');
 
 const adminOnly = [verifyToken, requireRole('admin', 'manager')];
@@ -18,6 +19,8 @@ const adminOrReception = [verifyToken, requireRole('admin', 'reception', 'manage
 router.get('/stats', ...adminOrReception, getStats);
 router.get('/teachers', ...adminOrReception, getTeachers);
 router.get('/teachers/:id/overview', ...adminOrReception, getTeacherOverview);
+router.post('/teachers/:id/payout', ...adminOrReception, recordTeacherPayout);
+router.put('/teachers/:id/salary-terms', ...adminOrReception, updateTeacherSalaryTerms);
 router.post('/teachers', ...adminOrReception, createTeacher);
 router.put('/teachers/:id', ...adminOrReception, updateTeacher);
 router.delete('/teachers/:id', ...adminOrReception, deleteTeacher);

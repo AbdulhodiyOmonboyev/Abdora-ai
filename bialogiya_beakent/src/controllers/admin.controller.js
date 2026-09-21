@@ -647,36 +647,266 @@ const updateSettings = async (req, res, next) => {
 
 // One-stop overview for a specific teacher: their groups, students (across
 // all their groups), and lessons (with which group each belongs to) - used
-// when reception clicks the Guruh/O'quvchi/Dars counters on a teacher card.
+// One-stop overview for a specific teacher: profile, groups, students, lessons,
+// financial earnings, current balance, and salary payouts history.
 const getTeacherOverview = async (req, res, next) => {
   try {
-    const teacher = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true, name: true, role: true, branchId: true } });
-    if (!teacher || teacher.role !== 'teacher') return error(res, 'Teacher not found', 404);
+    const teacher = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        isFrozen: true,
+        createdAt: true,
+        salaryType: true,
+        salaryShare: true,
+        fixedSalary: true,
+        hourlyRate: true,
+        branchId: true,
+        branch: { select: { id: true, name: true, address: true } },
+      },
+    });
+    if (!teacher || teacher.role !== 'teacher') return error(res, 'O\'qituvchi topilmadi', 404);
 
     if (req.user.role === 'reception') {
       const ownBranchIds = await getOwnBranchIds(req.user);
-      if (!teacher.branchId || !ownBranchIds.includes(teacher.branchId)) return error(res, 'Forbidden', 403);
+      if (teacher.branchId && ownBranchIds && !ownBranchIds.includes(teacher.branchId)) {
+        return error(res, 'Ruxsat berilmagan', 403);
+      }
     }
 
     const groups = await prisma.group.findMany({
       where: { teacherId: teacher.id },
-      select: { id: true, name: true, subject: true, monthlyFee: true, _count: { select: { students: true } }, branch: { select: { id: true, name: true } } },
+      select: {
+        id: true,
+        name: true,
+        subject: true,
+        monthlyFee: true,
+        lessonDays: true,
+        lessonTime: true,
+        room: { select: { id: true, name: true } },
+        branch: { select: { id: true, name: true } },
+        _count: { select: { students: true, lessons: true } },
+      },
       orderBy: { name: 'asc' },
     });
 
+    const groupIds = groups.map(g => g.id);
+
     const students = await prisma.user.findMany({
-      where: { role: 'student', isActive: true, teacherId: teacher.id },
-      select: { id: true, name: true, username: true, phone: true, xp: true, level: true, group: { select: { id: true, name: true } } },
+      where: {
+        role: 'student',
+        isActive: true,
+        OR: [
+          { teacherId: teacher.id },
+          ...(groupIds.length > 0 ? [{ groupId: { in: groupIds } }] : [])
+        ]
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        phone: true,
+        xp: true,
+        level: true,
+        createdAt: true,
+        group: { select: { id: true, name: true, monthlyFee: true } },
+      },
       orderBy: { name: 'asc' },
     });
 
     const lessons = await prisma.lesson.findMany({
       where: { teacherId: teacher.id, isActive: true },
-      select: { id: true, title: true, subject: true, createdAt: true, group: { select: { id: true, name: true } } },
+      select: {
+        id: true,
+        title: true,
+        subject: true,
+        createdAt: true,
+        views: true,
+        group: { select: { id: true, name: true } },
+      },
       orderBy: { createdAt: 'desc' },
+      take: 25,
     });
 
-    return success(res, { teacher, groups, students, lessons });
+    const studentIds = students.map(s => s.id);
+    const currentMonthStr = new Date().toISOString().slice(0, 7);
+
+    // All payments made by this teacher's students
+    const payments = studentIds.length > 0
+      ? await prisma.payment.findMany({
+          where: {
+            studentId: { in: studentIds },
+            amount: { gt: 0 },
+          },
+          select: {
+            id: true,
+            amount: true,
+            month: true,
+            paidAt: true,
+            method: true,
+            student: { select: { id: true, name: true } },
+          },
+          orderBy: { paidAt: 'desc' },
+        })
+      : [];
+
+    const totalCollected = payments.reduce((acc, p) => acc + (p.amount || 0), 0);
+    const thisMonthCollected = payments
+      .filter(p => p.month === currentMonthStr || (p.paidAt && p.paidAt.toISOString().slice(0, 7) === currentMonthStr))
+      .reduce((acc, p) => acc + (p.amount || 0), 0);
+
+    const salaryType = teacher.salaryType || 'percent';
+    const salaryShare = teacher.salaryShare ?? 50;
+    let totalEarned = 0;
+    let thisMonthEarned = 0;
+
+    if (salaryType === 'fixed') {
+      const monthsActive = Math.max(1, Math.ceil((Date.now() - new Date(teacher.createdAt).getTime()) / (30 * 24 * 60 * 60 * 1000)));
+      totalEarned = (teacher.fixedSalary || 0) * monthsActive;
+      thisMonthEarned = teacher.fixedSalary || 0;
+    } else if (salaryType === 'hourly') {
+      const lessonCount = await prisma.lesson.count({ where: { teacherId: teacher.id, isActive: true } });
+      totalEarned = (teacher.hourlyRate || 0) * lessonCount;
+      thisMonthEarned = (teacher.hourlyRate || 0) * lessons.length;
+    } else {
+      totalEarned = Math.round((totalCollected * salaryShare) / 100);
+      thisMonthEarned = Math.round((thisMonthCollected * salaryShare) / 100);
+    }
+
+    // Payouts recorded as expenses for this teacher
+    const payouts = await prisma.expense.findMany({
+      where: {
+        category: 'salary',
+        OR: [
+          { note: { contains: teacher.id } },
+          { title: { contains: teacher.name } },
+        ],
+      },
+      select: {
+        id: true,
+        amount: true,
+        date: true,
+        method: true,
+        note: true,
+        title: true,
+        createdAt: true,
+        createdBy: { select: { id: true, name: true, role: true } },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    const totalPaid = payouts.reduce((acc, p) => acc + (p.amount || 0), 0);
+    const balance = totalEarned - totalPaid;
+
+    const shareLabel = salaryType === 'percent'
+      ? (salaryShare === 33 ? '1/3 ulush' : salaryShare === 67 ? '2/3 ulush' : `${salaryShare}% ulush`)
+      : salaryType === 'fixed'
+      ? `Qat'iy oylik: ${teacher.fixedSalary ? teacher.fixedSalary.toLocaleString() : 0} so'm`
+      : `Soatbay: ${teacher.hourlyRate ? teacher.hourlyRate.toLocaleString() : 0} so'm`;
+
+    return success(res, {
+      teacher: {
+        ...teacher,
+        shareLabel,
+      },
+      groups,
+      students,
+      lessons,
+      financials: {
+        totalCollected,
+        thisMonthCollected,
+        totalEarned,
+        thisMonthEarned,
+        totalPaid,
+        balance,
+        salaryType,
+        salaryShare,
+        fixedSalary: teacher.fixedSalary,
+        hourlyRate: teacher.hourlyRate,
+      },
+      payouts,
+    });
+  } catch (err) { next(err); }
+};
+
+// Record a salary payout to a teacher (creates an Expense row with category='salary')
+const recordTeacherPayout = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { amount, method, date, note, month } = req.body;
+
+    const teacher = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, name: true, role: true, branchId: true, centerId: true },
+    });
+    if (!teacher || teacher.role !== 'teacher') return error(res, "O'qituvchi topilmadi", 404);
+
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      return error(res, "To'lov summasi 0 dan katta bo'lishi kerak", 400);
+    }
+
+    const payloadNote = `[TEACHER:${teacher.id}] ${month ? `(${month} oyi uchun) ` : ''}${note ? note.trim() : 'Oylik maosh'}`;
+
+    const payoutExpense = await prisma.expense.create({
+      data: {
+        category: 'salary',
+        type: 'expense',
+        title: `${teacher.name} — Oylik maosh`,
+        amount: Math.round(parsedAmount),
+        date: date ? new Date(date) : new Date(),
+        note: payloadNote,
+        method: method || 'cash',
+        branchId: teacher.branchId || null,
+        centerId: teacher.centerId || req.user.centerId || null,
+        createdById: req.user.userId,
+      },
+      include: {
+        createdBy: { select: { id: true, name: true, role: true } },
+      },
+    });
+
+    return success(res, payoutExpense, "O'qituvchiga to'lov muvaffaqiyatli saqlandi", 201);
+  } catch (err) { next(err); }
+};
+
+// Update teacher's salary terms
+const updateTeacherSalaryTerms = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { salaryType, salaryShare, fixedSalary, hourlyRate } = req.body;
+
+    const teacher = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true },
+    });
+    if (!teacher || teacher.role !== 'teacher') return error(res, "O'qituvchi topilmadi", 404);
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(salaryType ? { salaryType } : {}),
+        ...(salaryShare !== undefined ? { salaryShare: Number(salaryShare) } : {}),
+        ...(fixedSalary !== undefined ? { fixedSalary: Number(fixedSalary) } : {}),
+        ...(hourlyRate !== undefined ? { hourlyRate: Number(hourlyRate) } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        salaryType: true,
+        salaryShare: true,
+        fixedSalary: true,
+        hourlyRate: true,
+      },
+    });
+
+    return success(res, updated, "Maosh shartlari muvaffaqiyatli yangilandi");
   } catch (err) { next(err); }
 };
 
@@ -813,4 +1043,5 @@ module.exports = {
   getStats, getTeachers, createTeacher, updateTeacher, deleteTeacher, getStudents, getGroups, toggleUserStatus, getSettings, updateSettings,
   getReceptionUsers, createReceptionUser, updateReceptionUser, deleteReceptionUser, getTeacherOverview,
   getBranches, createBranch, updateBranch, deleteBranch, getBranchDetail,
+  recordTeacherPayout, updateTeacherSalaryTerms,
 };
