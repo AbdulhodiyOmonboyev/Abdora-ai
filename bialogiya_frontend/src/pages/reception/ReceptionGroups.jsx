@@ -213,163 +213,186 @@ export default function ReceptionGroups() {
       <AnimatePresence>
         {showModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
             onClick={e => e.target === e.currentTarget && closeModal()}>
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-md my-4">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="font-bold text-lg">{editingGroup ? "Guruhni tahrirlash" : "Guruh yaratish"}</h2>
-                <button onClick={closeModal} className="btn-ghost p-1.5 rounded-lg"><X size={16} /></button>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-5 w-full max-w-lg shadow-2xl border border-[var(--border)] max-h-[92vh] flex flex-col my-auto">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--border)] flex-shrink-0">
+                <div>
+                  <h2 className="font-bold text-base sm:text-lg text-[var(--text-primary)]">
+                    {editingGroup ? "Guruhni tahrirlash" : "Guruh yaratish"}
+                  </h2>
+                  <p className="text-xs text-[var(--text-muted)]">Guruh parametrlari va dars vaqtlarini belgilang</p>
+                </div>
+                <button onClick={closeModal} className="btn-ghost p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                  <X size={18} />
+                </button>
               </div>
-              <div className="space-y-4">
 
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Guruh nomi *</label>
-                  <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="Masalan: Biologiya-1A" className="input-field" />
-                </div>
-
-                {/* Teacher */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">O'qituvchi *</label>
-                  <select value={form.teacherId} onChange={e => setForm(f => ({ ...f, teacherId: e.target.value }))} className="input-field">
-                    <option value="">Tanlang</option>
-                    {teachers?.map(t => <option key={t.id} value={t.id}>{t.name}{t.branch ? ` (${t.branch.name})` : ''}</option>)}
-                  </select>
-                </div>
-
-                {/* Branch */}
-                {branches?.length > 0 && (
+              {/* Form body */}
+              <div className="overflow-y-auto pr-1 flex-1 space-y-3">
+                {/* Row 1: Name & Teacher */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium mb-1.5 flex items-center gap-1"><Building2 size={13} /> Markaz</label>
-                    <select value={form.branchId} onChange={e => setForm(f => ({ ...f, branchId: e.target.value }))} className="input-field">
-                      <option value="">Tanlanmagan</option>
-                      {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">Guruh nomi *</label>
+                    <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="Masalan: Biologiya-1A" className="input-field text-sm py-1.5" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">O'qituvchi *</label>
+                    <select value={form.teacherId} onChange={e => setForm(f => ({ ...f, teacherId: e.target.value }))} className="input-field text-sm py-1.5">
+                      <option value="">Tanlang</option>
+                      {teachers?.map(t => <option key={t.id} value={t.id}>{t.name}{t.branch ? ` (${t.branch.name})` : ''}</option>)}
                     </select>
                   </div>
-                )}
+                </div>
 
-                {/* Week days */}
+                {/* Row 2: Branch & Monthly fee */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {branches?.length > 0 ? (
+                    <div>
+                      <label className="block text-xs font-semibold mb-1 flex items-center gap-1 text-[var(--text-secondary)]">
+                        <Building2 size={12} /> Markaz / Filial
+                      </label>
+                      <select value={form.branchId} onChange={e => setForm(f => ({ ...f, branchId: e.target.value }))} className="input-field text-sm py-1.5">
+                        <option value="">Tanlanmagan</option>
+                        {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
+                    </div>
+                  ) : null}
+                  <div className={branches?.length > 0 ? '' : 'sm:col-span-2'}>
+                    <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">Oylik to'lov (so'm)</label>
+                    <input value={form.monthlyFee} onChange={e => setForm(f => ({ ...f, monthlyFee: e.target.value.replace(/\D/g, '') }))}
+                      placeholder="Masalan: 500000" inputMode="numeric" className="input-field text-sm py-1.5" />
+                  </div>
+                </div>
+
+                {/* Row 3: Week days */}
                 <div>
-                  <label className="block text-sm font-medium mb-2 flex items-center gap-1"><Calendar size={13} /> Hafta kunlari</label>
-                  <div className="flex gap-1.5 flex-wrap">
+                  <label className="block text-xs font-semibold mb-1.5 flex items-center gap-1 text-[var(--text-secondary)]">
+                    <Calendar size={12} /> Hafta kunlari
+                  </label>
+                  <div className="flex gap-1.5">
                     {DAYS.map(d => (
                       <button key={d.key} type="button"
                         onClick={() => toggleDay(d.key)}
-                        className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${form.weekDays.includes(d.key) ? 'gradient-bg text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
+                        className={`flex-1 h-8 rounded-lg text-xs font-semibold transition-colors ${
+                          form.weekDays.includes(d.key)
+                            ? 'gradient-bg text-white shadow-sm'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }`}>
                         {d.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Time */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5 flex items-center gap-1"><Clock size={13} /> Dars vaqti</label>
-                  <div className="flex items-center gap-2">
-                    <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                      className="input-field flex-1" />
-                    <span className="text-gray-400 text-sm">—</span>
-                    <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                      className="input-field flex-1" />
-                  </div>
-                </div>
-
-                {/* Room */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-sm font-medium flex items-center gap-1">
-                      <DoorOpen size={13} /> Xona
+                {/* Row 4: Time & Room */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Time */}
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 flex items-center gap-1 text-[var(--text-secondary)]">
+                      <Clock size={12} /> Dars vaqti
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setCustomRoomMode(m => !m)}
-                      className="text-xs text-[var(--primary)] hover:underline font-medium"
-                    >
-                      {customRoomMode ? "Ro'yxatdan tanlash" : "+ Boshqa xona yozish"}
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
+                        className="input-field text-xs py-1.5 flex-1" />
+                      <span className="text-gray-400 text-xs">—</span>
+                      <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
+                        className="input-field text-xs py-1.5 flex-1" />
+                    </div>
                   </div>
 
-                  {customRoomMode ? (
-                    <input
-                      value={form.room}
-                      onChange={e => setForm(f => ({ ...f, room: e.target.value, roomId: '' }))}
-                      placeholder="Xona nomini kiriting (masalan: 3-xona)"
-                      className="input-field"
-                      autoFocus
-                    />
-                  ) : (
-                    <select
-                      value={form.roomId || (rooms.find(r => r.name === form.room)?.id || (form.room ? `name:${form.room}` : ''))}
-                      onChange={e => {
-                        const val = e.target.value;
-                        if (val === '__custom__') {
-                          setCustomRoomMode(true);
-                          return;
-                        }
-                        if (val.startsWith('name:')) {
-                          const customName = val.replace('name:', '');
-                          setForm(f => ({ ...f, roomId: '', room: customName }));
-                          return;
-                        }
-                        const selectedRoom = rooms.find(r => r.id === val);
-                        setForm(f => ({
-                          ...f,
-                          roomId: val,
-                          room: selectedRoom ? selectedRoom.name : '',
-                        }));
-                      }}
-                      className="input-field"
-                    >
-                      <option value="">Xona tanlang</option>
-                      {rooms.map(r => (
-                        <option key={r.id} value={r.id}>
-                          {r.name} {r.capacity ? `(${r.capacity} kishi)` : ''}
-                        </option>
-                      ))}
-                      {/* Fallback standard rooms if custom rooms not added yet */}
-                      {rooms.length === 0 && ['1-xona', '2-xona', '3-xona', '4-xona', '5-xona'].map(name => (
-                        <option key={name} value={`name:${name}`}>{name}</option>
-                      ))}
-                      <option value="__custom__">+ Boshqa xona yozish...</option>
-                    </select>
-                  )}
-                </div>
-
-                {/* Monthly fee */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Oylik to'lov (so'm)</label>
-                  <input value={form.monthlyFee} onChange={e => setForm(f => ({ ...f, monthlyFee: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="Masalan: 500000" inputMode="numeric" className="input-field" />
-                </div>
-
-                {/* Course length drives the "kurs qayerga yetdi" progress bar. */}
-                <div className="grid grid-cols-2 gap-3">
+                  {/* Room */}
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Daraja</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold flex items-center gap-1 text-[var(--text-secondary)]">
+                        <DoorOpen size={12} /> Xona
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setCustomRoomMode(m => !m)}
+                        className="text-[11px] text-[var(--primary)] hover:underline font-medium"
+                      >
+                        {customRoomMode ? "Tanlash" : "+ Boshqa"}
+                      </button>
+                    </div>
+
+                    {customRoomMode ? (
+                      <input
+                        value={form.room}
+                        onChange={e => setForm(f => ({ ...f, room: e.target.value, roomId: '' }))}
+                        placeholder="Masalan: 3-xona"
+                        className="input-field text-sm py-1.5"
+                        autoFocus
+                      />
+                    ) : (
+                      <select
+                        value={form.roomId || (rooms.find(r => r.name === form.room)?.id || (form.room ? `name:${form.room}` : ''))}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val === '__custom__') {
+                            setCustomRoomMode(true);
+                            return;
+                          }
+                          if (val.startsWith('name:')) {
+                            const customName = val.replace('name:', '');
+                            setForm(f => ({ ...f, roomId: '', room: customName }));
+                            return;
+                          }
+                          const selectedRoom = rooms.find(r => r.id === val);
+                          setForm(f => ({
+                            ...f,
+                            roomId: val,
+                            room: selectedRoom ? selectedRoom.name : '',
+                          }));
+                        }}
+                        className="input-field text-sm py-1.5"
+                      >
+                        <option value="">Xona tanlang</option>
+                        {rooms.map(r => (
+                          <option key={r.id} value={r.id}>
+                            {r.name} {r.capacity ? `(${r.capacity} k)` : ''}
+                          </option>
+                        ))}
+                        {rooms.length === 0 && ['1-xona', '2-xona', '3-xona', '4-xona', '5-xona'].map(name => (
+                          <option key={name} value={`name:${name}`}>{name}</option>
+                        ))}
+                        <option value="__custom__">+ Boshqa xona yozish...</option>
+                      </select>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 5: Level & Total lessons */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">Daraja</label>
                     <input value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
-                      placeholder="Masalan: Boshlang'ich" className="input-field" />
+                      placeholder="Masalan: Boshlang'ich" className="input-field text-sm py-1.5" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Jami darslar</label>
+                    <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">Jami darslar</label>
                     <input value={form.totalLessons} onChange={e => setForm(f => ({ ...f, totalLessons: e.target.value.replace(/\D/g, '') }))}
-                      placeholder="Masalan: 48" inputMode="numeric" className="input-field" />
+                      placeholder="Masalan: 48" inputMode="numeric" className="input-field text-sm py-1.5" />
                   </div>
                 </div>
-
-                <div className="flex gap-3 pt-1">
-                  <button onClick={closeModal} className="btn-ghost flex-1">Bekor</button>
-                  <button onClick={() => canSubmit && submit()}
-                    disabled={!canSubmit}
-                    className="btn-primary flex-1 disabled:opacity-40">
-                    {saving ? 'Saqlanmoqda...' : editingGroup ? 'Saqlash' : 'Yaratish'}
-                  </button>
-                </div>
-                {saveError && (
-                  <p className="text-xs text-red-500 text-center">{friendlyAiErrorMessage(saveError)}</p>
-                )}
               </div>
+
+              {/* Footer */}
+              <div className="pt-3 mt-3 border-t border-[var(--border)] flex-shrink-0 flex gap-2.5">
+                <button onClick={closeModal} className="btn-ghost flex-1 py-2 text-sm">Bekor</button>
+                <button onClick={() => canSubmit && submit()}
+                  disabled={!canSubmit}
+                  className="btn-primary flex-1 py-2 text-sm disabled:opacity-40 font-medium">
+                  {saving ? 'Saqlanmoqda...' : editingGroup ? 'Saqlash' : 'Guruh yaratish'}
+                </button>
+              </div>
+              {saveError && (
+                <p className="text-xs text-red-500 text-center mt-1.5 flex-shrink-0">{friendlyAiErrorMessage(saveError)}</p>
+              )}
             </motion.div>
           </motion.div>
         )}
