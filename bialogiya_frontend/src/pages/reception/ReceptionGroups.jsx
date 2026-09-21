@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Users2, ChevronRight, Clock, Calendar, DoorOpen, Building2, Pencil, Trash2 } from 'lucide-react';
+import {
+  Plus, X, Users2, ChevronRight, Clock, Calendar, DoorOpen, Building2,
+  Pencil, Trash2, ChevronDown, Check, Sparkles
+} from 'lucide-react';
 import api from '../../config/axios';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -46,6 +49,260 @@ const groupToForm = (g) => ({
   level: g.level || '',
   totalLessons: g.totalLessons ? String(g.totalLessons) : '',
 });
+
+const TIME_PRESETS = [
+  { label: '08:30 — 10:00', start: '08:30', end: '10:00' },
+  { label: '10:00 — 11:30', start: '10:00', end: '11:30' },
+  { label: '14:00 — 15:30', start: '14:00', end: '15:30' },
+  { label: '15:30 — 17:00', start: '15:30', end: '17:00' },
+  { label: '17:00 — 18:30', start: '17:00', end: '18:30' },
+  { label: '18:30 — 20:00', start: '18:30', end: '20:00' },
+];
+
+const TIME_HOURS = Array.from({ length: 15 }, (_, i) => String(i + 8).padStart(2, '0'));
+const TIME_MINUTES = ['00', '15', '30', '45'];
+
+function addMinutesToTime(timeStr, minutesToAdd) {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return '';
+  const totalMin = h * 60 + m + minutesToAdd;
+  const newH = Math.floor(totalMin / 60) % 24;
+  const newM = totalMin % 60;
+  return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+}
+
+function TimeRangePicker({ startTime = '', endTime = '', onChange }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const [startH, startM] = (startTime || '14:00').split(':');
+  const [endH, endM] = (endTime || '15:30').split(':');
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  const handleStartChange = (h, m) => {
+    const newStart = `${h || startH || '14'}:${m || startM || '00'}`;
+    const newEnd = endTime || addMinutesToTime(newStart, 90);
+    onChange({ startTime: newStart, endTime: newEnd });
+  };
+
+  const handleEndChange = (h, m) => {
+    const newEnd = `${h || endH || '15'}:${m || endM || '30'}`;
+    onChange({ startTime: startTime || '14:00', endTime: newEnd });
+  };
+
+  const applyPreset = (preset) => {
+    onChange({ startTime: preset.start, endTime: preset.end });
+  };
+
+  const applyDuration = (mins) => {
+    const base = startTime || '14:00';
+    const newEnd = addMinutesToTime(base, mins);
+    onChange({ startTime: base, endTime: newEnd });
+  };
+
+  const clear = (e) => {
+    e.stopPropagation();
+    onChange({ startTime: '', endTime: '' });
+  };
+
+  const isPresetActive = (p) => startTime === p.start && endTime === p.end;
+
+  return (
+    <div className="relative" ref={containerRef}>
+      {/* Trigger Button */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        className={`input-field text-xs py-1.5 flex items-center justify-between cursor-pointer select-none transition-all ${
+          open ? 'ring-2 ring-[var(--primary)] border-transparent' : 'hover:border-[var(--primary)]'
+        }`}
+      >
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Clock size={12} className="text-[var(--primary)] flex-shrink-0" />
+          {startTime ? (
+            <span className="font-semibold text-xs text-[var(--text-primary)] truncate">
+              {startTime} <span className="text-gray-400 font-normal">—</span> {endTime || '--:--'}
+            </span>
+          ) : (
+            <span className="text-gray-400 text-xs truncate">Vaqtni tanlang (masalan: 14:00 — 15:30)</span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {startTime && (
+            <button
+              type="button"
+              onClick={clear}
+              className="p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              title="Tozalash"
+            >
+              <X size={11} />
+            </button>
+          )}
+          <ChevronDown
+            size={12}
+            className={`text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          />
+        </div>
+      </div>
+
+      {/* Popover */}
+      {open && (
+        <div
+          className="absolute left-0 top-full mt-1.5 z-50 w-[280px] sm:w-[320px] rounded-2xl p-3 shadow-2xl border border-[var(--border)] bg-white dark:bg-gray-900 animate-in fade-in zoom-in-95 duration-150"
+          style={{ boxShadow: '0 12px 36px -6px rgba(0, 0, 0, 0.45)' }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border)]">
+            <div className="flex items-center gap-1 text-xs font-bold text-[var(--text-primary)]">
+              <Sparkles size={12} className="text-[var(--primary)]" />
+              <span>Dars vaqtini tanlang</span>
+            </div>
+            {startTime && endTime && (
+              <span className="text-[11px] font-semibold text-[var(--primary)] px-1.5 py-0.5 rounded bg-[var(--primary)]/10">
+                {startTime} — {endTime}
+              </span>
+            )}
+          </div>
+
+          {/* 1. Quick Presets */}
+          <div className="mb-2.5">
+            <div className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+              Mashhur vaqtlar:
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              {TIME_PRESETS.map((p) => {
+                const active = isPresetActive(p);
+                return (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => applyPreset(p)}
+                    className={`py-1 px-1.5 rounded-lg text-xs font-medium text-center transition-all flex items-center justify-between ${
+                      active
+                        ? 'gradient-bg text-white shadow-sm font-semibold'
+                        : 'bg-gray-50 dark:bg-gray-800 text-[var(--text-secondary)] hover:bg-gray-100 dark:hover:bg-gray-700 border border-[var(--border)]'
+                    }`}
+                  >
+                    <span>{p.label}</span>
+                    {active && <Check size={11} />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. Custom Time Selector */}
+          <div className="mb-2.5 p-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-[var(--border)]">
+            <div className="grid grid-cols-2 gap-2">
+              {/* Start Time */}
+              <div>
+                <div className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1">Boshlanish:</div>
+                <div className="flex items-center gap-1">
+                  <select
+                    value={startH || '14'}
+                    onChange={(e) => handleStartChange(e.target.value, startM || '00')}
+                    className="input-field text-xs py-1 px-1 text-center font-semibold flex-1 bg-white dark:bg-gray-900"
+                  >
+                    {TIME_HOURS.map((h) => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                  <span className="text-gray-400 font-bold">:</span>
+                  <select
+                    value={startM || '00'}
+                    onChange={(e) => handleStartChange(startH || '14', e.target.value)}
+                    className="input-field text-xs py-1 px-1 text-center font-semibold flex-1 bg-white dark:bg-gray-900"
+                  >
+                    {TIME_MINUTES.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* End Time */}
+              <div>
+                <div className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1">Tugash:</div>
+                <div className="flex items-center gap-1">
+                  <select
+                    value={endH || '15'}
+                    onChange={(e) => handleEndChange(e.target.value, endM || '30')}
+                    className="input-field text-xs py-1 px-1 text-center font-semibold flex-1 bg-white dark:bg-gray-900"
+                  >
+                    {TIME_HOURS.map((h) => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                  <span className="text-gray-400 font-bold">:</span>
+                  <select
+                    value={endM || '30'}
+                    onChange={(e) => handleEndChange(endH || '15', e.target.value)}
+                    className="input-field text-xs py-1 px-1 text-center font-semibold flex-1 bg-white dark:bg-gray-900"
+                  >
+                    {TIME_MINUTES.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Duration Adders */}
+            <div className="flex items-center justify-between gap-1 mt-2 pt-1.5 border-t border-[var(--border)]">
+              <span className="text-[10px] text-[var(--text-muted)]">Davomiyligi:</span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => applyDuration(60)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 hover:bg-[var(--primary)] hover:text-white border border-[var(--border)] transition-colors font-medium"
+                >
+                  1 soat
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyDuration(90)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 hover:bg-[var(--primary)] hover:text-white border border-[var(--border)] transition-colors font-medium text-[var(--primary)]"
+                >
+                  1.5 soat
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyDuration(120)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-gray-700 hover:bg-[var(--primary)] hover:text-white border border-[var(--border)] transition-colors font-medium"
+                >
+                  2 soat
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer actions */}
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="btn-primary py-1 px-3 text-xs rounded-lg font-medium flex items-center gap-1"
+            >
+              <Check size={11} /> Tayyor
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ReceptionGroups() {
   const qc = useQueryClient();
@@ -296,13 +553,11 @@ export default function ReceptionGroups() {
                     <label className="block text-xs font-semibold mb-1 flex items-center gap-1 text-[var(--text-secondary)]">
                       <Clock size={12} /> Dars vaqti
                     </label>
-                    <div className="flex items-center gap-1.5">
-                      <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                        className="input-field text-xs py-1.5 flex-1" />
-                      <span className="text-gray-400 text-xs">—</span>
-                      <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                        className="input-field text-xs py-1.5 flex-1" />
-                    </div>
+                    <TimeRangePicker
+                      startTime={form.startTime}
+                      endTime={form.endTime}
+                      onChange={({ startTime, endTime }) => setForm(f => ({ ...f, startTime, endTime }))}
+                    />
                   </div>
 
                   {/* Room */}
