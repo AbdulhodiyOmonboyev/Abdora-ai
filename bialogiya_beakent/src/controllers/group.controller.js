@@ -24,7 +24,7 @@ const assertGroupAccess = async (groupId, user) => {
 const createGroup = async (req, res, next) => {
   try {
     let { name, description, subject, icon, color, teacherId, branchId, monthlyFee,
-            weekDays, startTime, endTime, room, totalLessons, level, startDate } = req.body;
+            weekDays, startTime, endTime, room, roomId, totalLessons, level, startDate } = req.body;
     if (!name) return error(res, 'Group name required', 400);
 
     const assignedTeacherId = req.user.role === 'teacher' ? req.user.userId : teacherId;
@@ -51,6 +51,12 @@ const createGroup = async (req, res, next) => {
 
     if (branchId && teacher.branchId !== branchId) return error(res, 'Teacher must belong to the selected branch', 403);
 
+    let roomName = room || null;
+    if (roomId) {
+      const foundRoom = await prisma.room.findUnique({ where: { id: roomId } });
+      if (foundRoom) roomName = foundRoom.name;
+    }
+
     const group = await prisma.group.create({
       data: {
         name, description, subject: subject || 'other', icon, color,
@@ -61,7 +67,8 @@ const createGroup = async (req, res, next) => {
         weekDays: weekDays ? JSON.stringify(weekDays) : null,
         startTime: startTime || null,
         endTime: endTime || null,
-        room: room || null,
+        room: roomName,
+        roomId: roomId || null,
         totalLessons: totalLessons ? parseInt(totalLessons, 10) : null,
         level: level || null,
         startDate: startDate ? new Date(startDate) : null,
@@ -176,7 +183,7 @@ const updateGroup = async (req, res, next) => {
     if (accessErr) return error(res, accessErr.message, accessErr.status);
 
     const { name, description, subject, icon, color, isActive, teacherId, branchId,
-            monthlyFee, weekDays, startTime, endTime, room, totalLessons, level, startDate } = req.body;
+            monthlyFee, weekDays, startTime, endTime, room, roomId, totalLessons, level, startDate } = req.body;
 
     // If reception is reassigning the group to a different branch, that
     // branch must also be one of theirs.
@@ -191,6 +198,12 @@ const updateGroup = async (req, res, next) => {
       if (!teacher || (ownBranchIds && !ownBranchIds.includes(teacher.branchId)) || (branchId && teacher.branchId !== branchId)) return error(res, 'Forbidden', 403);
     }
 
+    let roomName = room;
+    if (roomId) {
+      const foundRoom = await prisma.room.findUnique({ where: { id: roomId } });
+      if (foundRoom) roomName = foundRoom.name;
+    }
+
     const group = await prisma.group.update({
       where: { id: req.params.id },
       data: {
@@ -201,7 +214,8 @@ const updateGroup = async (req, res, next) => {
         ...(weekDays !== undefined ? { weekDays: weekDays ? JSON.stringify(weekDays) : null } : {}),
         ...(startTime !== undefined ? { startTime: startTime || null } : {}),
         ...(endTime !== undefined ? { endTime: endTime || null } : {}),
-        ...(room !== undefined ? { room: room || null } : {}),
+        ...(roomName !== undefined ? { room: roomName || null } : {}),
+        ...(roomId !== undefined ? { roomId: roomId || null } : {}),
         ...(totalLessons !== undefined ? { totalLessons: totalLessons ? parseInt(totalLessons, 10) : null } : {}),
         ...(level !== undefined ? { level: level || null } : {}),
         ...(startDate !== undefined ? { startDate: startDate ? new Date(startDate) : null } : {}),

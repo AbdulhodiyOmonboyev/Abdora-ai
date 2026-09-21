@@ -28,7 +28,7 @@ const formatSchedule = (g) => {
   return parts.join(' · ');
 };
 
-const EMPTY_FORM = { name: '', subject: 'other', teacherId: '', branchId: '', monthlyFee: '', weekDays: [], startTime: '', endTime: '', room: '', level: '', totalLessons: '' };
+const EMPTY_FORM = { name: '', subject: 'other', teacherId: '', branchId: '', monthlyFee: '', weekDays: [], startTime: '', endTime: '', room: '', roomId: '', level: '', totalLessons: '' };
 
 const groupToForm = (g) => ({
   name: g.name || '',
@@ -42,6 +42,7 @@ const groupToForm = (g) => ({
   startTime: g.startTime || '',
   endTime: g.endTime || '',
   room: g.room || '',
+  roomId: g.roomId || g.roomRel?.id || '',
   level: g.level || '',
   totalLessons: g.totalLessons ? String(g.totalLessons) : '',
 });
@@ -74,6 +75,13 @@ export default function ReceptionGroups() {
       const data = r.data?.data || r.data || [];
       return Array.isArray(data) ? data : [];
     }) 
+  });
+  const { data: rooms = [] } = useQuery({ 
+    queryKey: ['reception-rooms', form.branchId], 
+    queryFn: () => api.get('/rooms', { params: { branchId: form.branchId || undefined } }).then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }).catch(() => [])
   });
 
   const closeModal = () => { setShowModal(false); setEditingGroup(null); setForm(EMPTY_FORM); };
@@ -269,9 +277,34 @@ export default function ReceptionGroups() {
 
                 {/* Room */}
                 <div>
-                  <label className="block text-sm font-medium mb-1.5 flex items-center gap-1"><DoorOpen size={13} /> Xona</label>
-                  <input value={form.room} onChange={e => setForm(f => ({ ...f, room: e.target.value }))}
-                    placeholder="Masalan: 3-xona, 2-qavat" className="input-field" />
+                  <label className="block text-sm font-medium mb-1.5 flex items-center gap-1">
+                    <DoorOpen size={13} /> Xona
+                  </label>
+                  <select
+                    value={form.roomId || (rooms.find(r => r.name === form.room)?.id || '')}
+                    onChange={e => {
+                      const selectedId = e.target.value;
+                      const selectedRoom = rooms.find(r => r.id === selectedId);
+                      setForm(f => ({
+                        ...f,
+                        roomId: selectedId,
+                        room: selectedRoom ? selectedRoom.name : '',
+                      }));
+                    }}
+                    className="input-field"
+                  >
+                    <option value="">Xona tanlang</option>
+                    {rooms.map(r => (
+                      <option key={r.id} value={r.id}>
+                        {r.name} {r.capacity ? `(${r.capacity} kishi)` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {rooms.length === 0 && (
+                    <p className="text-[11px] text-amber-500 mt-1">
+                      Hozircha xonalar mavjud emas. Xonalar bo'limidan xona qo'shishingiz mumkin.
+                    </p>
+                  )}
                 </div>
 
                 {/* Monthly fee */}
