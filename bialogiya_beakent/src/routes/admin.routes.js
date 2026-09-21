@@ -38,8 +38,8 @@ router.post('/centers', ...adminOnly, createCenter);
 router.put('/centers/:id', ...adminOnly, updateCenter);
 router.delete('/centers/:id', ...adminOnly, deleteCenter);
 
-// Branches - admin only
-router.get('/branches', ...adminOnly, getBranches);
+// Branches - admin only (read permitted for reception & manager)
+router.get('/branches', ...adminOrReception, getBranches);
 router.post('/branches', ...adminOnly, createBranch);
 router.get('/branches/:id', ...adminOnly, getBranchDetail);
 router.put('/branches/:id', ...adminOnly, updateBranch);

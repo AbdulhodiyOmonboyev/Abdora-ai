@@ -77,7 +77,6 @@ export default function StudentDashboard() {
           <p className="flex items-center gap-1.5"><Sparkles size={14} className="text-primary inline flex-shrink-0" /> {motivation}</p>
         </div>
         <div className="dashboard-header-actions">
-          <span className="header-status">Live</span>
           <Link to="/student/results" className="header-button">Natijalar</Link>
         </div>
       </header>

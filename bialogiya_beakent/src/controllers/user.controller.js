@@ -172,32 +172,42 @@ const getAllUsers = async (req, res, next) => {
     const where = {
       ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}),
       ...(role ? { role } : {}),
-      ...(search
-        ? {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { username: { contains: search, mode: 'insensitive' } },
-              { email: { contains: search, mode: 'insensitive' } },
-              { phone: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
     };
 
-    if (ownBranchIds) {
-      where.OR = [
-        { role: 'teacher', branchId: { in: ownBranchIds } },
-        { role: 'student', group: { branchId: { in: ownBranchIds } } },
-        { role: 'manager', managedBranches: { some: { id: { in: ownBranchIds } } } },
-      ];
+    const andConditions = [];
+
+    if (search) {
+      andConditions.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { username: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+        ],
+      });
     }
+
     if (branchId) {
       if (ownBranchIds && !ownBranchIds.includes(branchId)) return error(res, 'Forbidden', 403);
       if (role === 'manager') {
-        where.managedBranches = { some: { id: branchId } };
+        andConditions.push({ managedBranches: { some: { id: branchId } } });
       } else {
-        where.AND = [{ OR: [{ branchId }, { group: { branchId } }] }];
+        andConditions.push({
+          OR: [{ branchId }, { group: { branchId } }],
+        });
       }
+    } else if (ownBranchIds) {
+      andConditions.push({
+        OR: [
+          { role: 'teacher', branchId: { in: ownBranchIds } },
+          { role: 'student', OR: [{ branchId: { in: ownBranchIds } }, { group: { branchId: { in: ownBranchIds } } }] },
+          { role: 'manager', managedBranches: { some: { id: { in: ownBranchIds } } } },
+        ],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     const [users, total] = await Promise.all([

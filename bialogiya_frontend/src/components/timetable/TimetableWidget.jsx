@@ -7,6 +7,7 @@ import {
   ArrowUpRight, Users, X
 } from 'lucide-react';
 import api from '../../config/axios';
+import { useBranchStore } from '../../store/branchStore';
 import { Skeleton } from '../ui/Skeleton';
 
 const DAYS = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Yakshanba'];
@@ -116,21 +117,25 @@ export default function TimetableWidget({ showHeaderLink = true, maxHeight = '54
   const [filterRoom, setFilterRoom] = useState('');
   const [filterTeacher, setFilterTeacher] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const { selectedBranchId } = useBranchStore();
 
   // Queries
   const { data: rooms = [] } = useQuery({
-    queryKey: ['rooms-widget'],
-    queryFn: () => api.get('/rooms').then((r) => r.data?.data || []).catch(() => []),
+    queryKey: ['rooms-widget', selectedBranchId],
+    queryFn: () => api.get('/rooms', {
+      params: selectedBranchId ? { branchId: selectedBranchId } : {}
+    }).then((r) => r.data?.data || []).catch(() => []),
   });
 
   const { data: schedule = [], isLoading } = useQuery({
-    queryKey: ['timetable-widget', filterRoom, filterTeacher],
+    queryKey: ['timetable-widget', filterRoom, filterTeacher, selectedBranchId],
     queryFn: () =>
       api
         .get('/schedule', {
           params: {
             roomId: filterRoom || undefined,
             teacherId: filterTeacher || undefined,
+            branchId: selectedBranchId || undefined,
           },
         })
         .then((r) => r.data?.data || [])

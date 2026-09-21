@@ -13,9 +13,14 @@ const getStats = async (req, res, next) => {
   try {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const { branchId } = req.query;
     const branchIds = await getOwnBranchIds(req.user);
 
     const isAdmin = req.user.role === 'admin';
+    if (branchId && branchIds && !branchIds.includes(branchId)) {
+      return error(res, 'Forbidden', 403);
+    }
+
     const centerScope = !isAdmin ? { centerId: req.user.centerId } : {};
     let teacherScope = centerScope;
     let groupScope = centerScope;
@@ -23,8 +28,14 @@ const getStats = async (req, res, next) => {
     let lessonScope = centerScope;
     let recentUserScope = centerScope;
 
-    if (!isAdmin) {
-      const branchFilter = { branchId: { in: branchIds || [] } };
+    let branchFilter = null;
+    if (branchId) {
+      branchFilter = { branchId };
+    } else if (!isAdmin) {
+      branchFilter = { branchId: { in: branchIds || [] } };
+    }
+
+    if (branchFilter) {
       teacherScope = { ...centerScope, ...branchFilter };
       groupScope = { ...centerScope, ...branchFilter };
       studentScope = { ...centerScope, OR: [{ ...branchFilter }, { group: branchFilter }] };

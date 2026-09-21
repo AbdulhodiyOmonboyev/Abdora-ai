@@ -4,10 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell, Sun, Moon, LogOut, Globe, ChevronDown, Menu,
   KeyRound, User, Eye, EyeOff, Search, X, Check,
-  BookOpen, FileEdit, Trophy, Snowflake,
+  BookOpen, FileEdit, Trophy, Snowflake, Building2, Users2, GraduationCap,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { useBranchStore } from '../../store/branchStore';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../../config/axios';
@@ -31,14 +32,17 @@ const dropdownVariants = {
 export default function Topbar({ onMenuClick, isSidebarOpen }) {
   const { user, clearAuth } = useAuthStore();
   const { theme, toggle } = useThemeStore();
+  const { selectedBranchId, selectedBranchName, setSelectedBranch } = useBranchStore();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const searchRef = useRef(null);
+  const branchRef = useRef(null);
 
   const [showNotifs, setShowNotifs] = useState(false);
   const [showLang, setShowLang] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [showChangePw, setShowChangePw] = useState(false);
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [showCurrent, setShowCurrent] = useState(false);
@@ -47,27 +51,22 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showHeaderResults, setShowHeaderResults] = useState(false);
 
-  const closeAll = () => { setShowNotifs(false); setShowLang(false); setShowProfile(false); };
+  const isManagement = ['admin', 'manager', 'reception'].includes(user?.role);
 
-  const searchPath = user?.role === 'admin'
-    ? '/admin/branches'
-    : user?.role === 'manager'
-      ? '/manager/branches'
-      : null;
+  const closeAll = () => {
+    setShowNotifs(false);
+    setShowLang(false);
+    setShowProfile(false);
+    setShowBranchDropdown(false);
+  };
 
-  const searchPlaceholder = user?.role === 'manager'
-    ? "Filial nomi bo'yicha qidirish"
-    : "Markaz nomi bo'yicha qidirish";
-
-  // Sync input with URL ?search= on back/forward navigation
-  const urlSearch = searchPath && location.pathname.startsWith(searchPath)
-    ? new URLSearchParams(location.search).get('search') || ''
-    : null;
-  const [syncedUrlSearch, setSyncedUrlSearch] = useState(urlSearch);
-  if (urlSearch !== null && urlSearch !== syncedUrlSearch) {
-    setSyncedUrlSearch(urlSearch);
-    setHeaderSearch(urlSearch);
-  }
+  // Branches list for switcher
+  const { data: branches = [], isLoading: isLoadingBranches } = useQuery({
+    queryKey: ['header-branches', user?.role],
+    queryFn: () => api.get('/admin/branches').then(r => (Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => []),
+    enabled: Boolean(isManagement),
+    staleTime: 1000 * 60 * 5,
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(headerSearch.trim()), 250);
@@ -79,29 +78,85 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setShowHeaderResults(false);
       }
+      if (branchRef.current && !branchRef.current.contains(e.target)) {
+        setShowBranchDropdown(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Global search: users
   const { data: headerUsers = [], isFetching: isHeaderSearching, isError: headerSearchFailed } = useQuery({
-    queryKey: ['header-search-users', debouncedSearch],
-    queryFn: () => api.get('/users', { params: { search: debouncedSearch, perPage: 10 } })
-      .then(r => (Array.isArray(r.data?.data) ? r.data.data : [])),
-    enabled: Boolean(debouncedSearch),
+    queryKey: ['header-search-users', debouncedSearch, selectedBranchId],
+    queryFn: () => api.get('/users', {
+      params: {
+        search: debouncedSearch,
+        perPage: 8,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+      },
+    }).then(r => (Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => []),
+    enabled: Boolean(debouncedSearch && isManagement),
     placeholderData: (prev) => prev,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 30,
+  });
+
+  // Global search: groups
+  const { data: headerGroups = [] } = useQuery({
+    queryKey: ['header-search-groups', debouncedSearch, selectedBranchId],
+    queryFn: () => api.get('/groups', {
+      params: {
+        search: debouncedSearch,
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+      },
+    }).then(r => {
+      const list = Array.isArray(r.data?.data) ? r.data.data : [];
+      const q = debouncedSearch.toLowerCase();
+      return list.filter(g => g.name?.toLowerCase().includes(q) || g.teacher?.name?.toLowerCase().includes(q)).slice(0, 4);
+    }).catch(() => []),
+    enabled: Boolean(debouncedSearch && isManagement),
+    placeholderData: (prev) => prev,
+    staleTime: 1000 * 30,
   });
 
   const searchPending = isHeaderSearching || debouncedSearch !== headerSearch.trim();
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (!searchPath) return;
-    const params = new URLSearchParams();
-    if (headerSearch.trim()) params.set('search', headerSearch.trim());
-    navigate(`${searchPath}${params.toString() ? `?${params.toString()}` : ''}`);
+    if (!headerSearch.trim()) return;
+    const q = encodeURIComponent(headerSearch.trim());
+    if (user?.role === 'reception') {
+      navigate(`/reception/students?search=${q}`);
+    } else if (user?.role === 'manager') {
+      navigate(`/manager/students?search=${q}`);
+    } else {
+      navigate(`/admin/students?search=${q}`);
+    }
     setShowHeaderResults(false);
+  };
+
+  const handleSelectUser = (result) => {
+    setShowHeaderResults(false);
+    setHeaderSearch('');
+    if (result.role === 'student') {
+      navigate(user?.role === 'reception' ? `/reception/students/${result.id}` : `/admin/students/${result.id}`);
+    } else if (result.role === 'teacher') {
+      navigate(user?.role === 'reception' ? `/reception/teachers/${result.id}` : user?.role === 'manager' ? `/manager/teachers/${result.id}` : `/admin/teachers`);
+    } else {
+      navigate(`/users/${result.id}`);
+    }
+  };
+
+  const handleSelectGroup = (group) => {
+    setShowHeaderResults(false);
+    setHeaderSearch('');
+    if (user?.role === 'reception') {
+      navigate(`/reception/groups/${group.id}`);
+    } else if (user?.role === 'manager') {
+      navigate(`/manager/groups/${group.id}`);
+    } else {
+      navigate(`/reception/groups/${group.id}`);
+    }
   };
 
   const { data: notifData, refetch } = useQuery({
@@ -167,7 +222,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
             <Menu size={20} style={{ color: 'var(--text-secondary)' }} />
           </button>
 
-          <div className="hidden md:flex flex-col justify-center">
+          <div className="hidden lg:flex flex-col justify-center">
             <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
               {new Date().toLocaleDateString(
                 i18n.language === 'uz' ? 'uz-UZ' : i18n.language === 'ru' ? 'ru-RU' : 'en-US',
@@ -177,9 +232,115 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
           </div>
         </div>
 
-        {/* Center — Search */}
-        {searchPath && (
-          <div ref={searchRef} className="hidden md:flex flex-1 max-w-md relative mx-4">
+        {/* Branch Filter / Switcher */}
+        {isManagement && (
+          <div ref={branchRef} className="relative flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                const willOpen = !showBranchDropdown;
+                closeAll();
+                setShowBranchDropdown(willOpen);
+              }}
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--secondary-background)] text-[var(--text-primary)] transition-all text-xs font-medium shadow-sm hover:border-[var(--primary)] group"
+              title="Filialni tanlash / almashtirish"
+            >
+              <Building2 size={14} className="text-[var(--primary)] flex-shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="max-w-[100px] sm:max-w-[150px] truncate font-medium">
+                {selectedBranchName || "Barcha filiallar"}
+              </span>
+              <ChevronDown size={12} className={`text-[var(--text-muted)] transition-transform duration-200 ${showBranchDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {showBranchDropdown && (
+                <motion.div
+                  {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
+                  className="absolute left-0 top-full mt-1.5 dropdown-panel w-64 py-1.5 z-50 shadow-xl border border-[var(--border)]"
+                >
+                  <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)] flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Building2 size={12} />
+                      Filial tanlash
+                    </span>
+                    {selectedBranchId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedBranch('', 'Barcha filiallar');
+                          setShowBranchDropdown(false);
+                          toast.success("Barcha filiallar ko'rinishi faollashdi");
+                        }}
+                        className="text-[10px] text-[var(--primary)] hover:underline capitalize"
+                      >
+                        Barchasi
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto py-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBranch('', 'Barcha filiallar');
+                        setShowBranchDropdown(false);
+                        toast.success("Barcha filiallar tanlandi");
+                      }}
+                      className={`dropdown-item w-full flex items-center justify-between text-xs py-2 px-3 ${
+                        !selectedBranchId ? 'bg-[var(--primary-50)] text-[var(--primary)] font-semibold' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Globe size={14} className={!selectedBranchId ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'} />
+                        <span>Barcha filiallar</span>
+                      </div>
+                      {!selectedBranchId && <Check size={14} className="text-[var(--primary)]" />}
+                    </button>
+
+                    {isLoadingBranches ? (
+                      <div className="px-4 py-3 text-xs text-center text-[var(--text-muted)]">Yuklanmoqda...</div>
+                    ) : branches.length === 0 ? (
+                      <div className="px-4 py-3 text-xs text-center text-[var(--text-muted)]">Filiallar topilmadi</div>
+                    ) : (
+                      branches.map((b) => {
+                        const isSelected = selectedBranchId === b.id;
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedBranch(b.id, b.name);
+                              setShowBranchDropdown(false);
+                              toast.success(`${b.name} filialiga o'tildi`);
+                            }}
+                            className={`dropdown-item w-full flex items-center justify-between text-xs py-2 px-3 ${
+                              isSelected ? 'bg-[var(--primary-50)] text-[var(--primary)] font-semibold' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 pr-2">
+                              <Building2 size={14} className={isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-muted)] flex-shrink-0'} />
+                              <div className="truncate text-left">
+                                <div className="truncate">{b.name}</div>
+                                {b.address && (
+                                  <div className="text-[10px] text-[var(--text-muted)] truncate">{b.address}</div>
+                                )}
+                              </div>
+                            </div>
+                            {isSelected && <Check size={14} className="text-[var(--primary)] flex-shrink-0" />}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* Center — Global Search */}
+        {isManagement && (
+          <div ref={searchRef} className="hidden md:flex flex-1 max-w-md relative mx-2">
             <form onSubmit={handleSearchSubmit} className="w-full">
               <div className="search-input-wrap">
                 <Search size={16} className="search-icon" />
@@ -191,7 +352,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
                   }}
                   onFocus={() => setShowHeaderResults(Boolean(headerSearch.trim()))}
                   onKeyDown={(e) => e.key === 'Escape' && setShowHeaderResults(false)}
-                  placeholder={searchPlaceholder}
+                  placeholder="Qidirish (ism, telefon, guruh)..."
                   className="input-field"
                   style={{ height: '2.375rem', fontSize: '0.8125rem' }}
                 />
@@ -212,38 +373,77 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
               {showHeaderResults && headerSearch.trim() && (
                 <motion.div
                   {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
-                  className="absolute left-0 right-0 top-full mt-1.5 dropdown-panel w-full max-h-80 overflow-y-auto z-50"
+                  className="absolute left-0 right-0 top-full mt-1.5 dropdown-panel w-full max-h-96 overflow-y-auto z-50 shadow-2xl border border-[var(--border)] divide-y divide-[var(--border)]"
                 >
                   {searchPending ? (
-                    <div className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>Qidirilmoqda...</div>
+                    <div className="px-4 py-3 text-sm text-[var(--text-secondary)]">Qidirilmoqda...</div>
                   ) : headerSearchFailed ? (
-                    <div className="px-4 py-3 text-sm" style={{ color: 'var(--error)' }}>Qidiruvda xatolik yuz berdi.</div>
-                  ) : headerUsers.length === 0 ? (
-                    <div className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>Hech narsa topilmadi.</div>
+                    <div className="px-4 py-3 text-sm text-[var(--error)]">Qidiruvda xatolik yuz berdi.</div>
+                  ) : headerUsers.length === 0 && headerGroups.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-[var(--text-secondary)]">Hech narsa topilmadi.</div>
                   ) : (
-                    headerUsers.slice(0, 8).map((result) => (
-                      <button
-                        key={result.id}
-                        type="button"
-                        onClick={() => { setShowHeaderResults(false); navigate(`/users/${result.id}`); }}
-                        className="dropdown-item w-full"
-                      >
-                        <div className="avatar avatar-sm" style={{ width: '2rem', height: '2rem', fontSize: '0.72rem', flexShrink: 0 }}>
-                          {(result.name || result.username || '?').charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0 text-left">
-                          <div className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                            {result.name || "Noma'lum"}
+                    <>
+                      {/* Groups results */}
+                      {headerGroups.length > 0 && (
+                        <div>
+                          <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] bg-[var(--secondary-background)]">
+                            Guruhlar ({headerGroups.length})
                           </div>
-                          <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
-                            @{result.username}{result.phone ? ` · ${result.phone}` : ''}
-                          </div>
+                          {headerGroups.map((g) => (
+                            <button
+                              key={`grp-${g.id}`}
+                              type="button"
+                              onClick={() => handleSelectGroup(g)}
+                              className="dropdown-item w-full flex items-center gap-3 py-2 px-3 text-left hover:bg-[var(--secondary-background)]"
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-[var(--primary-50)] text-[var(--primary)] flex items-center justify-center flex-shrink-0 font-bold text-xs">
+                                <Users2 size={15} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-xs text-[var(--text-primary)] truncate">{g.name}</div>
+                                <div className="text-[11px] text-[var(--text-muted)] truncate">
+                                  {g.teacher?.name ? `Ustoz: ${g.teacher.name}` : ''}
+                                  {g.branch?.name ? ` · ${g.branch.name}` : ''}
+                                </div>
+                              </div>
+                              <span className="badge badge-primary text-[10px] flex-shrink-0">Guruh</span>
+                            </button>
+                          ))}
                         </div>
-                        <span className="badge badge-gray text-[10px] flex-shrink-0">
-                          {ROLE_LABELS[result.role] || result.role}
-                        </span>
-                      </button>
-                    ))
+                      )}
+
+                      {/* Users results */}
+                      {headerUsers.length > 0 && (
+                        <div>
+                          <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] bg-[var(--secondary-background)]">
+                            Foydalanuvchilar ({headerUsers.length})
+                          </div>
+                          {headerUsers.map((result) => (
+                            <button
+                              key={`usr-${result.id}`}
+                              type="button"
+                              onClick={() => handleSelectUser(result)}
+                              className="dropdown-item w-full flex items-center gap-3 py-2 px-3 text-left hover:bg-[var(--secondary-background)]"
+                            >
+                              <div className="avatar avatar-sm flex-shrink-0" style={{ width: '2rem', height: '2rem', fontSize: '0.72rem' }}>
+                                {(result.name || result.username || '?').charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-xs truncate" style={{ color: 'var(--text-primary)' }}>
+                                  {result.name || "Noma'lum"}
+                                </div>
+                                <div className="text-[11px] truncate" style={{ color: 'var(--text-secondary)' }}>
+                                  @{result.username}{result.phone ? ` · ${result.phone}` : ''}
+                                </div>
+                              </div>
+                              <span className="badge badge-gray text-[10px] flex-shrink-0">
+                                {ROLE_LABELS[result.role] || result.role}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </motion.div>
               )}

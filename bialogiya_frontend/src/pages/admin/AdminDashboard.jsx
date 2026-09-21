@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import api from '../../config/axios';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { useBranchStore } from '../../store/branchStore';
 import PageHeader from '../../components/ui/PageHeader';
 import StatCard from '../../components/ui/StatCard';
 import ChartCard from '../../components/ui/ChartCard';
@@ -44,10 +45,13 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { theme } = useThemeStore();
+  const { selectedBranchId } = useBranchStore();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-stats', user?.role, user?.centerId],
-    queryFn: () => api.get('/admin/stats').then(r => r.data.data),
+    queryKey: ['admin-stats', user?.role, user?.centerId, selectedBranchId],
+    queryFn: () => api.get('/admin/stats', {
+      params: selectedBranchId ? { branchId: selectedBranchId } : {}
+    }).then(r => r.data.data),
   });
 
   const role = user?.role || 'admin';
@@ -120,18 +124,6 @@ export default function AdminDashboard() {
       <PageHeader
         title={title}
         subtitle={subtitle}
-        actions={
-          <div className="flex items-center gap-2">
-            <span className="header-status">Live</span>
-            <button
-              type="button"
-              onClick={() => navigate(`/${baseRole}/dashboard`)}
-              className="btn-ghost btn-sm"
-            >
-              Barcha ma'lumotlar
-            </button>
-          </div>
-        }
       />
 
       {/* KPI Stats */}
