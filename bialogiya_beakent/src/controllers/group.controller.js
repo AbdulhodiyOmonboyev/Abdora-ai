@@ -51,10 +51,30 @@ const createGroup = async (req, res, next) => {
 
     if (branchId && teacher.branchId !== branchId) return error(res, 'Teacher must belong to the selected branch', 403);
 
-    let roomName = room || null;
-    if (roomId) {
-      const foundRoom = await prisma.room.findUnique({ where: { id: roomId } });
+    let roomName = room ? String(room).trim() : null;
+    let actualRoomId = roomId || null;
+    if (actualRoomId) {
+      const foundRoom = await prisma.room.findUnique({ where: { id: actualRoomId } });
       if (foundRoom) roomName = foundRoom.name;
+      else actualRoomId = null;
+    }
+    if (roomName && !actualRoomId) {
+      let foundRoom = await prisma.room.findFirst({
+        where: { name: roomName, isActive: true, ...(centerId ? { centerId } : {}) }
+      });
+      if (!foundRoom) {
+        try {
+          foundRoom = await prisma.room.create({
+            data: {
+              name: roomName,
+              capacity: 20,
+              centerId: centerId || null,
+              branchId: branchId || null,
+            }
+          });
+        } catch (_) {}
+      }
+      if (foundRoom) actualRoomId = foundRoom.id;
     }
 
     const group = await prisma.group.create({
@@ -68,7 +88,7 @@ const createGroup = async (req, res, next) => {
         startTime: startTime || null,
         endTime: endTime || null,
         room: roomName,
-        roomId: roomId || null,
+        roomId: actualRoomId || null,
         totalLessons: totalLessons ? parseInt(totalLessons, 10) : null,
         level: level || null,
         startDate: startDate ? new Date(startDate) : null,
@@ -198,10 +218,32 @@ const updateGroup = async (req, res, next) => {
       if (!teacher || (ownBranchIds && !ownBranchIds.includes(teacher.branchId)) || (branchId && teacher.branchId !== branchId)) return error(res, 'Forbidden', 403);
     }
 
-    let roomName = room;
-    if (roomId) {
-      const foundRoom = await prisma.room.findUnique({ where: { id: roomId } });
+    let roomName = room !== undefined ? (room ? String(room).trim() : null) : undefined;
+    let actualRoomId = roomId !== undefined ? (roomId || null) : undefined;
+    if (actualRoomId) {
+      const foundRoom = await prisma.room.findUnique({ where: { id: actualRoomId } });
       if (foundRoom) roomName = foundRoom.name;
+      else actualRoomId = null;
+    }
+    if (roomName && !actualRoomId) {
+      const existingGroup = await prisma.group.findUnique({ where: { id: req.params.id }, select: { centerId: true, branchId: true } });
+      const targetCenterId = req.user.centerId || existingGroup?.centerId || null;
+      let foundRoom = await prisma.room.findFirst({
+        where: { name: roomName, isActive: true, ...(targetCenterId ? { centerId: targetCenterId } : {}) }
+      });
+      if (!foundRoom) {
+        try {
+          foundRoom = await prisma.room.create({
+            data: {
+              name: roomName,
+              capacity: 20,
+              centerId: targetCenterId,
+              branchId: branchId || existingGroup?.branchId || null,
+            }
+          });
+        } catch (_) {}
+      }
+      if (foundRoom) actualRoomId = foundRoom.id;
     }
 
     const group = await prisma.group.update({
@@ -215,7 +257,7 @@ const updateGroup = async (req, res, next) => {
         ...(startTime !== undefined ? { startTime: startTime || null } : {}),
         ...(endTime !== undefined ? { endTime: endTime || null } : {}),
         ...(roomName !== undefined ? { room: roomName || null } : {}),
-        ...(roomId !== undefined ? { roomId: roomId || null } : {}),
+        ...(actualRoomId !== undefined ? { roomId: actualRoomId || null } : {}),
         ...(totalLessons !== undefined ? { totalLessons: totalLessons ? parseInt(totalLessons, 10) : null } : {}),
         ...(level !== undefined ? { level: level || null } : {}),
         ...(startDate !== undefined ? { startDate: startDate ? new Date(startDate) : null } : {}),

@@ -53,6 +53,7 @@ export default function ReceptionGroups() {
   const [showModal, setShowModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null); // null = create mode
   const [form, setForm] = useState(EMPTY_FORM);
+  const [customRoomMode, setCustomRoomMode] = useState(false);
   const [confirm, setConfirm] = useState(null);
 
   const { data: groups = [] } = useQuery({ 
@@ -84,7 +85,7 @@ export default function ReceptionGroups() {
     }).catch(() => [])
   });
 
-  const closeModal = () => { setShowModal(false); setEditingGroup(null); setForm(EMPTY_FORM); };
+  const closeModal = () => { setShowModal(false); setEditingGroup(null); setForm(EMPTY_FORM); setCustomRoomMode(false); };
 
   const toPayload = (d) => ({
     ...d,
@@ -277,33 +278,62 @@ export default function ReceptionGroups() {
 
                 {/* Room */}
                 <div>
-                  <label className="block text-sm font-medium mb-1.5 flex items-center gap-1">
-                    <DoorOpen size={13} /> Xona
-                  </label>
-                  <select
-                    value={form.roomId || (rooms.find(r => r.name === form.room)?.id || '')}
-                    onChange={e => {
-                      const selectedId = e.target.value;
-                      const selectedRoom = rooms.find(r => r.id === selectedId);
-                      setForm(f => ({
-                        ...f,
-                        roomId: selectedId,
-                        room: selectedRoom ? selectedRoom.name : '',
-                      }));
-                    }}
-                    className="input-field"
-                  >
-                    <option value="">Xona tanlang</option>
-                    {rooms.map(r => (
-                      <option key={r.id} value={r.id}>
-                        {r.name} {r.capacity ? `(${r.capacity} kishi)` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  {rooms.length === 0 && (
-                    <p className="text-[11px] text-amber-500 mt-1">
-                      Hozircha xonalar mavjud emas. Xonalar bo'limidan xona qo'shishingiz mumkin.
-                    </p>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-sm font-medium flex items-center gap-1">
+                      <DoorOpen size={13} /> Xona
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setCustomRoomMode(m => !m)}
+                      className="text-xs text-[var(--primary)] hover:underline font-medium"
+                    >
+                      {customRoomMode ? "Ro'yxatdan tanlash" : "+ Boshqa xona yozish"}
+                    </button>
+                  </div>
+
+                  {customRoomMode ? (
+                    <input
+                      value={form.room}
+                      onChange={e => setForm(f => ({ ...f, room: e.target.value, roomId: '' }))}
+                      placeholder="Xona nomini kiriting (masalan: 3-xona)"
+                      className="input-field"
+                      autoFocus
+                    />
+                  ) : (
+                    <select
+                      value={form.roomId || (rooms.find(r => r.name === form.room)?.id || (form.room ? `name:${form.room}` : ''))}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === '__custom__') {
+                          setCustomRoomMode(true);
+                          return;
+                        }
+                        if (val.startsWith('name:')) {
+                          const customName = val.replace('name:', '');
+                          setForm(f => ({ ...f, roomId: '', room: customName }));
+                          return;
+                        }
+                        const selectedRoom = rooms.find(r => r.id === val);
+                        setForm(f => ({
+                          ...f,
+                          roomId: val,
+                          room: selectedRoom ? selectedRoom.name : '',
+                        }));
+                      }}
+                      className="input-field"
+                    >
+                      <option value="">Xona tanlang</option>
+                      {rooms.map(r => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} {r.capacity ? `(${r.capacity} kishi)` : ''}
+                        </option>
+                      ))}
+                      {/* Fallback standard rooms if custom rooms not added yet */}
+                      {rooms.length === 0 && ['1-xona', '2-xona', '3-xona', '4-xona', '5-xona'].map(name => (
+                        <option key={name} value={`name:${name}`}>{name}</option>
+                      ))}
+                      <option value="__custom__">+ Boshqa xona yozish...</option>
+                    </select>
                   )}
                 </div>
 

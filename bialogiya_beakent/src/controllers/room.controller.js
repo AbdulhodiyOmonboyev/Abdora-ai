@@ -4,19 +4,60 @@ const { success, error } = require('../utils/apiResponse');
 const getRooms = async (req, res, next) => {
   try {
     const { branchId } = req.query;
+    let centerId = req.user.centerId;
+    if (!centerId && req.user.role !== 'admin') {
+      const u = await prisma.user.findUnique({
+        where: { id: req.user.userId || req.user.id },
+        select: { centerId: true, branch: { select: { centerId: true } } }
+      });
+      centerId = u?.centerId || u?.branch?.centerId;
+      if (!centerId) {
+        const firstCenter = await prisma.center.findFirst({ where: { isActive: true }, select: { id: true } });
+        centerId = firstCenter?.id;
+      }
+    }
+
     const where = {
       isActive: true,
-      ...(req.user.role !== 'admin' && req.user.centerId ? { centerId: req.user.centerId } : {}),
+      ...(centerId ? { centerId } : {}),
     };
     if (branchId) where.branchId = branchId;
 
-    const rooms = await prisma.room.findMany({
+    let rooms = await prisma.room.findMany({
       where,
       include: {
         branch: { select: { id: true, name: true } },
       },
       orderBy: { name: 'asc' },
     });
+
+    if (rooms.length === 0) {
+      const defaultRooms = [
+        { name: '1-xona', capacity: 20, color: '#3B82F6' },
+        { name: '2-xona', capacity: 20, color: '#10B981' },
+        { name: '3-xona', capacity: 25, color: '#8B5CF6' },
+        { name: '4-xona', capacity: 18, color: '#F59E0B' },
+        { name: '5-xona', capacity: 30, color: '#EC4899' },
+      ];
+      await Promise.all(defaultRooms.map(r =>
+        prisma.room.create({
+          data: {
+            ...r,
+            centerId: centerId || null,
+            branchId: branchId || null,
+            amenities: ['Proyektor', 'Doska'],
+          }
+        }).catch(() => null)
+      ));
+
+      rooms = await prisma.room.findMany({
+        where,
+        include: {
+          branch: { select: { id: true, name: true } },
+        },
+        orderBy: { name: 'asc' },
+      });
+    }
 
     return success(res, rooms);
   } catch (err) {
