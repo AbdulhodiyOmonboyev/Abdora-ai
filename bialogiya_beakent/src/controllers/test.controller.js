@@ -247,4 +247,101 @@ const deleteTest = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createTest, getTests, getTestById, submitTest, getTestResults, getMyResults, getTestAnalysis, deleteTest };
+const updateQuestion = async (req, res, next) => {
+  try {
+    const { testId, questionId } = req.params;
+    const { text, options, difficulty, points, explanation } = req.body;
+
+    const test = await prisma.test.findFirst({
+      where: { id: testId, ...(req.user.role === 'admin' ? {} : { centerId: req.user.centerId, teacherId: req.user.userId }) },
+    });
+    if (!test) return error(res, 'Test not found or unauthorized', 404);
+
+    const question = await prisma.question.findFirst({
+      where: { id: questionId, testId },
+    });
+    if (!question) return error(res, 'Question not found', 404);
+
+    const updated = await prisma.question.update({
+      where: { id: questionId },
+      data: {
+        ...(text !== undefined && { text }),
+        ...(options !== undefined && { options }),
+        ...(difficulty !== undefined && { difficulty }),
+        ...(points !== undefined && { points: parseInt(points, 10) || 1 }),
+        ...(explanation !== undefined && { explanation }),
+      },
+    });
+
+    const allQuestions = await prisma.question.findMany({ where: { testId }, select: { points: true } });
+    const totalPoints = allQuestions.reduce((s, q) => s + (q.points || 0), 0);
+    await prisma.test.update({ where: { id: testId }, data: { totalPoints } });
+
+    return success(res, updated, 'Savol muvaffaqiyatli yangilandi');
+  } catch (err) { next(err); }
+};
+
+const deleteQuestion = async (req, res, next) => {
+  try {
+    const { testId, questionId } = req.params;
+
+    const test = await prisma.test.findFirst({
+      where: { id: testId, ...(req.user.role === 'admin' ? {} : { centerId: req.user.centerId, teacherId: req.user.userId }) },
+    });
+    if (!test) return error(res, 'Test not found or unauthorized', 404);
+
+    await prisma.question.delete({ where: { id: questionId } });
+
+    const allQuestions = await prisma.question.findMany({ where: { testId }, select: { points: true } });
+    const totalPoints = allQuestions.reduce((s, q) => s + (q.points || 0), 0);
+    await prisma.test.update({ where: { id: testId }, data: { totalPoints } });
+
+    return success(res, null, 'Savol o\'chirildi');
+  } catch (err) { next(err); }
+};
+
+const addQuestion = async (req, res, next) => {
+  try {
+    const { testId } = req.params;
+    const { text, options, difficulty, points, explanation } = req.body;
+    if (!text) return error(res, 'Savol matni kiritilishi shart', 400);
+
+    const test = await prisma.test.findFirst({
+      where: { id: testId, ...(req.user.role === 'admin' ? {} : { centerId: req.user.centerId, teacherId: req.user.userId }) },
+    });
+    if (!test) return error(res, 'Test not found or unauthorized', 404);
+
+    const newQuestion = await prisma.question.create({
+      data: {
+        testId,
+        text,
+        type: 'mcq',
+        options: options || [],
+        difficulty: difficulty || 'medium',
+        points: parseInt(points, 10) || 1,
+        explanation: explanation || '',
+      },
+    });
+
+    const allQuestions = await prisma.question.findMany({ where: { testId }, select: { points: true } });
+    const totalPoints = allQuestions.reduce((s, q) => s + (q.points || 0), 0);
+    await prisma.test.update({ where: { id: testId }, data: { totalPoints } });
+
+    return success(res, newQuestion, 'Yangi savol qo\'shildi', 201);
+  } catch (err) { next(err); }
+};
+
+module.exports = {
+  createTest,
+  getTests,
+  getTestById,
+  submitTest,
+  getTestResults,
+  getMyResults,
+  getTestAnalysis,
+  deleteTest,
+  updateQuestion,
+  deleteQuestion,
+  addQuestion,
+};
+

@@ -5,9 +5,10 @@ const upload = require('../middleware/upload.middleware');
 const {
   createHomework, getHomeworkByGroup, getMyHomework,
   submitHomework, getSubmissions, gradeSubmission, getTeacherHomework, getHomeworkById,
-  updateHomework, deleteHomework
+  updateHomework, deleteHomework, generateHomeworkAI
 } = require('../controllers/homework.controller');
 
+router.post('/generate-ai', verifyToken, requireRole('teacher', 'admin'), generateHomeworkAI);
 router.get('/my', verifyToken, requireRole('teacher'), getTeacherHomework);
 router.get('/student', verifyToken, requireRole('student'), getMyHomework);
 router.get('/group/:groupId', verifyToken, getHomeworkByGroup);

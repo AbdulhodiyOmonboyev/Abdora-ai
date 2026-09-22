@@ -125,7 +125,7 @@ const submitHomework = async (req, res, next) => {
       setImmediate(async () => {
         try {
           const { gradeHomework } = require('../services/ai/gradingAI.service');
-          const aiGrade = await gradeHomework(hw.description || hw.title, answerText || '');
+          const aiGrade = await gradeHomework(hw.title, hw.description || '', answerText || '', hw.maxScore || 100);
           await prisma.submission.update({ where: { id: submission.id }, data: { aiGrade, status: 'ai_graded' } });
         } catch (_) {}
       });
@@ -203,4 +203,59 @@ const deleteHomework = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createHomework, getHomeworkByGroup, getTeacherHomework, getMyHomework, getHomeworkById, submitHomework, getSubmissions, gradeSubmission, updateHomework, deleteHomework };
+const generateHomeworkAI = async (req, res, next) => {
+  try {
+    const { topic, lessonId, taskCount, difficulty, language } = req.body;
+    let effectiveTopic = topic;
+    let lessonContent = '';
+
+    if (lessonId) {
+      const lesson = await prisma.lesson.findUnique({
+        where: { id: lessonId },
+        select: { title: true, content: true },
+      });
+      if (lesson) {
+        if (!effectiveTopic) effectiveTopic = lesson.title;
+        lessonContent = lesson.content || '';
+      }
+    }
+
+    if (!effectiveTopic) {
+      return error(res, 'Mavzu (topic) yoki dars (lessonId) kiritilishi shart', 400);
+    }
+
+    const { getModel } = require('../config/gemini');
+    const { getHomeworkGenerationPrompt } = require('../services/ai/prompts');
+
+    const prompt = getHomeworkGenerationPrompt(
+      effectiveTopic,
+      lessonContent,
+      parseInt(taskCount, 10) || 3,
+      difficulty || 'medium',
+      language || 'uz'
+    );
+
+    const model = getModel(true);
+    const result = await model.generateContent(prompt);
+    const parsed = JSON.parse(result.response.text());
+
+    return success(res, parsed, 'AI vazifa taklifini muvaffaqiyatli shakllantirdi');
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  createHomework,
+  getHomeworkByGroup,
+  getTeacherHomework,
+  getMyHomework,
+  getHomeworkById,
+  submitHomework,
+  getSubmissions,
+  gradeSubmission,
+  updateHomework,
+  deleteHomework,
+  generateHomeworkAI,
+};
+

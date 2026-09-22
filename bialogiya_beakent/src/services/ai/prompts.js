@@ -280,4 +280,57 @@ Your job:
 - Keep each of your turns short (1-3 sentences) so the student talks more than you do.`;
 };
 
-module.exports = { LESSON_SYSTEM_PROMPT, getLessonGenerationPrompt, getChatSystemPrompt, getGradingPrompt, getResultAnalysisPrompt, getTestInsightsPrompt, getFinanceAdvicePrompt, getExplainerVideoPrompt, getSpeakingCoachInstructions };
+const getHomeworkGenerationPrompt = (topic, lessonContent = '', taskCount = 3, difficulty = 'medium', language = 'uz') => {
+  const langInstructions = {
+    uz: "Barcha ma'lumotlarni o'zbek tilida yozing.",
+    ru: 'Все данные пишите на русском языке.',
+    en: 'Write all details in English.',
+  };
+
+  return `${langInstructions[language] || langInstructions['uz']}
+You are an expert curriculum designer and educator.
+Create a high-quality homework assignment for students on the topic: "${topic}".
+Difficulty level: ${difficulty}.
+Number of tasks to generate: ${taskCount}.
+Additional lesson material/context:
+"${(lessonContent || topic).slice(0, 2500)}"
+
+Return ONLY valid JSON in this exact structure:
+{
+  "title": "Uy vazifasi nomi (qisqa va aniq)",
+  "description": "Talabalar uchun to'liq vazifa matni va tushunarli ko'rsatmalar. Har bir savol aniq tartiblangan bo'lsin.",
+  "tasks": [
+    {
+      "number": 1,
+      "type": "theory | analysis | practice",
+      "question": "Topshiriq yoki savol matni",
+      "points": 30,
+      "sampleAnswer": "O'qituvchi tekshirishi uchun namunaviy to'g'ri javob yoki etalon",
+      "criteria": "Baholash mezoni: talaba nimalarni bayon qilsa to'liq ball oladi"
+    }
+  ],
+  "maxScore": 100,
+  "gradingRubric": "O'qituvchi uchun baholash ko'rsatmasi va mezonlari"
+}
+
+Rules:
+- Tasks must be intellectually stimulating and directly relevant to the topic.
+- Include both conceptual understanding and practical problem-solving.
+- Provide clear sample answers so the teacher can easily verify accuracy.
+- Sum of task points must equal maxScore (100).
+- Plain text only, no markdown inside JSON strings.`;
+};
+
+module.exports = {
+  LESSON_SYSTEM_PROMPT,
+  getLessonGenerationPrompt,
+  getChatSystemPrompt,
+  getGradingPrompt,
+  getResultAnalysisPrompt,
+  getTestInsightsPrompt,
+  getFinanceAdvicePrompt,
+  getExplainerVideoPrompt,
+  getSpeakingCoachInstructions,
+  getHomeworkGenerationPrompt,
+};
+

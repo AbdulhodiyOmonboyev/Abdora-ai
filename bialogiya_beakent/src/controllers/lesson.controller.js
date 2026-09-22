@@ -334,4 +334,40 @@ const generateTestFromPDF = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { createLesson, getLessons, getLessonById, updateLesson, deleteLesson, removeAttachment, getAIContent, regenerateAI, generateTestFromPDF };
+const updateAIContent = async (req, res, next) => {
+  try {
+    const lesson = await findAccessibleLesson(req.params.id, req.user);
+    if (!lesson) return error(res, 'Lesson not found', 404);
+    if (!(await canAccessLesson(lesson, req.user))) return error(res, 'Forbidden', 403);
+
+    const existing = lesson.aiContent || {};
+    const updatedAi = {
+      ...existing,
+      ...req.body,
+      isVerifiedByTeacher: req.body.isVerifiedByTeacher !== undefined ? req.body.isVerifiedByTeacher : existing.isVerifiedByTeacher,
+      lastEditedAt: new Date().toISOString(),
+      lastEditedByTeacher: true,
+    };
+
+    const updated = await prisma.lesson.update({
+      where: { id: lesson.id },
+      data: { aiContent: updatedAi },
+    });
+
+    return success(res, updated.aiContent, 'AI kontent muvaffaqiyatli saqlandi');
+  } catch (err) { next(err); }
+};
+
+module.exports = {
+  createLesson,
+  getLessons,
+  getLessonById,
+  updateLesson,
+  deleteLesson,
+  removeAttachment,
+  getAIContent,
+  regenerateAI,
+  generateTestFromPDF,
+  updateAIContent,
+};
+

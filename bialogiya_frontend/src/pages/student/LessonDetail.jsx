@@ -9,7 +9,7 @@ import {
   MessageSquare, Users, ArrowLeft, RefreshCw, ChevronLeft, ChevronRight,
   Send, Loader2, Play, Pause, Square, Check, X, Download, Clapperboard, Mic,
   Sparkles, HelpCircle, Layers, Award, CheckCircle, Clock, Flame,
-  ArrowRight, Trophy, ThumbsUp, AlertTriangle
+  ArrowRight, Trophy, ThumbsUp, AlertTriangle, CheckCircle2, AlertCircle, ShieldCheck, Pencil, Trash2, Plus
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -94,95 +94,354 @@ function FlashcardDeck({ cards }) {
   );
 }
 
+// Teacher Quiz Review Component
+function TeacherQuizReview({ questions = [], onSaveQuestions }) {
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newQ, setNewQ] = useState({
+    text: '',
+    difficulty: 'medium',
+    explanation: '',
+    options: [
+      { text: '', isCorrect: true },
+      { text: '', isCorrect: false },
+      { text: '', isCorrect: false },
+      { text: '', isCorrect: false },
+    ],
+  });
+
+  const startEdit = (index) => {
+    setEditingIndex(index);
+    setEditForm(JSON.parse(JSON.stringify(questions[index])));
+  };
+
+  const handleSaveEdit = () => {
+    if (!editForm.text) return toast.error('Savol matnini kiriting');
+    if (editForm.options?.some(o => !o.text)) return toast.error('Barcha variantlarni to\'ldiring');
+    if (!editForm.options?.some(o => o.isCorrect)) return toast.error('Bitta to\'g\'ri variantni tanlang');
+
+    const updated = [...questions];
+    updated[editingIndex] = editForm;
+    onSaveQuestions(updated);
+    setEditingIndex(null);
+    setEditForm(null);
+    toast.success('Savol saqlandi');
+  };
+
+  const handleDelete = (index) => {
+    if (questions.length <= 1) return toast.error('Kamida bitta savol qolishi kerak');
+    const updated = questions.filter((_, i) => i !== index);
+    onSaveQuestions(updated);
+    toast.success('Savol o\'chirildi');
+  };
+
+  const handleAdd = () => {
+    if (!newQ.text) return toast.error('Savol matnini kiriting');
+    if (newQ.options?.some(o => !o.text)) return toast.error('Barcha variantlarni to\'ldiring');
+    const updated = [...questions, newQ];
+    onSaveQuestions(updated);
+    setIsAdding(false);
+    setNewQ({
+      text: '',
+      difficulty: 'medium',
+      explanation: '',
+      options: [
+        { text: '', isCorrect: true },
+        { text: '', isCorrect: false },
+        { text: '', isCorrect: false },
+        { text: '', isCorrect: false },
+      ],
+    });
+    toast.success('Yangi savol qo\'shildi');
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+        <div>
+          <h3 className="font-bold text-base text-gray-800 dark:text-white flex items-center gap-2">
+            <ShieldCheck size={18} className="text-primary" /> AI Test savollari ({questions.length} ta)
+          </h3>
+          <p className="text-xs text-gray-500">To'g'ri va noto'g'ri javoblarni tekshiring, xatolarni to'g'rilang</p>
+        </div>
+        {!isAdding && (
+          <button onClick={() => setIsAdding(true)} className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5">
+            <Plus size={14} /> Savol qo'shish
+          </button>
+        )}
+      </div>
+
+      {isAdding && (
+        <div className="p-4 rounded-2xl border-2 border-primary/40 bg-primary/5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-sm text-primary">Yangi savol qo'shish</span>
+            <button onClick={() => setIsAdding(false)} className="btn-ghost p-1 text-gray-400"><X size={14} /></button>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Savol matni *</label>
+            <input value={newQ.text} onChange={e => setNewQ(q => ({ ...q, text: e.target.value }))}
+              placeholder="Masalan: Fotosintez qaysi organoidda amalga oshadi?" className="input-field text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Variantlar (To'g'risini belgilang) *</label>
+            <div className="space-y-2">
+              {newQ.options.map((opt, oi) => (
+                <div key={oi} className="flex items-center gap-2">
+                  <input type="radio" name="newQ_correct" checked={opt.isCorrect}
+                    onChange={() => setNewQ(q => ({ ...q, options: q.options.map((o, j) => ({ ...o, isCorrect: j === oi })) }))}
+                    className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-semibold w-5">{String.fromCharCode(65 + oi)})</span>
+                  <input value={opt.text} onChange={e => setNewQ(q => ({ ...q, options: q.options.map((o, j) => j === oi ? { ...o, text: e.target.value } : o) }))}
+                    placeholder={`Variant ${String.fromCharCode(65 + oi)}`} className="input-field text-xs py-1.5 flex-1" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Qiyinlik darajasi</label>
+              <select value={newQ.difficulty} onChange={e => setNewQ(q => ({ ...q, difficulty: e.target.value }))} className="input-field text-xs py-1.5">
+                <option value="easy">Oson (Easy)</option>
+                <option value="medium">O'rta (Medium)</option>
+                <option value="hard">Qiyin (Hard)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Tushuntirish (ixtiyoriy)</label>
+              <input value={newQ.explanation} onChange={e => setNewQ(q => ({ ...q, explanation: e.target.value }))}
+                placeholder="Nega aynan shu javob to'g'ri?" className="input-field text-xs py-1.5" />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end pt-1">
+            <button onClick={() => setIsAdding(false)} className="btn-ghost text-xs py-1.5 px-3">Bekor qilish</button>
+            <button onClick={handleAdd} className="btn-primary text-xs py-1.5 px-4">Qo'shish</button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {questions.map((q, qi) => {
+          const isEditing = editingIndex === qi;
+
+          if (isEditing) {
+            return (
+              <div key={qi} className="p-4 rounded-2xl border-2 border-primary/40 bg-white dark:bg-gray-900 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-sm text-primary">Savol {qi + 1} ni tahrirlash</span>
+                  <button onClick={() => { setEditingIndex(null); setEditForm(null); }} className="btn-ghost p-1 text-gray-400"><X size={14} /></button>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Savol matni</label>
+                  <textarea value={editForm.text} onChange={e => setEditForm(f => ({ ...f, text: e.target.value }))}
+                    className="input-field text-sm resize-none" rows={2} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Variantlar (To'g'risini tanlang)</label>
+                  <div className="space-y-2">
+                    {editForm.options?.map((opt, oi) => (
+                      <div key={oi} className="flex items-center gap-2">
+                        <input type="radio" name={`editQ_${qi}_correct`} checked={opt.isCorrect}
+                          onChange={() => setEditForm(f => ({ ...f, options: f.options.map((o, j) => ({ ...o, isCorrect: j === oi })) }))}
+                          className="w-4 h-4 text-primary" />
+                        <span className="text-xs font-semibold w-5">{String.fromCharCode(65 + oi)})</span>
+                        <input value={opt.text} onChange={e => setEditForm(f => ({ ...f, options: f.options.map((o, j) => j === oi ? { ...o, text: e.target.value } : o) }))}
+                          className="input-field text-xs py-1.5 flex-1" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Qiyinlik darajasi</label>
+                    <select value={editForm.difficulty} onChange={e => setEditForm(f => ({ ...f, difficulty: e.target.value }))} className="input-field text-xs py-1.5">
+                      <option value="easy">Oson (Easy)</option>
+                      <option value="medium">O'rta (Medium)</option>
+                      <option value="hard">Qiyin (Hard)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Tushuntirish</label>
+                    <input value={editForm.explanation || ''} onChange={e => setEditForm(f => ({ ...f, explanation: e.target.value }))}
+                      className="input-field text-xs py-1.5" />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end pt-1">
+                  <button onClick={() => { setEditingIndex(null); setEditForm(null); }} className="btn-ghost text-xs py-1.5 px-3">Bekor</button>
+                  <button onClick={handleSaveEdit} className="btn-primary text-xs py-1.5 px-4 flex items-center gap-1">
+                    <Check size={13} /> Saqlash
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={qi} className="p-4 rounded-2xl border border-[var(--border)] bg-white dark:bg-gray-900/60 hover:border-primary/30 transition-all space-y-2.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5 flex-1">
+                  <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {qi + 1}
+                  </span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">{q.text}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`badge text-[11px] py-0 px-2 ${q.difficulty === 'easy' ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300' : q.difficulty === 'hard' ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300'}`}>
+                        {q.difficulty}
+                      </span>
+                      {q.points && <span className="text-[11px] text-gray-400">{q.points} ball</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => startEdit(qi)} className="btn-ghost p-1.5 rounded-lg text-primary hover:bg-primary/10" title="Savolni tahrirlash">
+                    <Pencil size={13} />
+                  </button>
+                  <button onClick={() => handleDelete(qi)} className="btn-ghost p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30" title="O'chirish">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Options display */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                {q.options?.map((opt, oi) => (
+                  <div key={oi} className={`p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 ${opt.isCorrect ? 'bg-green-50/80 dark:bg-green-950/20 border-green-300 dark:border-green-800 text-green-800 dark:text-green-300 font-medium' : 'bg-gray-50/50 dark:bg-gray-800/40 border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-400'}`}>
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="font-bold opacity-75">{String.fromCharCode(65 + oi)}.</span>
+                      <span className="truncate">{opt.text}</span>
+                    </div>
+                    {opt.isCorrect && (
+                      <span className="badge text-[10px] bg-green-200/70 dark:bg-green-900/60 text-green-800 dark:text-green-200 flex items-center gap-1 flex-shrink-0">
+                        <Check size={10} /> To'g'ri
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Explanation */}
+              {q.explanation && (
+                <div className="text-xs bg-gray-50 dark:bg-gray-800/60 rounded-xl p-2.5 text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-800">
+                  <span className="font-semibold text-primary">Tushuntirish: </span>
+                  {q.explanation}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // Quiz component
-function QuizSection({ questions }) {
+function QuizSection({ questions = [], isTeacher = false, onSaveQuestions }) {
+  const [viewMode, setViewMode] = useState(isTeacher ? 'review' : 'play');
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
   if (!questions?.length) return <div className="text-gray-400 text-center py-10">No quiz questions available</div>;
 
-  const q = questions[current];
-  const score = Object.keys(answers).filter(i => {
-    const qi = questions[parseInt(i)];
-    return qi?.options?.[answers[i]]?.isCorrect;
-  }).length;
-
-  if (submitted) {
-    return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8">
-        <div className="flex justify-center mb-4">
-          {score >= questions.length * 0.8 ? (
-            <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center">
-              <Trophy size={36} />
-            </div>
-          ) : score >= questions.length * 0.6 ? (
-            <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center">
-              <ThumbsUp size={36} />
-            </div>
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center">
-              <BookOpen size={36} />
-            </div>
-          )}
-        </div>
-        <h3 className="text-2xl font-bold gradient-text">{score}/{questions.length}</h3>
-        <p className="text-gray-500 mt-2">{Math.round((score / questions.length) * 100)}% correct</p>
-        <div className="mt-6 space-y-3 text-left max-w-xl mx-auto">
-          {questions.map((qi, i) => {
-            const isCorrect = qi.options?.[answers[i]]?.isCorrect;
-            const correctIdx = qi.options?.findIndex(o => o.isCorrect);
-            return (
-              <div key={i} className={`p-3 rounded-xl border ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                <div className="text-sm font-medium">{qi.text}</div>
-                {!isCorrect && (
-                  <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                    <Check size={12} /> <span>{qi.options?.[correctIdx]?.text}</span>
-                  </div>
-                )}
-                {qi.explanation && <div className="text-xs text-gray-500 mt-1">{qi.explanation}</div>}
-              </div>
-            );
-          })}
-        </div>
-        <button onClick={() => { setAnswers({}); setCurrent(0); setSubmitted(false); }} className="btn-primary mt-6">
-          Try Again
-        </button>
-      </motion.div>
-    );
-  }
-
   return (
-    <div className="max-w-xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-medium text-gray-500">Savol {current + 1}/{questions.length}</span>
-        <span className={`badge text-xs ${q.difficulty === 'easy' ? 'bg-green-100 text-green-700' : q.difficulty === 'hard' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-          {q.difficulty}
-        </span>
-      </div>
-      <div className="h-1.5 bg-gray-100 rounded-full mb-6">
-        <div className="h-full gradient-bg rounded-full transition-all" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
-      </div>
-      <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{q.text}</h3>
-      <div className="space-y-3">
-        {q.options?.map((opt, i) => (
-          <button key={i} onClick={() => setAnswers(a => ({ ...a, [current]: i }))}
-            className={`w-full text-left p-4 rounded-xl border-2 transition-all text-sm ${answers[current] === i ? 'border-primary bg-primary/5 text-primary font-medium' : 'border-gray-100 hover:border-gray-200 bg-white dark:bg-gray-900'}`}>
-            <span className="font-semibold mr-2">{String.fromCharCode(65 + i)}.</span> {opt.text}
+    <div>
+      {isTeacher && (
+        <div className="flex items-center justify-end gap-1 mb-4 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-fit ml-auto">
+          <button
+            onClick={() => setViewMode('review')}
+            className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${viewMode === 'review' ? 'bg-white dark:bg-gray-700 shadow-sm text-primary font-semibold' : 'text-gray-500'}`}
+          >
+            O'qituvchi tekshiruvi ({questions.length})
           </button>
-        ))}
-      </div>
-      <div className="flex justify-between mt-6">
-        <button onClick={() => setCurrent(Math.max(0, current - 1))} disabled={current === 0}
-          className="btn-ghost disabled:opacity-40">← Oldingi</button>
-        {current < questions.length - 1 ? (
-          <button onClick={() => setCurrent(current + 1)} disabled={answers[current] === undefined}
-            className="btn-primary disabled:opacity-40">Keyingi →</button>
-        ) : (
-          <button onClick={() => setSubmitted(true)} disabled={Object.keys(answers).length < questions.length}
-            className="btn-primary disabled:opacity-40">Testni topshirish</button>
-        )}
-      </div>
+          <button
+            onClick={() => { setViewMode('play'); setAnswers({}); setCurrent(0); setSubmitted(false); }}
+            className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all ${viewMode === 'play' ? 'bg-white dark:bg-gray-700 shadow-sm text-primary font-semibold' : 'text-gray-500'}`}
+          >
+            O'quvchi rejimi (Test)
+          </button>
+        </div>
+      )}
+
+      {isTeacher && viewMode === 'review' ? (
+        <TeacherQuizReview questions={questions} onSaveQuestions={onSaveQuestions} />
+      ) : submitted ? (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8">
+          <div className="flex justify-center mb-4">
+            {Object.keys(answers).filter(i => questions[parseInt(i)]?.options?.[answers[i]]?.isCorrect).length >= questions.length * 0.8 ? (
+              <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center">
+                <Trophy size={36} />
+              </div>
+            ) : Object.keys(answers).filter(i => questions[parseInt(i)]?.options?.[answers[i]]?.isCorrect).length >= questions.length * 0.6 ? (
+              <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center">
+                <ThumbsUp size={36} />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center">
+                <BookOpen size={36} />
+              </div>
+            )}
+          </div>
+          <h3 className="text-2xl font-bold gradient-text">
+            {Object.keys(answers).filter(i => questions[parseInt(i)]?.options?.[answers[i]]?.isCorrect).length}/{questions.length}
+          </h3>
+          <p className="text-gray-500 mt-2">
+            {Math.round((Object.keys(answers).filter(i => questions[parseInt(i)]?.options?.[answers[i]]?.isCorrect).length / questions.length) * 100)}% to'g'ri
+          </p>
+          <div className="mt-6 space-y-3 text-left max-w-xl mx-auto">
+            {questions.map((qi, i) => {
+              const isCorrect = qi.options?.[answers[i]]?.isCorrect;
+              const correctIdx = qi.options?.findIndex(o => o.isCorrect);
+              return (
+                <div key={i} className={`p-3 rounded-xl border ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                  <div className="text-sm font-medium">{qi.text}</div>
+                  {!isCorrect && (
+                    <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                      <Check size={12} /> <span>{qi.options?.[correctIdx]?.text}</span>
+                    </div>
+                  )}
+                  {qi.explanation && <div className="text-xs text-gray-500 mt-1">{qi.explanation}</div>}
+                </div>
+              );
+            })}
+          </div>
+          <button onClick={() => { setAnswers({}); setCurrent(0); setSubmitted(false); }} className="btn-primary mt-6">
+            Qaytadan sinash
+          </button>
+        </motion.div>
+      ) : (
+        <div className="max-w-xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-medium text-gray-500">Savol {current + 1}/{questions.length}</span>
+            <span className={`badge text-xs ${questions[current]?.difficulty === 'easy' ? 'bg-green-100 text-green-700' : questions[current]?.difficulty === 'hard' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+              {questions[current]?.difficulty}
+            </span>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full mb-6">
+            <div className="h-full gradient-bg rounded-full transition-all" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{questions[current]?.text}</h3>
+          <div className="space-y-3">
+            {questions[current]?.options?.map((opt, i) => (
+              <button key={i} onClick={() => setAnswers(a => ({ ...a, [current]: i }))}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all text-sm ${answers[current] === i ? 'border-primary bg-primary/5 text-primary font-medium' : 'border-gray-100 hover:border-gray-200 bg-white dark:bg-gray-900'}`}>
+                <span className="font-semibold mr-2">{String.fromCharCode(65 + i)}.</span> {opt.text}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-between mt-6">
+            <button onClick={() => setCurrent(Math.max(0, current - 1))} disabled={current === 0}
+              className="btn-ghost disabled:opacity-40">← Oldingi</button>
+            {current < questions.length - 1 ? (
+              <button onClick={() => setCurrent(current + 1)} disabled={answers[current] === undefined}
+                className="btn-primary disabled:opacity-40">Keyingi →</button>
+            ) : (
+              <button onClick={() => setSubmitted(true)} disabled={Object.keys(answers).length < questions.length}
+                className="btn-primary disabled:opacity-40">Testni topshirish</button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -438,6 +697,29 @@ export default function LessonDetail() {
     onError: () => toast.error('Faylni yuklab bo‘lmadi'),
   });
 
+  const isTeacher = user?.role === 'teacher' || user?.role === 'admin';
+  const [editingField, setEditingField] = useState(null);
+  const [editText, setEditText] = useState('');
+
+  const updateAiMutation = useMutation({
+    mutationFn: (payload) => api.put(`/lessons/${id}/ai`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['lesson', id]);
+      toast.success("AI ma'lumotlari muvaffaqiyatli saqlandi");
+      setEditingField(null);
+    },
+    onError: (e) => toast.error(e.response?.data?.message || 'Xatolik yuz berdi'),
+  });
+
+  const handleStartEditText = (field, currentVal) => {
+    setEditingField(field);
+    setEditText(typeof currentVal === 'string' ? currentVal : '');
+  };
+
+  const handleSaveText = (field) => {
+    updateAiMutation.mutate({ [field]: editText });
+  };
+
   const ai = lesson?.aiContent;
   const isGenerating = ai?.status === 'generating';
   const isDone = ai?.status === 'done';
@@ -480,6 +762,15 @@ export default function LessonDetail() {
                 '• Pending'
               )}
             </span>
+            {isTeacher && isDone && (
+              <span className={`badge text-xs ${ai?.isVerifiedByTeacher ? 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'}`}>
+                {ai?.isVerifiedByTeacher ? (
+                  <span className="inline-flex items-center gap-1"><ShieldCheck size={12} /> O'qituvchi tasdiqlagan</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1"><AlertCircle size={12} /> Tekshiruv kutilmoqda</span>
+                )}
+              </span>
+            )}
           </div>
         </div>
         {(isError || isDone) && (
@@ -489,6 +780,45 @@ export default function LessonDetail() {
           </button>
         )}
       </header>
+
+      {/* Teacher AI Verification Bar */}
+      {isTeacher && isDone && (
+        <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all ${ai?.isVerifiedByTeacher ? 'bg-green-50/80 dark:bg-green-950/20 border-green-200 dark:border-green-800/60' : 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${ai?.isVerifiedByTeacher ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'}`}>
+              {ai?.isVerifiedByTeacher ? <ShieldCheck size={20} /> : <AlertCircle size={20} />}
+            </div>
+            <div>
+              <div className="font-semibold text-sm text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                {ai?.isVerifiedByTeacher ? "O'qituvchi tomonidan tasdiqlangan" : "AI materiallari tekshiruv kutilmoqda"}
+                {ai?.isVerifiedByTeacher && <span className="badge text-[10px] bg-green-200 text-green-800">To'g'ri</span>}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {ai?.isVerifiedByTeacher
+                  ? "Darsdagi barcha AI tushuntirishlari va test savollari tekshirildi va tasdiqlandi."
+                  : "AI tuzgan testlar va tushuntirishlarni ko'rib chiqing. Hammasi to'g'ri bo'lsa, tasdiqlang."}
+              </div>
+            </div>
+          </div>
+          {!ai?.isVerifiedByTeacher ? (
+            <button
+              onClick={() => updateAiMutation.mutate({ isVerifiedByTeacher: true })}
+              disabled={updateAiMutation.isPending}
+              className="btn-primary text-xs py-2 px-3.5 flex items-center gap-1.5 flex-shrink-0 shadow-sm"
+            >
+              <CheckCircle2 size={15} /> Hammasini to'g'ri deb tasdiqlash
+            </button>
+          ) : (
+            <button
+              onClick={() => updateAiMutation.mutate({ isVerifiedByTeacher: false })}
+              disabled={updateAiMutation.isPending}
+              className="btn-ghost text-xs py-1.5 px-3 rounded-lg text-gray-500 hover:text-gray-700 flex-shrink-0"
+            >
+              Qayta tekshirish holatiga o'tkazish
+            </button>
+          )}
+        </div>
+      )}
 
       {/* AI Generating banner */}
       <AnimatePresence>
@@ -542,21 +872,84 @@ export default function LessonDetail() {
           )}
           {activeTab === 'explain' && (
             <div>
-              <h2 className="text-lg font-bold mb-4 gradient-text">Oddiy tushuntirish</h2>
-              <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.simpleExplanation}</div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold gradient-text">Oddiy tushuntirish</h2>
+                {isTeacher && editingField !== 'simpleExplanation' && (
+                  <button onClick={() => handleStartEditText('simpleExplanation', ai?.simpleExplanation)}
+                    className="btn-ghost text-xs px-2.5 py-1 rounded-lg text-primary hover:bg-primary/10 flex items-center gap-1.5">
+                    <Pencil size={13} /> Tahrirlash
+                  </button>
+                )}
+              </div>
+              {editingField === 'simpleExplanation' ? (
+                <div className="space-y-3">
+                  <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={7} className="input-field text-sm" />
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setEditingField(null)} className="btn-ghost text-xs py-1.5 px-3">Bekor</button>
+                    <button onClick={() => handleSaveText('simpleExplanation')} disabled={updateAiMutation.isPending}
+                      className="btn-primary text-xs py-1.5 px-4 flex items-center gap-1.5">
+                      <Check size={14} /> Saqlash
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.simpleExplanation}</div>
+              )}
             </div>
           )}
           {activeTab === 'tricks' && (
             <div>
-              <h2 className="text-lg font-bold mb-4 gradient-text">Xotira usullari va mnemonika</h2>
-              <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.mnemonics}</div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold gradient-text">Xotira usullari va mnemonika</h2>
+                {isTeacher && editingField !== 'mnemonics' && (
+                  <button onClick={() => handleStartEditText('mnemonics', ai?.mnemonics)}
+                    className="btn-ghost text-xs px-2.5 py-1 rounded-lg text-primary hover:bg-primary/10 flex items-center gap-1.5">
+                    <Pencil size={13} /> Tahrirlash
+                  </button>
+                )}
+              </div>
+              {editingField === 'mnemonics' ? (
+                <div className="space-y-3">
+                  <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={7} className="input-field text-sm" />
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setEditingField(null)} className="btn-ghost text-xs py-1.5 px-3">Bekor</button>
+                    <button onClick={() => handleSaveText('mnemonics')} disabled={updateAiMutation.isPending}
+                      className="btn-primary text-xs py-1.5 px-4 flex items-center gap-1.5">
+                      <Check size={14} /> Saqlash
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.mnemonics}</div>
+              )}
             </div>
           )}
           {activeTab === 'story' && (
             <div>
-              <h2 className="text-lg font-bold mb-4 gradient-text flex items-center gap-2">Hikoya rejimi <BookOpen size={18} className="text-primary inline" /></h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold gradient-text flex items-center gap-2">Hikoya rejimi <BookOpen size={18} className="text-primary inline" /></h2>
+                {isTeacher && editingField !== 'storyMode' && (
+                  <button onClick={() => handleStartEditText('storyMode', ai?.storyMode)}
+                    className="btn-ghost text-xs px-2.5 py-1 rounded-lg text-primary hover:bg-primary/10 flex items-center gap-1.5">
+                    <Pencil size={13} /> Tahrirlash
+                  </button>
+                )}
+              </div>
               {ai?.storyMode && <div className="mb-4"><StoryAudioPlayer lessonId={id} /></div>}
-              <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.storyMode}</div>
+              {editingField === 'storyMode' ? (
+                <div className="space-y-3">
+                  <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={7} className="input-field text-sm" />
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setEditingField(null)} className="btn-ghost text-xs py-1.5 px-3">Bekor</button>
+                    <button onClick={() => handleSaveText('storyMode')} disabled={updateAiMutation.isPending}
+                      className="btn-primary text-xs py-1.5 px-4 flex items-center gap-1.5">
+                      <Check size={14} /> Saqlash
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.storyMode}</div>
+              )}
             </div>
           )}
           {activeTab === 'examples' && (
@@ -585,12 +978,39 @@ export default function LessonDetail() {
               )}
             </div>
           )}
-          {activeTab === 'quiz' && <QuizSection questions={ai?.quizQuestions} />}
+          {activeTab === 'quiz' && (
+            <QuizSection
+              questions={ai?.quizQuestions}
+              isTeacher={isTeacher}
+              onSaveQuestions={(newQuestions) => updateAiMutation.mutate({ quizQuestions: newQuestions })}
+            />
+          )}
           {activeTab === 'flashcards' && <FlashcardDeck cards={ai?.flashcards} />}
           {activeTab === 'summary' && (
             <div>
-              <h2 className="text-lg font-bold mb-4 gradient-text">AI xulosasi</h2>
-              <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.summary}</div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold gradient-text">AI xulosasi</h2>
+                {isTeacher && editingField !== 'summary' && (
+                  <button onClick={() => handleStartEditText('summary', ai?.summary)}
+                    className="btn-ghost text-xs px-2.5 py-1 rounded-lg text-primary hover:bg-primary/10 flex items-center gap-1.5">
+                    <Pencil size={13} /> Tahrirlash
+                  </button>
+                )}
+              </div>
+              {editingField === 'summary' ? (
+                <div className="space-y-3">
+                  <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={7} className="input-field text-sm" />
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setEditingField(null)} className="btn-ghost text-xs py-1.5 px-3">Bekor</button>
+                    <button onClick={() => handleSaveText('summary')} disabled={updateAiMutation.isPending}
+                      className="btn-primary text-xs py-1.5 px-4 flex items-center gap-1.5">
+                      <Check size={14} /> Saqlash
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.summary}</div>
+              )}
             </div>
           )}
           {activeTab === 'mindmap' && <MindMap data={ai?.mindMapData} />}
