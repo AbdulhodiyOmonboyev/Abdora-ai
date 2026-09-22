@@ -8,11 +8,22 @@ const { getOwnBranchIds } = require('../utils/branchScope');
 // They cannot create students, admins, or other reception accounts.
 const createTeacher = async (req, res, next) => {
   try {
-    const { name, email, phone, language, branchId, password } = req.body;
+    const { name, email, phone, language, branchId, password, salaryType, salaryShare, fixedSalary, hourlyRate } = req.body;
     if (!name) return error(res, 'Name required', 400);
 
     const ownBranchIds = await getOwnBranchIds(req.user);
     const effectiveBranchId = branchId || (ownBranchIds && ownBranchIds.length > 0 ? ownBranchIds[0] : null);
+
+    const effectiveSalaryType = ['percent', 'fixed', 'hourly'].includes(salaryType) ? salaryType : 'percent';
+    const effectiveSalaryShare = effectiveSalaryType === 'percent'
+      ? (salaryShare !== undefined && salaryShare !== '' ? Math.max(1, Math.min(100, Number(salaryShare))) : 50)
+      : 50;
+    const effectiveFixedSalary = effectiveSalaryType === 'fixed' && fixedSalary !== undefined && fixedSalary !== ''
+      ? Math.max(0, Number(fixedSalary))
+      : null;
+    const effectiveHourlyRate = effectiveSalaryType === 'hourly' && hourlyRate !== undefined && hourlyRate !== ''
+      ? Math.max(0, Number(hourlyRate))
+      : null;
 
     const code = generatePassword(phone, password);
     let username = generateUsername(name, phone);
@@ -23,8 +34,34 @@ const createTeacher = async (req, res, next) => {
     const passwordHash = await bcrypt.hash(code, 10);
 
     const user = await prisma.user.create({
-      data: { name, email, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', branchId: effectiveBranchId },
-      select: { id: true, name: true, username: true, email: true, phone: true, role: true, createdAt: true, branch: { select: { id: true, name: true } } },
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        username,
+        passwordHash,
+        role: 'teacher',
+        language: language || 'uz',
+        branchId: effectiveBranchId,
+        salaryType: effectiveSalaryType,
+        salaryShare: effectiveSalaryShare,
+        fixedSalary: effectiveFixedSalary,
+        hourlyRate: effectiveHourlyRate,
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        phone: true,
+        role: true,
+        salaryType: true,
+        salaryShare: true,
+        fixedSalary: true,
+        hourlyRate: true,
+        createdAt: true,
+        branch: { select: { id: true, name: true } },
+      },
     });
 
     return success(res, { user, credentials: { username, password: code } }, 'Teacher created', 201);
@@ -39,7 +76,19 @@ const getTeachers = async (req, res, next) => {
       : {};
     const teachers = await prisma.user.findMany({
       where: { role: 'teacher', ...branchFilter },
-      select: { id: true, name: true, username: true, phone: true, isActive: true, createdAt: true, branch: { select: { id: true, name: true } } },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        phone: true,
+        isActive: true,
+        createdAt: true,
+        salaryType: true,
+        salaryShare: true,
+        fixedSalary: true,
+        hourlyRate: true,
+        branch: { select: { id: true, name: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
     return success(res, teachers);

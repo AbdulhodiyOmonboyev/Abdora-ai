@@ -156,6 +156,7 @@ const getTeachers = async (req, res, next) => {
       select: {
         id: true, name: true, username: true, email: true, phone: true, branchId: true,
         isActive: true, createdAt: true, lastLogin: true,
+        salaryType: true, salaryShare: true, fixedSalary: true, hourlyRate: true,
         branch: { select: { id: true, name: true } },
         _count: { select: { taughtGroups: true, students: true, lessons: true } },
       },
@@ -187,7 +188,7 @@ const assertBranchAccess = async (branchId, user) => {
 
 const createTeacher = async (req, res, next) => {
   try {
-    let { name, email, phone, language, branchId, password } = req.body;
+    let { name, email, phone, language, branchId, password, salaryType, salaryShare, fixedSalary, hourlyRate } = req.body;
     if (!name) return error(res, 'Name required', 400);
 
     const ownBranchIds = await getOwnBranchIds(req.user);
@@ -208,6 +209,17 @@ const createTeacher = async (req, res, next) => {
       centerId = branch?.centerId || null;
     }
 
+    const effectiveSalaryType = ['percent', 'fixed', 'hourly'].includes(salaryType) ? salaryType : 'percent';
+    const effectiveSalaryShare = effectiveSalaryType === 'percent'
+      ? (salaryShare !== undefined && salaryShare !== '' ? Math.max(1, Math.min(100, Number(salaryShare))) : 50)
+      : 50;
+    const effectiveFixedSalary = effectiveSalaryType === 'fixed' && fixedSalary !== undefined && fixedSalary !== ''
+      ? Math.max(0, Number(fixedSalary))
+      : null;
+    const effectiveHourlyRate = effectiveSalaryType === 'hourly' && hourlyRate !== undefined && hourlyRate !== ''
+      ? Math.max(0, Number(hourlyRate))
+      : null;
+
     const code = generatePassword(phone, password);
     let username = generateUsername(name, phone);
 
@@ -217,8 +229,35 @@ const createTeacher = async (req, res, next) => {
     const passwordHash = await bcrypt.hash(code, 10);
 
     const user = await prisma.user.create({
-      data: { name, email, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', branchId: branchId || null, centerId },
-      select: { id: true, name: true, username: true, email: true, phone: true, role: true, createdAt: true, branch: { select: { id: true, name: true } } },
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        username,
+        passwordHash,
+        role: 'teacher',
+        language: language || 'uz',
+        branchId: branchId || null,
+        centerId,
+        salaryType: effectiveSalaryType,
+        salaryShare: effectiveSalaryShare,
+        fixedSalary: effectiveFixedSalary,
+        hourlyRate: effectiveHourlyRate,
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        phone: true,
+        role: true,
+        salaryType: true,
+        salaryShare: true,
+        fixedSalary: true,
+        hourlyRate: true,
+        createdAt: true,
+        branch: { select: { id: true, name: true } },
+      },
     });
 
     return success(res, { user, credentials: { username, password: code } }, 'Teacher created', 201);
@@ -227,7 +266,7 @@ const createTeacher = async (req, res, next) => {
 
 const updateTeacher = async (req, res, next) => {
   try {
-    let { name, phone, email, branchId } = req.body;
+    let { name, phone, email, branchId, salaryType, salaryShare, fixedSalary, hourlyRate } = req.body;
     const teacher = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!teacher || teacher.role !== 'teacher') return error(res, 'Teacher not found', 404);
 
@@ -249,8 +288,16 @@ const updateTeacher = async (req, res, next) => {
       data: {
         ...(name && { name }), phone: phone ?? teacher.phone, ...(email !== undefined && { email }),
         ...(branchId !== undefined && { branchId: branchId || null }),
+        ...(salaryType && ['percent', 'fixed', 'hourly'].includes(salaryType) ? { salaryType } : {}),
+        ...(salaryShare !== undefined && salaryShare !== '' ? { salaryShare: Math.max(1, Math.min(100, Number(salaryShare))) } : {}),
+        ...(fixedSalary !== undefined ? { fixedSalary: fixedSalary ? Math.max(0, Number(fixedSalary)) : null } : {}),
+        ...(hourlyRate !== undefined ? { hourlyRate: hourlyRate ? Math.max(0, Number(hourlyRate)) : null } : {}),
       },
-      select: { id: true, name: true, username: true, email: true, phone: true, isActive: true, branch: { select: { id: true, name: true } } },
+      select: {
+        id: true, name: true, username: true, email: true, phone: true, isActive: true,
+        salaryType: true, salaryShare: true, fixedSalary: true, hourlyRate: true,
+        branch: { select: { id: true, name: true } },
+      },
     });
     return success(res, updated, 'Teacher updated');
   } catch (err) { next(err); }

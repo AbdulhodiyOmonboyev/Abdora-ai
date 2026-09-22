@@ -86,8 +86,19 @@ const createStudent = async (req, res, next) => {
 
 const createTeacher = async (req, res, next) => {
   try {
-    const { name, email, phone, language, password } = req.body;
+    const { name, email, phone, language, password, salaryType, salaryShare, fixedSalary, hourlyRate } = req.body;
     if (!name) return error(res, 'Name required', 400);
+
+    const effectiveSalaryType = ['percent', 'fixed', 'hourly'].includes(salaryType) ? salaryType : 'percent';
+    const effectiveSalaryShare = effectiveSalaryType === 'percent'
+      ? (salaryShare !== undefined && salaryShare !== '' ? Math.max(1, Math.min(100, Number(salaryShare))) : 50)
+      : 50;
+    const effectiveFixedSalary = effectiveSalaryType === 'fixed' && fixedSalary !== undefined && fixedSalary !== ''
+      ? Math.max(0, Number(fixedSalary))
+      : null;
+    const effectiveHourlyRate = effectiveSalaryType === 'hourly' && hourlyRate !== undefined && hourlyRate !== ''
+      ? Math.max(0, Number(hourlyRate))
+      : null;
 
     const code = generatePassword(phone, password);
     let username = generateUsername(name, phone);
@@ -99,7 +110,20 @@ const createTeacher = async (req, res, next) => {
 
     const centerId = getCenterId(req) || req.body.centerId || null;
     const user = await prisma.user.create({
-      data: { name, email, phone: phone || null, username, passwordHash, role: 'teacher', language: language || 'uz', centerId },
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        username,
+        passwordHash,
+        role: 'teacher',
+        language: language || 'uz',
+        centerId,
+        salaryType: effectiveSalaryType,
+        salaryShare: effectiveSalaryShare,
+        fixedSalary: effectiveFixedSalary,
+        hourlyRate: effectiveHourlyRate,
+      },
     });
 
     return success(res, { user: safeUser(user), credentials: { username, password: code } }, 'Teacher created', 201);
