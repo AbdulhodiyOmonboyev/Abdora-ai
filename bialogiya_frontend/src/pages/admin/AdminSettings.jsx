@@ -21,6 +21,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import PhoneInput from '../../components/ui/PhoneInput';
 import { cleanPhone } from '../../utils/formatPhone';
+import ThemeBuilder from '../../components/ui/ThemeBuilder';
 
 /* ─── Sidebar nav items ─────────────────────────────────────── */
 const NAV_ITEMS = [
@@ -35,7 +36,7 @@ const NAV_ITEMS = [
   { id: 'ai',              label: 'AI Funksiyalari',           icon: Bot },
   { id: 'notifications',   label: 'Bildirishnomalar',         icon: Bell },
   { id: 'security',        label: 'Xavfsizlik',               icon: Shield },
-  { id: 'appearance',      label: 'Ko\'rinish',                icon: Palette },
+  { id: 'appearance',      label: 'Mavzular & Ko\'rinish',    icon: Palette },
 ];
 
 /* ─── Reusable sub-components ─────────────────────────────────── */
@@ -1461,51 +1462,22 @@ export default function AdminSettings() {
                 </div>
               )}
 
-              {/* ═══════════════ KO'RINISH ═══════════════ */}
+              {/* ═══════════════ MAVZULAR & KO'RINISH ═══════════════ */}
               {activeTab === 'appearance' && (
-                <div className="panel-card space-y-5">
+                <div className="panel-card space-y-6">
                   <SectionHeader
-                    kicker="Interfeys"
-                    title="Ko'rinish sozlamalari"
-                    subtitle="Standart mavzu va interfeys opsiyalari"
+                    kicker="Interfeys & Dizayn"
+                    title="Mavzular va Ko'rinish sozlamalari"
+                    subtitle="Tizim mavzulari, ranglar konstruktori va interfeys moslashuvi"
                   />
-                  <div>
-                    <div className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Standart mavzu</div>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { value: 'light', label: 'Yorug\'', preview: '#F6F7F9', card: '#FFFFFF' },
-                        { value: 'dark',  label: 'Qorong\'u', preview: '#080D17', card: '#101827' },
-                        { value: 'auto',  label: 'Tizim',   preview: 'linear-gradient(135deg,#F6F7F9 50%,#080D17 50%)', card: '' },
-                      ].map(({ value, label, preview, card }) => {
-                        const active = settings.theme === value;
-                        return (
-                          <button
-                            key={value}
-                            onClick={() => {
-                              set('theme', value);
-                              if (value === 'dark') applyTheme('preset-dark');
-                              else if (value === 'light') applyTheme('preset-light');
-                            }}
-                            className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                              active ? 'border-[var(--primary)]' : 'border-[var(--border)]'
-                            }`}
-                          >
-                            <div className="w-full h-12 rounded-lg mb-2 overflow-hidden"
-                              style={{ background: preview, border: '1px solid var(--border)' }}>
-                              {card && (
-                                <div className="m-2 h-4 rounded" style={{ background: card }} />
-                              )}
-                            </div>
-                            <div style={{ color: active ? 'var(--primary)' : 'var(--text-secondary)' }}>{label}</div>
-                          </button>
-                        );
-                      })}
-                    </div>
+
+                  <div className="p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--secondary-background)]">
+                    <SettingRow label="Ixcham yon menyu (Compact sidebar)" hint="Sidebar menyu elementlari kichikroq o'lchamda ko'rsatiladi" noBorder>
+                      <ToggleSwitch checked={settings.sidebarCompact} onChange={v => set('sidebarCompact', v)} />
+                    </SettingRow>
                   </div>
 
-                  <SettingRow label="Ixcham sidebar" hint="Sidebar ikonalari kichikroq ko'rsatiladi" noBorder>
-                    <ToggleSwitch checked={settings.sidebarCompact} onChange={v => set('sidebarCompact', v)} />
-                  </SettingRow>
+                  <ThemeBuilder embedded />
                 </div>
               )}
 

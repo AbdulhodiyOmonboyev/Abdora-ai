@@ -15,13 +15,14 @@ import PageHeader from '../../components/ui/PageHeader';
 import PhoneInput from '../../components/ui/PhoneInput';
 import { cleanPhone } from '../../utils/formatPhone';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
+import ThemeBuilder from '../../components/ui/ThemeBuilder';
 
 const RECEPTION_NAV_ITEMS = [
   { id: 'workspace',     label: 'Kassa & Cheklar',          icon: Printer },
   { id: 'permissions',   label: 'Mening huquqlarim',        icon: ShieldCheck },
   { id: 'notifications', label: 'Bildirishnomalar & Ovoz',  icon: Bell },
   { id: 'account',       label: 'Mening profilim & Parol',  icon: User },
-  { id: 'appearance',    label: 'Tizim ko\'rinishi',        icon: Palette },
+  { id: 'appearance',    label: 'Mavzular & Ko\'rinish',    icon: Palette },
 ];
 
 function SectionHeader({ kicker, title, subtitle }) {
@@ -637,58 +638,29 @@ export default function ReceptionSettings() {
                 </div>
               )}
 
-              {/* TAB 5: KO'RINISH */}
+              {/* TAB 5: MAVZULAR VA KO'RINISH */}
               {activeTab === 'appearance' && (
-                <div className="panel-card space-y-5">
+                <div className="panel-card space-y-6">
                   <SectionHeader
-                    kicker="Dizayn"
-                    title="Interfeys ko'rinishi va Til"
-                    subtitle="Qabulxona ishchi stolini o'zingizga qulay qilib sozlang"
+                    kicker="Interfeys & Dizayn"
+                    title="Mavzular va Ko'rinish"
+                    subtitle="Qabulxona ishchi stolini o'zingizga qulay mavzu va ranglar bilan moslashtiring"
                   />
 
-                  <div>
-                    <label className="form-label mb-2">Tizim mavzusi</label>
-                    <div className="grid grid-cols-2 gap-3 max-w-md">
-                      <button
-                        type="button"
-                        onClick={() => theme !== 'light' && toggleTheme()}
-                        className={`p-3.5 rounded-xl border flex items-center gap-3 transition-all ${
-                          theme === 'light'
-                            ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)] font-bold'
-                            : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--secondary-background)]'
-                        }`}
-                      >
-                        <Sun size={18} />
-                        <span className="text-xs">Yorug' (Light)</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => theme !== 'dark' && toggleTheme()}
-                        className={`p-3.5 rounded-xl border flex items-center gap-3 transition-all ${
-                          theme === 'dark'
-                            ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)] font-bold'
-                            : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--secondary-background)]'
-                        }`}
-                      >
-                        <Moon size={18} />
-                        <span className="text-xs">Qorong'i (Dark)</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="max-w-md">
-                    <label className="form-label">Tizim tili</label>
+                  <div className="p-4 rounded-2xl border border-[var(--border)] bg-[var(--secondary-background)] max-w-md">
+                    <label className="form-label mb-1">Tizim tili</label>
                     <select
                       value={settings.receptionLanguage}
                       onChange={(e) => set('receptionLanguage', e.target.value)}
-                      className="input-field"
+                      className="input-field text-sm"
                     >
                       <option value="uz">O'zbekcha</option>
                       <option value="ru">Русский</option>
                       <option value="en">English</option>
                     </select>
                   </div>
+
+                  <ThemeBuilder embedded />
                 </div>
               )}
             </motion.div>

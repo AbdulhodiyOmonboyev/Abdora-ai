@@ -17,6 +17,7 @@ import PhoneInput from '../../components/ui/PhoneInput';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { cleanPhone } from '../../utils/formatPhone';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
+import ThemeBuilder from '../../components/ui/ThemeBuilder';
 
 const MANAGER_NAV_ITEMS = [
   { id: 'reception_control', label: 'Qabulxona (Reception)',    icon: ShieldCheck },
@@ -25,7 +26,8 @@ const MANAGER_NAV_ITEMS = [
   { id: 'lms_rules',         label: 'LMS & Ta\'lim qoidalari',  icon: BookOpen },
   { id: 'crm_leads',         label: 'CRM & Lidlar sozlamasi',   icon: Target },
   { id: 'notifications',     label: 'Bildirishnomalar (SMS)',   icon: Bell },
-  { id: 'personal',          label: 'Mening hisobim & Ko\'rinish', icon: User },
+  { id: 'themes',            label: 'Mavzular & Ko\'rinish',    icon: Palette },
+  { id: 'personal',          label: 'Mening hisobim & Parol',   icon: User },
 ];
 
 function SectionHeader({ kicker, title, subtitle }) {
@@ -860,42 +862,36 @@ export default function ManagerSettings() {
                     </form>
                   </div>
 
-                  {/* Interfeys mavzusi */}
-                  <div className="panel-card space-y-4">
+                  {/* Tezkor mavzu sozlamasi */}
+                  <div className="panel-card space-y-3">
                     <SectionHeader
-                      kicker="Dizayn"
-                      title="Interfeys mavzusi"
-                      subtitle="Qorong'i yoki yorug' rejimni tanlang"
+                      kicker="Interfeys"
+                      title="Tizim ko'rinishi va Mavzular"
+                      subtitle="Ranglar palitrasi va tayyor dizayn mavzularini tanlash"
                     />
-
-                    <div className="grid grid-cols-2 gap-3 max-w-md">
-                      <button
-                        type="button"
-                        onClick={() => theme !== 'light' && toggleTheme()}
-                        className={`p-3.5 rounded-xl border flex items-center gap-3 transition-all ${
-                          theme === 'light'
-                            ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)] font-bold'
-                            : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--secondary-background)]'
-                        }`}
-                      >
-                        <Sun size={18} />
-                        <span className="text-xs">Yorug' (Light)</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => theme !== 'dark' && toggleTheme()}
-                        className={`p-3.5 rounded-xl border flex items-center gap-3 transition-all ${
-                          theme === 'dark'
-                            ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)] font-bold'
-                            : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--secondary-background)]'
-                        }`}
-                      >
-                        <Moon size={18} />
-                        <span className="text-xs">Qorong'i (Dark)</span>
-                      </button>
-                    </div>
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      Tizim mavzusi va ranglarini to'liq moslashtirish uchun maxsus "Mavzular & Ko'rinish" bo'limiga o'tishingiz mumkin.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('themes')}
+                      className="btn-secondary text-xs py-2 px-3.5 flex items-center gap-2 max-w-fit"
+                    >
+                      <Palette size={14} /> Mavzular bo'limiga o'tish
+                    </button>
                   </div>
+                </div>
+              )}
+
+              {/* ═══════════════ MAVZULAR & KO'RINISH ═══════════════ */}
+              {activeTab === 'themes' && (
+                <div className="panel-card space-y-6">
+                  <SectionHeader
+                    kicker="Interfeys & Dizayn"
+                    title="Mavzular va Ko'rinish sozlamalari"
+                    subtitle="Tizim mavzulari, ranglar konstruktori va interfeys moslashuvi"
+                  />
+                  <ThemeBuilder embedded />
                 </div>
               )}
             </motion.div>
