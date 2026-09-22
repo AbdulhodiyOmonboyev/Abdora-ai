@@ -646,9 +646,41 @@ const updateSettings = async (req, res, next) => {
     const newSettings = req.body || {};
     const currentSettings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
 
-    // Security: reception accounts cannot modify receptionPermissions
+    // Security: reception accounts can only modify their reception workspace preferences
     if (req.user?.role === 'reception') {
-      newSettings.receptionPermissions = currentSettings.receptionPermissions;
+      const allowedReceptionKeys = [
+        'receiptFormat', 'receiptNote', 'autoPrintReceipt', 'copyReceiptNumber',
+        'showStaffOnReceipt', 'defaultPaymentMethod', 'timetableDefaultView',
+        'soundNotifications', 'leadSoundAlert', 'paymentSoundAlert',
+        'lessonReminderMinutes', 'receptionLanguage', 'theme', 'appearance',
+      ];
+      const filtered = {};
+      for (const k of allowedReceptionKeys) {
+        if (newSettings[k] !== undefined) filtered[k] = newSettings[k];
+      }
+      const mergedSettings = { ...currentSettings, ...filtered };
+      const updated = await prisma.center.update({
+        where: { id: center.id },
+        data: { settings: mergedSettings },
+      });
+      const rawSettings = typeof updated.settings === 'object' && updated.settings !== null ? updated.settings : {};
+      const merged = {
+        ...rawSettings,
+        centerName: center.name || 'Abdora AI Markazi',
+        centerAddress: center.address || '',
+        centerPhone: center.phone || '',
+        centerEmail: center.email || '',
+        centerWebsite: center.website || '',
+        centerId: center.id,
+      };
+      return success(res, merged);
+    }
+
+    // Security: manager accounts cannot modify platform-level core AI keys
+    if (req.user?.role === 'manager') {
+      delete newSettings.openaiApiKey;
+      delete newSettings.geminiApiKey;
+      delete newSettings.anthropicApiKey;
     }
 
     const mergedSettings = {
@@ -665,7 +697,7 @@ const updateSettings = async (req, res, next) => {
     const updateData = {
       settings: mergedSettings,
     };
-    if (newSettings.centerName) updateData.name = newSettings.centerName;
+    if (newSettings.centerName && req.user?.role === 'admin') updateData.name = newSettings.centerName;
     if (newSettings.centerAddress !== undefined) updateData.address = newSettings.centerAddress;
     if (newSettings.centerPhone !== undefined) updateData.phone = newSettings.centerPhone;
     if (newSettings.centerEmail !== undefined) updateData.email = newSettings.centerEmail;

@@ -81,6 +81,7 @@ import ManagerDashboard from './pages/manager/ManagerDashboard';
 import ManagerBranches from './pages/manager/ManagerBranches';
 import ManagerBranchDetail from './pages/manager/ManagerBranchDetail';
 import ManagerPayments from './pages/manager/ManagerPayments';
+import ManagerSettings from './pages/manager/ManagerSettings';
 
 // ERP pages
 import RoomsPage from './pages/erp/RoomsPage';
@@ -97,6 +98,7 @@ import ReceptionGroupDetail from './pages/reception/ReceptionGroupDetail';
 import ReceptionTeacherDetail from './pages/reception/ReceptionTeacherDetail';
 import ReceptionStudents from './pages/reception/ReceptionStudents';
 import ReceptionPayments from './pages/reception/ReceptionPayments';
+import ReceptionSettings from './pages/reception/ReceptionSettings';
 
 const ProtectedRoute = ({ children, role, permission }) => {
   const { isAuthenticated, user } = useAuthStore();
@@ -237,7 +239,7 @@ export default function App() {
           <Route path="groups" element={<AdminGroups />} />
           <Route path="groups/:id" element={<GroupDetail />} />
           <Route path="payments" element={<ManagerPayments />} />
-          <Route path="settings" element={<AdminSettings />} />
+          <Route path="settings" element={<ManagerSettings />} />
         </Route>
 
         {/* CRM Dashboard */}
@@ -275,7 +277,7 @@ export default function App() {
           <Route path="students" element={<ProtectedRoute role="reception" permission="canManageStudents"><ReceptionStudents /></ProtectedRoute>} />
           <Route path="students/:id" element={<ProtectedRoute role="reception" permission="canManageStudents"><UserDetail /></ProtectedRoute>} />
           <Route path="payments" element={<ProtectedRoute role="reception" permission="canManagePayments"><ReceptionPayments /></ProtectedRoute>} />
-          <Route path="settings" element={<AdminSettings />} />
+          <Route path="settings" element={<ReceptionSettings />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
