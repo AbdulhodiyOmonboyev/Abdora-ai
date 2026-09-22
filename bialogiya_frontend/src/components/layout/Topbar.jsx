@@ -36,8 +36,13 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Refs for tracking outside clicks on all dropdowns
   const searchRef = useRef(null);
   const branchRef = useRef(null);
+  const langRef = useRef(null);
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
 
   const [showNotifs, setShowNotifs] = useState(false);
   const [showLang, setShowLang] = useState(false);
@@ -60,6 +65,35 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
     setShowBranchDropdown(false);
   };
 
+  // Dedicated toggle handlers that accurately invert state and close other open menus
+  const toggleProfile = (e) => {
+    e?.stopPropagation();
+    const next = !showProfile;
+    closeAll();
+    setShowProfile(next);
+  };
+
+  const toggleNotifs = (e) => {
+    e?.stopPropagation();
+    const next = !showNotifs;
+    closeAll();
+    setShowNotifs(next);
+  };
+
+  const toggleLang = (e) => {
+    e?.stopPropagation();
+    const next = !showLang;
+    closeAll();
+    setShowLang(next);
+  };
+
+  const toggleBranchDropdown = (e) => {
+    e?.stopPropagation();
+    const next = !showBranchDropdown;
+    closeAll();
+    setShowBranchDropdown(next);
+  };
+
   // Branches list for switcher
   const { data: branches = [], isLoading: isLoadingBranches } = useQuery({
     queryKey: ['header-branches', user?.role],
@@ -73,6 +107,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
     return () => clearTimeout(timer);
   }, [headerSearch]);
 
+  // Handle outside clicks for ALL dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -81,10 +116,37 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
       if (branchRef.current && !branchRef.current.contains(e.target)) {
         setShowBranchDropdown(false);
       }
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setShowProfile(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifs(false);
+      }
+      if (langRef.current && !langRef.current.contains(e.target)) {
+        setShowLang(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Close dropdowns on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        closeAll();
+        setShowHeaderResults(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Close dropdowns upon route navigation
+  useEffect(() => {
+    closeAll();
+    setShowHeaderResults(false);
+  }, [location.pathname]);
 
   // Global search: users
   const { data: headerUsers = [], isFetching: isHeaderSearching, isError: headerSearchFailed } = useQuery({
@@ -237,11 +299,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
           <div ref={branchRef} className="relative flex-shrink-0">
             <button
               type="button"
-              onClick={() => {
-                const willOpen = !showBranchDropdown;
-                closeAll();
-                setShowBranchDropdown(willOpen);
-              }}
+              onClick={toggleBranchDropdown}
               className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--secondary-background)] text-[var(--text-primary)] transition-all text-xs font-medium shadow-sm hover:border-[var(--primary)] group"
               title="Filialni tanlash / almashtirish"
             >
@@ -256,7 +314,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
               {showBranchDropdown && (
                 <motion.div
                   {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
-                  className="absolute left-0 top-full mt-1.5 dropdown-panel w-64 py-1.5 z-50 shadow-xl border border-[var(--border)]"
+                  className="absolute left-0 top-full mt-2 dropdown-panel w-64 max-w-[calc(100vw-2rem)] py-1.5 z-50 shadow-xl border border-[var(--border)]"
                 >
                   <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)] flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
@@ -340,9 +398,9 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
 
         {/* Center — Global Search */}
         {isManagement && (
-          <div ref={searchRef} className="hidden md:flex flex-1 max-w-md relative mx-2">
+          <div ref={searchRef} className="hidden md:flex flex-1 max-w-md lg:max-w-lg relative mx-2">
             <form onSubmit={handleSearchSubmit} className="w-full">
-              <div className="search-input-wrap">
+              <div className="search-input-wrap relative w-full">
                 <Search size={16} className="search-icon" />
                 <input
                   value={headerSearch}
@@ -353,15 +411,13 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
                   onFocus={() => setShowHeaderResults(Boolean(headerSearch.trim()))}
                   onKeyDown={(e) => e.key === 'Escape' && setShowHeaderResults(false)}
                   placeholder="Qidirish (ism, telefon, guruh)..."
-                  className="input-field"
-                  style={{ height: '2.375rem', fontSize: '0.8125rem' }}
+                  className="input-field h-9 text-xs sm:text-sm pl-9 pr-8"
                 />
                 {headerSearch && (
                   <button
                     type="button"
                     onClick={() => { setHeaderSearch(''); setShowHeaderResults(false); }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2"
-                    style={{ color: 'var(--text-muted)' }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                   >
                     <X size={14} />
                   </button>
@@ -373,7 +429,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
               {showHeaderResults && headerSearch.trim() && (
                 <motion.div
                   {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
-                  className="absolute left-0 right-0 top-full mt-1.5 dropdown-panel w-full max-h-96 overflow-y-auto z-50 shadow-2xl border border-[var(--border)] divide-y divide-[var(--border)]"
+                  className="absolute left-0 right-0 top-full mt-2 dropdown-panel w-full max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto z-50 shadow-2xl border border-[var(--border)] divide-y divide-[var(--border)]"
                 >
                   {searchPending ? (
                     <div className="px-4 py-3 text-sm text-[var(--text-secondary)]">Qidirilmoqda...</div>
@@ -455,20 +511,20 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
         <div className="flex items-center gap-1 ml-auto">
 
           {/* Language */}
-          <div className="relative">
+          <div className="relative" ref={langRef}>
             <button
-              onClick={() => { closeAll(); setShowLang(v => !v); }}
+              onClick={toggleLang}
               className="btn-ghost btn-sm gap-1 hidden sm:inline-flex items-center"
             >
               <Globe size={15} />
               <span className="uppercase font-semibold text-xs">{i18n.language}</span>
-              <ChevronDown size={11} />
+              <ChevronDown size={11} className={`transition-transform duration-200 ${showLang ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
               {showLang && (
                 <motion.div
                   {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
-                  className="absolute right-0 top-full mt-1.5 dropdown-panel w-32 py-1 z-50"
+                  className="absolute right-0 top-full mt-2 dropdown-panel w-36 max-w-[calc(100vw-2rem)] py-1 z-50 shadow-xl border border-[var(--border)]"
                 >
                   {[{ code: 'uz', label: "O'zbek" }, { code: 'ru', label: 'Русский' }, { code: 'en', label: 'English' }].map(l => (
                     <button
@@ -501,13 +557,9 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
           </button>
 
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative" ref={notifRef}>
             <button
-              onClick={() => {
-                closeAll();
-                setShowNotifs(v => !v);
-                if (unread > 0) markRead.mutate();
-              }}
+              onClick={toggleNotifs}
               className="btn-icon relative"
               aria-label="Notifications"
             >
@@ -522,7 +574,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
               {showNotifs && (
                 <motion.div
                   {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
-                  className="absolute right-0 top-full mt-1.5 dropdown-panel w-72 sm:w-80 z-50"
+                  className="absolute right-0 top-full mt-2 dropdown-panel w-72 sm:w-80 max-w-[calc(100vw-2rem)] z-50 shadow-xl border border-[var(--border)]"
                 >
                   <div
                     className="flex items-center justify-between px-4 py-3"
@@ -585,30 +637,32 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
           <div className="w-px h-5 mx-0.5 hidden sm:block" style={{ backgroundColor: 'var(--border)' }} />
 
           {/* Profile */}
-          <div className="relative">
+          <div className="relative" ref={profileRef}>
             <button
-              onClick={() => { closeAll(); setShowProfile(v => !v); }}
-              className="flex items-center gap-2 btn-ghost py-1.5 px-2 rounded-xl"
+              type="button"
+              onClick={toggleProfile}
+              className="flex items-center gap-2 btn-ghost py-1.5 px-2 rounded-xl transition-colors hover:bg-[var(--secondary-background)]"
+              aria-expanded={showProfile}
             >
-              <div className="avatar avatar-sm" style={{ width: '1.875rem', height: '1.875rem', fontSize: '0.7rem' }}>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs bg-[var(--primary)] text-white shadow-xs flex-shrink-0">
                 {initials}
               </div>
               <div className="hidden sm:flex flex-col items-start min-w-0">
-                <span className="text-xs font-semibold truncate max-w-[90px] leading-tight" style={{ color: 'var(--text-primary)' }}>
+                <span className="text-xs font-semibold truncate max-w-[110px] leading-tight text-[var(--text-primary)]">
                   {user?.name}
                 </span>
-                <span className="text-[10px] leading-tight" style={{ color: 'var(--text-muted)' }}>
+                <span className="text-[10px] leading-tight text-[var(--text-muted)]">
                   {ROLE_LABELS[user?.role] || user?.role}
                 </span>
               </div>
-              <ChevronDown size={13} style={{ color: 'var(--text-muted)' }} className="hidden sm:block flex-shrink-0" />
+              <ChevronDown size={13} className={`text-[var(--text-muted)] hidden sm:block flex-shrink-0 transition-transform duration-200 ${showProfile ? 'rotate-180' : ''}`} />
             </button>
 
             <AnimatePresence>
               {showProfile && (
                 <motion.div
                   {...{ initial: dropdownVariants.hidden, animate: dropdownVariants.visible, exit: dropdownVariants.exit }}
-                  className="absolute right-0 top-full mt-1.5 dropdown-panel w-52 z-50 py-1.5"
+                  className="absolute right-0 top-full mt-2 dropdown-panel w-56 max-w-[calc(100vw-2rem)] z-50 py-1.5 shadow-xl border border-[var(--border)]"
                 >
                   {/* User info */}
                   <div className="px-4 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
