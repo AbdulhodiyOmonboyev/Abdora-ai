@@ -29,9 +29,8 @@ const PRIMARY_LINKS = {
   ],
   admin: [
     { to: '/admin/dashboard', icon: LayoutDashboard, key: 'dashboard' },
-    { to: '/admin/branches', icon: Building2, key: 'branches' },
-    { to: '/admin/managers', icon: Users, key: 'managers' },
-    { to: '/admin/applications', icon: Inbox, key: 'applications' },
+    { to: '/admin/centers', icon: Building2, key: 'centers', label: "O'quv Markazlar" },
+    { to: '/admin/applications', icon: Inbox, key: 'applications', label: 'Arizalar' },
   ],
   manager: [
     { to: '/manager/dashboard', icon: LayoutDashboard, key: 'dashboard' },
