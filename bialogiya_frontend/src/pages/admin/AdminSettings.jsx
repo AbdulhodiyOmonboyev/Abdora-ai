@@ -5,7 +5,7 @@ import {
   Save, Globe, Bot, Shield, CreditCard, BookOpen, Building2,
   Bell, Palette, Upload, Phone, MapPin, Mail, Clock, Users,
   ChevronRight, Check, AlertCircle, RefreshCw, Image, FileText, X,
-  Coins, Smartphone, Target, ShoppingBag, Award, Sparkles, MessageCircle,
+  Coins, Smartphone, Target, ShoppingBag, Sparkles,
   Banknote, Wallet, CheckCircle2, FileEdit,
   ShieldCheck, Lock, Unlock, PieChart, GraduationCap, BookMarked, Calendar,
   Plus, Trash2, Pencil, UserCog, Copy,
@@ -17,7 +17,6 @@ import ToggleSwitch from '../../components/ui/ToggleSwitch';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import PhoneInput from '../../components/ui/PhoneInput';
 import { cleanPhone } from '../../utils/formatPhone';
@@ -236,7 +235,6 @@ export default function AdminSettings() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const applyTheme = useThemeStore(s => s.applyTheme);
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get('tab');
   const [activeTab, setActiveTabState] = useState(() => {
@@ -255,7 +253,7 @@ export default function AdminSettings() {
   const [saved, setSaved] = useState(false);
 
   // Load settings strictly isolated for this specific user & center
-  const { data: serverSettings, isLoading } = useQuery({
+  const { data: serverSettings } = useQuery({
     queryKey: ['admin-settings', user?.id, user?.centerId],
     queryFn: () => api.get('/admin/settings').then(r => r.data?.data),
     enabled: !!user,

@@ -95,7 +95,7 @@ const requireReceptionPermission = (permissionKey) => {
           return error(res, "Ushbu qabulxona xodimi uchun ushbu amalga ruxsat cheklangan", 403);
         }
       } catch (err) {
-        console.error('requireReceptionPermission error:', err);
+        return error(res, "Ruxsatlarni tekshirishda xatolik yuz berdi", 500);
       }
     }
 

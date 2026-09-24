@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
-const { generateUsername, generatePassword, getPhoneCode } = require('../utils/generateCredentials');
+const { generateUsername, generatePassword } = require('../utils/generateCredentials');
 const { getOwnBranchIds } = require('../utils/branchScope');
 const { getCenterId } = require('../utils/centerScope');
 

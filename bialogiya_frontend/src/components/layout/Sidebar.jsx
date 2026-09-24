@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   X, LayoutDashboard, BookOpen, ClipboardList, FileText, BarChart2,
@@ -10,7 +10,6 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import api from '../../config/axios';
 import { cn } from '../../utils/cn';
 import { getLevelProgress } from '../../utils/format';
@@ -70,20 +69,7 @@ const managerLinks = [
   { to: '/manager/settings',   icon: Settings,        key: 'settings' },
 ];
 
-const receptionLinks = [
-  { to: '/reception/dashboard', icon: LayoutDashboard, key: 'dashboard' },
-  { to: '/crm/dashboard',       icon: Bot,             key: 'crmDashboard', label: 'CRM Dashboard' },
-  { to: '/leads',               icon: UserPlus,        key: 'leads',    label: 'Lidlar' },
-  { to: '/erp/rooms',           icon: BookOpen,        key: 'rooms',    label: 'Xonalar' },
-  { to: '/erp/timetable',       icon: Calendar,        key: 'timetable',label: 'Jadval' },
-  { to: '/reception/teachers',  icon: BookMarked,      key: 'teachers' },
-  { to: '/reception/groups',    icon: Users,           key: 'groups' },
-  { to: '/reception/students',  icon: GraduationCap,   key: 'students' },
-  { to: '/reception/payments',  icon: Wallet,          key: 'payments' },
-  { to: '/finance',             icon: PieChart,        key: 'finance',  label: 'Moliya' },
-  { to: '/erp/cashbox',         icon: Wallet,          key: 'cashbox',  label: 'Kassa' },
-  { to: '/reception/settings',  icon: Settings,        key: 'settings' },
-];
+
 
 const ROLE_LABELS = {
   admin: 'Admin',

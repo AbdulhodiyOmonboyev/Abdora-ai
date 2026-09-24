@@ -6,17 +6,15 @@ import {
   ShieldCheck, Shield, Building2, CreditCard, BookOpen, Target, Bell, User,
   Lock, Unlock, PieChart, Wallet, Calendar, Users, GraduationCap,
   BookMarked, Plus, X, Pencil, Trash2, Copy, Save, Check, KeyRound,
-  Sun, Moon, Palette, AlertCircle, Phone, Smartphone, Banknote, ChevronRight,
+  Palette, Smartphone, Banknote, ChevronRight,
   Sparkles, ShoppingBag, Tag, Gift, Shirt, Package, Clock, CheckCircle2, Coins,
-  Bot, RefreshCw
+  RefreshCw
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
-import { useThemeStore } from '../../store/themeStore';
 import PageHeader from '../../components/ui/PageHeader';
 import PhoneInput from '../../components/ui/PhoneInput';
-import StatusBadge from '../../components/ui/StatusBadge';
 import Modal from '../../components/ui/Modal';
 import { cleanPhone } from '../../utils/formatPhone';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
@@ -110,7 +108,6 @@ export default function ManagerSettings() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { user, updateUser } = useAuthStore();
-  const { theme, toggleTheme } = useThemeStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get('tab');
   const [activeTab, setActiveTabState] = useState(urlTab || 'reception_control');
@@ -125,7 +122,6 @@ export default function ManagerSettings() {
   const [showAddReception, setShowAddReception] = useState(false);
   const [receptionForm, setReceptionForm] = useState({ name: '', phone: '+998 ', branchId: '', password: '' });
   const [newReceptionCreds, setNewReceptionCreds] = useState(null);
-  const [editingReception, setEditingReception] = useState(null);
 
   // Profile and password state
   const [profileForm, setProfileForm] = useState({ name: user?.name || '', phone: user?.phone || '+998 ' });
@@ -376,22 +372,6 @@ export default function ManagerSettings() {
     const cur = settings.enabledPaymentMethods || [];
     const next = cur.includes(key) ? cur.filter(k => k !== key) : [...cur, key];
     set('enabledPaymentMethods', next);
-  };
-
-  const toggleFeature = (featKey) => {
-    const nextVal = !settings.features?.[featKey];
-    const updatedFeatures = {
-      ...(settings.features || {}),
-      [featKey]: nextVal,
-    };
-    set('features', updatedFeatures);
-    api.put('/admin/settings', { features: updatedFeatures })
-      .then(() => {
-        qc.invalidateQueries({ queryKey: ['manager-settings'] });
-        qc.invalidateQueries({ queryKey: ['center-settings'] });
-      })
-      .catch(() => {});
-    toast.success("Imkoniyat holati yangilandi");
   };
 
   const handleAddStage = () => {

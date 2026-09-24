@@ -249,7 +249,7 @@ const computePayroll = async (user, month, branchId) => {
     return {
       ...row,
       salary,
-      centerShare: row.salaryType === 'percent' ? row.collected - salary : row.collected - salary,
+      centerShare: row.collected - salary,
       // Text the manager sees, e.g. "50/50" or "1/3".
       shareLabel: row.salaryType === 'percent'
         ? (row.salaryShare === 33 ? '1/3' : row.salaryShare === 67 ? '2/3' : `${row.salaryShare}/${100 - row.salaryShare}`)
@@ -539,7 +539,7 @@ const getFinancialAdvice = async (req, res, next) => {
       const result = await model.generateContent(getFinanceAdvicePrompt(summary, month));
       advice = JSON.parse(result.response.text());
     } catch (e) {
-      console.error('Finance advice error:', e.message);
+      // AI fail should not break the endpoint, just return null advice
     }
 
     const payload = { month, advice, summary: { current: summary.current, change: summary.change } };

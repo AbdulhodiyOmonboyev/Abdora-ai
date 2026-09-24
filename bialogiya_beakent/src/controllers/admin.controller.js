@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
-const { generateUsername, generatePassword, getPhoneCode } = require('../utils/generateCredentials');
+const { generateUsername, generatePassword } = require('../utils/generateCredentials');
 
 // Reception accounts should only ever see their OWN branches' data (admin
 // sees everything) - see utils/branchScope.js.
@@ -1247,8 +1247,6 @@ const getBranches = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
     return success(res, branches);
-    // Cache for short period
-    cache.set(cacheKey, branches, 5000);
   } catch (err) { next(err); }
 };
 
@@ -1356,7 +1354,6 @@ const getBranchDetail = async (req, res, next) => {
     });
 
     return success(res, { ...branch, studentsCount });
-    cache.set(cacheKey, { ...branch, studentsCount }, 5000);
   } catch (err) { next(err); }
 };
 
