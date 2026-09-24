@@ -5,7 +5,7 @@ import {
   X, LayoutDashboard, BookOpen, ClipboardList, FileText, BarChart2,
   Users, FolderOpen, Calendar, Trophy, Star, Settings,
   GraduationCap, BookMarked, UserCheck, Upload, Mic, Wallet, UserCog, Inbox, Building2,
-  PieChart, Receipt, UserPlus, LogOut, Bot, ChevronLeft,
+  PieChart, Receipt, UserPlus, LogOut, Bot, ChevronLeft, ShoppingBag,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,7 @@ const studentLinks = [
   { to: '/student/lessons', icon: BookOpen, key: 'lessons' },
   { to: '/student/homework', icon: ClipboardList, key: 'homework' },
   { to: '/student/tests', icon: FileText, key: 'tests' },
+  { to: '/student/shop', icon: ShoppingBag, key: 'shop', label: "Do'kon" },
   { to: '/student/results', icon: BarChart2, key: 'results' },
   { to: '/student/resources', icon: FolderOpen, key: 'resources' },
   { to: '/student/attendance', icon: UserCheck, key: 'attendance' },

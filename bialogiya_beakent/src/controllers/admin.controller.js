@@ -808,6 +808,23 @@ const getSettings = async (req, res, next) => {
       centerWebsite: rawSettings.centerWebsite || center.website || '',
       centerId: center.id,
       receptionPermissions: rawSettings.receptionPermissions || {},
+      features: rawSettings.features || {
+        aiEnabled: true,
+        coinsEnabled: true,
+        shopEnabled: true,
+        smsEnabled: true,
+      },
+      leadStages: rawSettings.leadStages || [
+        { id: 'new', label: 'Yangi murojaat', color: '#3b82f6', isSystem: true },
+        { id: 'contacted', label: "Aloqa o'rnatildi", color: '#6366f1', isSystem: true },
+        { id: 'trial', label: 'Sinov darsiga yozildi', color: '#06b6d4', isSystem: true },
+        { id: 'attended', label: 'Sinov darsida qatnashdi', color: '#8b5cf6', isSystem: true },
+        { id: 'waiting_payment', label: "To'lov kutilmoqda", color: '#f59e0b', isSystem: true },
+        { id: 'enrolled', label: "Guruhga qo'shildi", color: '#10b981', isSystem: true },
+      ],
+      leadSources: rawSettings.leadSources || [
+        'Instagram', 'Telegram', 'Facebook', 'TikTok', 'Tashqi banner', "Do'st tavsiyasi", 'Web sayt'
+      ],
     };
 
     // Role-scoped preferences namespace
@@ -826,7 +843,7 @@ const getSettings = async (req, res, next) => {
       'maxStudentsPerGroup', 'minAttendancePercent', 'passingScore',
       'paymentDeadlineDay', 'allowInstallments', 'acceptedPaymentMethods',
       'workingHoursStart', 'workingHoursEnd', 'lessonDurationMinutes',
-      'leadStages', 'leadSources', 'smsOnAbsent', 'smsPaymentReceipt', 'smsPaymentReminder',
+      'smsOnAbsent', 'smsPaymentReceipt', 'smsPaymentReminder',
     ];
     let backfilled = { ...rolePrefs };
     if (Object.keys(rolePrefs).length === 0) {
@@ -872,6 +889,15 @@ const updateSettings = async (req, res, next) => {
           ...(currentSettings.receptionPermissions || {}),
           ...value,
         };
+      } else if (key === 'features' && typeof value === 'object') {
+        sharedSettingsUpdate.features = {
+          ...(currentSettings.features || { aiEnabled: true, coinsEnabled: true, shopEnabled: true, smsEnabled: true }),
+          ...value,
+        };
+      } else if (key === 'leadStages' && Array.isArray(value)) {
+        sharedSettingsUpdate.leadStages = value;
+      } else if (key === 'leadSources' && Array.isArray(value)) {
+        sharedSettingsUpdate.leadSources = value;
       } else if (sharedFieldMap[key] !== undefined) {
         // Shared center-level fields
         if (key === 'centerName' && role !== 'admin') continue; // only admin can rename center

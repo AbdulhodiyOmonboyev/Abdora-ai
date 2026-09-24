@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -80,6 +80,25 @@ export default function ManagerLeads() {
     queryFn: () => api.get('/leads', { params: { status: tab, search: search.trim() || undefined, branchId } })
       .then(r => r.data.data),
   });
+
+  const { data: serverSettings } = useQuery({
+    queryKey: ['lead-settings-sources'],
+    queryFn: () => api.get('/admin/settings').then(r => r.data?.data || {}),
+  });
+
+  const availableSources = useMemo(() => {
+    const list = [...SOURCES];
+    const customSources = Array.isArray(serverSettings?.leadSources) ? serverSettings.leadSources : [];
+    customSources.forEach(cs => {
+      if (typeof cs === 'string') {
+        const norm = cs.toLowerCase().trim();
+        if (!list.some(s => s.value.toLowerCase() === norm || s.label.toLowerCase() === norm)) {
+          list.push({ value: norm, label: cs, icon: Pin });
+        }
+      }
+    });
+    return list;
+  }, [serverSettings?.leadSources]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['leads'] });
@@ -362,8 +381,8 @@ export default function ManagerLeads() {
 
           <div>
             <label className="form-label">Manba</label>
-            <div className="grid grid-cols-3 gap-2">
-              {SOURCES.map(s => {
+            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+              {availableSources.map(s => {
                 const Icon = s.icon;
                 return (
                   <button key={s.value} type="button"
@@ -372,7 +391,7 @@ export default function ManagerLeads() {
                       form.source === s.value ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)]' : 'border-[var(--border)] text-[var(--text-secondary)]'
                     }`}>
                     <Icon size={14} />
-                    <span>{s.label}</span>
+                    <span className="truncate">{s.label}</span>
                   </button>
                 );
               })}

@@ -22,5 +22,6 @@ router.use('/applications', require('./application.routes'));
 router.use('/rooms', require('./room.routes'));
 router.use('/schedule', require('./schedule.routes'));
 router.use('/student', require('./student.routes'));
+router.use('/shop', require('./shop.routes'));
 
 module.exports = router;

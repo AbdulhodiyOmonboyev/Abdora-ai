@@ -22,7 +22,7 @@ const createLead = async (req, res, next) => {
     const { name, phone, source, interestedIn, note, branchId, status } = req.body;
     if (!name?.trim()) return error(res, 'Ism kiritilmagan', 400);
     if (!phone?.trim()) return error(res, 'Telefon raqam kiritilmagan', 400);
-    if (source && !SOURCES.includes(source)) return error(res, 'Manba noto\'g\'ri', 400);
+    if (source && typeof source !== 'string') return error(res, 'Manba noto\'g\'ri', 400);
     if (status && !STATUSES.includes(status)) return error(res, 'Status noto\'g\'ri', 400);
 
     const lead = await prisma.lead.create({

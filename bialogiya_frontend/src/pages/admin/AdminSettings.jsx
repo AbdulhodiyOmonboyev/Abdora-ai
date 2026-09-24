@@ -132,6 +132,14 @@ const DEFAULT_SETTINGS = {
   currency: 'UZS',
   dateFormat: 'DD.MM.YYYY',
 
+  // Markaz imkoniyatlari (Features)
+  features: {
+    aiEnabled: true,
+    coinsEnabled: true,
+    shopEnabled: true,
+    smsEnabled: true,
+  },
+
   // Qabulxona (Reception) huquqlari
   receptionPermissions: {
     canViewFinance: false,       // Odatiy: Moliya yopiq
@@ -594,6 +602,90 @@ export default function AdminSettings() {
                         <option value="YYYY-MM-DD">YYYY-MM-DD (2026-12-31)</option>
                       </select>
                     </FormGroup>
+                  </div>
+
+                  <div className="pt-4 border-t space-y-4" style={{ borderColor: 'var(--border)' }}>
+                    <div>
+                      <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        O'quv markazi imkoniyatlari (Features)
+                      </h3>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                        Platformaning asosiy modullarini markaz miqyosida yoqish yoki o'chirish
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        {
+                          key: 'aiEnabled',
+                          label: "Sun'iy intellekt (AI) tizimi",
+                          hint: "Darslar, testlar va baholashda AI yordamchilari",
+                          icon: Bot,
+                          color: '#6366f1',
+                        },
+                        {
+                          key: 'coinsEnabled',
+                          label: "Tangalar (Coins) & Gamifikatsiya",
+                          hint: "Talabalarga tangalar va reyting tizimi",
+                          icon: Coins,
+                          color: '#f59e0b',
+                        },
+                        {
+                          key: 'shopEnabled',
+                          label: "Online Do'kon (Coin Shop)",
+                          hint: "O'quvchilar tangalariga sovg'alar va vaucherlar",
+                          icon: ShoppingBag,
+                          color: '#10b981',
+                        },
+                        {
+                          key: 'smsEnabled',
+                          label: "Avtomatik SMS xabarnomalar",
+                          hint: "SMS provayder orqali xabarlar yuborish",
+                          icon: Smartphone,
+                          color: '#3b82f6',
+                        },
+                      ].map(({ key, label, hint, icon: Icon, color }) => {
+                        const isEnabled = settings.features?.[key] !== false;
+                        return (
+                          <div
+                            key={key}
+                            className="p-3.5 rounded-xl border flex items-center justify-between gap-3"
+                            style={{
+                              borderColor: 'var(--border)',
+                              background: isEnabled ? 'var(--card)' : 'var(--secondary-background)',
+                              opacity: isEnabled ? 1 : 0.75,
+                            }}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                                style={{ background: `${color}15`, color }}
+                              >
+                                <Icon size={18} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium leading-snug truncate" style={{ color: 'var(--text-primary)' }}>
+                                  {label}
+                                </div>
+                                <div className="text-xs leading-tight line-clamp-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                  {hint}
+                                </div>
+                              </div>
+                            </div>
+                            <ToggleSwitch
+                              checked={isEnabled}
+                              onChange={(val) => {
+                                const updatedFeatures = {
+                                  ...(settings.features || {}),
+                                  [key]: val,
+                                };
+                                set('features', updatedFeatures);
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
