@@ -248,6 +248,8 @@ const runMigrations = async () => {
   // 13. Role enum
   await safeRun(`ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'reception'`);
   await safeRun(`ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'manager'`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "permissions" JSONB NOT NULL DEFAULT '{}'`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isFrozen" BOOLEAN NOT NULL DEFAULT false`);
 
   // 14. Branch table
   await safeRun(`

@@ -99,6 +99,7 @@ import ReceptionTeacherDetail from './pages/reception/ReceptionTeacherDetail';
 import ReceptionStudents from './pages/reception/ReceptionStudents';
 import ReceptionPayments from './pages/reception/ReceptionPayments';
 import ReceptionSettings from './pages/reception/ReceptionSettings';
+import ReceptionStaffDetail from './pages/admin/ReceptionStaffDetail';
 
 const ProtectedRoute = ({ children, role, permission }) => {
   const { isAuthenticated, user } = useAuthStore();
@@ -221,6 +222,8 @@ export default function App() {
           <Route path="centers/:id" element={<AdminCenterDetail />} />
           <Route path="teachers" element={<AdminTeachers />} />
           <Route path="teachers/:id" element={<ReceptionTeacherDetail />} />
+          <Route path="reception" element={<AdminReception />} />
+          <Route path="reception/:id" element={<ReceptionStaffDetail />} />
           <Route path="students" element={<AdminStudents />} />
           <Route path="students/:id" element={<UserDetail />} />
           <Route path="settings" element={<AdminSettings />} />
@@ -232,6 +235,7 @@ export default function App() {
           <Route path="branches" element={<ManagerBranches />} />
           <Route path="branches/:id" element={<ManagerBranchDetail />} />
           <Route path="reception" element={<AdminReception />} />
+          <Route path="reception/:id" element={<ReceptionStaffDetail />} />
           <Route path="teachers" element={<AdminTeachers />} />
           <Route path="teachers/:id" element={<ReceptionTeacherDetail />} />
           <Route path="students" element={<AdminStudents />} />

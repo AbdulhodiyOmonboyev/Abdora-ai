@@ -4,7 +4,8 @@ const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const {
   getStats, getTeachers, createTeacher, updateTeacher, deleteTeacher,
   getStudents, getGroups, toggleUserStatus, getSettings, updateSettings,
-  getReceptionUsers, createReceptionUser, updateReceptionUser, deleteReceptionUser, getTeacherOverview,
+  getReceptionUsers, getReceptionStaffDetail, createReceptionUser, updateReceptionUser,
+  updateReceptionStaffPermissions, toggleReceptionStaffStatus, deleteReceptionUser, getTeacherOverview,
   getBranches, createBranch, updateBranch, deleteBranch, getBranchDetail,
   recordTeacherPayout, updateTeacherSalaryTerms,
 } = require('../controllers/admin.controller');
@@ -48,10 +49,13 @@ router.get('/branches/:id', ...adminOnly, getBranchDetail);
 router.put('/branches/:id', ...adminOnly, updateBranch);
 router.delete('/branches/:id', ...adminOnly, deleteBranch);
 
-// Reception accounts - only admin can create/deactivate them.
+// Reception accounts - admin & manager can create, view, configure permissions and deactivate them.
 router.get('/reception', ...adminOnly, getReceptionUsers);
+router.get('/reception/:id', ...adminOnly, getReceptionStaffDetail);
 router.post('/reception', ...adminOnly, createReceptionUser);
 router.put('/reception/:id', ...adminOnly, updateReceptionUser);
+router.put('/reception/:id/permissions', ...adminOnly, updateReceptionStaffPermissions);
+router.put('/reception/:id/toggle-status', ...adminOnly, toggleReceptionStaffStatus);
 router.delete('/reception/:id', ...adminOnly, deleteReceptionUser);
 
 // AI Agents

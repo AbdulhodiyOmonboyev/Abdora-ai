@@ -83,6 +83,7 @@ model User {
   refreshTokenHash String?
   isActive         Boolean   @default(true)
   isFrozen         Boolean   @default(false)
+  permissions      Json?     @default("{}")
   lastLogin        DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt

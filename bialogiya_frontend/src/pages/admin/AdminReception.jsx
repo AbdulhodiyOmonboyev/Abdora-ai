@@ -1,12 +1,14 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Copy, X, UserCog, Phone, Trash2, Pencil, Building2, CheckCircle2,
   Shield, ShieldCheck, Lock, Unlock, ChevronDown, ChevronUp, PieChart,
   Wallet, CreditCard, Target, Calendar, Users as UsersIcon, GraduationCap,
-  BookMarked, SlidersHorizontal, Check,
+  BookMarked, SlidersHorizontal, Check, ChevronRight,
 } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
 import api from '../../config/axios';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
@@ -19,6 +21,8 @@ const EMPTY_FORM = { name: '', phone: '+998 ', email: '', language: 'uz', branch
 
 export default function AdminReception() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [showCreate, setShowCreate] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -143,12 +147,12 @@ export default function AdminReception() {
   const saveError = createMutation.error || updateMutation.error;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto px-1 sm:px-0">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Qabulxona</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Faqat siz qabulxona hisoblarini yaratishingiz mumkin</p>
+          <p className="text-sm text-gray-500 mt-0.5">Qabulxona hisoblari, shaxsiy ruxsatlar va faoliyat nazorati</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
           <Plus size={15} /> Hisob qo'shish
@@ -160,7 +164,7 @@ export default function AdminReception() {
         const isFinanceCashboxBlocked = !receptionPerms.canViewFinance && !receptionPerms.canViewCashbox;
         return (
           <div
-            className="mb-6 p-5 rounded-2xl border transition-all"
+            className="mb-6 p-4 sm:p-5 rounded-2xl border transition-all overflow-hidden w-full"
             style={{
               background: isFinanceCashboxBlocked
                 ? 'rgba(239, 68, 68, 0.04)'
@@ -170,8 +174,8 @@ export default function AdminReception() {
                 : 'rgba(16, 185, 129, 0.25)',
             }}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3.5">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5 min-w-0">
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{
@@ -181,24 +185,24 @@ export default function AdminReception() {
                 >
                   {isFinanceCashboxBlocked ? <Lock size={22} /> : <Unlock size={22} />}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-base font-semibold text-gray-800 dark:text-white">
                       Qabulxona huquqlari
                     </h2>
                     <span className={`badge text-xs ${isFinanceCashboxBlocked ? 'badge-danger' : 'badge-success'}`}>
-                      {isFinanceCashboxBlocked ? 'Moliya va Kassa yopiq (Qabulxona ko\'ra olmaydi)' : 'Moliya va Kassa ochiq'}
+                      {isFinanceCashboxBlocked ? "Moliya & Kassa yopiq" : "Moliya & Kassa ochiq"}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 break-words">
                     {isFinanceCashboxBlocked
-                      ? 'Qabulxona xodimlari Moliya dashboardi, hisobotlar va Kassaga kira olmaydi.'
-                      : 'Qabulxona xodimlariga Moliya va Kassa bo\'limlariga kirish ruxsati berilgan.'}
+                      ? "Qabulxona xodimlari Moliya va Kassaga kira olmaydi. Har bir xodim profilida alohida ruxsat berish mumkin."
+                      : "Qabulxona xodimlariga Moliya va Kassa bo'limlariga umumiy ruxsat berilgan."}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   disabled={updatePermsMutation.isPending}
@@ -211,7 +215,7 @@ export default function AdminReception() {
                     };
                     updatePermsMutation.mutate(newPerms);
                   }}
-                  className={`px-4 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors flex-shrink-0 ${
+                  className={`px-3.5 py-2.5 rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors flex-shrink-0 ${
                     isFinanceCashboxBlocked
                       ? 'btn-primary'
                       : 'bg-red-500 hover:bg-red-600 text-white'
@@ -219,11 +223,11 @@ export default function AdminReception() {
                 >
                   {isFinanceCashboxBlocked ? (
                     <>
-                      <Unlock size={16} /> Moliya va Kassaga ruxsat berish
+                      <Unlock size={15} /> Moliya & Kassani ochish
                     </>
                   ) : (
                     <>
-                      <Lock size={16} /> 1 bosishda bloklash
+                      <Lock size={15} /> 1 bosishda bloklash
                     </>
                   )}
                 </button>
@@ -231,7 +235,7 @@ export default function AdminReception() {
                 <button
                   type="button"
                   onClick={() => setShowPermsDetails(!showPermsDetails)}
-                  className="btn-outline px-3 py-2.5 rounded-xl text-xs flex items-center gap-1.5"
+                  className="btn-outline px-3 py-2.5 rounded-xl text-xs flex items-center gap-1.5 flex-shrink-0"
                   title="Qo'shimcha ruxsatlar"
                 >
                   <SlidersHorizontal size={14} />
@@ -249,13 +253,13 @@ export default function AdminReception() {
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="mt-4 pt-4 border-t overflow-hidden"
+                  className="mt-4 pt-4 border-t overflow-hidden w-full"
                   style={{ borderColor: 'var(--border)' }}
                 >
                   <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-3">
-                    Barcha bo'limlar bo'yicha qabulxona ruxsatlari:
+                    Markaziy standart ruxsatlar (har bir xodim profilida individual o'zgartirish mumkin):
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
                     {[
                       { key: 'canViewFinance', label: 'Moliya sahifasi va hisobotlari', icon: PieChart, color: '#6366f1' },
                       { key: 'canViewCashbox', label: 'Kassa va naqd tushumlar', icon: Wallet, color: '#10b981' },
@@ -270,7 +274,7 @@ export default function AdminReception() {
                       return (
                         <div
                           key={key}
-                          className="p-3 rounded-xl border flex items-center justify-between gap-2 text-xs"
+                          className="p-3 rounded-xl border flex items-center justify-between gap-2 text-xs overflow-hidden"
                           style={{
                             background: isChecked ? 'var(--card)' : 'var(--secondary-background)',
                             borderColor: 'var(--border)',
@@ -306,35 +310,87 @@ export default function AdminReception() {
         );
       })()}
 
-      <div className="space-y-2">
-        {users?.map((u, i) => (
-          <motion.div key={u.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-            className="card flex items-center gap-3">
-            <div className="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-              {u.name?.charAt(0)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm text-gray-800 dark:text-white">{u.name}</div>
-              <div className="text-xs text-gray-400 flex items-center gap-2 flex-wrap">
-                <span>@{u.username}</span>
-                {u.phone && <span className="flex items-center gap-0.5"><Phone size={10} /> {u.phone}</span>}
-                <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
-                  <Building2 size={11} />
-                  {u.branches?.[0]?.name ? u.branches[0].name : (u.branches?.length > 1 ? `${u.branches.length} filial` : 'Filial biriktirilmagan')}
-                </span>
+      <div className="space-y-2.5">
+        {users?.map((u, i) => {
+          const isBlocked = !u.isActive || u.isFrozen;
+          const targetUrl = user?.role === 'manager' ? `/manager/reception/${u.id}` : `/admin/reception/${u.id}`;
+          return (
+            <motion.div
+              key={u.id}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              onClick={() => navigate(targetUrl)}
+              className="card flex items-center gap-3 p-4 cursor-pointer hover:border-primary/50 hover:shadow-md transition-all group"
+            >
+              <div className="w-11 h-11 gradient-bg rounded-2xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
+                {u.name?.charAt(0)?.toUpperCase()}
               </div>
-            </div>
-            <span className={`badge text-xs ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-              {u.isActive ? 'Faol' : 'Nofaol'}
-            </span>
-            <button onClick={() => openEdit(u)} className="btn-ghost p-2 rounded-lg" title="Tahrirlash">
-              <Pencil size={14} />
-            </button>
-            <button onClick={() => handleDelete(u)} className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50" title="O'chirish">
-              <Trash2 size={14} />
-            </button>
-          </motion.div>
-        ))}
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-sm text-gray-800 dark:text-white group-hover:text-primary transition-colors">
+                    {u.name}
+                  </span>
+                  {isBlocked ? (
+                    <span className="badge text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                      Bloklangan
+                    </span>
+                  ) : (
+                    <span className="badge text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                      Faol
+                    </span>
+                  )}
+                  {u.permissions?.canViewFinance && (
+                    <span className="badge text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                      Moliya ochiq
+                    </span>
+                  )}
+                  {u.permissions?.canViewCashbox && (
+                    <span className="badge text-[10px] bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                      Kassa ochiq
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-xs text-gray-400 flex items-center gap-2.5 flex-wrap mt-1">
+                  <span>@{u.username}</span>
+                  {u.phone && (
+                    <span className="flex items-center gap-0.5">
+                      <Phone size={10} /> {u.phone}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                    <Building2 size={11} />
+                    {u.branches?.[0]?.name ? u.branches[0].name : (u.branches?.length > 1 ? `${u.branches.length} filial` : "Filial biriktirilmagan")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); openEdit(u); }}
+                  className="btn-ghost p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  title="Tahrirlash"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleDelete(u); }}
+                  className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+                  title="O'chirish"
+                >
+                  <Trash2 size={14} />
+                </button>
+                <div className="pl-1 text-gray-400 group-hover:text-primary transition-colors">
+                  <ChevronRight size={18} />
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
         {users?.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <UserCog size={36} className="mx-auto mb-3 opacity-30" />

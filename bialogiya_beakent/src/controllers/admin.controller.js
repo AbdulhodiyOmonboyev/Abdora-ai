@@ -354,6 +354,8 @@ const getReceptionUsers = async (req, res, next) => {
         email: true,
         phone: true,
         isActive: true,
+        isFrozen: true,
+        permissions: true,
         maxBranches: true,
         createdAt: true,
         lastLogin: true,
@@ -369,9 +371,174 @@ const getReceptionUsers = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const getReceptionStaffDetail = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        phone: true,
+        role: true,
+        language: true,
+        isActive: true,
+        isFrozen: true,
+        permissions: true,
+        maxBranches: true,
+        createdAt: true,
+        lastLogin: true,
+        centerId: true,
+        branchId: true,
+        branches: {
+          select: { id: true, name: true, address: true, studentCapacity: true }
+        },
+        center: {
+          select: { id: true, name: true, settings: true }
+        }
+      }
+    });
+
+    if (!user || user.role !== 'reception') {
+      return error(res, 'Reception user not found', 404);
+    }
+
+    // Resolve effective permissions
+    const centerSettings = (user.center?.settings && typeof user.center?.settings === 'object') ? user.center.settings : {};
+    const defaultCenterPerms = centerSettings.receptionPermissions || {
+      canViewFinance: false,
+      canViewCashbox: false,
+      canManagePayments: true,
+      canManageLeads: true,
+      canManageTimetable: true,
+      canManageGroups: true,
+      canManageStudents: true,
+      canManageTeachers: true,
+    };
+
+    const userOverrides = (user.permissions && typeof user.permissions === 'object')
+      ? user.permissions
+      : (centerSettings.receptionUserPermissions?.[user.id] || {});
+
+    const effectivePermissions = {
+      ...defaultCenterPerms,
+      ...userOverrides,
+    };
+
+    // Stats
+    const branchId = user.branches?.[0]?.id || user.branchId;
+    let studentsCount = 0;
+    let groupsCount = 0;
+    let leadsCount = 0;
+
+    if (branchId) {
+      [studentsCount, groupsCount, leadsCount] = await Promise.all([
+        prisma.user.count({ where: { role: 'student', branchId } }).catch(() => 0),
+        prisma.group.count({ where: { branchId } }).catch(() => 0),
+        prisma.lead.count({ where: { branchId } }).catch(() => 0),
+      ]);
+    }
+
+    return success(res, {
+      user: {
+        ...user,
+        effectivePermissions,
+        userOverrides,
+      },
+      stats: {
+        studentsCount,
+        groupsCount,
+        leadsCount,
+      }
+    });
+  } catch (err) { next(err); }
+};
+
+const updateReceptionStaffPermissions = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { permissions } = req.body;
+    if (!permissions || typeof permissions !== 'object') {
+      return error(res, 'Permissions object required', 400);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true, centerId: true, permissions: true }
+    });
+    if (!user || user.role !== 'reception') return error(res, 'Reception user not found', 404);
+
+    const mergedUserPerms = {
+      ...((user.permissions && typeof user.permissions === 'object') ? user.permissions : {}),
+      ...permissions,
+    };
+
+    // Update User
+    await prisma.user.update({
+      where: { id },
+      data: { permissions: mergedUserPerms }
+    });
+
+    // Also sync in center.settings.receptionUserPermissions
+    const centerId = user.centerId || req.user.centerId;
+    if (centerId) {
+      const center = await prisma.center.findUnique({ where: { id: centerId }, select: { settings: true } });
+      if (center) {
+        const curSettings = (center.settings && typeof center.settings === 'object') ? center.settings : {};
+        const existingUserMap = curSettings.receptionUserPermissions || {};
+        await prisma.center.update({
+          where: { id: centerId },
+          data: {
+            settings: {
+              ...curSettings,
+              receptionUserPermissions: {
+                ...existingUserMap,
+                [id]: mergedUserPerms,
+              }
+            }
+          }
+        });
+      }
+    }
+
+    return success(res, { permissions: mergedUserPerms }, 'Qabulxona xodimi ruxsatlari muvaffaqiyatli saqlandi');
+  } catch (err) { next(err); }
+};
+
+const toggleReceptionStaffStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true, isActive: true, isFrozen: true }
+    });
+    if (!user || user.role !== 'reception') return error(res, 'Reception user not found', 404);
+
+    let isFrozen = req.body.isFrozen;
+    let isActive = req.body.isActive;
+
+    if (isFrozen === undefined && isActive === undefined) {
+      isFrozen = !user.isFrozen;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(isFrozen !== undefined && { isFrozen }),
+        ...(isActive !== undefined && { isActive }),
+      },
+      select: { id: true, isActive: true, isFrozen: true }
+    });
+
+    return success(res, updated, isFrozen ? 'Qabulxona hisobi bloklandi' : 'Qabulxona hisobi faollashtirildi');
+  } catch (err) { next(err); }
+};
+
 const createReceptionUser = async (req, res, next) => {
   try {
-    const { name, email, phone, language, maxBranches, password, branchId } = req.body;
+    const { name, email, phone, language, maxBranches, password, branchId, permissions } = req.body;
     if (!name) return error(res, 'Name required', 400);
 
     const code = generatePassword(phone, password);
@@ -400,8 +567,9 @@ const createReceptionUser = async (req, res, next) => {
         language: language || 'uz',
         centerId: creatorCenter?.id || req.user.centerId || null,
         maxBranches: Number.isFinite(Number(maxBranches)) && Number(maxBranches) > 0 ? Number(maxBranches) : 3,
+        permissions: permissions && typeof permissions === 'object' ? permissions : {},
       },
-      select: { id: true, name: true, username: true, email: true, phone: true, role: true, maxBranches: true, centerId: true, createdAt: true },
+      select: { id: true, name: true, username: true, email: true, phone: true, role: true, maxBranches: true, centerId: true, permissions: true, createdAt: true },
     });
 
     if (branchId) {
@@ -421,7 +589,7 @@ const createReceptionUser = async (req, res, next) => {
 // PUT /admin/reception/:id - admin/manager can change details, branch assignment, or active status
 const updateReceptionUser = async (req, res, next) => {
   try {
-    const { name, phone, email, maxBranches, branchId, isActive } = req.body;
+    const { name, phone, email, maxBranches, branchId, isActive, isFrozen, permissions } = req.body;
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user || user.role !== 'reception') return error(res, 'Reception user not found', 404);
 
@@ -437,9 +605,11 @@ const updateReceptionUser = async (req, res, next) => {
         ...(phone !== undefined && { phone }),
         ...(email !== undefined && { email }),
         ...(isActive !== undefined && { isActive }),
+        ...(isFrozen !== undefined && { isFrozen }),
+        ...(permissions !== undefined && typeof permissions === 'object' && { permissions }),
         ...(maxBranches !== undefined && Number(maxBranches) > 0 && { maxBranches: Number(maxBranches) }),
       },
-      select: { id: true, name: true, username: true, email: true, phone: true, maxBranches: true, isActive: true },
+      select: { id: true, name: true, username: true, email: true, phone: true, maxBranches: true, isActive: true, isFrozen: true, permissions: true },
     });
 
     if (branchId !== undefined) {
@@ -465,7 +635,7 @@ const deleteReceptionUser = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user || user.role !== 'reception') return error(res, 'Reception user not found', 404);
-    await prisma.user.update({ where: { id: req.params.id }, data: { isActive: false } });
+    await prisma.user.update({ where: { id: req.params.id }, data: { isActive: false, isFrozen: true } });
     await prisma.branch.updateMany({
       where: { receptionId: req.params.id },
       data: { receptionId: null },
@@ -1166,7 +1336,7 @@ const getBranchDetail = async (req, res, next) => {
 
 module.exports = {
   getStats, getTeachers, createTeacher, updateTeacher, deleteTeacher, getStudents, getGroups, toggleUserStatus, getSettings, updateSettings,
-  getReceptionUsers, createReceptionUser, updateReceptionUser, deleteReceptionUser, getTeacherOverview,
+  getReceptionUsers, getReceptionStaffDetail, createReceptionUser, updateReceptionUser, updateReceptionStaffPermissions, toggleReceptionStaffStatus, deleteReceptionUser, getTeacherOverview,
   getBranches, createBranch, updateBranch, deleteBranch, getBranchDetail,
   recordTeacherPayout, updateTeacherSalaryTerms,
 };

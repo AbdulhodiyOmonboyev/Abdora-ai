@@ -44,41 +44,55 @@ const requireReceptionPermission = (permissionKey) => {
 
     if (req.user.role === 'reception') {
       try {
-        let centerId = req.user.centerId;
-        if (!centerId) {
-          const u = await prisma.user.findUnique({
-            where: { id: req.user.userId || req.user.id },
-            select: { centerId: true, branchId: true }
-          });
-          centerId = u?.centerId;
-          if (!centerId && u?.branchId) {
-            const b = await prisma.branch.findUnique({ where: { id: u.branchId }, select: { centerId: true } });
-            centerId = b?.centerId;
-          }
-          if (!centerId) {
-            const rb = await prisma.branch.findFirst({ where: { receptionId: req.user.userId || req.user.id }, select: { centerId: true } });
-            centerId = rb?.centerId;
-          }
+        const u = await prisma.user.findUnique({
+          where: { id: req.user.userId || req.user.id },
+          select: { centerId: true, branchId: true, isActive: true, isFrozen: true, permissions: true }
+        });
+
+        // Block access if receptionist account is deactivated or frozen
+        if (!u || u.isActive === false || u.isFrozen === true) {
+          return error(res, "Qabulxona hisobi nofaol yoki bloklangan holatda", 403);
         }
 
-        let perms = {};
+        let centerId = req.user.centerId || u.centerId;
+        if (!centerId && u.branchId) {
+          const b = await prisma.branch.findUnique({ where: { id: u.branchId }, select: { centerId: true } });
+          centerId = b?.centerId;
+        }
+        if (!centerId) {
+          const rb = await prisma.branch.findFirst({ where: { receptionId: req.user.userId || req.user.id }, select: { centerId: true } });
+          centerId = rb?.centerId;
+        }
+
+        let centerPerms = {};
+        let userOverrides = {};
         if (centerId) {
           const center = await prisma.center.findUnique({ where: { id: centerId }, select: { settings: true } });
           const settings = (center?.settings && typeof center.settings === 'object') ? center.settings : {};
-          perms = settings.receptionPermissions || {};
+          centerPerms = settings.receptionPermissions || {};
+          if (settings.receptionUserPermissions && typeof settings.receptionUserPermissions === 'object') {
+            userOverrides = settings.receptionUserPermissions[req.user.userId || req.user.id] || {};
+          }
         }
+
+        // Individual user permissions override center-wide defaults
+        const perms = {
+          ...centerPerms,
+          ...((u.permissions && typeof u.permissions === 'object') ? u.permissions : {}),
+          ...userOverrides,
+        };
 
         // Sensitive financial sections (Finance and Cashbox) require explicit permission (default false)
         if (permissionKey === 'canViewFinance' && perms.canViewFinance !== true) {
-          return error(res, "Qabulxona uchun moliya bo'limiga kirish ruxsati berilmagan", 403);
+          return error(res, "Ushbu qabulxona xodimi uchun moliya bo'limiga kirish ruxsati berilmagan", 403);
         }
         if (permissionKey === 'canViewCashbox' && perms.canViewCashbox !== true) {
-          return error(res, "Qabulxona uchun kassa bo'limiga kirish ruxsati berilmagan", 403);
+          return error(res, "Ushbu qabulxona xodimi uchun kassa bo'limiga kirish ruxsati berilmagan", 403);
         }
 
         // Other operational sections default to true unless explicitly disabled (false)
         if (perms[permissionKey] === false) {
-          return error(res, `Qabulxona uchun ushbu amalga ruxsat cheklangan`, 403);
+          return error(res, "Ushbu qabulxona xodimi uchun ushbu amalga ruxsat cheklangan", 403);
         }
       } catch (err) {
         console.error('requireReceptionPermission error:', err);
