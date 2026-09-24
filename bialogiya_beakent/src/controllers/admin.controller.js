@@ -627,14 +627,47 @@ const getSettings = async (req, res, next) => {
   try {
     const center = await resolveSettingsCenter(req);
     const rawSettings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
-    const merged = {
-      ...rawSettings,
+    const role = req.user?.role || 'admin';
+
+    // Shared center-level info (same for all roles)
+    const shared = {
       centerName: rawSettings.centerName || center.name || 'Abdora AI Markazi',
       centerAddress: rawSettings.centerAddress || center.address || '',
       centerPhone: rawSettings.centerPhone || center.phone || '',
       centerEmail: rawSettings.centerEmail || center.email || '',
       centerWebsite: rawSettings.centerWebsite || center.website || '',
       centerId: center.id,
+      receptionPermissions: rawSettings.receptionPermissions || {},
+    };
+
+    // Role-scoped preferences namespace
+    const rolePrefsKey = role === 'reception' ? 'receptionPrefs'
+                       : role === 'manager'   ? 'managerPrefs'
+                       :                         'adminPrefs';
+    const rolePrefs = rawSettings[rolePrefsKey] || {};
+
+    // For backward compatibility: merge legacy flat keys into role prefs
+    // (only if rolePrefs is empty, meaning first load after migration)
+    const legacyKeys = [
+      'receiptFormat', 'receiptNote', 'autoPrintReceipt', 'copyReceiptNumber',
+      'showStaffOnReceipt', 'defaultPaymentMethod', 'timetableDefaultView',
+      'soundNotifications', 'leadSoundAlert', 'paymentSoundAlert',
+      'lessonReminderMinutes', 'theme', 'appearance',
+      'maxStudentsPerGroup', 'minAttendancePercent', 'passingScore',
+      'paymentDeadlineDay', 'allowInstallments', 'acceptedPaymentMethods',
+      'workingHoursStart', 'workingHoursEnd', 'lessonDurationMinutes',
+      'leadStages', 'leadSources', 'smsOnAbsent', 'smsPaymentReceipt', 'smsPaymentReminder',
+    ];
+    let backfilled = { ...rolePrefs };
+    if (Object.keys(rolePrefs).length === 0) {
+      for (const k of legacyKeys) {
+        if (rawSettings[k] !== undefined) backfilled[k] = rawSettings[k];
+      }
+    }
+
+    const merged = {
+      ...shared,
+      ...backfilled,
     };
     return success(res, merged);
   } catch (err) { next(err); }
@@ -645,9 +678,43 @@ const updateSettings = async (req, res, next) => {
     const center = await resolveSettingsCenter(req);
     const newSettings = req.body || {};
     const currentSettings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
+    const role = req.user?.role || 'admin';
 
-    // Security: reception accounts can only modify their reception workspace preferences
-    if (req.user?.role === 'reception') {
+    // Determine the role-specific prefs namespace key
+    const rolePrefsKey = role === 'reception' ? 'receptionPrefs'
+                       : role === 'manager'   ? 'managerPrefs'
+                       :                         'adminPrefs';
+
+    // Extract shared center-level fields that should update the center record directly
+    const sharedFieldMap = {
+      centerName: 'name', centerAddress: 'address', centerPhone: 'phone',
+      centerEmail: 'email', centerWebsite: 'website',
+    };
+    const updateData = {};
+    const roleSpecificData = {};
+    const sharedSettingsUpdate = {};
+
+    for (const [key, value] of Object.entries(newSettings)) {
+      if (key === 'receptionPermissions' && typeof value === 'object') {
+        // receptionPermissions is a shared cross-role setting (admin/manager control it)
+        if (role === 'reception') continue; // reception cannot change its own permissions
+        sharedSettingsUpdate.receptionPermissions = {
+          ...(currentSettings.receptionPermissions || {}),
+          ...value,
+        };
+      } else if (sharedFieldMap[key] !== undefined) {
+        // Shared center-level fields
+        if (key === 'centerName' && role !== 'admin') continue; // only admin can rename center
+        updateData[sharedFieldMap[key]] = value;
+        sharedSettingsUpdate[key] = value;
+      } else {
+        // Everything else goes into role-scoped namespace
+        roleSpecificData[key] = value;
+      }
+    }
+
+    // Security: reception can only modify whitelisted keys
+    if (role === 'reception') {
       const allowedReceptionKeys = [
         'receiptFormat', 'receiptNote', 'autoPrintReceipt', 'copyReceiptNumber',
         'showStaffOnReceipt', 'defaultPaymentMethod', 'timetableDefaultView',
@@ -656,67 +723,48 @@ const updateSettings = async (req, res, next) => {
       ];
       const filtered = {};
       for (const k of allowedReceptionKeys) {
-        if (newSettings[k] !== undefined) filtered[k] = newSettings[k];
+        if (roleSpecificData[k] !== undefined) filtered[k] = roleSpecificData[k];
       }
-      const mergedSettings = { ...currentSettings, ...filtered };
-      const updated = await prisma.center.update({
-        where: { id: center.id },
-        data: { settings: mergedSettings },
-      });
-      const rawSettings = typeof updated.settings === 'object' && updated.settings !== null ? updated.settings : {};
-      const merged = {
-        ...rawSettings,
-        centerName: center.name || 'Abdora AI Markazi',
-        centerAddress: center.address || '',
-        centerPhone: center.phone || '',
-        centerEmail: center.email || '',
-        centerWebsite: center.website || '',
-        centerId: center.id,
-      };
-      return success(res, merged);
+      Object.keys(roleSpecificData).forEach(k => delete roleSpecificData[k]);
+      Object.assign(roleSpecificData, filtered);
     }
 
-    // Security: manager accounts cannot modify platform-level core AI keys
-    if (req.user?.role === 'manager') {
-      delete newSettings.openaiApiKey;
-      delete newSettings.geminiApiKey;
-      delete newSettings.anthropicApiKey;
+    // Security: manager cannot modify platform-level core AI keys
+    if (role === 'manager') {
+      delete roleSpecificData.openaiApiKey;
+      delete roleSpecificData.geminiApiKey;
+      delete roleSpecificData.anthropicApiKey;
     }
 
+    // Merge into center.settings preserving other roles' namespaces
     const mergedSettings = {
       ...currentSettings,
-      ...newSettings,
-      ...(newSettings.receptionPermissions && typeof newSettings.receptionPermissions === 'object' ? {
-        receptionPermissions: {
-          ...(currentSettings.receptionPermissions || {}),
-          ...newSettings.receptionPermissions,
-        }
-      } : {}),
+      ...sharedSettingsUpdate,
+      [rolePrefsKey]: {
+        ...(currentSettings[rolePrefsKey] || {}),
+        ...roleSpecificData,
+      },
     };
 
-    const updateData = {
-      settings: mergedSettings,
-    };
-    if (newSettings.centerName && req.user?.role === 'admin') updateData.name = newSettings.centerName;
-    if (newSettings.centerAddress !== undefined) updateData.address = newSettings.centerAddress;
-    if (newSettings.centerPhone !== undefined) updateData.phone = newSettings.centerPhone;
-    if (newSettings.centerEmail !== undefined) updateData.email = newSettings.centerEmail;
-    if (newSettings.centerWebsite !== undefined) updateData.website = newSettings.centerWebsite;
+    updateData.settings = mergedSettings;
 
     const updated = await prisma.center.update({
       where: { id: center.id },
-      data: updateData
+      data: updateData,
     });
 
+    // Return the merged view for this role
     const rawSettings = typeof updated.settings === 'object' && updated.settings !== null ? updated.settings : {};
+    const rolePrefs = rawSettings[rolePrefsKey] || {};
     const merged = {
-      ...rawSettings,
-      centerName: updated.name,
+      centerName: updated.name || 'Abdora AI Markazi',
       centerAddress: updated.address || '',
       centerPhone: updated.phone || '',
       centerEmail: updated.email || '',
       centerWebsite: updated.website || '',
       centerId: updated.id,
+      receptionPermissions: rawSettings.receptionPermissions || {},
+      ...rolePrefs,
     };
 
     return success(res, merged, 'Sozlamalar muvaffaqiyatli saqlandi');
@@ -724,8 +772,6 @@ const updateSettings = async (req, res, next) => {
   catch (err) { next(err); }
 };
 
-// One-stop overview for a specific teacher: their groups, students (across
-// all their groups), and lessons (with which group each belongs to) - used
 // One-stop overview for a specific teacher: profile, groups, students, lessons,
 // financial earnings, current balance, and salary payouts history.
 const getTeacherOverview = async (req, res, next) => {
