@@ -25,19 +25,21 @@ import ThemeBuilder from '../../components/ui/ThemeBuilder';
 
 /* ─── Sidebar nav items ─────────────────────────────────────── */
 const NAV_ITEMS = [
-  { id: 'center',          label: 'Markaz ma\'lumotlari',     icon: Building2 },
-  { id: 'platform',        label: 'Platforma',                icon: Globe },
-  { id: 'reception_perms', label: 'Qabulxona (Reception)',    icon: ShieldCheck, roles: ['admin', 'manager'] },
-  { id: 'payments',        label: 'To\'lovlar',                icon: CreditCard },
-  { id: 'lms',             label: 'LMS Sozlamalari',          icon: BookOpen },
-  { id: 'gamification',    label: 'Tangalar (Coins) & Gamifikatsiya', icon: Coins },
-  { id: 'crm_settings',    label: 'CRM Konfiguratsiyasi',      icon: Target },
-  { id: 'integrations',    label: 'SMS va Telegram',           icon: Smartphone },
-  { id: 'ai',              label: 'AI Funksiyalari',           icon: Bot },
-  { id: 'notifications',   label: 'Bildirishnomalar',         icon: Bell },
-  { id: 'security',        label: 'Xavfsizlik',               icon: Shield },
-  { id: 'appearance',      label: 'Mavzular & Ko\'rinish',    icon: Palette },
+  { id: 'center',            label: 'Markaz ma\'lumotlari',            icon: Building2 },
+  { id: 'platform',          label: 'Platforma',                      icon: Globe },
+  { id: 'markaz_ruxsatlari', label: 'Markaz ruxsatlari',              icon: Sparkles },
+  { id: 'reception_perms',   label: 'Qabulxona (Reception)',          icon: ShieldCheck, roles: ['admin', 'manager'] },
+  { id: 'payments',          label: 'To\'lovlar',                      icon: CreditCard },
+  { id: 'lms',               label: 'LMS Sozlamalari',                icon: BookOpen },
+  { id: 'gamification',      label: 'Tangalar (Coins) & Gamifikatsiya', icon: Coins },
+  { id: 'crm_settings',      label: 'CRM Konfiguratsiyasi',            icon: Target },
+  { id: 'integrations',      label: 'SMS va Telegram',                 icon: Smartphone },
+  { id: 'ai',                label: 'AI Funksiyalari',                 icon: Bot },
+  { id: 'notifications',     label: 'Bildirishnomalar',               icon: Bell },
+  { id: 'security',          label: 'Xavfsizlik',                     icon: Shield },
+  { id: 'appearance',        label: 'Mavzular & Ko\'rinish',           icon: Palette },
 ];
+
 
 /* ─── Reusable sub-components ─────────────────────────────────── */
 function SectionHeader({ kicker, title, subtitle }) {
@@ -604,93 +606,104 @@ export default function AdminSettings() {
                     </FormGroup>
                   </div>
 
-                  <div className="pt-4 border-t space-y-4" style={{ borderColor: 'var(--border)' }}>
-                    <div>
-                      <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        O'quv markazi imkoniyatlari (Features)
-                      </h3>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                        Platformaning asosiy modullarini markaz miqyosida yoqish yoki o'chirish
-                      </p>
-                    </div>
+                </div>
+              )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {[
-                        {
-                          key: 'aiEnabled',
-                          label: "Sun'iy intellekt (AI) tizimi",
-                          hint: "Darslar, testlar va baholashda AI yordamchilari",
-                          icon: Bot,
-                          color: '#6366f1',
-                        },
-                        {
-                          key: 'coinsEnabled',
-                          label: "Tangalar (Coins) & Gamifikatsiya",
-                          hint: "Talabalarga tangalar va reyting tizimi",
-                          icon: Coins,
-                          color: '#f59e0b',
-                        },
-                        {
-                          key: 'shopEnabled',
-                          label: "Online Do'kon (Coin Shop)",
-                          hint: "O'quvchilar tangalariga sovg'alar va vaucherlar",
-                          icon: ShoppingBag,
-                          color: '#10b981',
-                        },
-                        {
-                          key: 'smsEnabled',
-                          label: "Avtomatik SMS xabarnomalar",
-                          hint: "SMS provayder orqali xabarlar yuborish",
-                          icon: Smartphone,
-                          color: '#3b82f6',
-                        },
-                      ].map(({ key, label, hint, icon: Icon, color }) => {
-                        const isEnabled = settings.features?.[key] !== false;
-                        return (
-                          <div
-                            key={key}
-                            className="p-3.5 rounded-xl border flex items-center justify-between gap-3"
-                            style={{
-                              borderColor: 'var(--border)',
-                              background: isEnabled ? 'var(--card)' : 'var(--secondary-background)',
-                              opacity: isEnabled ? 1 : 0.75,
-                            }}
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div
-                                className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                                style={{ background: `${color}15`, color }}
-                              >
-                                <Icon size={18} />
+              {/* ═══════════════ MARKAZ RUXSATLARI (AI, TANGALAR, DO'KON, SMS) ═══════════════ */}
+              {activeTab === 'markaz_ruxsatlari' && (
+                <div className="panel-card space-y-5">
+                  <SectionHeader
+                    kicker="Ruxsatlar"
+                    title="Markaz ruxsatlari va modullari"
+                    subtitle="Platformaning asosiy modullarini markaz miqyosida yoqing yoki o'chiring. Bu sozlamalar barcha foydalanuvchilarga ta'sir qiladi."
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      {
+                        key: 'aiEnabled',
+                        label: "Sun'iy intellekt (AI) tizimi",
+                        hint: "AI dars rejalari, testlar generatsiyasi, uy vazifalarini baholash va AI assistent chatbot",
+                        icon: Bot,
+                        color: '#6366f1',
+                      },
+                      {
+                        key: 'coinsEnabled',
+                        label: "Tangalar (Coins) & Gamifikatsiya",
+                        hint: "Darslar, testlar va faollik uchun tangalar berish, daraja va reyting jadvali",
+                        icon: Coins,
+                        color: '#f59e0b',
+                      },
+                      {
+                        key: 'shopEnabled',
+                        label: "Online Do'kon (Coin Shop)",
+                        hint: "O'quvchilar tangalarini markaz esdalik sovg'alari va chegirmalarga almashtirishi",
+                        icon: ShoppingBag,
+                        color: '#10b981',
+                      },
+                      {
+                        key: 'smsEnabled',
+                        label: "Avtomatik SMS xabarnomalar",
+                        hint: "Ota-onalar va o'quvchilarga to'lov, dars va eslatmalar bo'yicha SMS yuborish",
+                        icon: Smartphone,
+                        color: '#3b82f6',
+                      },
+                    ].map(({ key, label, hint, icon: Icon, color }) => {
+                      const isEnabled = settings.features?.[key] !== false;
+                      return (
+                        <div
+                          key={key}
+                          className="p-4 rounded-2xl border transition-all flex items-start justify-between gap-4"
+                          style={{
+                            borderColor: 'var(--border)',
+                            backgroundColor: isEnabled ? 'var(--card)' : 'var(--secondary-background)',
+                            opacity: isEnabled ? 1 : 0.75,
+                          }}
+                        >
+                          <div className="flex items-start gap-3.5 min-w-0">
+                            <div
+                              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                              style={{ backgroundColor: `${color}15`, color }}
+                            >
+                              <Icon size={20} />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                                {label}
                               </div>
-                              <div className="min-w-0">
-                                <div className="text-sm font-medium leading-snug truncate" style={{ color: 'var(--text-primary)' }}>
-                                  {label}
-                                </div>
-                                <div className="text-xs leading-tight line-clamp-1 mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                                  {hint}
-                                </div>
+                              <div className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                {hint}
+                              </div>
+                              <div className="mt-2.5">
+                                <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                                  isEnabled
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
+                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                                }`}>
+                                  {isEnabled ? 'Faollashtirilgan' : "O'chirilgan"}
+                                </span>
                               </div>
                             </div>
-                            <ToggleSwitch
-                              checked={isEnabled}
-                              onChange={(val) => {
-                                const updatedFeatures = {
-                                  ...(settings.features || {}),
-                                  [key]: val,
-                                };
-                                set('features', updatedFeatures);
-                              }}
-                            />
                           </div>
-                        );
-                      })}
-                    </div>
+                          <ToggleSwitch
+                            checked={isEnabled}
+                            onChange={(val) => {
+                              const updatedFeatures = {
+                                ...(settings.features || {}),
+                                [key]: val,
+                              };
+                              set('features', updatedFeatures);
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
               {/* ═══════════════ QABULXONA HUQUQLARI ═══════════════ */}
+
               {activeTab === 'reception_perms' && (
                 <div className="panel-card space-y-6">
                   <SectionHeader

@@ -24,7 +24,6 @@ import ThemeBuilder from '../../components/ui/ThemeBuilder';
 
 const MANAGER_NAV_ITEMS = [
   { id: 'reception_control', label: 'Qabulxona (Reception)',       icon: ShieldCheck },
-  { id: 'features_control',  label: 'Markaz imkoniyatlari (AI)',    icon: Sparkles },
   { id: 'branch_info',       label: 'Filial ma\'lumotlari',        icon: Building2 },
   { id: 'payments',          label: 'To\'lovlar & Qoidalar',       icon: CreditCard },
   { id: 'lms_rules',         label: 'LMS & Ta\'lim qoidalari',     icon: BookOpen },
@@ -734,95 +733,6 @@ export default function ManagerSettings() {
                         </tbody>
                       </table>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB: MARKAZ IMKONIYATLARI (AI, TANGALAR, DO'KON) */}
-              {activeTab === 'features_control' && (
-                <div className="panel-card space-y-5">
-                  <SectionHeader
-                    kicker="Imkoniyatlar"
-                    title="O'quv markazi imkoniyatlari va modullari"
-                    subtitle="Markaz darajasida sun'iy intellekt, tangalar, do'kon va SMS xabarnomalarni yoqing yoki o'chiring"
-                  />
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      {
-                        key: 'aiEnabled',
-                        label: "Sun'iy intellekt (AI) tizimi",
-                        hint: "AI dars rejalari, testlar generatsiyasi, uy vazifalarini baholash va AI assistent",
-                        icon: Bot,
-                        color: '#6366f1',
-                      },
-                      {
-                        key: 'coinsEnabled',
-                        label: "Tangalar (Coins) & Gamifikatsiya",
-                        hint: "Darslar, testlar va faollik uchun tangalar berish va reyting jadvali",
-                        icon: Coins,
-                        color: '#f59e0b',
-                      },
-                      {
-                        key: 'shopEnabled',
-                        label: "Online Do'kon (Coin Shop)",
-                        hint: "O'quvchilar tangalarini markaz esdalik sovg'alari va chegirmalarga almashtirishi",
-                        icon: ShoppingBag,
-                        color: '#10b981',
-                      },
-                      {
-                        key: 'smsEnabled',
-                        label: "Avtomatik SMS xabarnomalar",
-                        hint: "Ota-onalar va o'quvchilarga to'lov, dars va eslatmalar bo'yicha SMS yuborish",
-                        icon: Smartphone,
-                        color: '#3b82f6',
-                      },
-                    ].map(({ key, label, hint, icon: Icon, color }) => {
-                      const isEnabled = settings.features?.[key] !== false;
-                      return (
-                        <div
-                          key={key}
-                          className="p-4 rounded-2xl border transition-all flex items-start justify-between gap-4"
-                          style={{
-                            borderColor: 'var(--border)',
-                            backgroundColor: isEnabled ? 'var(--card)' : 'var(--secondary-background)',
-                            opacity: isEnabled ? 1 : 0.75,
-                          }}
-                        >
-                          <div className="flex items-start gap-3.5 min-w-0">
-                            <div
-                              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                              style={{
-                                backgroundColor: `${color}15`,
-                                color: color,
-                              }}
-                            >
-                              <Icon size={20} />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-sm font-bold text-[var(--text-primary)]">
-                                {label}
-                              </div>
-                              <div className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
-                                {hint}
-                              </div>
-                              <div className="mt-2.5">
-                                <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                                  isEnabled ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                                }`}>
-                                  {isEnabled ? 'Faollashtirilgan' : 'O\'chirilgan'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <ToggleSwitch
-                            checked={isEnabled}
-                            onChange={() => toggleFeature(key)}
-                          />
-                        </div>
-                      );
-                    })}
                   </div>
                 </div>
               )}
