@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import api from '../../config/axios';
 import { cn } from '../../utils/cn';
@@ -106,6 +106,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const { user, clearAuth } = useAuthStore();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const { data: serverSettings } = useQuery({
     queryKey: ['center-settings', user?.centerId || user?.id],
@@ -159,8 +160,8 @@ export default function Sidebar({ isOpen, onClose }) {
 
   const logoutMutation = useMutation({
     mutationFn: () => api.post('/auth/logout'),
-    onSuccess: () => { clearAuth(); navigate('/login'); },
-    onError: () => { clearAuth(); navigate('/login'); },
+    onSuccess: () => { qc.clear(); clearAuth(); navigate('/login'); },
+    onError: () => { qc.clear(); clearAuth(); navigate('/login'); },
   });
 
   const initials = (user?.name || 'U').charAt(0).toUpperCase();

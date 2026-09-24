@@ -10,7 +10,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useBranchStore } from '../../store/branchStore';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { formatRelativeTime } from '../../utils/format';
@@ -36,6 +36,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const qc = useQueryClient();
 
   // Refs for tracking outside clicks on all dropdowns
   const searchRef = useRef(null);
@@ -234,8 +235,8 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
 
   const logoutMutation = useMutation({
     mutationFn: () => api.post('/auth/logout'),
-    onSuccess: () => { clearAuth(); navigate('/login'); },
-    onError: () => { clearAuth(); navigate('/login'); },
+    onSuccess: () => { qc.clear(); clearAuth(); navigate('/login'); },
+    onError: () => { qc.clear(); clearAuth(); navigate('/login'); },
   });
 
   const changePwMutation = useMutation({
