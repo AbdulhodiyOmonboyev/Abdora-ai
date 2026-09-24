@@ -1,17 +1,50 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Building2, ArrowLeft, GitBranch, Users, BookOpen, UserCheck,
-  Phone, Mail, Globe, MapPin, Pencil, Trash2, Check, X,
-  Loader2, Shield, Calendar, User, Eye, Info,
+  Phone, MapPin, Pencil, Trash2, Check, X,
+  Loader2, User, Info,
+  Bot, Coins, ShoppingBag, Smartphone, Settings2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../config/axios";
 import StatusBadge from "../../components/ui/StatusBadge";
 import PhoneInput from "../../components/ui/PhoneInput";
 import { cleanPhone } from "../../utils/formatPhone";
+import ToggleSwitch from "../../components/ui/ToggleSwitch";
+
+const FEATURE_LIST = [
+  {
+    key: "aiEnabled",
+    label: "Sun'iy intellekt (AI) tizimi",
+    hint: "AI dars rejalari, testlar, uy vazifalarini baholash va AI assistent",
+    icon: Bot,
+    color: "#6366f1",
+  },
+  {
+    key: "coinsEnabled",
+    label: "Tangalar (Coins) va Gamifikatsiya",
+    hint: "Darslar va faollik uchun tangalar, daraja va reyting jadvali",
+    icon: Coins,
+    color: "#f59e0b",
+  },
+  {
+    key: "shopEnabled",
+    label: "Online Do'kon (Coin Shop)",
+    hint: "O'quvchilar tangalarini sovg'alar va chegirmalarga almashtirishi",
+    icon: ShoppingBag,
+    color: "#10b981",
+  },
+  {
+    key: "smsEnabled",
+    label: "Avtomatik SMS xabarnomalar",
+    hint: "To'lov, dars va eslatmalar bo'yicha ota-onalarga SMS yuborish",
+    icon: Smartphone,
+    color: "#3b82f6",
+  },
+];
 
 export default function AdminCenterDetail() {
   const { id } = useParams();
@@ -19,6 +52,12 @@ export default function AdminCenterDetail() {
   const qc = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
+  const [features, setFeatures] = useState({
+    aiEnabled: true,
+    coinsEnabled: true,
+    shopEnabled: true,
+    smsEnabled: true,
+  });
 
   const { data: center, isLoading } = useQuery({
     queryKey: ["admin-center", id],
@@ -36,6 +75,15 @@ export default function AdminCenterDetail() {
         website: center.website || "",
         isActive: center.isActive ?? true,
       });
+      // Load features from center settings
+      const s = center.settings || {};
+      const f = s.features || {};
+      setFeatures({
+        aiEnabled:     f.aiEnabled     !== false,
+        coinsEnabled:  f.coinsEnabled  !== false,
+        shopEnabled:   f.shopEnabled   !== false,
+        smsEnabled:    f.smsEnabled    !== false,
+      });
     }
   }, [center]);
 
@@ -46,6 +94,21 @@ export default function AdminCenterDetail() {
       qc.invalidateQueries({ queryKey: ["admin-center", id] });
       qc.invalidateQueries({ queryKey: ["admin-centers"] });
       setIsEditing(false);
+    },
+    onError: (e) => toast.error(e.response?.data?.message || "Xatolik yuz berdi"),
+  });
+
+  const saveFeaturesMutation = useMutation({
+    mutationFn: (newFeatures) =>
+      api.put(`/admin/centers/${id}`, {
+        settings: {
+          ...(center?.settings || {}),
+          features: newFeatures,
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Markaz ruxsatlari saqlandi!");
+      qc.invalidateQueries({ queryKey: ["admin-center", id] });
     },
     onError: (e) => toast.error(e.response?.data?.message || "Xatolik yuz berdi"),
   });
@@ -92,6 +155,12 @@ export default function AdminCenterDetail() {
       ...editForm,
       phone: cleanPhone(editForm.phone),
     });
+  };
+
+  const toggleFeature = (key) => {
+    const updated = { ...features, [key]: !features[key] };
+    setFeatures(updated);
+    saveFeaturesMutation.mutate(updated);
   };
 
   return (
@@ -171,10 +240,10 @@ export default function AdminCenterDetail() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Filiallar", value: center.branches?.length ?? center._count?.branches ?? 0, icon: GitBranch, color: "#6366f1" },
-          { label: "O'quvchilar", value: center.studentsCount ?? 0, icon: Users, color: "#10b981" },
-          { label: "O'qituvchilar", value: center.teachersCount ?? 0, icon: BookOpen, color: "#f59e0b" },
-          { label: "Guruhlar", value: center._count?.groups ?? 0, icon: UserCheck, color: "#3b82f6" },
+          { label: "Filiallar",     value: center.branches?.length ?? center._count?.branches ?? 0, icon: GitBranch, color: "#6366f1" },
+          { label: "O'quvchilar",   value: center.studentsCount ?? 0,                                icon: Users,     color: "#10b981" },
+          { label: "O'qituvchilar", value: center.teachersCount ?? 0,                                icon: BookOpen,  color: "#f59e0b" },
+          { label: "Guruhlar",      value: center._count?.groups ?? 0,                               icon: UserCheck, color: "#3b82f6" },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="rounded-2xl p-4"
             style={{ background: "var(--card-background)", border: "1px solid var(--border)" }}>
@@ -190,7 +259,7 @@ export default function AdminCenterDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 cols: Details & Edit */}
+        {/* Left 2 cols */}
         <div className="lg:col-span-2 space-y-6">
           {/* Main Info Card */}
           <div className="panel-card space-y-4">
@@ -252,7 +321,70 @@ export default function AdminCenterDetail() {
             )}
           </div>
 
-          {/* Filiallar (Branches) Table */}
+          {/* ══════════ MARKAZ SOZLAMALARI ══════════ */}
+          <div className="panel-card space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                  <Settings2 size={18} className="text-primary" /> Markaz sozlamalari
+                </h2>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                  Ushbu markaz uchun modullarni yoqing yoki o'chiring
+                </p>
+              </div>
+              {saveFeaturesMutation.isPending && (
+                <Loader2 size={16} className="animate-spin" style={{ color: "var(--primary)" }} />
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {FEATURE_LIST.map(({ key, label, hint, icon: Icon, color }) => {
+                const isEnabled = features[key] !== false;
+                return (
+                  <motion.div
+                    key={key}
+                    layout
+                    className="p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all"
+                    style={{
+                      borderColor: isEnabled ? color + "40" : "var(--border)",
+                      background: isEnabled ? color + "08" : "var(--secondary-background)",
+                    }}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: `${color}15`, color }}
+                      >
+                        <Icon size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>
+                          {label}
+                        </div>
+                        <div className="text-[11px] mt-0.5 line-clamp-1" style={{ color: "var(--text-secondary)" }}>
+                          {hint}
+                        </div>
+                        <span className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-1 ${
+                          isEnabled
+                            ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-500"
+                        }`}>
+                          {isEnabled ? "Faol" : "O'chiq"}
+                        </span>
+                      </div>
+                    </div>
+                    <ToggleSwitch
+                      checked={isEnabled}
+                      onChange={() => toggleFeature(key)}
+                      disabled={saveFeaturesMutation.isPending}
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Filiallar Table */}
           <div className="panel-card space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
@@ -274,15 +406,11 @@ export default function AdminCenterDetail() {
                   <tbody>
                     {center.branches.map(b => (
                       <tr key={b.id}>
-                        <td className="font-semibold" style={{ color: "var(--text-primary)" }}>
-                          {b.name}
-                        </td>
+                        <td className="font-semibold" style={{ color: "var(--text-primary)" }}>{b.name}</td>
                         <td style={{ color: "var(--text-secondary)" }}>{b.address || "—"}</td>
                         <td>{b._count?.groups || 0}</td>
                         <td>{b._count?.teachers || 0}</td>
-                        <td>
-                          <StatusBadge status={b.isActive ? "faol" : "nofaol"} />
-                        </td>
+                        <td><StatusBadge status={b.isActive ? "faol" : "nofaol"} /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -296,7 +424,7 @@ export default function AdminCenterDetail() {
           </div>
         </div>
 
-        {/* Right col: Manager Accounts */}
+        {/* Right col */}
         <div className="space-y-6">
           <div className="panel-card space-y-4">
             <h2 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
