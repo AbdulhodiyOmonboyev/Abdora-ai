@@ -235,7 +235,7 @@ export default function FinanceDashboard() {
               <p className="mb-4 text-xs text-gray-400">
                 Oxirgi {s.forecast.basedOnMonths} oyning o'rtachasi asosida — kafolat emas, mo'ljal
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { label: 'Kutilayotgan tushum', value: s.forecast.expectedIncome, tone: 'text-primary' },
                   { label: 'Kutilayotgan xarajat', value: s.forecast.expectedExpense, tone: 'text-orange-500' },

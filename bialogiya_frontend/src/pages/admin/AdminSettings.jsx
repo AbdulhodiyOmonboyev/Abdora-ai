@@ -16,7 +16,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import ToggleSwitch from '../../components/ui/ToggleSwitch';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import PhoneInput from '../../components/ui/PhoneInput';
@@ -224,6 +224,7 @@ const DEFAULT_SETTINGS = {
 /* ─── Main Component ──────────────────────────────────────────── */
 export default function AdminSettings() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const applyTheme = useThemeStore(s => s.applyTheme);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -835,10 +836,12 @@ export default function AdminSettings() {
                       <div className="space-y-2.5">
                         {receptionUsers.map((u) => {
                           const branchName = u.branches?.[0]?.name || u.branch?.name;
+                          const isBlocked = !u.isActive || u.isFrozen;
                           return (
                             <div
                               key={u.id}
-                              className="p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
+                              onClick={() => navigate(`/admin/reception/${u.id}`)}
+                              className="p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors cursor-pointer hover:border-primary/50 hover:shadow-sm"
                               style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
                             >
                               <div className="flex items-center gap-3 min-w-0">
@@ -847,12 +850,17 @@ export default function AdminSettings() {
                                 </div>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                                    <span className="font-semibold text-sm truncate hover:text-primary transition-colors" style={{ color: 'var(--text-primary)' }}>
                                       {u.name}
                                     </span>
-                                    <span className={`badge text-[11px] ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
-                                      {u.isActive ? 'Faol' : 'Nofaol'}
+                                    <span className={`badge text-[11px] ${isBlocked ? 'badge-danger' : 'badge-success'}`}>
+                                      {isBlocked ? 'Bloklangan' : 'Faol'}
                                     </span>
+                                    {u.permissions?.canViewFinance && (
+                                      <span className="badge text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                                        Moliya ochiq
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="text-xs flex items-center gap-3 flex-wrap mt-1" style={{ color: 'var(--text-secondary)' }}>
                                     <span className="font-medium text-primary-600 dark:text-primary-400">@{u.username}</span>
@@ -869,7 +877,16 @@ export default function AdminSettings() {
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-1.5 self-end sm:self-auto flex-shrink-0">
+                              <div className="flex items-center gap-1.5 self-end sm:self-auto flex-shrink-0" onClick={e => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/admin/reception/${u.id}`)}
+                                  className="btn-outline px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-1 text-primary"
+                                  title="Shaxsiy profil va ruxsatlar"
+                                >
+                                  <Shield size={14} />
+                                  <span>Profil & Ruxsatlar</span>
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => openReceptionEdit(u)}

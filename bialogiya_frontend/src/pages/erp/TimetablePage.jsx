@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Calendar, Users, ChevronLeft, ChevronRight, Filter, GraduationCap, Building2, Clock } from 'lucide-react';
+import { AlertTriangle, Calendar, Users, ChevronLeft, ChevronRight, Filter, GraduationCap, Building2, Clock, X } from 'lucide-react';
 import api from '../../config/axios';
 import PageHeader from '../../components/ui/PageHeader';
 import { Skeleton } from '../../components/ui/Skeleton';
@@ -330,8 +330,8 @@ export default function TimetablePage() {
             <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
               {selectedSlot.groupName || selectedSlot.teacherName || 'Guruh'}
             </div>
-            <button className="btn-icon" onClick={() => setSelectedSlot(null)}>
-              <Calendar size={14} />
+            <button className="btn-icon" onClick={() => setSelectedSlot(null)} title="Yopish">
+              <X size={14} />
             </button>
           </div>
           <div className="space-y-2 text-xs" style={{ color: 'var(--text-secondary)' }}>

@@ -290,7 +290,16 @@ export default function AdminBranches() {
                     ) : '—'}
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
-                    {branch.manager?.name || branch.reception?.name || '—'}
+                    {branch.manager?.name ? (
+                      <div>
+                        <div className="font-medium text-xs text-gray-800 dark:text-gray-200">{branch.manager.name}</div>
+                        {branch.reception?.name && (
+                          <div className="text-[11px] text-gray-400">Qabul: {branch.reception.name}</div>
+                        )}
+                      </div>
+                    ) : branch.reception?.name ? (
+                      <span className="text-xs">Qabul: {branch.reception.name}</span>
+                    ) : '—'}
                   </td>
                   <td>
                     <span className="font-semibold">{branch._count?.teachers || 0}</span>

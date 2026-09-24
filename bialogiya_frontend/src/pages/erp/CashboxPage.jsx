@@ -13,11 +13,11 @@ import Modal from '../../components/ui/Modal';
 import { Skeleton } from '../../components/ui/Skeleton';
 
 const METHOD_CONFIG = {
-  cash:  { label: 'Naqd pul', icon: Banknote,   color: '#10B981', bg: '#ECFDF5' },
-  click: { label: 'Click',    icon: Smartphone, color: '#3B82F6', bg: '#EFF6FF' },
-  payme: { label: 'Payme',    icon: CreditCard, color: '#8B5CF6', bg: '#F5F3FF' },
-  bank:  { label: 'Bank',     icon: Building2,  color: '#F59E0B', bg: '#FFFBEB' },
-  other: { label: 'Boshqa',   icon: Wallet,     color: '#64748B', bg: '#F8FAFC' },
+  cash:  { label: 'Naqd pul', icon: Banknote,   color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' },
+  click: { label: 'Click',    icon: Smartphone, color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)' },
+  payme: { label: 'Payme',    icon: CreditCard, color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.12)' },
+  bank:  { label: 'Bank',     icon: Building2,  color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' },
+  other: { label: 'Boshqa',   icon: Wallet,     color: '#64748B', bg: 'rgba(100, 116, 139, 0.12)' },
 };
 
 const TX_TYPES = [

@@ -6,7 +6,7 @@ import {
   Plus, Copy, X, UserCog, Phone, Trash2, Pencil, Building2, CheckCircle2,
   Shield, ShieldCheck, Lock, Unlock, ChevronDown, ChevronUp, PieChart,
   Wallet, CreditCard, Target, Calendar, Users as UsersIcon, GraduationCap,
-  BookMarked, SlidersHorizontal, Check, ChevronRight,
+  BookMarked, SlidersHorizontal, Check, ChevronRight, Search,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../config/axios';
@@ -29,6 +29,7 @@ export default function AdminReception() {
   const [newCreds, setNewCreds] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [showPermsDetails, setShowPermsDetails] = useState(false);
+  const [search, setSearch] = useState('');
 
   const { data: serverSettings } = useQuery({
     queryKey: ['admin-settings'],
@@ -310,87 +311,131 @@ export default function AdminReception() {
         );
       })()}
 
+      {/* ── Search & Counter Bar ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          Jami xodimlar: <span className="font-semibold text-gray-800 dark:text-gray-200">{users.length} ta</span>
+          <span className="hidden sm:inline ml-2 text-gray-400">— Profil va ruxsatlarni ko'rish uchun xodim ustiga bosing</span>
+        </div>
+
+        {users.length > 0 && (
+          <div className="search-input-wrap w-full sm:w-64">
+            <Search size={14} className="search-icon" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Ism, login yoki telefon..."
+              className="input-field text-xs py-2"
+            />
+          </div>
+        )}
+      </div>
+
       <div className="space-y-2.5">
-        {users?.map((u, i) => {
-          const isBlocked = !u.isActive || u.isFrozen;
-          const targetUrl = user?.role === 'manager' ? `/manager/reception/${u.id}` : `/admin/reception/${u.id}`;
-          return (
-            <motion.div
-              key={u.id}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-              onClick={() => navigate(targetUrl)}
-              className="card flex items-center gap-3 p-4 cursor-pointer hover:border-primary/50 hover:shadow-md transition-all group"
-            >
-              <div className="w-11 h-11 gradient-bg rounded-2xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
-                {u.name?.charAt(0)?.toUpperCase()}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-sm text-gray-800 dark:text-white group-hover:text-primary transition-colors">
-                    {u.name}
-                  </span>
-                  {isBlocked ? (
-                    <span className="badge text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
-                      Bloklangan
-                    </span>
-                  ) : (
-                    <span className="badge text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                      Faol
-                    </span>
-                  )}
-                  {u.permissions?.canViewFinance && (
-                    <span className="badge text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
-                      Moliya ochiq
-                    </span>
-                  )}
-                  {u.permissions?.canViewCashbox && (
-                    <span className="badge text-[10px] bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-                      Kassa ochiq
-                    </span>
-                  )}
+        {users
+          ?.filter(u => {
+            if (!search) return true;
+            const q = search.toLowerCase();
+            return (
+              u.name?.toLowerCase().includes(q) ||
+              u.username?.toLowerCase().includes(q) ||
+              u.phone?.toLowerCase().includes(q)
+            );
+          })
+          .map((u, i) => {
+            const isBlocked = !u.isActive || u.isFrozen;
+            const targetUrl = user?.role === 'manager' ? `/manager/reception/${u.id}` : `/admin/reception/${u.id}`;
+            return (
+              <motion.div
+                key={u.id}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                onClick={() => navigate(targetUrl)}
+                className="card flex items-center gap-3 p-4 cursor-pointer hover:border-primary/50 hover:shadow-md transition-all group"
+              >
+                <div className="w-11 h-11 gradient-bg rounded-2xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
+                  {u.name?.charAt(0)?.toUpperCase()}
                 </div>
 
-                <div className="text-xs text-gray-400 flex items-center gap-2.5 flex-wrap mt-1">
-                  <span>@{u.username}</span>
-                  {u.phone && (
-                    <span className="flex items-center gap-0.5">
-                      <Phone size={10} /> {u.phone}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm text-gray-800 dark:text-white group-hover:text-primary transition-colors">
+                      {u.name}
                     </span>
-                  )}
-                  <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
-                    <Building2 size={11} />
-                    {u.branches?.[0]?.name ? u.branches[0].name : (u.branches?.length > 1 ? `${u.branches.length} filial` : "Filial biriktirilmagan")}
-                  </span>
-                </div>
-              </div>
+                    {isBlocked ? (
+                      <span className="badge text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold">
+                        Bloklangan
+                      </span>
+                    ) : (
+                      <span className="badge text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold">
+                        Faol
+                      </span>
+                    )}
+                    {u.permissions?.canViewFinance && (
+                      <span className="badge text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                        Moliya ochiq
+                      </span>
+                    )}
+                    {u.permissions?.canViewCashbox && (
+                      <span className="badge text-[10px] bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                        Kassa ochiq
+                      </span>
+                    )}
+                  </div>
 
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); openEdit(u); }}
-                  className="btn-ghost p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                  title="Tahrirlash"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); handleDelete(u); }}
-                  className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
-                  title="O'chirish"
-                >
-                  <Trash2 size={14} />
-                </button>
-                <div className="pl-1 text-gray-400 group-hover:text-primary transition-colors">
-                  <ChevronRight size={18} />
+                  <div className="text-xs text-gray-400 flex items-center gap-2.5 flex-wrap mt-1">
+                    <span>@{u.username}</span>
+                    {u.phone && (
+                      <span className="flex items-center gap-0.5 font-mono">
+                        <Phone size={10} /> {u.phone}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                      <Building2 size={11} />
+                      {u.branches?.[0]?.name ? u.branches[0].name : (u.branches?.length > 1 ? `${u.branches.length} filial` : "Filial biriktirilmagan")}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          );
-        })}
+
+                <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(targetUrl)}
+                    className="btn-outline px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-1 text-primary hover:bg-primary/5 transition-colors hidden sm:flex"
+                    title="Shaxsiy profil va ruxsatlar"
+                  >
+                    <Shield size={13} />
+                    <span>Profil & Ruxsatlar</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(u)}
+                    className="btn-ghost p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    title="Tahrirlash"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(u)}
+                    className="btn-ghost p-2 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+                    title="O'chirish"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(targetUrl)}
+                    className="pl-1 text-gray-400 group-hover:text-primary transition-colors"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
         {users?.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <UserCog size={36} className="mx-auto mb-3 opacity-30" />

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ShieldCheck, Building2, CreditCard, BookOpen, Target, Bell, User,
+  ShieldCheck, Shield, Building2, CreditCard, BookOpen, Target, Bell, User,
   Lock, Unlock, PieChart, Wallet, Calendar, Users, GraduationCap,
   BookMarked, Plus, X, Pencil, Trash2, Copy, Save, Check, KeyRound,
-  Sun, Moon, Palette, AlertCircle, Phone, Smartphone, Banknote
+  Sun, Moon, Palette, AlertCircle, Phone, Smartphone, Banknote, ChevronRight
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -77,6 +77,7 @@ function ToggleSwitch({ checked, onChange, disabled }) {
 
 export default function ManagerSettings() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { user, updateUser } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -454,42 +455,59 @@ export default function ManagerSettings() {
                             <th>Telefon</th>
                             <th>Filial</th>
                             <th>Holati</th>
-                            <th className="text-right">Amal</th>
+                            <th className="text-right">Amal va Sozlamalar</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {receptionUsers.map((u) => (
-                            <tr key={u.id}>
-                              <td>
-                                <div className="font-semibold text-xs text-[var(--text-primary)]">{u.name}</div>
-                                <div className="text-[11px] text-[var(--text-muted)]">@{u.username}</div>
-                              </td>
-                              <td className="text-xs font-mono text-[var(--text-secondary)]">
-                                {u.phone || '—'}
-                              </td>
-                              <td className="text-xs text-[var(--text-secondary)]">
-                                {u.branch?.name || (u.branches?.length > 0 ? u.branches.map(b => b.name).join(', ') : 'Umumiy')}
-                              </td>
-                              <td>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleReceptionStatusMutation.mutate(u.id)}
-                                  className="cursor-pointer active:scale-95"
-                                >
-                                  <StatusBadge status={u.isActive ? 'faol' : 'nofaol'} />
-                                </button>
-                              </td>
-                              <td className="text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleReceptionStatusMutation.mutate(u.id)}
-                                  className="btn-ghost btn-xs"
-                                >
-                                  {u.isActive ? 'Muzlatish' : 'Faollashtirish'}
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
+                          {receptionUsers.map((u) => {
+                            const isBlocked = !u.isActive || u.isFrozen;
+                            return (
+                              <tr
+                                key={u.id}
+                                onClick={() => navigate(`/manager/reception/${u.id}`)}
+                                className="cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+                              >
+                                <td>
+                                  <div className="font-semibold text-xs text-[var(--text-primary)] hover:text-primary transition-colors flex items-center gap-1.5">
+                                    <span>{u.name}</span>
+                                    <ChevronRight size={13} className="text-gray-400" />
+                                  </div>
+                                  <div className="text-[11px] text-[var(--text-muted)]">@{u.username}</div>
+                                </td>
+                                <td className="text-xs font-mono text-[var(--text-secondary)]">
+                                  {u.phone || '—'}
+                                </td>
+                                <td className="text-xs text-[var(--text-secondary)]">
+                                  {u.branch?.name || (u.branches?.length > 0 ? u.branches.map(b => b.name).join(', ') : 'Umumiy')}
+                                </td>
+                                <td>
+                                  <span className={`badge text-[10px] font-bold px-2 py-0.5 ${isBlocked ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'}`}>
+                                    {isBlocked ? 'Bloklangan' : 'Faol'}
+                                  </span>
+                                </td>
+                                <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => navigate(`/manager/reception/${u.id}`)}
+                                      className="btn-outline btn-xs flex items-center gap-1 text-[11px]"
+                                      title="Shaxsiy ruxsatlar va profil"
+                                    >
+                                      <Shield size={12} className="text-primary" />
+                                      <span>Profil & Ruxsatlar</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleReceptionStatusMutation.mutate(u.id)}
+                                      className={`btn-xs rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${isBlocked ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300'}`}
+                                    >
+                                      {isBlocked ? 'Faollashtirish' : 'Bloklash'}
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
                           {receptionUsers.length === 0 && (
                             <tr>
                               <td colSpan={5} className="py-6 text-center text-xs text-[var(--text-muted)]">
