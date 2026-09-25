@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Upload, Send, Sparkles, X, Loader2, CheckCircle2, BookOpen } from 'lucide-react';
+import { ArrowLeft, Upload, Send, Sparkles, X, Loader2, CheckCircle2 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 

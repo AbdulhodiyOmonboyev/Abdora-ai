@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell, Sun, Moon, LogOut, Globe, ChevronDown, Menu,
   KeyRound, User, Eye, EyeOff, Search, X, Check,
-  BookOpen, FileEdit, Trophy, Snowflake, Building2, Users2, GraduationCap,
+  BookOpen, FileEdit, Trophy, Snowflake, Building2, Users2,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';

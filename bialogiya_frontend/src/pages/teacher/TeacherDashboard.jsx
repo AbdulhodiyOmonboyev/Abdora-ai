@@ -1,6 +1,4 @@
-import { getSubjectBadgeClass } from '../../utils/subjects';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Users, BookOpen, ClipboardList, FileText } from 'lucide-react';
 import api from '../../config/axios';
@@ -67,17 +65,16 @@ export default function TeacherDashboard() {
   });
 
   const totalStudents = (teacherAnalytics?.totalStudents ?? groups?.reduce((sum, g) => sum + (g.students?.length || 0), 0)) || 0;
-  const aiReadyLessons = Array.isArray(lessons) ? lessons.filter((l) => l.aiContent?.status === 'done').length : 0;
   const totalEarnings = earningsData?.totalEarned || 0;
   const avgScore = teacherAnalytics?.avgScore ?? 0;
   const totalTests = teacherAnalytics?.totalTests ?? 0;
   const totalLessons = (teacherAnalytics?.totalLessons ?? lessons?.length) || 0;
 
   const stats = [
-    { icon: Users, label: 'Total Students', value: totalStudents, color: 'text-primary', bg: 'bg-primary/10', link: '/teacher/students' },
-    { icon: BookOpen, label: 'Lessons', value: lessons?.length || 0, color: 'text-secondary', bg: 'bg-secondary/10', link: '/teacher/lessons' },
-    { icon: ClipboardList, label: 'Homework', value: homework?.length || 0, color: 'text-green-500', bg: 'bg-green-50', link: '/teacher/homework' },
-    { icon: FileText, label: 'Tests', value: tests?.length || 0, color: 'text-purple-500', bg: 'bg-purple-50', link: '/teacher/tests' },
+    { icon: Users, label: "Jami o'quvchilar", value: totalStudents, color: 'text-primary', bg: 'bg-primary/10', link: '/teacher/students' },
+    { icon: BookOpen, label: 'Darslar', value: lessons?.length || 0, color: 'text-secondary', bg: 'bg-secondary/10', link: '/teacher/lessons' },
+    { icon: ClipboardList, label: 'Vazifalar', value: homework?.length || 0, color: 'text-green-500', bg: 'bg-green-50', link: '/teacher/homework' },
+    { icon: FileText, label: 'Testlar', value: tests?.length || 0, color: 'text-purple-500', bg: 'bg-purple-50', link: '/teacher/tests' },
   ];
 
   return (
@@ -85,7 +82,7 @@ export default function TeacherDashboard() {
       <header className="dashboard-header">
         <div>
           <span className="dashboard-badge"><Users size={12} /> Abdora AI</span>
-          <h1>O'qituvchi dashboard</h1>
+          <h1>O'qituvchi paneli</h1>
           <p>Mavjud o'quvchilar, bu oy yig'ilgan daromad va o'z natijalaringiz.</p>
         </div>
         <div className="dashboard-header-actions">
@@ -103,14 +100,14 @@ export default function TeacherDashboard() {
         <div className="panel-card chart-card">
           <div className="panel-header">
             <div>
-              <span className="panel-kicker">Overview</span>
-              <h2>Umumiy natijalar</h2>
+              <span className="panel-kicker">Umumiy ko'rsatkichlar</span>
+              <h2>Natijalar tahlili</h2>
             </div>
-            <span className="tag-pill">Oy</span>
+            <span className="tag-pill">Joriy oy</span>
           </div>
           <div className="mini-metrics">
             <div className="mini-metric orange">
-              <span>O‘rtacha</span>
+              <span>O‘rtacha natija</span>
               <strong>{avgScore}%</strong>
             </div>
             <div className="mini-metric blue">
@@ -128,7 +125,7 @@ export default function TeacherDashboard() {
           <div className="panel-header compact">
             <div>
               <span className="panel-kicker">Daromad</span>
-              <h2>Bu oy</h2>
+              <h2>Bu oydagi tushum</h2>
             </div>
           </div>
           <div className="mini-metrics">
@@ -137,7 +134,7 @@ export default function TeacherDashboard() {
               <strong>{new Intl.NumberFormat('uz-UZ').format(totalEarnings)}</strong>
             </div>
             <div className="mini-metric blue">
-              <span>O‘quvchi</span>
+              <span>To'lagan o‘quvchilar</span>
               <strong>{totalStudents}</strong>
             </div>
           </div>
@@ -148,7 +145,7 @@ export default function TeacherDashboard() {
         <div className="panel-card">
           <div className="panel-header">
             <div>
-              <span className="panel-kicker">Groups</span>
+              <span className="panel-kicker">Guruhlar</span>
               <h2>Mening guruhlarim</h2>
             </div>
             <Link to="/teacher/groups" className="panel-link">Boshqarish</Link>
@@ -187,11 +184,11 @@ export default function TeacherDashboard() {
                   <div className="branch-dot"><BookOpen size={14} /></div>
                   <div className="branch-copy">
                     <strong>{l.title}</strong>
-                    <span>{l.aiContent?.status || 'draft'}</span>
+                    <span>{l.aiContent?.status || 'qoralama'}</span>
                   </div>
                 </div>
                 <div className="branch-meta">
-                  <span>{l.aiContent?.status === 'done' ? 'Ready' : 'In progress'}</span>
+                  <span>{l.aiContent?.status === 'done' ? 'Tayyor' : 'Tayyorlanmoqda'}</span>
                 </div>
               </div>
             ))}

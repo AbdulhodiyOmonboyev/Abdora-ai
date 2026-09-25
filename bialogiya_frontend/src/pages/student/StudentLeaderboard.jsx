@@ -40,9 +40,9 @@ export default function StudentLeaderboard() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-        <Trophy size={24} className="text-yellow-500" /> Leaderboard
+    <div className="max-w-2xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+        <Trophy size={24} className="text-yellow-500" /> Yetakchilar reytingi (Leaderboard)
       </h1>
 
       {/* Top 3 podium */}
@@ -84,12 +84,12 @@ export default function StudentLeaderboard() {
               </div>
               <div className="flex-1">
                 <div className="font-semibold text-sm text-gray-800 dark:text-white">
-                  {player.name} {isMe && <span className="text-xs text-primary">(Siz)</span>}
+                  {player.name} {isMe && <span className="text-xs text-primary font-bold">(Siz)</span>}
                 </div>
-                <div className="text-xs text-gray-400">Level {level}</div>
+                <div className="text-xs text-gray-400">{level}-daraja</div>
               </div>
               <div className="flex items-center gap-1 font-bold text-primary text-sm">
-                <Zap size={13} /> {player.xp}
+                <Zap size={13} /> {player.xp} XP
               </div>
             </motion.div>
           );

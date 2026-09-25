@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   Building2, ArrowLeft, GitBranch, Users, BookOpen, UserCheck,
-  Phone, MapPin, Pencil, Trash2, Check, X,
+  Phone, MapPin, Pencil, Trash2, Check,
   Loader2, User, Info,
   Bot, Coins, ShoppingBag, Smartphone, Settings2,
 } from "lucide-react";

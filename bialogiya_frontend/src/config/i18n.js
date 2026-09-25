@@ -6,7 +6,7 @@ import languages from './languages.json';
 const modules = import.meta.glob('../locales/*/translation.json', { eager: true });
 
 const resources = Object.keys(modules).reduce((acc, path) => {
-  const match = path.match(/\/locales\/([^\/]+)\/translation\.json$/);
+  const match = path.match(/\/locales\/([^/]+)\/translation\.json$/);
   if (!match) return acc;
   const code = match[1];
   acc[code] = { translation: modules[path].default || modules[path] };

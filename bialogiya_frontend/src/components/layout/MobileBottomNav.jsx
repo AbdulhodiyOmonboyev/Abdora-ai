@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard, BookOpen, ClipboardList, FileText, Trophy,
+  LayoutDashboard, BookOpen, ClipboardList, Trophy,
   Users, GraduationCap, Building2, UserPlus, Wallet, Inbox, Menu,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -57,14 +57,15 @@ export default function MobileBottomNav({ onMoreClick }) {
     staleTime: 30 * 1000,
   });
 
-  const perms = serverSettings?.receptionPermissions || {};
-
-  const receptionPrimaryLinks = useMemo(() => [
-    { to: '/reception/dashboard', icon: LayoutDashboard, key: 'dashboard' },
-    ...(perms.canManageGroups !== false ? [{ to: '/reception/groups', icon: Users, key: 'groups' }] : []),
-    ...(perms.canManageStudents !== false ? [{ to: '/reception/students', icon: GraduationCap, key: 'students' }] : []),
-    ...(perms.canManagePayments !== false ? [{ to: '/reception/payments', icon: Wallet, key: 'payments' }] : []),
-  ], [perms]);
+  const receptionPrimaryLinks = useMemo(() => {
+    const perms = serverSettings?.receptionPermissions || {};
+    return [
+      { to: '/reception/dashboard', icon: LayoutDashboard, key: 'dashboard' },
+      ...(perms.canManageGroups !== false ? [{ to: '/reception/groups', icon: Users, key: 'groups' }] : []),
+      ...(perms.canManageStudents !== false ? [{ to: '/reception/students', icon: GraduationCap, key: 'students' }] : []),
+      ...(perms.canManagePayments !== false ? [{ to: '/reception/payments', icon: Wallet, key: 'payments' }] : []),
+    ];
+  }, [serverSettings?.receptionPermissions]);
 
   const links = user?.role === 'reception' ? receptionPrimaryLinks : (PRIMARY_LINKS[user?.role] || PRIMARY_LINKS.student);
 

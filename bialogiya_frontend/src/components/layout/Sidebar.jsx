@@ -100,9 +100,8 @@ export default function Sidebar({ isOpen, onClose }) {
     staleTime: 30 * 1000,
   });
 
-  const perms = serverSettings?.receptionPermissions || {};
-
   const activeReceptionLinks = useMemo(() => {
+    const perms = serverSettings?.receptionPermissions || {};
     return [
       { to: '/reception/dashboard', icon: LayoutDashboard, key: 'dashboard' },
       ...(perms.canManageLeads !== false ? [
@@ -133,7 +132,7 @@ export default function Sidebar({ isOpen, onClose }) {
       ] : []),
       { to: '/reception/settings', icon: Settings, key: 'settings' },
     ];
-  }, [perms]);
+  }, [serverSettings?.receptionPermissions]);
 
   const links = user?.role === 'student' ? studentLinks
     : user?.role === 'teacher' ? teacherLinks

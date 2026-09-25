@@ -20,27 +20,27 @@ import SpeakingPractice from '../../components/ai/SpeakingPractice';
 
 
 const TABS = [
-  { id: 'overview', icon: BookOpen, key: 'overview', label: 'Overview' },
-  { id: 'explain', icon: Brain, key: 'ai_explanation', label: 'AI Explain' },
-  { id: 'tricks', icon: Lightbulb, key: 'memory_tricks', label: 'Mnemonics' },
-  { id: 'story', icon: FileText, key: 'story_mode', label: 'Story' },
-  { id: 'examples', icon: Repeat, key: 'real_examples', label: 'Examples' },
-  { id: 'quiz', icon: Check, key: 'ai_quiz', label: 'Quiz' },
-  { id: 'flashcards', icon: Repeat, key: 'flashcards', label: 'Flashcards' },
-  { id: 'summary', icon: FileText, key: 'summary', label: 'Summary' },
-  { id: 'mindmap', icon: Map, key: 'mind_map', label: 'Mind Map' },
-  { id: 'voice', icon: Volume2, key: 'voice_teacher', label: 'Voice' },
-  { id: 'video', icon: Clapperboard, key: 'explainer_video', label: 'Video' },
-  { id: 'speaking', icon: Mic, key: 'speaking_practice', label: 'Speaking' },
+  { id: 'overview', icon: BookOpen, key: 'overview', label: 'Umumiy' },
+  { id: 'explain', icon: Brain, key: 'ai_explanation', label: 'AI Tushuntirish' },
+  { id: 'tricks', icon: Lightbulb, key: 'memory_tricks', label: 'Mnemotika' },
+  { id: 'story', icon: FileText, key: 'story_mode', label: 'Hikoya' },
+  { id: 'examples', icon: Repeat, key: 'real_examples', label: 'Hayotiy misollar' },
+  { id: 'quiz', icon: Check, key: 'ai_quiz', label: 'AI Test' },
+  { id: 'flashcards', icon: Repeat, key: 'flashcards', label: 'Fleshkartalar' },
+  { id: 'summary', icon: FileText, key: 'summary', label: 'Xulosa' },
+  { id: 'mindmap', icon: Map, key: 'mind_map', label: 'Aql xaritasi' },
+  { id: 'voice', icon: Volume2, key: 'voice_teacher', label: 'Ovozli dars' },
+  { id: 'video', icon: Clapperboard, key: 'explainer_video', label: 'Video dars' },
+  { id: 'speaking', icon: Mic, key: 'speaking_practice', label: 'So\'zlashuv' },
   { id: 'chat', icon: MessageSquare, key: 'ai_chat', label: 'AI Chat' },
 ];
 
 const CHAT_STYLES = [
-  { id: 'normal', label: 'Normal' },
-  { id: 'like_im_10', label: "Like I'm 10" },
-  { id: 'emoji', label: 'With Emojis' },
-  { id: 'step_by_step', label: 'Step by Step' },
-  { id: 'with_examples', label: 'With Examples' },
+  { id: 'normal', label: 'Oddiy' },
+  { id: 'like_im_10', label: "10 yoshli boladek" },
+  { id: 'emoji', label: 'Emojilar bilan' },
+  { id: 'step_by_step', label: 'Qadamma-qadam' },
+  { id: 'with_examples', label: 'Misollar bilan' },
 ];
 
 // Flashcard component

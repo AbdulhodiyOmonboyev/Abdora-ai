@@ -23,10 +23,10 @@ export default function LoginPage() {
     onSuccess: ({ data }) => {
       const { user, accessToken, refreshToken } = data.data;
       setAuth(user, accessToken, refreshToken);
-      toast.success(`Welcome, ${user.name}!`);
+      toast.success(`Xush kelibsiz, ${user.name}!`);
       if (user.role === 'student') navigate('/student/dashboard');
       else if (user.role === 'teacher') navigate('/teacher/dashboard');
-      else if (user.role === 'reception') navigate('/reception/teachers');
+      else if (user.role === 'reception') navigate('/reception/dashboard');
       else if (user.role === 'manager') navigate('/manager/dashboard');
       else navigate('/admin/dashboard');
     },
@@ -35,7 +35,7 @@ export default function LoginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.username || !form.password) return toast.error('Fill in all fields');
+    if (!form.username || !form.password) return toast.error("Barcha maydonlarni to'ldiring");
     loginMutation.mutate(form);
   };
 
@@ -86,13 +86,13 @@ export default function LoginPage() {
             </div>
 
             <div className="login-field">
-              <label>Kod</label>
+              <label>Parol / Kirish kodi</label>
               <div className="login-password">
                 <input
                   type={showPass ? 'text' : 'password'}
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  placeholder="Telefon oxirgi 4 raqami"
+                  placeholder="Parol yoki telefon oxirgi 4 raqami"
                   className="login-input"
                   autoComplete="current-password"
                 />

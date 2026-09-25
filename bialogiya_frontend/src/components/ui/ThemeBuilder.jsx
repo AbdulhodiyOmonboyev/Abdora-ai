@@ -44,7 +44,7 @@ const PRESET_DISPLAY_NAMES = {
 };
 
 // Ranglar guruhlari (O'zbekcha professional tavsiflar bilan)
-export const COLOR_GROUPS = [
+const COLOR_GROUPS = [
   {
     id: 'brand',
     title: 'Asosiy brend ranglari',

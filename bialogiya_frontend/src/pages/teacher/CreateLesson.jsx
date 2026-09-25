@@ -39,24 +39,24 @@ export default function CreateLesson() {
 
   const createMutation = useMutation({
     mutationFn: (fd) => api.post('/lessons', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
-    onSuccess: () => { toast.success('Lesson created! AI is generating content...'); navigate('/teacher/lessons'); },
-    onError: (e) => toast.error(e.response?.data?.message || 'Error creating lesson'),
+    onSuccess: () => { toast.success('Dars yaratildi! AI materiallarni tayyorlamoqda...'); navigate('/teacher/lessons'); },
+    onError: (e) => toast.error(e.response?.data?.message || 'Dars yaratishda xatolik yuz berdi'),
   });
 
   const updateMutation = useMutation({
     mutationFn: (payload) => api.put(`/lessons/${id}`, payload),
-    onSuccess: () => { toast.success('Lesson updated successfully'); navigate('/teacher/lessons'); },
-    onError: (e) => toast.error(e.response?.data?.message || 'Error updating lesson'),
+    onSuccess: () => { toast.success('Dars muvaffaqiyatli yangilandi'); navigate('/teacher/lessons'); },
+    onError: (e) => toast.error(e.response?.data?.message || 'Darsni yangilashda xatolik yuz berdi'),
   });
 
   const removeAttachment = useMutation({
     mutationFn: (attachmentId) => api.delete(`/lessons/${id}/attachments/${attachmentId}`),
     onSuccess: () => { toast.success('Fayl o\'chirildi'); refetchLesson(); },
-    onError: (e) => toast.error(e.response?.data?.message || 'Xato'),
+    onError: (e) => toast.error(e.response?.data?.message || 'Xatolik'),
   });
 
   const handleSubmit = () => {
-    if (!form.title || !form.groupId) return toast.error('Title and Group are required');
+    if (!form.title || !form.groupId) return toast.error('Dars nomi va guruhni kiritish shart');
 
     const fd = new FormData();
     fd.append('title', form.title);
@@ -72,29 +72,28 @@ export default function CreateLesson() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="btn-ghost p-2 rounded-xl"><ArrowLeft size={18} /></button>
         <div>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white">{id ? 'Edit Lesson' : 'Create New Lesson'}</h1>
-          <p className="text-sm text-gray-500">AI will automatically generate explanations, quizzes & more</p>
+          <h1 className="text-xl font-bold text-gray-800 dark:text-white">{id ? 'Darsni tahrirlash' : 'Yangi dars yaratish'}</h1>
+          <p className="text-xs text-gray-500">AI dars uchun tushuntirishlar, testlar va materiallarni avtomatik tayyorlaydi</p>
         </div>
       </div>
 
-      {/* AI is additive only: it writes to its own tabs and never edits the
-          teacher's lesson text or files. */}
-      <div className={`rounded-2xl p-4 mb-5 flex items-start gap-3 transition-colors ${aiEnabled ? 'gradient-bg text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'}`}>
+      {/* AI banner */}
+      <div className={`rounded-2xl p-4 flex items-start gap-3 transition-colors ${aiEnabled ? 'gradient-bg text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'}`}>
         {aiEnabled ? <Brain size={24} className="flex-shrink-0 mt-0.5" /> : <Lock size={24} className="flex-shrink-0 mt-0.5 text-gray-400" />}
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm">
             {aiEnabled ? 'AI qo\'shimcha material tayyorlaydi' : 'AI o\'chirilgan'}
           </div>
-          <div className={`text-xs mt-0.5 ${aiEnabled ? 'text-white/70' : 'text-gray-500'}`}>
+          <div className={`text-xs mt-0.5 ${aiEnabled ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>
             {aiEnabled
-              ? 'Sodda tushuntirish, eslab qolish usullari, hikoya, test, kartochka va mind map — alohida bo\'limlarda qo\'shiladi.'
+              ? 'Sodda tushuntirish, eslab qolish usullari, hikoya, test, kartochka va aql xaritasi — alohida bo\'limlarda qo\'shiladi.'
               : 'Faqat siz yozgan matn va yuklagan fayllar ko\'rsatiladi.'}
           </div>
-          <div className={`text-xs mt-1.5 font-medium ${aiEnabled ? 'text-white/90' : 'text-gray-600 dark:text-gray-300'}`}>
+          <div className={`text-xs mt-1.5 font-medium ${aiEnabled ? 'text-white/95' : 'text-gray-600 dark:text-gray-300'}`}>
             Sizning dars matningiz va fayllaringiz hech qachon o'zgartirilmaydi.
           </div>
         </div>
@@ -108,11 +107,11 @@ export default function CreateLesson() {
         <div>
           <label className="block text-sm font-medium mb-1.5">Dars sarlavhasi *</label>
           <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="e.g. Protein Synthesis, Cell Division..." className="input-field" />
+            placeholder="Masalan: Fotosintez jarayoni, Hujayra tuzilishi..." className="input-field" />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1.5">Subject *</label>
+            <label className="block text-sm font-medium mb-1.5">Fan *</label>
             <select value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} className="input-field">
               {SUBJECTS.map(s => (
                 <option key={s} value={s}>{SUBJECT_LABELS[s]}</option>
@@ -131,11 +130,11 @@ export default function CreateLesson() {
           <label className="block text-sm font-medium mb-1.5">Dars matni</label>
           <textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
             placeholder="Dars matnini shu yerga joylashtiring. Matn qanchalik batafsil bo'lsa, AI shunchalik yaxshi tushuntiradi..."
-            rows={8} className="input-field resize-none" />
-          <p className="text-xs text-gray-400 mt-1">Maslahat: Dars matnini yuqoriga joylashtiring — AI shu matn asosida o'rgatadi</p>
+            rows={8} className="input-field resize-none text-sm" />
+          <p className="text-xs text-gray-400 mt-1">Maslahat: Dars matnini kiritishingiz bilan AI shu asosda o'quvchiga o'rgatadi</p>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1.5">Attachments (PDF, Images, etc.)</label>
+          <label className="block text-sm font-medium mb-1.5">Biriktirilgan fayllar (PDF, Rasmlar va hk.)</label>
           {lesson?.attachments?.length > 0 && (
             <div className="mb-2 space-y-1.5">
               {lesson.attachments.map((att) => (
@@ -153,19 +152,19 @@ export default function CreateLesson() {
             <span className="text-sm text-gray-500">Qo'shimcha fayllarni yuklash</span>
             <input type="file" multiple className="hidden" onChange={e => setFiles(Array.from(e.target.files))} />
           </label>
-          {id && <p className="text-xs text-gray-400 mt-1">Yangi fayllar qo'shiladi — eskilari o'chib ketmaydi.</p>}
+          {id && <p className="text-xs text-gray-400 mt-1">Yangi fayllar qo'shiladi — eskilari saqlanib qoladi.</p>}
           {files.length > 0 && (
             <div className="mt-2 space-y-1">
-              {files.map((f, i) => <div key={i} className="text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-1.5">{f.name}</div>)}
+              {files.map((f, i) => <div key={i} className="text-xs text-gray-600 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-1.5">{f.name}</div>)}
             </div>
           )}
         </div>
         <button onClick={handleSubmit} disabled={id ? updateMutation.isPending : createMutation.isPending}
           className="btn-primary w-full flex items-center justify-center gap-2 py-3">
           {(id ? updateMutation.isPending : createMutation.isPending) ? (
-            <><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }} className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> {id ? 'Saving...' : 'Creating...'}</>
+            <><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }} className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> {id ? 'Saqlanmoqda...' : 'Yaratilmoqda...'}</>
           ) : (
-            <><Sparkles size={16} /> {id ? 'Save Lesson' : (aiEnabled ? 'Create Lesson & Generate AI Content' : 'Create Lesson')}</>
+            <><Sparkles size={16} /> {id ? 'Darsni saqlash' : (aiEnabled ? 'Dars yaratish va AI materiallarni tayyorlash' : 'Dars yaratish')}</>
           )}
         </button>
       </div>

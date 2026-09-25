@@ -80,7 +80,7 @@ export default function ProfilePage() {
           </div>
           <div className="card text-center py-4">
             <Flame size={18} className="mx-auto mb-1.5 text-orange-500" />
-            <div className="text-lg font-bold text-gray-800 dark:text-white">{me?.streak?.current || 0}</div>
+            <div className="text-lg font-bold text-gray-800 dark:text-white">{me?.streakCurrent ?? me?.streak?.current ?? 0}</div>
             <div className="text-xs text-gray-400">Ketma-ketlik</div>
           </div>
           <div className="card text-center py-4">

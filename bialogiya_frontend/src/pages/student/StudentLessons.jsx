@@ -2,7 +2,7 @@ import { getSubjectIcon } from '../../utils/subjects';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { BookOpen, ChevronRight, Brain, Clock, Sparkles, Loader2 } from 'lucide-react';
+import { BookOpen, ChevronRight, Clock, Sparkles, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../config/axios';
 import { formatDate } from '../../utils/format';
@@ -28,7 +28,7 @@ export default function StudentLessons() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Darslar</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{lessons?.length || 0} lessons available</p>
+          <p className="text-gray-500 text-sm mt-0.5">{lessons?.length || 0} ta dars mavjud</p>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export default function StudentLessons() {
                       )}
                     </span>
                     <span className="text-xs text-gray-400 flex items-center gap-1"><Clock size={11} /> {formatDate(lesson.createdAt)}</span>
-                    <span className="text-xs text-gray-400">{lesson.views} views</span>
+                    <span className="text-xs text-gray-400">{lesson.views} marta ko'rildi</span>
                   </div>
                 </div>
                 <ChevronRight size={18} className="text-gray-400 group-hover:text-primary transition-colors flex-shrink-0" />

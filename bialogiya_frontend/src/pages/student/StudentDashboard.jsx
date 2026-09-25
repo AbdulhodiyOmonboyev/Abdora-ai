@@ -4,13 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
 import {
-  BookOpen, ClipboardList, Trophy, Zap, Flame, Star,
-  TrendingUp, Calendar, Bell, ChevronRight, Brain, Target,
-  Sparkles, FileText
+  ClipboardList, Trophy, TrendingUp, Calendar, Sparkles, FileText
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import api from '../../config/axios';
-import { getLevelProgress, formatDate, getScoreBg } from '../../utils/format';
+import { getLevelProgress, formatDate } from '../../utils/format';
 import StatCard from '../../components/ui/StatCard';
 
 const MOTIVATIONS = [
@@ -23,7 +21,7 @@ const MOTIVATIONS = [
 
 export default function StudentDashboard() {
   const { user } = useAuthStore();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const { data: analytics = {} } = useQuery({
     queryKey: ['student-analytics'],
@@ -125,7 +123,7 @@ export default function StudentDashboard() {
             <div className="mini-metrics">
               {analytics.weakTopics.slice(0, 3).map((topic, i) => (
                 <div key={i} className="mini-metric orange">
-                  <span>Weak topic</span>
+                  <span>Qayta ko'rish tavsiya etiladi:</span>
                   <strong>{topic}</strong>
                 </div>
               ))}
@@ -140,7 +138,7 @@ export default function StudentDashboard() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="panel-card">
           <div className="panel-header">
             <div>
-              <span className="panel-kicker">Homework</span>
+              <span className="panel-kicker">Vazifalar</span>
               <h2>Kelayotgan vazifalar</h2>
             </div>
             <Link to="/student/homework" className="panel-link">Barchasi</Link>
@@ -156,7 +154,7 @@ export default function StudentDashboard() {
                   </div>
                 </div>
                 <div className="branch-meta">
-                  <span>{item.deadline ? new Date(item.deadline).toLocaleDateString('uz-UZ') : 'Today'}</span>
+                  <span>{item.deadline ? new Date(item.deadline).toLocaleDateString('uz-UZ') : 'Bugun'}</span>
                 </div>
               </div>
             )) : <div className="empty-state">Vazifa yo‘q.</div>}
@@ -166,7 +164,7 @@ export default function StudentDashboard() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="panel-card">
           <div className="panel-header">
             <div>
-              <span className="panel-kicker">Tests</span>
+              <span className="panel-kicker">Testlar</span>
               <h2>Keyingi testlar</h2>
             </div>
             <Link to="/student/tests" className="panel-link">Barchasi</Link>

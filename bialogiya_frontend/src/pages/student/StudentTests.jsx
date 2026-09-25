@@ -1,9 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FileText, Clock, ChevronRight, Check } from 'lucide-react';
+import { FileText, Check } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../config/axios';
+
+const TYPE_LABELS = {
+  topic: 'Mavzuli test',
+  weekly: 'Haftalik test',
+  monthly: 'Oylik nazorat',
+  mock: 'Katta sinov (Mock)',
+};
 
 export default function StudentTests() {
   const { user } = useAuthStore();
@@ -18,7 +25,12 @@ export default function StudentTests() {
   });
 
   const completedIds = new Set(results?.map(r => String(r.testId?.id || r.testId)));
-  const typeColors = { topic: 'bg-primary/10 text-primary', weekly: 'bg-secondary/10 text-secondary', monthly: 'bg-purple-100 text-purple-700', mock: 'bg-yellow-100 text-yellow-700' };
+  const typeColors = {
+    topic: 'bg-primary/10 text-primary',
+    weekly: 'bg-secondary/10 text-secondary',
+    monthly: 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300',
+    mock: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-300',
+  };
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -36,7 +48,9 @@ export default function StudentTests() {
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-gray-800 dark:text-white truncate">{test.title}</div>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`badge text-xs ${typeColors[test.type] || 'bg-gray-100 text-gray-600'}`}>{test.type}</span>
+                  <span className={`badge text-xs ${typeColors[test.type] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>
+                    {TYPE_LABELS[test.type] || test.type}
+                  </span>
                   {done && result && (
                     <span className="badge bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 text-xs inline-flex items-center gap-1">
                       <Check size={12} /> {result.percentage}%
@@ -47,7 +61,7 @@ export default function StudentTests() {
               {!done ? (
                 <Link to={`/student/tests/${test.id}/run`} className="btn-primary text-xs py-2 px-3 flex-shrink-0">Boshlash</Link>
               ) : (
-                <span className="badge bg-gray-100 text-gray-500 text-xs">Yakunlangan</span>
+                <span className="badge bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs">Yakunlangan</span>
               )}
             </motion.div>
           );
@@ -55,7 +69,7 @@ export default function StudentTests() {
         {!isLoading && tests?.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <FileText size={36} className="mx-auto mb-3 opacity-30" />
-            <p>No tests available</p>
+            <p>Hozircha testlar mavjud emas</p>
           </div>
         )}
       </div>

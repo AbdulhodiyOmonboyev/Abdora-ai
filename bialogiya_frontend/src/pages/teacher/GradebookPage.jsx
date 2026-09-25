@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Users, BookOpen, Check, X, Download, RefreshCw,
-  ChevronLeft, ChevronRight, TrendingUp, Star, ClipboardList,
+  Users, BookOpen, Download, Star, ClipboardList,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';

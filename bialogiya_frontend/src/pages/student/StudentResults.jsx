@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { BarChart2, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import { BarChart2, AlertTriangle, CheckCircle } from 'lucide-react';
 import api from '../../config/axios';
 import { formatDate, getScoreBg } from '../../utils/format';
 import TestAnalysis from '../../components/ui/TestAnalysis';
@@ -21,7 +21,7 @@ export default function StudentResults() {
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h3 className="font-semibold text-gray-800 dark:text-white">{result.test?.title || 'Test'}</h3>
-                <p className="text-xs text-gray-400 mt-0.5">{formatDate(result.completedAt)} • {Math.round(result.timeTaken / 60)} min</p>
+                <p className="text-xs text-gray-400 mt-0.5">{formatDate(result.completedAt)} • {Math.round((result.timeTaken || 0) / 60)} daqiqa</p>
               </div>
               <div className={`text-2xl font-black px-3 py-1 rounded-xl ${getScoreBg(result.percentage)}`}>
                 {result.percentage}%
@@ -29,20 +29,20 @@ export default function StudentResults() {
             </div>
             <div className="flex items-center gap-2 mb-3">
               {result.passed ? (
-                <span className="badge bg-green-100 text-green-700"><CheckCircle size={12} /> O'tdi</span>
+                <span className="badge bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-300"><CheckCircle size={12} /> O'tdi</span>
               ) : (
-                <span className="badge bg-red-100 text-red-600">Muvaffaqiyatsiz</span>
+                <span className="badge bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400">Muvaffaqiyatsiz</span>
               )}
-              <span className="badge bg-gray-100 text-gray-600">{result.score} pts</span>
+              <span className="badge bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{result.score} ball</span>
             </div>
             {result.aiAnalysis?.weakTopics?.length > 0 && (
               <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 mt-2">
-                <div className="flex items-center gap-1.5 text-amber-700 text-xs font-semibold mb-1.5">
-                  <AlertTriangle size={12} /> AI Recommendations
+                <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 text-xs font-semibold mb-1.5">
+                  <AlertTriangle size={12} /> AI Tavsiyalari
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {result.aiAnalysis.weakTopics.map((t, i) => (
-                    <span key={i} className="badge bg-amber-100 text-amber-700 text-xs">Review: {t}</span>
+                  {result.aiAnalysis.weakTopics.map((t, idx) => (
+                    <span key={idx} className="badge bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-xs">Qayta takrorlash: {t}</span>
                   ))}
                 </div>
               </div>
@@ -53,7 +53,7 @@ export default function StudentResults() {
         {!isLoading && results?.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <BarChart2 size={36} className="mx-auto mb-3 opacity-30" />
-            <p>No test results yet. Take your first test!</p>
+            <p>Hali test natijalari mavjud emas. Birinchi testingizni topshiring!</p>
           </div>
         )}
       </div>

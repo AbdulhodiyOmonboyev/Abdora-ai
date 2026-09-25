@@ -35,13 +35,14 @@ export default function TestRunner() {
   const submitMutation = useMutation({
     mutationFn: (data) => api.post(`/tests/${id}/submit`, data),
     onSuccess: ({ data }) => {
-      toast.success(`Test completed! Score: ${data.data.percentage}%`);
+      toast.success(`Test yakunlandi! Natija: ${data.data?.percentage || 0}%`);
       navigate('/student/results');
     },
-    onError: (err) => toast.error(err.response?.data?.message || 'Submission failed'),
+    onError: (err) => toast.error(err.response?.data?.message || "Testni yuborishda xatolik yuz berdi"),
   });
 
   const handleSubmit = useCallback(() => {
+    if (!test?.questions) return;
     const timeTaken = Math.round((Date.now() - startTime) / 1000);
     const formattedAnswers = Object.keys(answers).map(qi => {
       const question = test.questions[parseInt(qi)];
@@ -52,61 +53,118 @@ export default function TestRunner() {
       };
     });
     submitMutation.mutate({ answers: formattedAnswers, timeTaken });
-  }, [answers, test, startTime]);
+  }, [answers, test, startTime, submitMutation]);
+
+  useEffect(() => {
+    if (test?.timeLimit) {
+      setTimeLeft(test.timeLimit * 60);
+    }
+  }, [test]);
+
+  useEffect(() => {
+    if (timeLeft === null) return;
+    if (timeLeft <= 0) {
+      handleSubmit();
+      return;
+    }
+    const t = setInterval(() => setTimeLeft(prev => (prev > 0 ? prev - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [timeLeft, handleSubmit]);
 
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
-  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" /></div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const questions = test?.questions || [];
   const q = questions[current];
   const answered = Object.keys(answers).length;
 
+  const difficultyLabels = {
+    easy: 'Oson',
+    medium: "O'rta",
+    hard: 'Qiyin',
+  };
+
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-bold text-lg text-gray-800 dark:text-white">{test?.title}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-bold text-lg text-gray-800 dark:text-white truncate max-w-md">{test?.title}</h1>
         {timeLeft !== null && (
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono font-bold text-sm ${timeLeft < 60 ? 'bg-red-100 text-red-600' : 'bg-primary/10 text-primary'}`}>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono font-bold text-sm ${timeLeft < 60 ? 'bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400' : 'bg-primary/10 text-primary'}`}>
             <Clock size={14} /> {formatTime(timeLeft)}
           </div>
         )}
       </div>
 
       {/* Progress */}
-      <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-        <span>Question {current + 1} of {questions.length}</span>
-        <span>{answered} answered</span>
-      </div>
-      <div className="h-2 bg-gray-100 rounded-full mb-6">
-        <div className="h-full gradient-bg rounded-full transition-all" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <span>{questions.length} tadan {current + 1}-savol</span>
+          <span>{answered} ta javob berildi</span>
+        </div>
+        <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-full gradient-bg rounded-full transition-all duration-300" style={{ width: `${((current + 1) / (questions.length || 1)) * 100}%` }} />
+        </div>
       </div>
 
       {/* Question dots */}
-      <div className="flex gap-1.5 flex-wrap mb-6">
+      <div className="flex gap-1.5 flex-wrap">
         {questions.map((_, i) => (
-          <button key={i} onClick={() => setCurrent(i)}
-            className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all ${i === current ? 'gradient-bg text-white' : answers[i] !== undefined ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-gray-500'}`}>
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all ${
+              i === current
+                ? 'gradient-bg text-white shadow-sm'
+                : answers[i] !== undefined
+                ? 'bg-primary/20 text-primary font-bold'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
             {i + 1}
           </button>
         ))}
       </div>
 
-      {/* Question */}
+      {/* Question Card */}
       <AnimatePresence mode="wait">
-        <motion.div key={current} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-          className="card mb-4">
+        <motion.div
+          key={current}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          className="card"
+        >
           <div className="flex items-center gap-2 mb-4">
-            <span className={`badge text-xs ${q?.difficulty === 'easy' ? 'bg-green-100 text-green-700' : q?.difficulty === 'hard' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-              {q?.difficulty}
+            <span className={`badge text-xs ${
+              q?.difficulty === 'easy'
+                ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-300'
+                : q?.difficulty === 'hard'
+                ? 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300'
+                : 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-300'
+            }`}>
+              {difficultyLabels[q?.difficulty] || q?.difficulty}
             </span>
           </div>
-          <h3 className="text-base font-semibold text-gray-800 dark:text-white mb-5">{q?.text}</h3>
+          <h3 className="text-base font-semibold text-gray-800 dark:text-white mb-5 leading-relaxed">{q?.text}</h3>
           <div className="space-y-2.5">
             {q?.options?.map((opt, i) => (
-              <button key={i} onClick={() => setAnswers(a => ({ ...a, [current]: i }))}
-                className={`w-full text-left p-3.5 rounded-xl border-2 transition-all text-sm ${answers[current] === i ? 'border-primary bg-primary/5 text-primary font-medium' : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 bg-white dark:bg-gray-900'}`}>
+              <button
+                key={i}
+                onClick={() => setAnswers(a => ({ ...a, [current]: i }))}
+                className={`w-full text-left p-3.5 rounded-xl border-2 transition-all text-sm ${
+                  answers[current] === i
+                    ? 'border-primary bg-primary/5 text-primary font-medium'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-primary/40 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100'
+                }`}
+              >
                 <span className="font-semibold mr-2 text-gray-400">{String.fromCharCode(65 + i)}.</span> {opt.text}
               </button>
             ))}
@@ -115,15 +173,29 @@ export default function TestRunner() {
       </AnimatePresence>
 
       {/* Navigation */}
-      <div className="flex justify-between">
-        <button onClick={() => setCurrent(Math.max(0, current - 1))} disabled={current === 0}
-          className="btn-ghost flex items-center gap-1 disabled:opacity-40"><ChevronLeft size={16} /> Previous</button>
+      <div className="flex items-center justify-between pt-2">
+        <button
+          onClick={() => setCurrent(Math.max(0, current - 1))}
+          disabled={current === 0}
+          className="btn-ghost flex items-center gap-1 disabled:opacity-40"
+        >
+          <ChevronLeft size={16} /> Oldingi
+        </button>
+
         {current < questions.length - 1 ? (
-          <button onClick={() => setCurrent(current + 1)} className="btn-primary flex items-center gap-1">Next <ChevronRight size={16} /></button>
+          <button
+            onClick={() => setCurrent(current + 1)}
+            className="btn-primary flex items-center gap-1"
+          >
+            Keyingi <ChevronRight size={16} />
+          </button>
         ) : (
-          <button onClick={handleSubmit} disabled={submitMutation.isPending}
-            className="btn-primary flex items-center gap-2">
-            <Send size={15} /> {submitMutation.isPending ? 'Submitting...' : 'Submit Test'}
+          <button
+            onClick={handleSubmit}
+            disabled={submitMutation.isPending}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Send size={15} /> {submitMutation.isPending ? 'Yuborilmoqda...' : 'Testni yakunlash'}
           </button>
         )}
       </div>
