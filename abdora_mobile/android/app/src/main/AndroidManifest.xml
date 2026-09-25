@@ -1,11 +1,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="uz.abdora.app">
+    package="uz.abdora.student">
 
+    <!-- Tarmoq va aloqa ruxsatlari -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
+    <!-- Speaking AI va Ovozli ta'lim ruxsatlari -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+
+    <!-- Vazifa va profil rasmlarini yuklash ruxsatlari -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+
     <application
-        android:label="Abdora AI"
+        android:label="Abdora Student"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

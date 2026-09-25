@@ -4,8 +4,6 @@ import '../core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
 import 'auth/login_screen.dart';
 import 'student/student_main_nav.dart';
-import 'teacher/teacher_main_nav.dart';
-import 'manager/manager_main_nav.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(milliseconds: 1500));
+    await Future.delayed(const Duration(milliseconds: 1200));
     if (!mounted) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -31,28 +29,9 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (isLoggedIn && authProvider.user != null) {
-      final role = authProvider.user!.role;
-      Widget targetScreen;
-
-      switch (role) {
-        case 'student':
-          targetScreen = const StudentMainNav();
-          break;
-        case 'teacher':
-          targetScreen = const TeacherMainNav();
-          break;
-        case 'manager':
-        case 'reception':
-        case 'admin':
-          targetScreen = const ManagerMainNav();
-          break;
-        default:
-          targetScreen = const StudentMainNav();
-      }
-
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => targetScreen),
+        MaterialPageRoute(builder: (_) => const StudentMainNav()),
       );
     } else {
       Navigator.pushReplacement(
@@ -71,22 +50,22 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 90,
-              height: 90,
+              width: 86,
+              height: 86,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.15),
+                color: AppColors.primary.withOpacity(0.12),
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.primary, width: 2),
               ),
               child: const Icon(
                 Icons.school_rounded,
-                size: 46,
+                size: 44,
                 color: AppColors.primary,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
             const Text(
-              'Abdora AI',
+              'Abdora Student',
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 26,
@@ -94,15 +73,15 @@ class _SplashScreenState extends State<SplashScreen> {
                 letterSpacing: 0.5,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
-              'CRM + ERP + LMS Ta\'lim Tizimi',
+              'O\'quvchi Shaxsiy Ta\'lim Portali',
               style: TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 13,
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 40),
             const SizedBox(
               width: 24,
               height: 24,

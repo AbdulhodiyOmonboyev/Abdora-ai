@@ -30,7 +30,6 @@ class AuthProvider extends ChangeNotifier {
         return true;
       }
     } catch (_) {
-      // Agar internet bo'lmasa, oxirgi keshdagi foydalanuvchini olish
       final cachedUser = await TokenStorage.getUserJson();
       if (cachedUser != null) {
         _user = UserModel.fromJson(jsonDecode(cachedUser));
@@ -83,8 +82,44 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  // Parolni o'zgartirish
+  Future<bool> changePassword(String currentPassword, String newPassword) async {
+    try {
+      final res = await ApiClient().dio.post(
+        Endpoints.changePassword,
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Profilni yangilash
+  Future<bool> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final res = await ApiClient().dio.put(
+        Endpoints.updateProfile,
+        data: data,
+      );
+      if (res.statusCode == 200 && res.data['data'] != null) {
+        _user = UserModel.fromJson(res.data['data']);
+        await TokenStorage.saveUserJson(jsonEncode(_user!.toJson()));
+        notifyListeners();
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   // Tizimdan chiqish
   Future<void> logout() async {
+    try {
+      await ApiClient().dio.post('/auth/logout');
+    } catch (_) {}
     _user = null;
     await TokenStorage.clearAll();
     notifyListeners();

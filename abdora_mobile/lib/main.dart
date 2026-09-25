@@ -3,43 +3,41 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
-import 'providers/lesson_provider.dart';
-import 'providers/lead_provider.dart';
-import 'providers/payment_provider.dart';
+import 'providers/student_provider.dart';
 import 'providers/shop_provider.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Status bar va navigatsiya paneli ranglarini moslash
+  // Android va iOS uchun chekkadan-chekkagacha (edge-to-edge) holat paneli
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF1E293B),
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.transparent,
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
 
-  runApp(const AbdoraApp());
+  runApp(const AbdoraStudentApp());
 }
 
-class AbdoraApp extends StatelessWidget {
-  const AbdoraApp({super.key});
+class AbdoraStudentApp extends StatelessWidget {
+  const AbdoraStudentApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => LessonProvider()),
-        ChangeNotifierProvider(create: (_) => LeadProvider()),
-        ChangeNotifierProvider(create: (_) => PaymentProvider()),
+        ChangeNotifierProvider(create: (_) => StudentProvider()),
         ChangeNotifierProvider(create: (_) => ShopProvider()),
       ],
       child: MaterialApp(
-        title: 'Abdora AI',
+        title: 'Abdora Student',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         home: const SplashScreen(),
