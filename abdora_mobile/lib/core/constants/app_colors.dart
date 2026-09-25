@@ -1,30 +1,43 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Asosiy fon va sirt ranglari (Dark Slate)
-  static const Color background = Color(0xFF0B1120);
-  static const Color surface = Color(0xFF1E293B);
-  static const Color card = Color(0xFF162032);
-  static const Color border = Color(0xFF334155);
+  // Web sayt bilan 100% bir xil qorong'u rejim (Obsidian & Navy Charcoal)
+  static const Color background = Color(0xFF080D17);
+  static const Color secondaryBackground = Color(0xFF141E2D);
+  static const Color surface = Color(0xFF141E2D);
+  static const Color card = Color(0xFF101827);
+  static const Color border = Color(0xFF223047);
+  static const Color divider = Color(0xFF1E2D42);
+  static const Color inputBg = Color(0xFF0B111D);
+  static const Color navbarBackground = Color(0xFF0B111D);
 
-  // Asosiy brend ranglari (Teal / Emerald)
-  static const Color primary = Color(0xFF00BFA6);
-  static const Color primaryDark = Color(0xFF009688);
-  static const Color primaryLight = Color(0xFF4EEAD5);
+  // Web brend rangi: Vibrant Electric Orange (Alanga va Biologiya energiyasi)
+  static const Color primary = Color(0xFFFF6A00);
+  static const Color primaryDark = Color(0xFFD9530B);
+  static const Color primaryLight = Color(0xFFFFA269);
+  static const Color primary50 = Color(0xFFFFF2E9);
 
-  // Gamifikatsiya va aksent ranglar
+  // Ikkilamchi rang: Royal Electric Blue
+  static const Color secondary = Color(0xFF4D8DFF);
+  static const Color secondaryDark = Color(0xFF1D4ED8);
+  static const Color secondaryLight = Color(0xFF93C5FD);
+
+  // Aksent ranglar
+  static const Color accent = Color(0xFF9A72FF);
+  static const Color accentPurple = Color(0xFF7C3AED);
   static const Color coinGold = Color(0xFFF59E0B);
   static const Color coinGoldLight = Color(0xFFFBBF24);
-  static const Color accentPurple = Color(0xFF8B5CF6);
-  static const Color accentBlue = Color(0xFF3B82F6);
 
-  // Holat ranglari
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color danger = Color(0xFFEF4444);
-  static const Color info = Color(0xFF0EA5E9);
+  // Semantik holat ranglari
+  static const Color success = Color(0xFF25C58A);
+  static const Color successBg = Color(0x1A25C58A);
+  static const Color warning = Color(0xFFD97706);
+  static const Color warningBg = Color(0x1AD97706);
+  static const Color danger = Color(0xFFDC2626);
+  static const Color error = Color(0xFFDC2626);
+  static const Color info = Color(0xFF2563EB);
 
-  // Matn ranglari
+  // Tipografiya ranglari
   static const Color textPrimary = Color(0xFFF8FAFC);
   static const Color textSecondary = Color(0xFF94A3B8);
   static const Color textMuted = Color(0xFF64748B);

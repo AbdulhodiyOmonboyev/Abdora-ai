@@ -11,8 +11,8 @@ class AppTheme {
       primaryColor: AppColors.primary,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
-        secondary: AppColors.primaryLight,
-        surface: AppColors.surface,
+        secondary: AppColors.secondary,
+        surface: AppColors.card,
         error: AppColors.danger,
       ),
       textTheme: GoogleFonts.interTextTheme(
@@ -48,13 +48,39 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.background,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
         iconTheme: IconThemeData(color: AppColors.textPrimary),
         titleTextStyle: TextStyle(
           color: AppColors.textPrimary,
           fontSize: 18,
           fontWeight: FontWeight.bold,
+          letterSpacing: 0.2,
         ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.inputBg,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.navbarBackground,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textMuted,
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
       ),
     );
   }

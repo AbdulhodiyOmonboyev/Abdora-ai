@@ -29,7 +29,7 @@ class _StudentMainNavState extends State<StudentMainNav> {
   Widget build(BuildContext context) {
     final isTablet = context.isTablet;
 
-    // Planshetlar uchun NavigationRail (chap tarafdagi qulay menyu)
+    // Planshetlar uchun Web Sidebar uslubidagi NavigationRail
     if (isTablet) {
       return Scaffold(
         body: Row(
@@ -37,11 +37,18 @@ class _StudentMainNavState extends State<StudentMainNav> {
             NavigationRail(
               selectedIndex: _currentIndex,
               onDestinationSelected: (index) => setState(() => _currentIndex = index),
-              backgroundColor: AppColors.surface,
+              backgroundColor: AppColors.navbarBackground,
               selectedIconTheme: const IconThemeData(color: AppColors.primary),
               unselectedIconTheme: const IconThemeData(color: AppColors.textMuted),
-              selectedLabelTextStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
-              unselectedLabelTextStyle: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+              selectedLabelTextStyle: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              unselectedLabelTextStyle: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 12,
+              ),
               labelType: NavigationRailLabelType.all,
               destinations: const [
                 NavigationRailDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: Text('Asosiy')),
@@ -63,7 +70,7 @@ class _StudentMainNavState extends State<StudentMainNav> {
       );
     }
 
-    // Smartfonlar uchun BottomNavigationBar (iOS Safe Area bilan)
+    // Smartfonlar uchun Web bilan 100% uyg'un pastki panel (BottomNavigationBar)
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -71,7 +78,7 @@ class _StudentMainNavState extends State<StudentMainNav> {
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.navbarBackground,
           border: Border(top: BorderSide(color: AppColors.border, width: 1)),
         ),
         child: SafeArea(
@@ -79,7 +86,7 @@ class _StudentMainNavState extends State<StudentMainNav> {
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) => setState(() => _currentIndex = index),
-            backgroundColor: AppColors.surface,
+            backgroundColor: AppColors.navbarBackground,
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.textMuted,
             type: BottomNavigationBarType.fixed,
