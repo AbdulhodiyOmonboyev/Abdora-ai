@@ -1,6 +1,6 @@
 class Endpoints {
-  // Asosiy server manzili (Emulyator: 10.0.2.2, Jonli server: Render / Domeningiz)
-  static const String baseUrl = 'http://10.0.2.2:5000/api';
+  // Jonli server manzili (Render)
+  static const String baseUrl = 'https://abdora-ai-backend.onrender.com/api';
 
   // Autentifikatsiya va Profil
   static const String login = '/auth/login';
