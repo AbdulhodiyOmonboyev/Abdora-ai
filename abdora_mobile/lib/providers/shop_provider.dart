@@ -29,7 +29,7 @@ class ShopProvider extends ChangeNotifier {
   Future<bool> buyItem(String itemId) async {
     try {
       final response = await ApiClient().dio.post(
-        Endpoints.buyShopItem,
+        Endpoints.purchaseShopItem,
         data: {'itemId': itemId},
       );
       return response.statusCode == 200;

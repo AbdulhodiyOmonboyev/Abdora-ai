@@ -40,7 +40,7 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
 
     showModalBottomSheet(
       context: context,
-      isScrollable: true,
+      isScrollControlled: true,
       backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
