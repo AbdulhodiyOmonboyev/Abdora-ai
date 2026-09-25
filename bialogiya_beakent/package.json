@@ -16,10 +16,10 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "nodemon": "^3.1.14",
-    "prisma": "^6.9.0"
+    "nodemon": "^3.1.14"
   },
   "dependencies": {
+    "prisma": "^6.9.0",
     "compression": "^1.7.4",
     "@google/genai": "^1.52.0",
     "@google/generative-ai": "^0.24.1",
