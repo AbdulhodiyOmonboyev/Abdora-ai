@@ -135,6 +135,4 @@ export default function CreateTest() {
       </div>
     </div>
   );
-    </div>
-  );
 }
