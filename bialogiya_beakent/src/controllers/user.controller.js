@@ -281,13 +281,89 @@ const getUserById = async (req, res, next) => {
 
 const updateProfile = async (req, res, next) => {
   try {
-    const { name, language, avatar, phone, gender, age, address, studyLocation, residence, alternativeWorkplace, birthDate } = req.body;
+    const {
+      name, language, avatar, phone, gender, age, address,
+      studyLocation, residence, alternativeWorkplace, birthDate,
+      permissions, aiPreferences
+    } = req.body;
+
+    let updatedPermissions = permissions;
+    if (aiPreferences !== undefined || permissions !== undefined) {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { permissions: true }
+      });
+      const currentPerms = (currentUser?.permissions && typeof currentUser.permissions === 'object') ? currentUser.permissions : {};
+      updatedPermissions = {
+        ...currentPerms,
+        ...(permissions || {}),
+        ...(aiPreferences !== undefined ? {
+          aiPreferences: {
+            ...(currentPerms.aiPreferences || {}),
+            ...aiPreferences
+          }
+        } : {})
+      };
+    }
+
+    const updateData = {
+      ...(name !== undefined && { name }),
+      ...(language !== undefined && { language }),
+      ...(avatar !== undefined && { avatar }),
+      ...(phone !== undefined && { phone }),
+      ...(gender !== undefined && { gender }),
+      ...(age !== undefined && { age: age ? Number(age) : null }),
+      ...(address !== undefined && { address }),
+      ...(studyLocation !== undefined && { studyLocation }),
+      ...(residence !== undefined && { residence }),
+      ...(alternativeWorkplace !== undefined && { alternativeWorkplace }),
+      ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
+      ...(updatedPermissions !== undefined && { permissions: updatedPermissions }),
+    };
+
     const user = await prisma.user.update({
       where: { id: req.user.userId },
-      data: { name, language, avatar, phone, gender, age: age ? Number(age) : null, address, studyLocation, residence, alternativeWorkplace, birthDate: birthDate ? new Date(birthDate) : null },
+      data: updateData,
     });
     return success(res, safeUser(user));
   } catch (err) { next(err); }
+};
+
+const testAIPersonalization = async (req, res, next) => {
+  try {
+    const { message, aiPreferences: bodyPreferences } = req.body;
+    if (!message) return error(res, 'Xabar kiritilmadi', 400);
+
+    let aiPreferences = bodyPreferences;
+    if (!aiPreferences) {
+      const userRecord = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { permissions: true }
+      });
+      aiPreferences = userRecord?.permissions?.aiPreferences || {};
+    }
+
+    const { getChatSystemPrompt } = require('../services/ai/prompts');
+    const { getModel } = require('../config/gemini');
+
+    const systemPrompt = getChatSystemPrompt(
+      "Abdora AI Shaxsiy Yordamchi",
+      "O'quvchining sevimli qiziqishlari va o'rganish uslubi bo'yicha moslashtirilgan ta'limiy suhbat.",
+      aiPreferences?.style || 'normal',
+      aiPreferences?.language || 'uz',
+      aiPreferences
+    );
+
+    const fullPrompt = `${systemPrompt}\n\nStudent: ${message}\nAbdora AI:`;
+    const model = getModel(false);
+    const result = await model.generateContent(fullPrompt);
+    const reply = result.response.text().trim();
+
+    return success(res, { reply });
+  } catch (err) {
+    console.error('AI test error:', err);
+    return error(res, err.message || 'AI xizmatida xatolik yuz berdi', 500);
+  }
 };
 
 const updateUser = async (req, res, next) => {
@@ -862,4 +938,5 @@ module.exports = {
   addStudentNote,
   deleteStudentNote,
   awardStudentCoins,
+  testAIPersonalization,
 };

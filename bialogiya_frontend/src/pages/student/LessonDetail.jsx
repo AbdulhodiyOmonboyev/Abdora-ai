@@ -560,10 +560,12 @@ function VoiceSection({ lessonId, title }) {
 // AI Chat section
 function AIChatSection({ lessonId, i18nLanguage }) {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const studentAiPrefs = user?.permissions?.aiPreferences || {};
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [style, setStyle] = useState('normal');
-  const [lang, setLang] = useState(i18nLanguage || 'uz');
+  const [style, setStyle] = useState(studentAiPrefs.style || 'normal');
+  const [lang, setLang] = useState(studentAiPrefs.language || i18nLanguage || 'uz');
   const bottomRef = useRef(null);
 
   const { data: history, isLoading: histLoading } = useQuery({
@@ -584,13 +586,29 @@ function AIChatSection({ lessonId, i18nLanguage }) {
     onSuccess: ({ data }) => {
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply, timestamp: new Date() }]);
     },
-    onError: () => toast.error('AI is unavailable. Try again.'),
+    onError: () => toast.error('AI xizmati hozircha band. Qayta urinib ko\'ring.'),
   });
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   return (
     <div className="flex flex-col h-[500px]">
+      {/* Student AI Personalization indicator */}
+      {(studentAiPrefs.interests?.length > 0 || studentAiPrefs.customPrompt) && (
+        <div className="mb-2.5 p-2 px-3 rounded-xl bg-primary/10 border border-primary/20 text-xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 truncate">
+            <Sparkles size={13} className="text-primary flex-shrink-0" />
+            <span className="text-[var(--text-secondary)]">AI sizning qiziqishingizga moslangan:</span>
+            <span className="font-semibold text-primary truncate">
+              {studentAiPrefs.interests?.slice(0, 3).join(', ') || 'Maxsus yo\'riqnoma faol'}
+            </span>
+          </div>
+          <Link to="/student/settings" className="text-primary hover:underline text-[11px] font-medium whitespace-nowrap flex-shrink-0">
+            Sozlash
+          </Link>
+        </div>
+      )}
+
       {/* Controls */}
       <div className="flex gap-2 mb-3 flex-wrap">
         <select value={style} onChange={e => setStyle(e.target.value)} className="input-field text-xs py-1.5 flex-1 min-w-[140px]">
@@ -647,13 +665,13 @@ function AIChatSection({ lessonId, i18nLanguage }) {
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && input.trim() && sendMsg.mutate({ message: input.trim(), style, language: lang })}
+          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && input.trim() && sendMsg.mutate({ message: input.trim(), style, language: lang, aiPreferences: studentAiPrefs })}
           placeholder={t('ask_ai')}
           className="input-field flex-1 text-sm"
           disabled={sendMsg.isPending}
         />
         <button
-          onClick={() => input.trim() && sendMsg.mutate({ message: input.trim(), style, language: lang })}
+          onClick={() => input.trim() && sendMsg.mutate({ message: input.trim(), style, language: lang, aiPreferences: studentAiPrefs })}
           disabled={!input.trim() || sendMsg.isPending}
           className="btn-primary px-3 py-2.5 disabled:opacity-40"
         >

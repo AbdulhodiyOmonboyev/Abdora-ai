@@ -62,11 +62,11 @@ Generate comprehensive educational materials in JSON format with these exact key
 }`;
 };
 
-const getChatSystemPrompt = (lessonTitle, lessonSummary, style, language) => {
+const getChatSystemPrompt = (lessonTitle, lessonSummary, style, language, aiPreferences = {}) => {
   const styleGuides = {
-    normal: 'Explain clearly and professionally.',
+    normal: 'Explain clearly, encouragingly and professionally.',
     like_im_10: 'Explain like the student is 10 years old. Use very simple words, fun analogies, and avoid jargon.',
-    emoji: 'Use lots of emojis to make explanations fun and visual. Every key point should have a relevant emoji.',
+    emoji: 'Explain dynamically with vivid expressions.',
     step_by_step: 'Break everything into numbered steps. Be very systematic and logical.',
     with_examples: 'Give 3-5 real-world examples for every concept you explain.',
   };
@@ -77,15 +77,33 @@ const getChatSystemPrompt = (lessonTitle, lessonSummary, style, language) => {
     en: 'Reply in English.',
   };
 
-  return `You are Abdora AI, a friendly and expert academic tutor.
-You are helping a student understand: "${lessonTitle}"
+  let personalization = '';
+  if (aiPreferences) {
+    if (aiPreferences.interests && Array.isArray(aiPreferences.interests) && aiPreferences.interests.length > 0) {
+      personalization += `\n- Student's favorite topics & interests: ${aiPreferences.interests.join(', ')}. Connect explanations, metaphors, and real-life analogies to these areas whenever possible!`;
+    } else if (typeof aiPreferences.interests === 'string' && aiPreferences.interests.trim()) {
+      personalization += `\n- Student's favorite topics & interests: ${aiPreferences.interests.trim()}. Connect explanations to these areas whenever possible!`;
+    }
 
-Lesson Summary: ${lessonSummary || 'Not available'}
+    if (aiPreferences.customPrompt && aiPreferences.customPrompt.trim()) {
+      personalization += `\n- STUDENT'S PERSONAL PREFERENCES & INSTRUCTIONS (Strictly follow this): "${aiPreferences.customPrompt.trim()}".`;
+    }
+
+    if (aiPreferences.difficulty) {
+      personalization += `\n- Preferred explanation level/depth: ${aiPreferences.difficulty}.`;
+    }
+  }
+
+  const baseHeader = lessonTitle
+    ? `You are Abdora AI, a friendly and expert academic tutor.\nYou are helping a student understand: "${lessonTitle}"\n\nLesson Summary: ${lessonSummary || 'Not available'}`
+    : `You are Abdora AI, an intelligent, inspiring, and friendly personal educational mentor.`;
+
+  return `${baseHeader}
 
 ${styleGuides[style] || styleGuides['normal']}
 ${langInstructions[language] || langInstructions['uz']}
-
-Keep responses concise (2-4 paragraphs max) but thorough. Be encouraging and supportive.`;
+${personalization ? `\nSTUDENT PERSONALIZATION & PREFERENCES:\n${personalization}\n` : ''}
+Keep responses concise, engaging, inspiring, and highly educational (2-4 paragraphs max). Do not use emojis in your responses. Be encouraging and supportive.`;
 };
 
 const getGradingPrompt = (question, description, studentAnswer, maxScore) => `

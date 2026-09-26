@@ -41,6 +41,7 @@ import StudentAnalytics from './pages/student/StudentAnalytics';
 import StudentProgress from './pages/student/StudentProgress';
 import CertificatePage from './pages/student/CertificatePage';
 import StudentShopPage from './pages/student/StudentShopPage';
+import StudentSettings from './pages/student/StudentSettings';
 
 // Teacher pages
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
@@ -176,6 +177,7 @@ export default function App() {
           <Route path="progress" element={<StudentProgress />} />
           <Route path="certificates" element={<CertificatePage />} />
           <Route path="shop" element={<StudentShopPage />} />
+          <Route path="settings" element={<StudentSettings />} />
         </Route>
 
         {/* Teacher Routes */}

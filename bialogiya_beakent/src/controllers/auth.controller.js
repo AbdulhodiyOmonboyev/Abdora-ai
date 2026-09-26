@@ -102,6 +102,7 @@ const getMe = async (req, res, next) => {
         avatar: true, language: true, xp: true, coins: true, level: true,
         streakCurrent: true, streakLongest: true, streakLastDate: true,
         achievements: true, isActive: true, isFrozen: true, lastLogin: true, createdAt: true,
+        permissions: true,
         groupId: true, teacherId: true,
         group: { select: { id: true, name: true, subject: true } },
         teacher: { select: { id: true, name: true } },

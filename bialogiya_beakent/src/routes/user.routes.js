@@ -4,7 +4,7 @@ const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const {
   createStudent, createTeacher, createManager, getManagers, updateManager, deleteManager, getManagerBranches, getAllUsers, getStudentsByTeacher, getUserById,
   updateUser, updateProfile, deleteUser, resetStudentPassword, freezeStudent, changePassword,
-  getStudentHistory, addStudentNote, deleteStudentNote, awardStudentCoins
+  getStudentHistory, addStudentNote, deleteStudentNote, awardStudentCoins, testAIPersonalization
 } = require('../controllers/user.controller');
 
 router.get('/', verifyToken, requireRole('admin', 'reception', 'manager'), getAllUsers);
@@ -21,6 +21,7 @@ router.delete('/managers/:id', verifyToken, requireRole('admin'), deleteManager)
 router.get('/manager/branches', verifyToken, requireRole('manager'), getManagerBranches);
 router.put('/profile', verifyToken, updateProfile);
 router.post('/change-password', verifyToken, changePassword);
+router.post('/ai-test', verifyToken, testAIPersonalization);
 
 // Student History, Notes, Coin Awards
 router.get('/:id/history', verifyToken, requireRole('admin', 'reception', 'manager', 'teacher', 'student'), getStudentHistory);

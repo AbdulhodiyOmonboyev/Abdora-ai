@@ -1,9 +1,9 @@
 const { getModel } = require('../../config/gemini');
 const { getChatSystemPrompt } = require('./prompts');
 
-const chatWithAI = async (lesson, messages, userMessage, style = 'normal', language = 'uz') => {
-  const aiContent = lesson.aiContent || {};
-  const systemPrompt = getChatSystemPrompt(lesson.title, aiContent.summary || '', style, language);
+const chatWithAI = async (lesson, messages, userMessage, style = 'normal', language = 'uz', aiPreferences = {}) => {
+  const aiContent = lesson?.aiContent || {};
+  const systemPrompt = getChatSystemPrompt(lesson?.title || '', aiContent.summary || '', style, language, aiPreferences);
 
   const history = (messages || []).slice(-10);
   const historyText = history.map(m => `${m.role === 'user' ? 'Student' : 'Teacher AI'}: ${m.content}`).join('\n');

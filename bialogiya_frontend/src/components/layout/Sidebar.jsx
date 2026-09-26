@@ -27,6 +27,7 @@ const studentLinks = [
   { to: '/student/certificates', icon: Trophy, key: 'certificates', label: 'Sertifikatlar' },
   { to: '/student/achievements', icon: Star, key: 'achievements' },
   { to: '/student/leaderboard', icon: Users, key: 'leaderboard' },
+  { to: '/student/settings', icon: Settings, key: 'settings', label: 'Sozlamalar' },
 ];
 
 const teacherLinks = [

@@ -188,12 +188,22 @@ const getExplainerSlideImage = async (req, res, next) => {
 const chatMessage = async (req, res, next) => {
   try {
     const { lessonId } = req.params;
-    const { message, style, language } = req.body;
+    const { message, style, language, aiPreferences: bodyPreferences } = req.body;
     if (!message) return error(res, 'Message required', 400);
 
     const lesson = await findAccessibleLesson(lessonId, req.user, { id: true, title: true, content: true, groupId: true, teacherId: true, centerId: true });
     if (!lesson) return error(res, 'Lesson not found', 404);
     if (!(await assertLessonAccess(lesson, req.user))) return error(res, 'Forbidden', 403);
+
+    // Fetch user's aiPreferences from DB if not provided in body
+    let aiPreferences = bodyPreferences;
+    if (!aiPreferences) {
+      const userRecord = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { permissions: true }
+      });
+      aiPreferences = userRecord?.permissions?.aiPreferences || {};
+    }
 
     let chat = await prisma.aIChat.findUnique({
       where: { lessonId_studentId: { lessonId, studentId: req.user.userId } },
@@ -202,13 +212,16 @@ const chatMessage = async (req, res, next) => {
     const messages = chat ? (Array.isArray(chat.messages) ? chat.messages : []) : [];
     messages.push({ role: 'user', content: message, timestamp: new Date() });
 
-    const aiReply = await chatWithAI(lesson, messages, message, style || 'normal', language || 'uz');
+    const effectiveStyle = style || aiPreferences?.style || 'normal';
+    const effectiveLang = language || aiPreferences?.language || 'uz';
+
+    const aiReply = await chatWithAI(lesson, messages, message, effectiveStyle, effectiveLang, aiPreferences);
     messages.push({ role: 'assistant', content: aiReply, timestamp: new Date() });
 
     if (chat) {
-      chat = await prisma.aIChat.update({ where: { id: chat.id }, data: { messages, style: style || chat.style, language: language || chat.language } });
+      chat = await prisma.aIChat.update({ where: { id: chat.id }, data: { messages, style: effectiveStyle, language: effectiveLang } });
     } else {
-      chat = await prisma.aIChat.create({ data: { lessonId, studentId: req.user.userId, centerId: lesson.centerId, messages, style: style || 'normal', language: language || 'uz' } });
+      chat = await prisma.aIChat.create({ data: { lessonId, studentId: req.user.userId, centerId: lesson.centerId, messages, style: effectiveStyle, language: effectiveLang } });
     }
 
     return success(res, { reply: aiReply, chatId: chat.id });
