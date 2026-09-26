@@ -14,6 +14,7 @@ import StatusBadge from "../../components/ui/StatusBadge";
 import PhoneInput from "../../components/ui/PhoneInput";
 import { cleanPhone } from "../../utils/formatPhone";
 import ToggleSwitch from "../../components/ui/ToggleSwitch";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 
 const FEATURE_LIST = [
   {
@@ -119,6 +120,32 @@ export default function AdminCenterDetail() {
       toast.success("O'quv markaz o'chirildi!");
       qc.invalidateQueries({ queryKey: ["admin-centers"] });
       navigate("/admin/centers");
+    },
+    onError: (e) => toast.error(e.response?.data?.message || "Xatolik yuz berdi"),
+  });
+
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const deleteBranchMutation = useMutation({
+    mutationFn: (branchId) => api.delete(`/admin/branches/${branchId}`),
+    onSuccess: () => {
+      toast.success("Filial muvaffaqiyatli o'chirildi!");
+      qc.invalidateQueries({ queryKey: ["admin-center", id] });
+      qc.invalidateQueries({ queryKey: ["admin-centers"] });
+      qc.invalidateQueries({ queryKey: ["header-branches"] });
+      setConfirmDelete(null);
+    },
+    onError: (e) => toast.error(e.response?.data?.message || "Xatolik yuz berdi"),
+  });
+
+  const cleanupBranchesMutation = useMutation({
+    mutationFn: () => api.post(`/admin/centers/${id}/cleanup-branches`),
+    onSuccess: (res) => {
+      toast.success(res.data?.message || "Bo'sh filiallar tozalandi!");
+      qc.invalidateQueries({ queryKey: ["admin-center", id] });
+      qc.invalidateQueries({ queryKey: ["admin-centers"] });
+      qc.invalidateQueries({ queryKey: ["header-branches"] });
+      setConfirmDelete(null);
     },
     onError: (e) => toast.error(e.response?.data?.message || "Xatolik yuz berdi"),
   });
@@ -386,10 +413,25 @@ export default function AdminCenterDetail() {
 
           {/* Filiallar Table */}
           <div className="panel-card space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
                 <MapPin size={18} className="text-primary" /> Markazga qarashli filiallar ({center.branches?.length || 0})
               </h2>
+              {center.branches && center.branches.length > 1 && (
+                <button
+                  onClick={() => {
+                    setConfirmDelete({
+                      title: "Bo'sh filiallarni tozalash",
+                      message: "Ushbu markazga tegishli barcha bo'sh (guruhi, o'qituvchisi bo'lmagan) va ortiqcha test filiallari o'chiriladi. Asosiy faol filial saqlab qolinadi.",
+                      onConfirm: () => cleanupBranchesMutation.mutate(),
+                    });
+                  }}
+                  disabled={cleanupBranchesMutation.isPending}
+                  className="btn-ghost btn-sm text-xs flex items-center gap-1.5 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/10"
+                >
+                  <Trash2 size={13} /> Bo'sh filiallarni tozalash
+                </button>
+              )}
             </div>
             {center.branches && center.branches.length > 0 ? (
               <div className="table-shell">
@@ -401,6 +443,7 @@ export default function AdminCenterDetail() {
                       <th>Guruhlar</th>
                       <th>O'qituvchilar</th>
                       <th>Holat</th>
+                      <th className="text-right">Amallar</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -411,6 +454,21 @@ export default function AdminCenterDetail() {
                         <td>{b._count?.groups || 0}</td>
                         <td>{b._count?.teachers || 0}</td>
                         <td><StatusBadge status={b.isActive ? "faol" : "nofaol"} /></td>
+                        <td className="text-right">
+                          <button
+                            onClick={() => {
+                              setConfirmDelete({
+                                title: "Filialni o'chirish",
+                                message: `"${b.name}" filialini o'chirishni tasdiqlaysizmi?`,
+                                onConfirm: () => deleteBranchMutation.mutate(b.id),
+                              });
+                            }}
+                            title="Filialni o'chirish"
+                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors inline-flex items-center"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -476,6 +534,7 @@ export default function AdminCenterDetail() {
           </div>
         </div>
       </div>
+      <ConfirmDialog confirm={confirmDelete} onClose={() => setConfirmDelete(null)} />
     </div>
   );
 }

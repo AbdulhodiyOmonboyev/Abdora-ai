@@ -74,6 +74,8 @@ import AdminGroups from './pages/admin/AdminGroups';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminCenters from './pages/admin/AdminCenters';
 import AdminCenterDetail from './pages/admin/AdminCenterDetail';
+import AdminBranches from './pages/admin/AdminBranches';
+import AdminBranchDetail from './pages/admin/AdminBranchDetail';
 import UserDetail from './pages/shared/UserDetail';
 
 // Manager pages
@@ -228,6 +230,8 @@ export default function App() {
           <Route path="applications" element={<AdminApplications />} />
           <Route path="centers" element={<AdminCenters />} />
           <Route path="centers/:id" element={<AdminCenterDetail />} />
+          <Route path="branches" element={<AdminBranches />} />
+          <Route path="branches/:id" element={<AdminBranchDetail />} />
           <Route path="teachers" element={<AdminTeachers />} />
           <Route path="teachers/:id" element={<ReceptionTeacherDetail />} />
           <Route path="reception" element={<AdminReception />} />

@@ -33,7 +33,7 @@ router.put('/settings', ...adminOrReception, updateSettings);
 
 // Centers (O'quv Markazlar) - Superadmin only
 const {
-  getCenters, getCenterDetail, createCenter, updateCenter, deleteCenter
+  getCenters, getCenterDetail, createCenter, updateCenter, deleteCenter, cleanupEmptyBranches
 } = require('../controllers/center.controller');
 
 router.get('/centers', ...adminOnly, getCenters);
@@ -41,6 +41,7 @@ router.get('/centers/:id', ...adminOnly, getCenterDetail);
 router.post('/centers', ...adminOnly, createCenter);
 router.put('/centers/:id', ...adminOnly, updateCenter);
 router.delete('/centers/:id', ...adminOnly, deleteCenter);
+router.post('/centers/:id/cleanup-branches', ...adminOnly, cleanupEmptyBranches);
 
 // Branches - admin only (read permitted for reception & manager)
 router.get('/branches', ...adminOrReception, getBranches);
@@ -48,6 +49,7 @@ router.post('/branches', ...adminOnly, createBranch);
 router.get('/branches/:id', ...adminOnly, getBranchDetail);
 router.put('/branches/:id', ...adminOnly, updateBranch);
 router.delete('/branches/:id', ...adminOnly, deleteBranch);
+router.post('/branches/cleanup-empty', ...adminOnly, cleanupEmptyBranches);
 
 // Reception accounts - admin & manager can create, view, configure permissions and deactivate them.
 router.get('/reception', ...adminOnly, getReceptionUsers);

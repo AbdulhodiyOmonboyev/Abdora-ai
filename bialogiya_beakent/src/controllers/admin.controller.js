@@ -98,14 +98,21 @@ const getStats = async (req, res, next) => {
         prisma.aIAgent.count({ where: { isActive: true } }),
       ]);
 
-      // count students per center
-      const centerStudentCounts = await Promise.all(
-        centerRows.map((c) => prisma.user.count({ where: { role: 'student', centerId: c.id, isActive: true } }))
-      );
+      // count active students, branches, groups per center
+      const [centerStudentCounts, centerBranchCounts, centerGroupCounts] = await Promise.all([
+        Promise.all(centerRows.map((c) => prisma.user.count({ where: { role: 'student', centerId: c.id, isActive: true } }))),
+        Promise.all(centerRows.map((c) => prisma.branch.count({ where: { centerId: c.id, isActive: true } }))),
+        Promise.all(centerRows.map((c) => prisma.group.count({ where: { centerId: c.id, isActive: true } }))),
+      ]);
 
       centers = centerRows.map((c, i) => ({
         ...c,
-        _count: { ...c._count, students: centerStudentCounts[i] },
+        _count: {
+          ...c._count,
+          students: centerStudentCounts[i],
+          branches: centerBranchCounts[i],
+          groups: centerGroupCounts[i],
+        },
       }));
       totalCenters = await prisma.center.count({ where: { isActive: true } });
       totalAIAgents = aiAgentsCount;
@@ -1309,12 +1316,39 @@ const updateBranch = async (req, res, next) => {
 
 const deleteBranch = async (req, res, next) => {
   try {
-    const branch = await prisma.branch.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) } });
-    if (!branch) return error(res, 'Branch not found', 404);
+    const branch = await prisma.branch.findFirst({
+      where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
+      include: {
+        _count: {
+          select: {
+            groups: true,
+            rooms: true,
+            teachers: true,
+            leads: true,
+            expenses: true,
+            payments: true,
+          },
+        },
+      },
+    });
+    if (!branch) return error(res, 'Filial topilmadi', 404);
     if (req.user.role === 'manager' && branch.managerId !== req.user.userId) return error(res, 'Forbidden', 403);
 
-    await prisma.branch.update({ where: { id: req.params.id }, data: { isActive: false } });
-    return success(res, null, 'Branch deleted');
+    const totalRelations = (branch._count?.groups || 0) +
+      (branch._count?.rooms || 0) +
+      (branch._count?.teachers || 0) +
+      (branch._count?.leads || 0) +
+      (branch._count?.expenses || 0) +
+      (branch._count?.payments || 0);
+
+    if (totalRelations === 0) {
+      await prisma.branch.delete({ where: { id: req.params.id } });
+    } else {
+      await prisma.branch.update({ where: { id: req.params.id }, data: { isActive: false } });
+    }
+
+    cache.flushAll();
+    return success(res, null, 'Filial muvaffaqiyatli o\'chirildi');
   } catch (err) { next(err); }
 };
 

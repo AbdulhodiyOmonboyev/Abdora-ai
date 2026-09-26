@@ -10,6 +10,7 @@ const getCenters = async (req, res, next) => {
       where: { isActive: true },
       include: {
         branches: {
+          where: { isActive: true },
           select: { id: true, name: true, address: true, isActive: true },
         },
         users: {
@@ -28,10 +29,12 @@ const getCenters = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Count students per center separately (they belong to center via centerId)
-    const studentCounts = await Promise.all(
-      centers.map((c) => prisma.user.count({ where: { role: 'student', centerId: c.id, isActive: true } }))
-    );
+    // Count active students, branches, and groups per center separately
+    const [studentCounts, branchCounts, groupCounts] = await Promise.all([
+      Promise.all(centers.map((c) => prisma.user.count({ where: { role: 'student', centerId: c.id, isActive: true } }))),
+      Promise.all(centers.map((c) => prisma.branch.count({ where: { centerId: c.id, isActive: true } }))),
+      Promise.all(centers.map((c) => prisma.group.count({ where: { centerId: c.id, isActive: true } }))),
+    ]);
 
     const formatted = centers.map((c, i) => ({
       id: c.id,
@@ -44,9 +47,9 @@ const getCenters = async (req, res, next) => {
       createdAt: c.createdAt,
       settings: c.settings,
       _count: {
-        branches: c._count.branches,
+        branches: branchCounts[i],
         students: studentCounts[i],
-        groups: c._count.groups,
+        groups: groupCounts[i],
         leads: c._count.leads,
       },
       branches: c.branches,
@@ -183,6 +186,7 @@ const getCenterDetail = async (req, res, next) => {
             manager: { select: { id: true, name: true, phone: true } },
             _count: { select: { groups: true, teachers: true } },
           },
+          orderBy: { createdAt: 'desc' },
         },
         users: {
           where: { role: 'manager', isActive: true },
@@ -202,16 +206,91 @@ const getCenterDetail = async (req, res, next) => {
 
     if (!center) return error(res, 'O\'quv markaz topilmadi', 404);
 
-    const [studentsCount, teachersCount] = await Promise.all([
+    const [studentsCount, teachersCount, branchesCount, groupsCount] = await Promise.all([
       prisma.user.count({ where: { role: 'student', centerId: id, isActive: true } }),
       prisma.user.count({ where: { role: 'teacher', centerId: id, isActive: true } }),
+      prisma.branch.count({ where: { centerId: id, isActive: true } }),
+      prisma.group.count({ where: { centerId: id, isActive: true } }),
     ]);
 
     return success(res, {
       ...center,
+      _count: {
+        ...center._count,
+        students: studentsCount,
+        teachers: teachersCount,
+        branches: branchesCount,
+        groups: groupsCount,
+      },
       studentsCount,
       teachersCount,
+      branchesCount,
+      groupsCount,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /admin/centers/:id/cleanup-branches and POST /admin/branches/cleanup-empty
+const cleanupEmptyBranches = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const where = id ? { centerId: id } : {};
+    
+    // Find all branches matching scope
+    const branches = await prisma.branch.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            groups: true,
+            rooms: true,
+            teachers: true,
+            leads: true,
+            expenses: true,
+            payments: true,
+          },
+        },
+      },
+    });
+
+    // An empty branch has 0 groups, 0 rooms, 0 teachers, 0 leads, 0 expenses, 0 payments
+    // or is inactive (soft-deleted)
+    const emptyBranches = branches.filter((b) => {
+      const totalRelations = (b._count?.groups || 0) +
+        (b._count?.rooms || 0) +
+        (b._count?.teachers || 0) +
+        (b._count?.leads || 0) +
+        (b._count?.expenses || 0) +
+        (b._count?.payments || 0);
+      return !b.isActive || totalRelations === 0;
+    });
+
+    if (emptyBranches.length === 0) {
+      return success(res, { deletedCount: 0 }, 'Tozalanadigan bo\'sh filiallar topilmadi');
+    }
+
+    let toDeleteIds = emptyBranches.map((b) => b.id);
+    // If all branches are empty, keep at least 1 primary active branch
+    if (branches.length > 0 && emptyBranches.length === branches.length) {
+      const keepBranch = branches.find((b) => b.isActive) || branches[0];
+      toDeleteIds = toDeleteIds.filter((bid) => bid !== keepBranch.id);
+      await prisma.branch.update({
+        where: { id: keepBranch.id },
+        data: { isActive: true },
+      });
+    }
+
+    if (toDeleteIds.length === 0) {
+      return success(res, { deletedCount: 0 }, 'Tozalanadigan ortiqcha filiallar topilmadi');
+    }
+
+    const deleted = await prisma.branch.deleteMany({
+      where: { id: { in: toDeleteIds } },
+    });
+
+    return success(res, { deletedCount: deleted.count }, `${deleted.count} ta bo'sh yoki nofaol filial muvaffaqiyatli tozalandi`);
   } catch (err) {
     next(err);
   }
@@ -223,5 +302,6 @@ module.exports = {
   createCenter,
   updateCenter,
   deleteCenter,
+  cleanupEmptyBranches,
 };
 

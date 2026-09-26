@@ -180,7 +180,17 @@ export default function AdminBranches() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/admin/branches/${id}`),
-    onSuccess: () => { qc.invalidateQueries(['admin-branches']); toast.success("Filial o'chirildi"); },
+    onSuccess: () => { qc.invalidateQueries(['admin-branches']); qc.invalidateQueries(['header-branches']); toast.success("Filial o'chirildi"); },
+    onError: (error) => toast.error(friendlyAiErrorMessage(error)),
+  });
+
+  const cleanupMutation = useMutation({
+    mutationFn: () => api.post('/admin/branches/cleanup-empty'),
+    onSuccess: (res) => {
+      qc.invalidateQueries(['admin-branches']);
+      qc.invalidateQueries(['header-branches']);
+      toast.success(res.data?.message || "Bo'sh filiallar tozalandi");
+    },
     onError: (error) => toast.error(friendlyAiErrorMessage(error)),
   });
 
@@ -220,12 +230,29 @@ export default function AdminBranches() {
 
       {/* Header */}
       <PageHeader
-        title="Markazlar"
-        subtitle="Barcha markazlarni boshqaring"
+        title="Filiallar"
+        subtitle="Barcha filiallarni boshqaring"
         actions={
-          <button onClick={() => setShowCreate(true)} className="btn-primary">
-            <Plus size={16} /> Markaz qo'shish
-          </button>
+          <div className="flex items-center gap-2">
+            {branches.length > 1 && (
+              <button
+                onClick={() => {
+                  setConfirm({
+                    title: "Bo'sh filiallarni tozalash",
+                    message: "Barcha bo'sh (guruhi, o'qituvchisi bo'lmagan) va ortiqcha test filiallarini o'chirishni xohlaysizmi?",
+                    onConfirm: () => cleanupMutation.mutate(),
+                  });
+                }}
+                disabled={cleanupMutation.isPending}
+                className="btn-ghost text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/10 text-xs sm:text-sm"
+              >
+                <Trash2 size={15} /> Bo'sh filiallarni tozalash
+              </button>
+            )}
+            <button onClick={() => setShowCreate(true)} className="btn-primary">
+              <Plus size={16} /> Filial qo'shish
+            </button>
+          </div>
         }
       />
 
@@ -234,10 +261,10 @@ export default function AdminBranches() {
         <SearchInput
           value={localSearch}
           onChange={setLocalSearch}
-          placeholder="Markaz nomi bo'yicha qidirish..."
+          placeholder="Filial nomi bo'yicha qidirish..."
         />
         <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-          {filteredBranches.length} ta markaz
+          {filteredBranches.length} ta filial
         </span>
       </div>
 
@@ -247,7 +274,7 @@ export default function AdminBranches() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Markaz</th>
+                <th>Filial</th>
                 <th>Manzil</th>
                 <th>Manager</th>
                 <th>O'qituvchi</th>
@@ -336,26 +363,26 @@ export default function AdminBranches() {
       ) : (
         <EmptyState
           icon={Building2}
-          title={activeSearch ? "Qidiruv bo'yicha markaz topilmadi" : "Hozircha markazlar yo'q"}
-          description={activeSearch ? `"${activeSearch}" uchun hech narsa topilmadi` : "Birinchi markazni qo'shing"}
+          title={activeSearch ? "Qidiruv bo'yicha filial topilmadi" : "Hozircha filiallar yo'q"}
+          description={activeSearch ? `"${activeSearch}" uchun hech narsa topilmadi` : "Birinchi filialni qo'shing"}
           action={!activeSearch && (
             <button onClick={() => setShowCreate(true)} className="btn-primary btn-sm">
-              <Plus size={14} /> Markaz qo'shish
+              <Plus size={14} /> Filial qo'shish
             </button>
           )}
         />
       )}
 
       {/* Create Modal */}
-      <BranchModal open={showCreate} onClose={closeModal} title="Markaz qo'shish">
+      <BranchModal open={showCreate} onClose={closeModal} title="Filial qo'shish">
         <div className="space-y-4">
           <div>
-            <label className="form-label">Markaz nomi *</label>
+            <label className="form-label">Filial nomi *</label>
             <input
               value={form.name}
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
               className="input-field"
-              placeholder="Markaz nomi"
+              placeholder="Filial nomi"
             />
           </div>
 
@@ -371,7 +398,7 @@ export default function AdminBranches() {
           />
 
           <div>
-            <label className="form-label">O'quvchi kapasiteti</label>
+            <label className="form-label">O'quvchi sig'imi</label>
             <input
               value={form.studentCapacity}
               onChange={e => setForm(p => ({ ...p, studentCapacity: e.target.value }))}
@@ -383,7 +410,7 @@ export default function AdminBranches() {
 
           <div>
             <label className="form-label">
-              Markaz joylashuvi
+              Filial joylashuvi
               {form.latitude && <span className="form-hint ml-1"> (xaritada bosing yoki markerni suring)</span>}
             </label>
             <BranchLocationPicker
@@ -413,15 +440,15 @@ export default function AdminBranches() {
       </BranchModal>
 
       {/* Edit Modal */}
-      <BranchModal open={showEdit} onClose={closeEditModal} title="Markaz tahrirlash">
+      <BranchModal open={showEdit} onClose={closeEditModal} title="Filialni tahrirlash">
         <div className="space-y-4">
           <div>
-            <label className="form-label">Markaz nomi *</label>
+            <label className="form-label">Filial nomi *</label>
             <input
               value={editForm.name}
               onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
               className="input-field"
-              placeholder="Markaz nomi"
+              placeholder="Filial nomi"
             />
           </div>
 
@@ -437,7 +464,7 @@ export default function AdminBranches() {
           />
 
           <div>
-            <label className="form-label">O'quvchi kapasiteti</label>
+            <label className="form-label">O'quvchi sig'imi</label>
             <input
               value={editForm.studentCapacity}
               onChange={e => setEditForm(p => ({ ...p, studentCapacity: e.target.value }))}
@@ -449,7 +476,7 @@ export default function AdminBranches() {
 
           <div>
             <label className="form-label">
-              Markaz joylashuvi
+              Filial joylashuvi
               {editForm.latitude && <span className="form-hint ml-1"> (xaritada bosing yoki markerni suring)</span>}
             </label>
             <BranchLocationPicker

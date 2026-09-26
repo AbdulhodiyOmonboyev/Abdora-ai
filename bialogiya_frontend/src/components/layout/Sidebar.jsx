@@ -5,7 +5,7 @@ import {
   X, LayoutDashboard, BookOpen, ClipboardList, FileText, BarChart2,
   Users, FolderOpen, Calendar, Trophy, Star, Settings,
   GraduationCap, BookMarked, UserCheck, Upload, Mic, Wallet, UserCog, Inbox, Building2,
-  PieChart, Receipt, UserPlus, LogOut, Bot, ChevronLeft, ShoppingBag,
+  PieChart, Receipt, UserPlus, LogOut, Bot, ChevronLeft, ShoppingBag, GitBranch,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
@@ -48,6 +48,7 @@ const adminLinks = [
   { to: '/admin/dashboard',    icon: LayoutDashboard, key: 'dashboard' },
   { to: '/admin/applications', icon: Inbox,           key: 'applications' },
   { to: '/admin/centers',      icon: Building2,       key: 'centers' },
+  { to: '/admin/branches',     icon: GitBranch,       key: 'branches' },
   { to: '/admin/ai-agents',    icon: Bot,             key: 'aiAgents' },
   { to: '/admin/settings',     icon: Settings,        key: 'settings' },
 ];
