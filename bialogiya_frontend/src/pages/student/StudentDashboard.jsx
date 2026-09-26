@@ -68,14 +68,16 @@ export default function StudentDashboard() {
 
   return (
     <div className="dashboard-shell max-w-6xl mx-auto">
-      <header className="dashboard-header">
-        <div>
-          <span className="dashboard-badge"><Sparkles size={12} /> Abdora AI</span>
-          <h1>{getGreeting()}, {user?.name}</h1>
-          <p className="flex items-center gap-1.5"><Sparkles size={14} className="text-primary inline flex-shrink-0" /> {motivation}</p>
+      <header className="dashboard-header flex items-center justify-between">
+        <div className="flex-1 min-w-0 pr-2">
+          <span className="dashboard-badge inline-flex items-center gap-1"><Sparkles size={11} /> Abdora AI</span>
+          <h1 className="text-xl sm:text-2xl font-bold truncate mt-1">{getGreeting()}, {user?.name}</h1>
+          <p className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-400 mt-0.5 line-clamp-1">
+            <Sparkles size={13} className="text-primary inline flex-shrink-0" /> {motivation}
+          </p>
         </div>
-        <div className="dashboard-header-actions">
-          <Link to="/student/results" className="header-button">Natijalar</Link>
+        <div className="dashboard-header-actions flex-shrink-0">
+          <Link to="/student/results" className="header-button text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2">Natijalar</Link>
         </div>
       </header>
 

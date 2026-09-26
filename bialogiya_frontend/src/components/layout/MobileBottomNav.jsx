@@ -16,10 +16,10 @@ import { cn } from '../../utils/cn';
 // more than that and labels get too cramped to read on a phone.
 const PRIMARY_LINKS = {
   student: [
-    { to: '/student/dashboard', icon: LayoutDashboard, key: 'dashboard' },
-    { to: '/student/lessons', icon: BookOpen, key: 'lessons' },
-    { to: '/student/homework', icon: ClipboardList, key: 'homework' },
-    { to: '/student/achievements', icon: Trophy, key: 'achievements' },
+    { to: '/student/dashboard', icon: LayoutDashboard, key: 'dashboard', label: 'Asosiy' },
+    { to: '/student/lessons', icon: BookOpen, key: 'lessons', label: 'Darslar' },
+    { to: '/student/homework', icon: ClipboardList, key: 'homework', label: 'Vazifalar' },
+    { to: '/student/achievements', icon: Trophy, key: 'achievements', label: 'Yutuqlar' },
   ],
   teacher: [
     { to: '/teacher/dashboard', icon: LayoutDashboard, key: 'dashboard' },

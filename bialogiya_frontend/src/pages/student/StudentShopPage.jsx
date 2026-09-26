@@ -86,34 +86,34 @@ export default function StudentShopPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* ── Page Header & Balance Banner ── */}
-      <div className="gradient-bg rounded-3xl p-6 sm:p-8 text-white shadow-soft relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur-sm">
-              <Sparkles size={14} /> Tanga & Sovg'alar Tizimi
+      <div className="gradient-bg rounded-2xl sm:rounded-3xl p-4 sm:p-7 text-white shadow-soft relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
+          <div className="space-y-1 sm:space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-white/20 text-white backdrop-blur-sm">
+              <Sparkles size={12} /> Tanga & Sovg'alar Tizimi
             </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight">
               Tangalar Do'koni (Coin Shop)
             </h1>
-            <p className="text-white/80 text-sm max-w-xl">
+            <p className="hidden sm:block text-white/80 text-xs sm:text-sm max-w-xl">
               Darslarda qatnashib, vazifalarni vaqtida bajarib to'plagan tangalaringizni markazimizning brendli sovg'alari, darsliklar va chegirmalarga almashtiring!
             </p>
           </div>
 
           {/* Coin Balance Card */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/20 flex items-center gap-4 self-stretch md:self-auto min-w-[220px]">
-            <div className="w-14 h-14 rounded-2xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-amber-300 flex-shrink-0 shadow-inner">
-              <Coins size={30} className="drop-shadow" />
+          <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/20 flex items-center gap-3 sm:gap-4 w-full md:w-auto">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-amber-300 flex-shrink-0 shadow-inner">
+              <Coins size={24} className="drop-shadow" />
             </div>
-            <div>
-              <div className="text-xs text-white/70 uppercase tracking-wider font-medium">Sizning balansingiz</div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-300 flex items-baseline gap-1.5">
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] sm:text-xs text-white/70 uppercase tracking-wider font-medium">Balansingiz</div>
+              <div className="text-xl sm:text-2xl font-black text-amber-300 flex items-baseline gap-1">
                 {studentCoins.toLocaleString()}
-                <span className="text-sm font-semibold text-white/80">tanga</span>
+                <span className="text-xs font-semibold text-white/80">tanga</span>
               </div>
-              <div className="text-xs text-white/60 mt-0.5 flex items-center gap-2">
-                <span className="flex items-center gap-1"><Flame size={12} className="text-orange-400" /> {user?.streak?.current || 0} kun streak</span>
-                <span className="flex items-center gap-1"><Zap size={12} className="text-yellow-300" /> {user?.xp || 0} XP</span>
+              <div className="text-[11px] text-white/60 mt-0.5 flex items-center gap-2">
+                <span className="flex items-center gap-1"><Flame size={11} className="text-orange-400" /> {user?.streak?.current || 0} kun streak</span>
+                <span className="flex items-center gap-1"><Zap size={11} className="text-yellow-300" /> {user?.xp || 0} XP</span>
               </div>
             </div>
           </div>
@@ -121,33 +121,33 @@ export default function StudentShopPage() {
       </div>
 
       {/* ── Sub Navigation (Catalog vs Orders) ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-3">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border)] pb-3">
+        <div className="flex items-center gap-1.5 p-1 bg-[var(--card)] rounded-xl border border-[var(--border)] w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setActiveTab('catalog')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
               activeTab === 'catalog'
                 ? 'bg-[var(--primary)] text-white shadow-soft'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-background)]'
             }`}
           >
-            <ShoppingBag size={16} />
-            Mahsulotlar katalogi ({items.length})
+            <ShoppingBag size={14} />
+            Katalog ({items.length})
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('orders')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all relative ${
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all relative ${
               activeTab === 'orders'
                 ? 'bg-[var(--primary)] text-white shadow-soft'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-background)]'
             }`}
           >
-            <Package size={16} />
-            Mening xaridlarim
+            <Package size={14} />
+            Xaridlarim
             {orders.length > 0 && (
-              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
                 activeTab === 'orders' ? 'bg-white text-[var(--primary)]' : 'bg-[var(--primary-50)] text-[var(--primary)]'
               }`}>
                 {orders.length}
@@ -163,7 +163,7 @@ export default function StudentShopPage() {
                 key={cat.key}
                 type="button"
                 onClick={() => setSelectedCategory(cat.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium whitespace-nowrap transition-colors ${
                   selectedCategory === cat.key
                     ? 'bg-[var(--primary-50)] text-[var(--primary)] font-bold border border-[var(--primary-100)]'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-background)] border border-transparent'
@@ -264,10 +264,10 @@ export default function StudentShopPage() {
                         {isOutOfStock ? (
                           'Tugagan'
                         ) : !canAfford ? (
-                          'Tangalar yetarli emas'
+                          'Yetarli emas'
                         ) : (
                           <>
-                            <ShoppingBag size={14} /> Xarid qilish
+                            <ShoppingBag size={13} /> Xarid qilish
                           </>
                         )}
                       </button>

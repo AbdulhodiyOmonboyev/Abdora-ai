@@ -41,14 +41,14 @@ export default function StudentLessons() {
           {lessons?.map((lesson, i) => (
             <motion.div key={lesson.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Link to={`/student/lessons/${lesson.id}`}
-                className="card flex items-center gap-4 hover:shadow-glow hover:border-primary/20 transition-all group">
-                <div className="w-12 h-12 gradient-bg rounded-2xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                className="card flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5 hover:shadow-glow hover:border-primary/20 transition-all group">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 gradient-bg rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0">
                   {getSubjectIcon(lesson.subject)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-800 dark:text-white truncate">{lesson.title}</h3>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className={`badge text-xs inline-flex items-center gap-1 ${lesson.aiContent?.status === 'done' ? 'bg-primary/10 text-primary' : lesson.aiContent?.status === 'generating' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <h3 className="font-semibold text-sm sm:text-base text-gray-800 dark:text-white truncate">{lesson.title}</h3>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 mt-1">
+                    <span className={`badge text-[11px] inline-flex items-center gap-1 py-0.5 px-2 whitespace-nowrap ${lesson.aiContent?.status === 'done' ? 'bg-primary/10 text-primary' : lesson.aiContent?.status === 'generating' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
                       {lesson.aiContent?.status === 'done' ? (
                         <><Sparkles size={11} /> AI Tayyor</>
                       ) : lesson.aiContent?.status === 'generating' ? (
@@ -57,8 +57,12 @@ export default function StudentLessons() {
                         '• Kutilmoqda'
                       )}
                     </span>
-                    <span className="text-xs text-gray-400 flex items-center gap-1"><Clock size={11} /> {formatDate(lesson.createdAt)}</span>
-                    <span className="text-xs text-gray-400">{lesson.views} marta ko'rildi</span>
+                    <span className="text-[11px] sm:text-xs text-gray-400 flex items-center gap-1 whitespace-nowrap">
+                      <Clock size={11} /> {formatDate(lesson.createdAt)}
+                    </span>
+                    <span className="hidden sm:inline text-[11px] sm:text-xs text-gray-400 whitespace-nowrap">
+                      • {lesson.views} ko'rildi
+                    </span>
                   </div>
                 </div>
                 <ChevronRight size={18} className="text-gray-400 group-hover:text-primary transition-colors flex-shrink-0" />

@@ -836,6 +836,30 @@ export default function LessonDetail() {
         )}
       </AnimatePresence>
 
+      {/* Mobile Horizontal Tabs Pill Strip */}
+      <div className="lg:hidden flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+        {TABS.map((tab) => {
+          const locked = tab.id !== 'overview' && !isDone;
+          const active = activeTab === tab.id;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              disabled={locked}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                active
+                  ? 'bg-primary text-white shadow-soft font-semibold'
+                  : 'bg-[var(--card)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-primary/40'
+              } ${locked ? 'opacity-40 cursor-not-allowed' : ''}`}
+            >
+              <Icon size={13} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Content + section navigator */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 items-start">
         <AnimatePresence mode="wait">
@@ -1021,8 +1045,8 @@ export default function LessonDetail() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Section navigator — vertical stepper through the same tabs */}
-        <div className="panel-card">
+        {/* Section navigator — vertical stepper through the same tabs (desktop only) */}
+        <div className="hidden lg:block panel-card">
           <span className="panel-kicker">Bo'lim</span>
           <h3 className="panel-title mb-3">{lesson?.title || getSubjectLabel(lesson?.subject)}</h3>
           <div className="relative">
