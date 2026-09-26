@@ -1,5 +1,6 @@
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
+const { updateCachedApiKey } = require('../config/gemini');
 
 const formatAgent = (agent) => {
   const extra = (agent.useCases && typeof agent.useCases === 'object') ? agent.useCases : {};
@@ -55,6 +56,10 @@ const createAIAgent = async (req, res, next) => {
       },
     });
 
+    if (agent.isActive && agent.apiKey) {
+      updateCachedApiKey(agent.apiKey);
+    }
+
     return success(res, formatAgent(agent), 'AI Agent qo\'shildi', 201);
   } catch (err) { next(err); }
 };
@@ -86,6 +91,12 @@ const updateAIAgent = async (req, res, next) => {
       },
     });
 
+    if (updated.isActive && updated.apiKey) {
+      updateCachedApiKey(updated.apiKey);
+    } else {
+      updateCachedApiKey(null);
+    }
+
     return success(res, formatAgent(updated), 'AI Agent yangilandi');
   } catch (err) { next(err); }
 };
@@ -97,6 +108,7 @@ const deleteAIAgent = async (req, res, next) => {
     if (!existing) return error(res, 'AI Agent topilmadi', 404);
 
     await prisma.aIAgent.delete({ where: { id } });
+    updateCachedApiKey(null);
     return success(res, null, 'AI Agent o\'chirildi');
   } catch (err) { next(err); }
 };

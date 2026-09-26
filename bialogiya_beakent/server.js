@@ -7,12 +7,15 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { connectDB } = require('./src/config/db');
+const { loadKeyFromDb } = require('./src/config/gemini');
 const errorHandler = require('./src/middleware/error.middleware');
 
 const app = express();
 
-// Connect to PostgreSQL (Neon)
-connectDB();
+// Connect to PostgreSQL (Neon) and initialize AI agent keys
+connectDB().then(() => {
+  loadKeyFromDb().catch(() => {});
+});
 
 // Trust proxy (Render sits behind a reverse proxy)
 app.set('trust proxy', 1);

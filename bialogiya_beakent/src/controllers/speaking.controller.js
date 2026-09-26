@@ -1,7 +1,7 @@
 const { GoogleGenAI } = require('@google/genai');
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
-const { getCleanApiKey } = require('../config/gemini');
+const { getCleanApiKey, getApiKeyAsync } = require('../config/gemini');
 const { getSpeakingCoachInstructions } = require('../services/ai/prompts');
 
 // Gemini Live model names are preview/rotating - override via env if Google
@@ -15,7 +15,7 @@ const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-aud
 // back to the cleaned API key so the client WebSocket can connect without 502 error.
 const createSpeakingSession = async (req, res, next) => {
   try {
-    const apiKey = getCleanApiKey();
+    const apiKey = (await getApiKeyAsync()) || getCleanApiKey();
     if (!apiKey) {
       return error(res, 'AI API kaliti serverda sozlanmagan', 400);
     }
