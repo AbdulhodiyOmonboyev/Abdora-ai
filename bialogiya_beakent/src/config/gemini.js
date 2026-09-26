@@ -1,6 +1,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const genAI = new GoogleGenerativeAI(process.env.GIMINI_AI_API_KEY || '');
+const apiKey = process.env.GIMINI_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GEMINI_AI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(apiKey);
 
 const getModel = (jsonMode = false) => {
   return genAI.getGenerativeModel({
@@ -9,4 +10,4 @@ const getModel = (jsonMode = false) => {
   });
 };
 
-module.exports = { genAI, getModel };
+module.exports = { genAI, getModel, apiKey };

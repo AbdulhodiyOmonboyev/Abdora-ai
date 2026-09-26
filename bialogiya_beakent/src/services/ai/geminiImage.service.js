@@ -8,14 +8,15 @@ const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
  * Generate an illustration for a prompt. Returns { buffer, mimeType }.
  */
 const generateImage = async (prompt) => {
-  if (!process.env.GIMINI_AI_API_KEY) throw new Error('GIMINI_AI_API_KEY is not configured on the server');
+  const apiKey = process.env.GIMINI_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GEMINI_AI_API_KEY;
+  if (!apiKey) throw new Error('AI API kaliti serverda sozlanmagan');
   const input = (prompt || '').trim().slice(0, 1500);
   if (!input) throw new Error('No prompt to generate an image from');
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'x-goog-api-key': process.env.GIMINI_AI_API_KEY, 'Content-Type': 'application/json' },
+    headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: input }] }],
       generationConfig: { responseModalities: ['IMAGE'] },

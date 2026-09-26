@@ -85,8 +85,9 @@ const getChatSystemPrompt = (lessonTitle, lessonSummary, style, language, aiPref
       personalization += `\n- Student's favorite topics & interests: ${aiPreferences.interests.trim()}. Connect explanations to these areas whenever possible!`;
     }
 
-    if (aiPreferences.customPrompt && aiPreferences.customPrompt.trim()) {
-      personalization += `\n- STUDENT'S PERSONAL PREFERENCES & INSTRUCTIONS (Strictly follow this): "${aiPreferences.customPrompt.trim()}".`;
+    const customInstructions = aiPreferences.customPrompt || aiPreferences.customInstructions;
+    if (customInstructions && typeof customInstructions === 'string' && customInstructions.trim()) {
+      personalization += `\n- STUDENT'S PERSONAL PREFERENCES & INSTRUCTIONS (Strictly follow this): "${customInstructions.trim()}".`;
     }
 
     if (aiPreferences.difficulty) {
@@ -132,7 +133,7 @@ const getResultAnalysisPrompt = (testTitle, wrongQuestions, correctTopics, langu
 You are analyzing a student's test results for "${testTitle}".
 
 Questions answered incorrectly:
-${wrong.map((q, i) => `${i + 1}. ${q.text} (Topic: ${q.topic || 'General'})`).join('\n') || 'None'}
+${wrong.map((q, i) => `${i + 1}. ${q.text || q.question || q} (Topic: ${q.topic || 'General'})`).join('\n') || 'None'}
 
 Topics answered correctly: ${correct.join(', ') || 'None'}
 

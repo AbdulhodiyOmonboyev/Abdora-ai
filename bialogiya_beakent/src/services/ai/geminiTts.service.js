@@ -34,13 +34,13 @@ const pcmToWav = (pcmBuffer, sampleRate = 24000, channels = 1, bitsPerSample = 1
  */
 const synthesizeSpeech = async (text, { voice = DEFAULT_VOICE } = {}) => {
   const input = (text || '').trim().slice(0, MAX_CHARS);
-  if (!input) throw new Error('No text to synthesize');
-  if (!process.env.GIMINI_AI_API_KEY) throw new Error('GIMINI_AI_API_KEY is not configured on the server');
+  const apiKey = process.env.GIMINI_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GEMINI_AI_API_KEY;
+  if (!apiKey) throw new Error('AI API kaliti serverda sozlanmagan');
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'x-goog-api-key': process.env.GIMINI_AI_API_KEY, 'Content-Type': 'application/json' },
+    headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: input }] }],
       generationConfig: {

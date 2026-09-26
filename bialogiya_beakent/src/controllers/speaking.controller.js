@@ -18,8 +18,9 @@ const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-aud
 // this is a known real-world misconfiguration, not a hypothetical one.
 const createSpeakingSession = async (req, res, next) => {
   try {
-    if (!process.env.GIMINI_AI_API_KEY) {
-      return error(res, 'GIMINI_AI_API_KEY is not configured on the server', 500);
+    const apiKey = process.env.GIMINI_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GEMINI_AI_API_KEY;
+    if (!apiKey) {
+      return error(res, 'AI API kaliti serverda sozlanmagan', 500);
     }
 
     const { topic, lessonId, level } = req.body || {};
@@ -34,7 +35,7 @@ const createSpeakingSession = async (req, res, next) => {
     const instructions = getSpeakingCoachInstructions(resolvedTopic, user?.language || 'uz', level || 'intermediate');
 
     const genAI = new GoogleGenAI({
-      apiKey: process.env.GIMINI_AI_API_KEY,
+      apiKey,
       httpOptions: { apiVersion: 'v1alpha' }, // required for ephemeral tokens
     });
 
