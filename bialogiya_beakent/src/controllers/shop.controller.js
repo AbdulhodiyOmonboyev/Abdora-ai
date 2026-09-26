@@ -11,6 +11,7 @@ const DEFAULT_SHOP_ITEMS = [
     category: 'merch',
     stock: 25,
     icon: 'Shirt',
+    imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -22,6 +23,7 @@ const DEFAULT_SHOP_ITEMS = [
     category: 'merch',
     stock: 100,
     icon: 'Sparkles',
+    imageUrl: 'https://images.unsplash.com/photo-1572375992501-4b0892d50c69?w=600&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -33,6 +35,7 @@ const DEFAULT_SHOP_ITEMS = [
     category: 'book',
     stock: 15,
     icon: 'BookOpen',
+    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -44,6 +47,7 @@ const DEFAULT_SHOP_ITEMS = [
     category: 'discount',
     stock: null, // Cheksiz
     icon: 'Tag',
+    imageUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=600&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -55,6 +59,7 @@ const DEFAULT_SHOP_ITEMS = [
     category: 'merch',
     stock: 40,
     icon: 'Pencil',
+    imageUrl: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=600&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -89,6 +94,24 @@ const getShopItems = async (req, res, next) => {
         where: { id: center.id },
         data: { settings: { ...settings, shopItems: items, shopOrders: settings.shopOrders || [] } },
       });
+    } else {
+      // Sync default item imageUrls if missing in existing DB items
+      let needUpdate = false;
+      items = items.map(it => {
+        const def = DEFAULT_SHOP_ITEMS.find(d => d.id === it.id);
+        if (def && !it.imageUrl) {
+          needUpdate = true;
+          return { ...it, imageUrl: def.imageUrl };
+        }
+        return it;
+      });
+
+      if (needUpdate) {
+        await prisma.center.update({
+          where: { id: center.id },
+          data: { settings: { ...settings, shopItems: items } },
+        }).catch(() => {});
+      }
     }
 
     // Students only see active items
@@ -107,7 +130,7 @@ const createShopItem = async (req, res, next) => {
       return error(res, "Faqat menejer yoki admin mahsulot qo'sha oladi", 403);
     }
 
-    const { title, description, priceCoins, category, stock, icon, isActive } = req.body;
+    const { title, description, priceCoins, category, stock, icon, imageUrl, isActive } = req.body;
     if (!title || !title.trim()) return error(res, "Mahsulot nomi kiritilishi shart", 400);
     const parsedPrice = parseInt(priceCoins, 10);
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
@@ -126,6 +149,7 @@ const createShopItem = async (req, res, next) => {
       category: category || 'merch',
       stock: stock !== undefined && stock !== '' && stock !== null ? Math.max(0, parseInt(stock, 10)) : null,
       icon: icon || 'Gift',
+      imageUrl: imageUrl?.trim() || '',
       isActive: isActive !== false,
       createdAt: new Date().toISOString(),
     };
@@ -149,7 +173,7 @@ const updateShopItem = async (req, res, next) => {
     }
 
     const { id } = req.params;
-    const { title, description, priceCoins, category, stock, icon, isActive } = req.body;
+    const { title, description, priceCoins, category, stock, icon, imageUrl, isActive } = req.body;
 
     const center = await resolveCenterForUser(req.user);
     const settings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
@@ -167,6 +191,7 @@ const updateShopItem = async (req, res, next) => {
       category: category !== undefined ? category : existing.category,
       stock: stock !== undefined ? (stock === null || stock === '' ? null : Math.max(0, parseInt(stock, 10))) : existing.stock,
       icon: icon !== undefined ? icon : existing.icon,
+      imageUrl: imageUrl !== undefined ? imageUrl?.trim() : existing.imageUrl,
       isActive: isActive !== undefined ? !!isActive : existing.isActive,
       updatedAt: new Date().toISOString(),
     };

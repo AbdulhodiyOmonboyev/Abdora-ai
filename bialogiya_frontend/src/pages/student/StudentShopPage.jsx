@@ -34,6 +34,25 @@ const CATEGORIES = [
   { key: 'other', label: 'Boshqa sovg\'alar' },
 ];
 
+const ITEM_DEFAULT_IMAGES = {
+  'item-merch-shirt': 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80',
+  'item-merch-stickers': 'https://images.unsplash.com/photo-1572375992501-4b0892d50c69?w=600&auto=format&fit=crop&q=80',
+  'item-book-biology': 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+  'item-discount-10': 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=600&auto=format&fit=crop&q=80',
+  'item-stationery-set': 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=600&auto=format&fit=crop&q=80',
+};
+
+const CATEGORY_DEFAULT_IMAGES = {
+  merch: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80',
+  book: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
+  discount: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=600&auto=format&fit=crop&q=80',
+  other: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&auto=format&fit=crop&q=80',
+};
+
+const getItemImage = (item) => {
+  return item?.imageUrl || ITEM_DEFAULT_IMAGES[item?.id] || CATEGORY_DEFAULT_IMAGES[item?.category] || null;
+};
+
 export default function StudentShopPage() {
   const qc = useQueryClient();
   const { user, updateUser } = useAuthStore();
@@ -194,10 +213,11 @@ export default function StudentShopPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredItems.map(item => {
                 const canAfford = studentCoins >= item.priceCoins;
                 const isOutOfStock = item.stock !== null && item.stock <= 0;
+                const itemImg = getItemImage(item);
 
                 return (
                   <motion.div
@@ -205,73 +225,97 @@ export default function StudentShopPage() {
                     layout
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="panel-card flex flex-col justify-between p-3.5 sm:p-5 hover:shadow-soft transition-all border border-[var(--border)] group relative"
+                    className="panel-card flex flex-col justify-between overflow-hidden p-0 hover:shadow-soft transition-all border border-[var(--border)] group relative rounded-2xl sm:rounded-3xl"
                   >
-                    <div>
-                      {/* Top Row: Icon + Category + Stock */}
-                      <div className="flex items-start justify-between gap-3 mb-2.5 sm:mb-4">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--primary-50)] text-[var(--primary)] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-                          {renderIcon(item.icon, "w-5 h-5 sm:w-6 sm:h-6")}
+                    {/* Mahsulot rasmi va ustki nishonlar */}
+                    <div className="relative w-full h-40 sm:h-48 overflow-hidden bg-[var(--secondary-background)] flex items-center justify-center">
+                      {itemImg ? (
+                        <img
+                          src={itemImg}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 text-primary">
+                          {renderIcon(item.icon, "w-10 h-10")}
                         </div>
-                        <div className="flex flex-col items-end gap-0.5 sm:gap-1">
-                          <span className="badge badge-gray text-[10px] uppercase font-semibold">
-                            {item.category === 'merch' ? 'Merch' :
-                             item.category === 'book' ? 'Kitob' :
-                             item.category === 'discount' ? 'Chegirma' : 'Sovg\'a'}
+                      )}
+
+                      {/* Gradient soya */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/35 pointer-events-none" />
+
+                      {/* Toifa va Zaxira nishonlari */}
+                      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-none">
+                        <span className="badge backdrop-blur-md bg-black/50 text-white border border-white/20 text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5">
+                          {item.category === 'merch' ? 'Merch' :
+                           item.category === 'book' ? 'Kitob' :
+                           item.category === 'discount' ? 'Chegirma' : "Sovg'a"}
+                        </span>
+
+                        {item.stock !== null ? (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-md border ${
+                            item.stock > 0 
+                              ? 'bg-emerald-500/85 text-white border-emerald-400/30' 
+                              : 'bg-rose-500/85 text-white border-rose-400/30'
+                          }`}>
+                            {item.stock > 0 ? `${item.stock} dona qoldi` : 'Tugagan'}
                           </span>
-                          {item.stock !== null ? (
-                            <span className={`text-[11px] font-medium ${item.stock > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 font-bold'}`}>
-                              {item.stock > 0 ? `${item.stock} dona qoldi` : 'Tugagan'}
-                            </span>
-                          ) : (
-                            <span className="text-[11px] text-[var(--text-secondary)] font-medium">
-                              Cheksiz zaxira
-                            </span>
-                          )}
-                        </div>
+                        ) : (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-md bg-white/20 text-white border border-white/20">
+                            Cheksiz zaxira
+                          </span>
+                        )}
                       </div>
 
-                      {/* Title & Description */}
-                      <h3 className="font-bold text-sm sm:text-base text-[var(--text-primary)] mb-1 group-hover:text-[var(--primary)] transition-colors line-clamp-2">
-                        {item.title}
-                      </h3>
-                      <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-3 sm:mb-4 leading-relaxed">
-                        {item.description || "Markaz o'quvchilari uchun maxsus sovg'a."}
-                      </p>
+                      {/* Tanga narxi rasmdagi qatlam ustida */}
+                      <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/65 backdrop-blur-md border border-white/25 text-amber-300 font-bold text-xs sm:text-sm shadow-md">
+                        <Coins size={14} className="text-amber-400 shrink-0" />
+                        <span>{item.priceCoins}</span>
+                        <span className="text-[10px] text-white/80 font-normal">tanga</span>
+                      </div>
                     </div>
 
-                    {/* Bottom Row: Price & Buy Button */}
-                    <div className="pt-3 sm:pt-4 border-t border-[var(--border)] flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <Coins size={16} className="text-amber-500 flex-shrink-0" />
-                        <span className="text-base sm:text-lg font-black text-[var(--text-primary)]">
-                          {item.priceCoins}
-                        </span>
-                        <span className="text-xs text-[var(--text-secondary)] font-medium">tanga</span>
+                    {/* Kartaning ichki ma'lumotlari */}
+                    <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-bold text-sm sm:text-base text-[var(--text-primary)] mb-1 group-hover:text-[var(--primary)] transition-colors line-clamp-2 leading-snug">
+                          {item.title}
+                        </h3>
+                        <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-3 leading-relaxed">
+                          {item.description || "Markaz o'quvchilari uchun maxsus sovg'a."}
+                        </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setPurchasingItem(item)}
-                        disabled={!canAfford || isOutOfStock}
-                        className={`btn-sm flex items-center gap-1.5 text-xs py-1.5 sm:py-2 px-3 sm:px-3.5 rounded-xl font-semibold transition-all ${
-                          !canAfford
-                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
-                            : isOutOfStock
-                            ? 'bg-rose-50 text-rose-400 cursor-not-allowed'
-                            : 'btn-primary shadow-xs hover:shadow-soft'
-                        }`}
-                      >
-                        {isOutOfStock ? (
-                          'Tugagan'
-                        ) : !canAfford ? (
-                          'Yetarli emas'
-                        ) : (
-                          <>
-                            <ShoppingBag size={13} /> Xarid qilish
-                          </>
-                        )}
-                      </button>
+                      {/* Pastki qator: Xarid tugmasi va yordamchi matn */}
+                      <div className="pt-2.5 border-t border-[var(--border)] flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-[var(--text-muted)] font-medium">
+                          {canAfford ? "Balans yetarli" : `Yana ${item.priceCoins - studentCoins} tanga`}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => setPurchasingItem(item)}
+                          disabled={!canAfford || isOutOfStock}
+                          className={`btn-sm flex items-center gap-1.5 text-xs py-1.5 sm:py-2 px-3 sm:px-3.5 rounded-xl font-semibold transition-all ${
+                            !canAfford
+                              ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
+                              : isOutOfStock
+                              ? 'bg-rose-50 text-rose-400 cursor-not-allowed'
+                              : 'btn-primary shadow-xs hover:shadow-soft'
+                          }`}
+                        >
+                          {isOutOfStock ? (
+                            'Tugagan'
+                          ) : !canAfford ? (
+                            'Yetarli emas'
+                          ) : (
+                            <>
+                              <ShoppingBag size={13} /> Xarid qilish
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 );
@@ -487,13 +531,17 @@ export default function StudentShopPage() {
       >
         {purchasingItem && (
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-[var(--secondary-background)] border border-[var(--border)] flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl bg-[var(--primary-50)] text-[var(--primary)] flex items-center justify-center flex-shrink-0">
-                {renderIcon(purchasingItem.icon, "w-6 h-6")}
+            <div className="p-3.5 rounded-2xl bg-[var(--secondary-background)] border border-[var(--border)] flex items-center gap-3.5">
+              <div className="w-14 h-14 rounded-xl overflow-hidden bg-[var(--card)] flex-shrink-0 border border-[var(--border)] flex items-center justify-center">
+                {getItemImage(purchasingItem) ? (
+                  <img src={getItemImage(purchasingItem)} alt={purchasingItem.title} className="w-full h-full object-cover" />
+                ) : (
+                  renderIcon(purchasingItem.icon, "w-6 h-6 text-primary")
+                )}
               </div>
-              <div>
-                <div className="font-bold text-sm text-[var(--text-primary)]">{purchasingItem.title}</div>
-                <div className="text-xs text-[var(--text-secondary)] line-clamp-1">{purchasingItem.description}</div>
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-sm text-[var(--text-primary)] truncate">{purchasingItem.title}</div>
+                <div className="text-xs text-[var(--text-secondary)] line-clamp-1 mt-0.5">{purchasingItem.description}</div>
               </div>
             </div>
 
