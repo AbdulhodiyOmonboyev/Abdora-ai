@@ -873,20 +873,20 @@ export default function LessonDetail() {
           >
           {activeTab === 'overview' && (
             <div>
-              <h2 className="text-lg font-bold mb-4">{lesson?.title}</h2>
-              <div className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-gray-400 mb-3">Mavzu tavsifi</h2>
+              <div className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                 {lesson?.content || <span className="text-gray-400 italic">Ushbu dars uchun kontent kiritilmagan.</span>}
               </div>
               {lesson?.attachments?.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="font-semibold mb-3 text-gray-700 dark:text-gray-200">Ilovalar</h3>
+                <div className="mt-5 pt-4 border-t border-[var(--border)]">
+                  <h3 className="font-semibold text-sm mb-2.5 text-gray-700 dark:text-gray-200">Ilovalar</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {lesson.attachments.map((att, i) => (
                       <button key={i} onClick={() => downloadAtt.mutate(att)} disabled={downloadAtt.isPending}
-                        className="flex items-center gap-2 p-3 bg-gray-900 text-white rounded-xl hover:bg-black transition-colors text-sm text-left">
-                        <Download size={16} className="flex-shrink-0" />
-                        <span className="truncate flex-1">{att.name}</span>
-                        {downloadAtt.isPending && downloadAtt.variables === att && <Loader2 size={14} className="animate-spin" />}
+                        className="flex items-center gap-2 p-2.5 bg-[var(--secondary-background)] border border-[var(--border)] text-[var(--text-primary)] hover:border-primary/50 hover:bg-primary/5 rounded-xl transition-colors text-xs sm:text-sm text-left">
+                        <Download size={15} className="flex-shrink-0 text-primary" />
+                        <span className="truncate flex-1 font-medium">{att.name}</span>
+                        {downloadAtt.isPending && downloadAtt.variables === att && <Loader2 size={13} className="animate-spin text-primary" />}
                       </button>
                     ))}
                   </div>

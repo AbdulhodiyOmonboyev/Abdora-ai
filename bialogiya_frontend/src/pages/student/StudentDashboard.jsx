@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
 import {
-  ClipboardList, Trophy, TrendingUp, Calendar, Sparkles, FileText
+  ClipboardList, Trophy, TrendingUp, Calendar, Sparkles, FileText, CheckCircle2
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import api from '../../config/axios';
@@ -110,7 +110,10 @@ export default function StudentDashboard() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="empty-state">Natija ma’lumotlari hali yo‘q.</div>
+            <div className="empty-state">
+              <TrendingUp size={18} className="text-gray-400 opacity-60" />
+              <span>Hozircha natija ma’lumotlari mavjud emas.</span>
+            </div>
           )}
         </motion.div>
 
@@ -131,12 +134,15 @@ export default function StudentDashboard() {
               ))}
             </div>
           ) : (
-            <div className="empty-state">AI tavsiyalar uchun testlar yechilsin.</div>
+            <div className="empty-state">
+              <Sparkles size={18} className="text-primary/70" />
+              <span>AI tavsiyalari uchun test va darslarni bajaring.</span>
+            </div>
           )}
         </motion.div>
       </section>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="panel-card">
           <div className="panel-header">
             <div>
@@ -159,7 +165,12 @@ export default function StudentDashboard() {
                   <span>{item.deadline ? new Date(item.deadline).toLocaleDateString('uz-UZ') : 'Bugun'}</span>
                 </div>
               </div>
-            )) : <div className="empty-state">Vazifa yo‘q.</div>}
+            )) : (
+              <div className="empty-state">
+                <CheckCircle2 size={18} className="text-green-500/80" />
+                <span>Barcha vazifalar topshirilgan! Yangi vazifa yo'q.</span>
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -185,7 +196,12 @@ export default function StudentDashboard() {
                   <span>{test.questions?.length || 0} savol</span>
                 </div>
               </div>
-            )) : <div className="empty-state">Testlar yo‘q.</div>}
+            )) : (
+              <div className="empty-state">
+                <FileText size={18} className="text-gray-400 opacity-60" />
+                <span>Yaqin orada rejalashtirilgan testlar yo‘q.</span>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

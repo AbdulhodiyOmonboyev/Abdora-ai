@@ -72,28 +72,28 @@ export default function ProfilePage() {
 
       {/* Student stats */}
       {me?.role === 'student' && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="card text-center py-4">
-            <Trophy size={18} className="mx-auto mb-1.5 text-amber-500" />
-            <div className="text-lg font-bold text-gray-800 dark:text-white">{level}</div>
-            <div className="text-xs text-gray-400">Daraja</div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="card text-center py-3 px-1 sm:px-3">
+            <Trophy size={18} className="mx-auto mb-1 text-amber-500" />
+            <div className="text-base sm:text-lg font-bold text-gray-800 dark:text-white">{level}</div>
+            <div className="text-[11px] sm:text-xs text-gray-400 whitespace-nowrap">Daraja</div>
           </div>
-          <div className="card text-center py-4">
-            <Flame size={18} className="mx-auto mb-1.5 text-orange-500" />
-            <div className="text-lg font-bold text-gray-800 dark:text-white">{me?.streakCurrent ?? me?.streak?.current ?? 0}</div>
-            <div className="text-xs text-gray-400">Ketma-ketlik</div>
+          <div className="card text-center py-3 px-1 sm:px-3">
+            <Flame size={18} className="mx-auto mb-1 text-orange-500" />
+            <div className="text-base sm:text-lg font-bold text-gray-800 dark:text-white">{me?.streakCurrent ?? me?.streak?.current ?? 0} kun</div>
+            <div className="text-[11px] sm:text-xs text-gray-400 whitespace-nowrap">Ketma-ketlik</div>
           </div>
-          <div className="card text-center py-4">
-            <BookOpen size={18} className="mx-auto mb-1.5 text-primary" />
-            <div className="text-lg font-bold text-gray-800 dark:text-white">{me?.xp || 0}</div>
-            <div className="text-xs text-gray-400">XP</div>
+          <div className="card text-center py-3 px-1 sm:px-3">
+            <BookOpen size={18} className="mx-auto mb-1 text-primary" />
+            <div className="text-base sm:text-lg font-bold text-gray-800 dark:text-white">{me?.xp || 0}</div>
+            <div className="text-[11px] sm:text-xs text-gray-400 whitespace-nowrap">XP</div>
           </div>
         </div>
       )}
       {me?.role === 'student' && (me?.group || me?.teacher) && (
-        <div className="card flex items-center gap-4 text-sm">
-          {me?.group && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300"><Users size={14} className="text-gray-400" /> {me.group.name}</div>}
-          {me?.teacher && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300"><User size={14} className="text-gray-400" /> {me.teacher.name}</div>}
+        <div className="card flex items-center gap-3 sm:gap-4 text-xs sm:text-sm flex-wrap p-3 sm:p-4">
+          {me?.group && <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300"><Users size={14} className="text-gray-400 shrink-0" /> {me.group.name}</div>}
+          {me?.teacher && <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300"><User size={14} className="text-gray-400 shrink-0" /> {me.teacher.name}</div>}
         </div>
       )}
       {me?.role === 'reception' && (

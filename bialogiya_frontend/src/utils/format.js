@@ -48,16 +48,17 @@ export const formatDeadlineOffset = (submittedAt, dueDate) => {
 export const getInitials = (name = '') =>
   name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
-export const calculateLevel = (xp) => Math.max(1, Math.floor(Math.sqrt(xp / 100)));
+export const calculateLevel = (xp) => Math.max(1, Math.floor(Math.sqrt((Number(xp) || 0) / 100)));
 
 export const xpForLevel = (level) => level * level * 100;
 
 export const getLevelProgress = (xp) => {
-  const level = calculateLevel(xp);
+  const safeXp = Number(xp) || 0;
+  const level = calculateLevel(safeXp);
   const currentLevelXP = xpForLevel(level);
   const nextLevelXP = xpForLevel(level + 1);
-  const progress = ((xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
-  return { level, progress: Math.max(0, Math.min(100, progress)), currentLevelXP, nextLevelXP };
+  const progress = nextLevelXP > currentLevelXP ? ((safeXp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100 : 0;
+  return { level, progress: Math.max(0, Math.min(100, progress)), currentLevelXP, nextLevelXP, xp: safeXp };
 };
 
 export const getScoreColor = (score) => {
