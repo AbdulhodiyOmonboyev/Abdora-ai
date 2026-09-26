@@ -2,13 +2,15 @@
 // GIMINI_AI_API_KEY already used everywhere else in this app.
 // https://ai.google.dev/gemini-api/docs/image-generation
 
+const { getCleanApiKey } = require('../../config/gemini');
+
 const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
 
 /**
  * Generate an illustration for a prompt. Returns { buffer, mimeType }.
  */
 const generateImage = async (prompt) => {
-  const apiKey = process.env.GIMINI_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GEMINI_AI_API_KEY;
+  const apiKey = getCleanApiKey();
   if (!apiKey) throw new Error('AI API kaliti serverda sozlanmagan');
   const input = (prompt || '').trim().slice(0, 1500);
   if (!input) throw new Error('No prompt to generate an image from');

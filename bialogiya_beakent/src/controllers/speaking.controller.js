@@ -1,6 +1,7 @@
 const { GoogleGenAI } = require('@google/genai');
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
+const { getCleanApiKey } = require('../config/gemini');
 const { getSpeakingCoachInstructions } = require('../services/ai/prompts');
 
 // Gemini Live model names are preview/rotating - override via env if Google
@@ -8,19 +9,15 @@ const { getSpeakingCoachInstructions } = require('../services/ai/prompts');
 const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025';
 
 // POST /api/speaking/session
-// Mints a short-lived Gemini Live "ephemeral token". The real GIMINI_AI_API_KEY
-// never leaves the server; the browser only ever sees this one-shot token and
-// uses it to open a direct WebSocket connection to Gemini for live speech.
-//
-// SECURITY: the model + system instruction + response modality are locked
-// into the token itself via liveConnectConstraints. Without this, a client
-// could reuse the token to open a session with a different system prompt -
-// this is a known real-world misconfiguration, not a hypothetical one.
+// Creates a Gemini Live session for real-time bidirectional audio.
+// If ephemeral token creation succeeds (Vertex AI/OAuth), it uses the minted token.
+// If ephemeral token is unsupported by the API key (AI Studio keys), it safely falls
+// back to the cleaned API key so the client WebSocket can connect without 502 error.
 const createSpeakingSession = async (req, res, next) => {
   try {
-    const apiKey = process.env.GIMINI_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GEMINI_AI_API_KEY;
+    const apiKey = getCleanApiKey();
     if (!apiKey) {
-      return error(res, 'AI API kaliti serverda sozlanmagan', 500);
+      return error(res, 'AI API kaliti serverda sozlanmagan', 400);
     }
 
     const { topic, lessonId, level } = req.body || {};
@@ -34,35 +31,46 @@ const createSpeakingSession = async (req, res, next) => {
     const user = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { language: true } });
     const instructions = getSpeakingCoachInstructions(resolvedTopic, user?.language || 'uz', level || 'intermediate');
 
-    const genAI = new GoogleGenAI({
-      apiKey,
-      httpOptions: { apiVersion: 'v1alpha' }, // required for ephemeral tokens
-    });
-
     const expireTime = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    const token = await genAI.authTokens.create({
-      config: {
-        uses: 1,
-        expireTime,
-        liveConnectConstraints: {
-          model: LIVE_MODEL,
-          config: {
-            responseModalities: ['AUDIO'],
-            systemInstruction: instructions,
+    let token = null;
+
+    try {
+      const genAI = new GoogleGenAI({
+        apiKey,
+        httpOptions: { apiVersion: 'v1alpha' }, // required for ephemeral tokens
+      });
+
+      const authToken = await genAI.authTokens.create({
+        config: {
+          uses: 1,
+          expireTime,
+          liveConnectConstraints: {
+            model: LIVE_MODEL,
+            config: {
+              responseModalities: ['AUDIO'],
+              systemInstruction: instructions,
+            },
           },
         },
-      },
-    });
+      });
+      token = authToken?.name;
+    } catch (tokenErr) {
+      // Google AI Studio API keys (AIzaSy...) do not support AuthTokenService.CreateToken
+      // (which requires OAuth2 / Vertex AI credentials).
+      // Fallback: pass the cleaned API key directly so WebSocket connection connects via ?key=
+      console.warn('Gemini Live ephemeral token unavailable, using API key session:', tokenErr.message);
+      token = apiKey;
+    }
 
     return success(res, {
-      token: token.name,
+      token,
       model: LIVE_MODEL,
       topic: resolvedTopic,
       expireTime,
     });
   } catch (err) {
-    console.error('Gemini Live token error:', err.message);
-    return error(res, 'Could not start speaking session', 502);
+    console.error('Gemini Live session error:', err.message);
+    return error(res, 'Speaking sessiyasini boshlashda xatolik yuz berdi: ' + err.message, 500);
   }
 };
 

@@ -83,10 +83,12 @@ export default function ExplainerVideoPlayer({ lessonId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideIdx, slides.length]);
 
-  // --- Audio playback ---
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     };
   }, [slideIdx]);
@@ -112,6 +114,23 @@ export default function ExplainerVideoPlayer({ lessonId }) {
       setPlaying(true);
     } catch (err) {
       console.error(err);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window && slide?.narration) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(slide.narration);
+        utterance.lang = 'uz-UZ';
+        utterance.onend = () => {
+          setPlaying(false);
+          setProgress(0);
+          if (slideIdx < slides.length - 1) setSlideIdx(i => i + 1);
+        };
+        utterance.onerror = () => {
+          setPlaying(false);
+          toast.error(friendlyAiErrorMessage(err));
+        };
+        window.speechSynthesis.speak(utterance);
+        setPlaying(true);
+        return;
+      }
       toast.error(friendlyAiErrorMessage(err));
     } finally {
       setAudioLoading(false);
@@ -127,6 +146,9 @@ export default function ExplainerVideoPlayer({ lessonId }) {
 
   const pause = () => {
     audioRef.current?.pause();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
     setPlaying(false);
   };
 

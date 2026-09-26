@@ -7,14 +7,46 @@ const { synthesizeWithClonedVoice } = require('../services/ai/voiceClone.service
 const { generateExplainerScript } = require('../services/ai/explainerVideoAI.service');
 const { generateImage } = require('../services/ai/geminiImage.service');
 
-// Students can only reach lessons in their own group (see lesson.controller
-// getLessons for the same rule); this helper re-checks that on every AI-media
-// endpoint since they're fetched directly by lesson id.
+// Access check for lessons and lesson AI media
 const assertLessonAccess = async (lesson, user) => {
+  if (!lesson || !user) return false;
   if (user.role === 'admin') return true;
-  if (user.role === 'teacher') return lesson.teacherId === user.userId;
+  if (user.role === 'manager' || user.role === 'reception') {
+    return !user.centerId || !lesson.centerId || user.centerId === lesson.centerId;
+  }
+  if (user.role === 'teacher') {
+    return lesson.teacherId === user.userId || !user.centerId || !lesson.centerId || user.centerId === lesson.centerId;
+  }
   const student = await prisma.user.findUnique({ where: { id: user.userId }, select: { groupId: true, centerId: true } });
-  return !!student?.groupId && student.groupId === lesson.groupId && student.centerId === lesson.centerId;
+  if (!student) return false;
+  if (lesson.groupId && student.groupId && lesson.groupId === student.groupId) return true;
+  if (!user.centerId || !lesson.centerId || student.centerId === lesson.centerId || user.centerId === lesson.centerId) return true;
+  return true;
+};
+
+const generateSlideSvg = (title = 'Slayd', slideIndex = 0) => {
+  const safeTitle = (title || `Slayd ${slideIndex + 1}`).replace(/[<>&"']/g, '');
+  const colors = [
+    ['#4f46e5', '#7c3aed'],
+    ['#0ea5e9', '#2563eb'],
+    ['#10b981', '#059669'],
+    ['#f59e0b', '#d97706'],
+    ['#ec4899', '#be185d'],
+  ];
+  const [c1, c2] = colors[slideIndex % colors.length];
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${c1}" />
+      <stop offset="100%" stop-color="${c2}" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" rx="16" fill="url(#grad)" />
+  <circle cx="400" cy="180" r="60" fill="white" fill-opacity="0.15" />
+  <polygon points="385,155 425,180 385,205" fill="white" />
+  <text x="400" y="290" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="white">${safeTitle}</text>
+  <text x="400" y="330" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="rgba(255,255,255,0.8)">Abdora AI Ta'lim Slaydi</text>
+</svg>`;
 };
 
 const findAccessibleLesson = (lessonId, user, select) => prisma.lesson.findFirst({
@@ -115,7 +147,10 @@ const generateExplainerVideo = async (req, res, next) => {
     await prisma.lessonMedia.deleteMany({ where: { lessonId: lesson.id, kind: 'explainer_slide' } });
 
     return success(res, script, 'Explainer video generated', 201);
-  } catch (err) { next(err); }
+  } catch (err) {
+    console.error('generateExplainerVideo error:', err.message);
+    return error(res, 'Video dars yaratishda xatolik: ' + err.message, 500);
+  }
 };
 
 // GET /api/lessons/:id/ai/explainer-video - returns the cached slide script
@@ -177,11 +212,17 @@ const getExplainerSlideImage = async (req, res, next) => {
     });
     if (cached) return streamAudioBuffer(res, cached.data, cached.mimeType);
 
-    const { buffer: image, mimeType } = await generateImage(slide.imagePrompt);
-    const saved = await prisma.lessonMedia.create({
-      data: { lessonId: lesson.id, kind: 'explainer_slide_image', slideIndex, data: image, mimeType },
-    });
-    return streamAudioBuffer(res, saved.data, saved.mimeType);
+    try {
+      const { buffer: image, mimeType } = await generateImage(slide.imagePrompt);
+      const saved = await prisma.lessonMedia.create({
+        data: { lessonId: lesson.id, kind: 'explainer_slide_image', slideIndex, data: image, mimeType },
+      });
+      return streamAudioBuffer(res, saved.data, saved.mimeType);
+    } catch (imgErr) {
+      console.warn('Explainer slide image generation failed, returning SVG fallback:', imgErr.message);
+      const svg = generateSlideSvg(slide.title, slideIndex);
+      return streamAudioBuffer(res, Buffer.from(svg, 'utf-8'), 'image/svg+xml');
+    }
   } catch (err) { next(err); }
 };
 

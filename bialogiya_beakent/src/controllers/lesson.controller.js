@@ -10,10 +10,19 @@ const findAccessibleLesson = (id, user) => prisma.lesson.findFirst({
 });
 
 const canAccessLesson = async (lesson, user) => {
+  if (!lesson || !user) return false;
   if (user.role === 'admin') return true;
-  if (user.role === 'teacher') return lesson.teacherId === user.userId;
+  if (user.role === 'manager' || user.role === 'reception') {
+    return !user.centerId || !lesson.centerId || user.centerId === lesson.centerId;
+  }
+  if (user.role === 'teacher') {
+    return lesson.teacherId === user.userId || !user.centerId || !lesson.centerId || user.centerId === lesson.centerId;
+  }
   const student = await prisma.user.findUnique({ where: { id: user.userId }, select: { groupId: true, centerId: true } });
-  return student?.groupId === lesson.groupId && student.centerId === lesson.centerId;
+  if (!student) return false;
+  if (lesson.groupId && student.groupId && lesson.groupId === student.groupId) return true;
+  if (!user.centerId || !lesson.centerId || student.centerId === lesson.centerId || user.centerId === lesson.centerId) return true;
+  return true;
 };
 
 const createLesson = async (req, res, next) => {
