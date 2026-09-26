@@ -295,47 +295,53 @@ export default function StudentSettings() {
           </div>
         </div>
 
-        {/* Tab Buttons */}
-        <div className="flex items-center gap-2 mt-6 overflow-x-auto pb-1 scrollbar-none border-t border-[var(--border)]/60 pt-4">
+        {/* Tab Buttons (100% width, No scroll on any screen) */}
+        <div className="grid grid-cols-3 gap-1 sm:gap-2 mt-5 p-1 bg-[var(--card)] sm:bg-[var(--secondary-background)] rounded-2xl border border-[var(--border)] w-full">
           <button
+            type="button"
             onClick={() => setActiveTab('ai')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 px-1.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
               activeTab === 'ai'
                 ? 'bg-primary text-white shadow-soft shadow-primary/20'
-                : 'bg-[var(--card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card)]'
             }`}
           >
-            <Sparkles size={15} />
-            <span>AI Shaxsiylashtirish</span>
+            <Sparkles size={15} className="flex-shrink-0" />
+            <span className="sm:hidden font-medium">AI</span>
+            <span className="hidden sm:inline">AI Shaxsiylashtirish</span>
             {interests.length > 0 && (
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activeTab === 'ai' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'}`}>
+              <span className={`hidden md:inline-block px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === 'ai' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'}`}>
                 {interests.length}
               </span>
             )}
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('appearance')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 px-1.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
               activeTab === 'appearance'
                 ? 'bg-primary text-white shadow-soft shadow-primary/20'
-                : 'bg-[var(--card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card)]'
             }`}
           >
-            <Palette size={15} />
-            <span>Ranglar va Mavzular</span>
+            <Palette size={15} className="flex-shrink-0" />
+            <span className="sm:hidden font-medium">Ranglar</span>
+            <span className="hidden sm:inline">Ranglar va Mavzular</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+            className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 px-1.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
               activeTab === 'profile'
                 ? 'bg-primary text-white shadow-soft shadow-primary/20'
-                : 'bg-[var(--card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card)]'
             }`}
           >
-            <User size={15} />
-            <span>Profil va Xavfsizlik</span>
+            <User size={15} className="flex-shrink-0" />
+            <span className="sm:hidden font-medium">Profil</span>
+            <span className="hidden sm:inline">Profil va Xavfsizlik</span>
           </button>
         </div>
       </div>
