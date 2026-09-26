@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { formatDateTime } from '../../utils/format';
 
 const ICON_MAP = {
   Shirt,
@@ -93,7 +94,7 @@ export default function StudentShopPage() {
               <Sparkles size={12} /> Tanga & Sovg'alar Tizimi
             </span>
             <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight">
-              Tangalar Do'koni (Coin Shop)
+              Tangalar Do'koni
             </h1>
             <p className="hidden sm:block text-white/80 text-xs sm:text-sm max-w-xl">
               Darslarda qatnashib, vazifalarni vaqtida bajarib to'plagan tangalaringizni markazimizning brendli sovg'alari, darsliklar va chegirmalarga almashtiring!
@@ -111,8 +112,8 @@ export default function StudentShopPage() {
                 {studentCoins.toLocaleString()}
                 <span className="text-xs font-semibold text-white/80">tanga</span>
               </div>
-              <div className="text-[11px] text-white/60 mt-0.5 flex items-center gap-2">
-                <span className="flex items-center gap-1"><Flame size={11} className="text-orange-400" /> {user?.streak?.current || 0} kun streak</span>
+              <div className="text-[11px] text-white/80 mt-0.5 flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1"><Flame size={11} className="text-orange-400" /> {user?.streakCurrent ?? user?.streak?.current ?? 0} kun ketma-ketlik</span>
                 <span className="flex items-center gap-1"><Zap size={11} className="text-yellow-300" /> {user?.xp || 0} XP</span>
               </div>
             </div>
@@ -193,7 +194,7 @@ export default function StudentShopPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
               {filteredItems.map(item => {
                 const canAfford = studentCoins >= item.priceCoins;
                 const isOutOfStock = item.stock !== null && item.stock <= 0;
@@ -204,15 +205,15 @@ export default function StudentShopPage() {
                     layout
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="panel-card flex flex-col justify-between p-5 hover:shadow-soft transition-all border border-[var(--border)] group relative"
+                    className="panel-card flex flex-col justify-between p-3.5 sm:p-5 hover:shadow-soft transition-all border border-[var(--border)] group relative"
                   >
                     <div>
                       {/* Top Row: Icon + Category + Stock */}
-                      <div className="flex items-start justify-between gap-3 mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[var(--primary-50)] text-[var(--primary)] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-xs">
-                          {renderIcon(item.icon, "w-6 h-6")}
+                      <div className="flex items-start justify-between gap-3 mb-2.5 sm:mb-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[var(--primary-50)] text-[var(--primary)] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-xs">
+                          {renderIcon(item.icon, "w-5 h-5 sm:w-6 sm:h-6")}
                         </div>
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-col items-end gap-0.5 sm:gap-1">
                           <span className="badge badge-gray text-[10px] uppercase font-semibold">
                             {item.category === 'merch' ? 'Merch' :
                              item.category === 'book' ? 'Kitob' :
@@ -231,19 +232,19 @@ export default function StudentShopPage() {
                       </div>
 
                       {/* Title & Description */}
-                      <h3 className="font-bold text-base text-[var(--text-primary)] mb-1 group-hover:text-[var(--primary)] transition-colors">
+                      <h3 className="font-bold text-sm sm:text-base text-[var(--text-primary)] mb-1 group-hover:text-[var(--primary)] transition-colors line-clamp-2">
                         {item.title}
                       </h3>
-                      <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-4 leading-relaxed">
+                      <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-3 sm:mb-4 leading-relaxed">
                         {item.description || "Markaz o'quvchilari uchun maxsus sovg'a."}
                       </p>
                     </div>
 
                     {/* Bottom Row: Price & Buy Button */}
-                    <div className="pt-4 border-t border-[var(--border)] flex items-center justify-between gap-3">
+                    <div className="pt-3 sm:pt-4 border-t border-[var(--border)] flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
-                        <Coins size={18} className="text-amber-500 flex-shrink-0" />
-                        <span className="text-lg font-black text-[var(--text-primary)]">
+                        <Coins size={16} className="text-amber-500 flex-shrink-0" />
+                        <span className="text-base sm:text-lg font-black text-[var(--text-primary)]">
                           {item.priceCoins}
                         </span>
                         <span className="text-xs text-[var(--text-secondary)] font-medium">tanga</span>
@@ -253,7 +254,7 @@ export default function StudentShopPage() {
                         type="button"
                         onClick={() => setPurchasingItem(item)}
                         disabled={!canAfford || isOutOfStock}
-                        className={`btn-sm flex items-center gap-1.5 text-xs py-2 px-3.5 rounded-xl font-semibold transition-all ${
+                        className={`btn-sm flex items-center gap-1.5 text-xs py-1.5 sm:py-2 px-3 sm:px-3.5 rounded-xl font-semibold transition-all ${
                           !canAfford
                             ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
                             : isOutOfStock
@@ -309,86 +310,139 @@ export default function StudentShopPage() {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-[var(--border)] text-[var(--text-secondary)] font-semibold uppercase tracking-wider">
-                    <th className="py-3 px-3">Mahsulot</th>
-                    <th className="py-3 px-3">Narxi</th>
-                    <th className="py-3 px-3">Sana</th>
-                    <th className="py-3 px-3">Holat</th>
-                    <th className="py-3 px-3 text-right">Eslatma</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  {orders.map(order => {
-                    const isPending = order.status === 'pending';
-                    const isFulfilled = order.status === 'fulfilled';
-                    const isCancelled = order.status === 'cancelled';
+            <>
+              {/* Mobile View: Cards */}
+              <div className="md:hidden space-y-3">
+                {orders.map(order => {
+                  const isPending = order.status === 'pending';
+                  const isFulfilled = order.status === 'fulfilled';
+                  const isCancelled = order.status === 'cancelled';
 
-                    return (
-                      <tr key={order.id} className="hover:bg-[var(--secondary-background)] transition-colors">
-                        <td className="py-3.5 px-3">
-                          <div className="font-semibold text-sm text-[var(--text-primary)]">
+                  return (
+                    <div key={order.id} className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--secondary-background)] space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-sm text-[var(--text-primary)] truncate">
                             {order.itemTitle}
                           </div>
                           <div className="text-[11px] text-[var(--text-secondary)]">ID: #{order.id.slice(0, 8)}</div>
-                        </td>
-                        <td className="py-3.5 px-3">
-                          <div className="flex items-center gap-1 font-bold text-amber-500">
-                            <Coins size={14} />
-                            {order.priceCoins} tanga
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-3 text-[var(--text-secondary)]">
-                          {new Date(order.createdAt).toLocaleDateString('uz-UZ', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </td>
-                        <td className="py-3.5 px-3">
+                        </div>
+                        <div className="flex items-center gap-1 font-bold text-amber-500 text-xs shrink-0 bg-amber-500/10 px-2.5 py-1 rounded-lg">
+                          <Coins size={13} className="shrink-0" />
+                          {order.priceCoins} tanga
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--border)]/70 text-xs">
+                        <span className="text-[var(--text-secondary)] text-[11px]">
+                          {formatDateTime(order.createdAt)}
+                        </span>
+                        <div>
                           {isPending && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                              <Clock size={12} /> Kutilmoqda
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                              <Clock size={11} /> Kutilmoqda
                             </span>
                           )}
                           {isFulfilled && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                              <CheckCircle2 size={12} /> Topshirildi
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                              <CheckCircle2 size={11} /> Topshirildi
                             </span>
                           )}
                           {isCancelled && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
-                              <X size={12} /> Bekor qilingan
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                              <X size={11} /> Bekor qilingan
                             </span>
                           )}
-                        </td>
-                        <td className="py-3.5 px-3 text-right">
-                          {isPending && (
-                            <span className="text-[11px] text-[var(--text-secondary)]">
-                              Markaz qabulxonasidan olib keting
-                            </span>
-                          )}
-                          {isFulfilled && (
-                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                              Muvaffaqiyatli qabul qilib olindi
-                            </span>
-                          )}
-                          {isCancelled && (
-                            <span className="text-[11px] text-rose-500">
-                              Tangalar balansingizga qaytarildi
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-[var(--text-muted)] bg-[var(--card)] px-2.5 py-1.5 rounded-lg border border-[var(--border)]/50">
+                        {isPending && "Markaz qabulxonasidan olib keting"}
+                        {isFulfilled && "Muvaffaqiyatli qabul qilib olindi"}
+                        {isCancelled && "Tangalar balansingizga qaytarildi"}
+                        {order.note && ` • ${order.note}`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop View: Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-[var(--border)] text-[var(--text-secondary)] font-semibold uppercase tracking-wider">
+                      <th className="py-3 px-3">Mahsulot</th>
+                      <th className="py-3 px-3">Narxi</th>
+                      <th className="py-3 px-3">Sana</th>
+                      <th className="py-3 px-3">Holat</th>
+                      <th className="py-3 px-3 text-right">Eslatma</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border)]">
+                    {orders.map(order => {
+                      const isPending = order.status === 'pending';
+                      const isFulfilled = order.status === 'fulfilled';
+                      const isCancelled = order.status === 'cancelled';
+
+                      return (
+                        <tr key={order.id} className="hover:bg-[var(--secondary-background)] transition-colors">
+                          <td className="py-3.5 px-3">
+                            <div className="font-semibold text-sm text-[var(--text-primary)]">
+                              {order.itemTitle}
+                            </div>
+                            <div className="text-[11px] text-[var(--text-secondary)]">ID: #{order.id.slice(0, 8)}</div>
+                          </td>
+                          <td className="py-3.5 px-3">
+                            <div className="flex items-center gap-1 font-bold text-amber-500">
+                              <Coins size={14} />
+                              {order.priceCoins} tanga
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-3 text-[var(--text-secondary)] whitespace-nowrap">
+                            {formatDateTime(order.createdAt)}
+                          </td>
+                          <td className="py-3.5 px-3 whitespace-nowrap">
+                            {isPending && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                <Clock size={12} /> Kutilmoqda
+                              </span>
+                            )}
+                            {isFulfilled && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                                <CheckCircle2 size={12} /> Topshirildi
+                              </span>
+                            )}
+                            {isCancelled && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                                <X size={12} /> Bekor qilingan
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-3 text-right">
+                            {isPending && (
+                              <span className="text-[11px] text-[var(--text-secondary)]">
+                                Markaz qabulxonasidan olib keting
+                              </span>
+                            )}
+                            {isFulfilled && (
+                              <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                                Muvaffaqiyatli qabul qilib olindi
+                              </span>
+                            )}
+                            {isCancelled && (
+                              <span className="text-[11px] text-rose-500">
+                                Tangalar balansingizga qaytarildi
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}

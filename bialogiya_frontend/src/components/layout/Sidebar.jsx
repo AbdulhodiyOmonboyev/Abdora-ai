@@ -157,25 +157,24 @@ export default function Sidebar({ isOpen, onClose }) {
         style={{
           backgroundColor: 'var(--sidebar-background)',
           borderColor: 'var(--border)',
-          width: isOpen ? 'var(--sidebar-width, 256px)' : '0px',
         }}
         className={cn(
           'flex-shrink-0 flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out',
           'fixed inset-y-0 left-0 z-40',
           'md:relative',
           isOpen
-            ? 'translate-x-0 border-r opacity-100'
-            : '-translate-x-full md:translate-x-0 border-r-0 opacity-0 md:w-0 pointer-events-none'
+            ? 'w-[280px] md:w-[var(--sidebar-width,256px)] translate-x-0 border-r opacity-100 shadow-2xl md:shadow-none'
+            : 'w-0 -translate-x-full md:translate-x-0 border-r-0 opacity-0 md:w-0 pointer-events-none'
         )}
       >
         {/* ── Logo ── */}
-        <div style={{ borderColor: 'var(--border)' }} className="px-5 py-4 border-b flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
+        <div style={{ borderColor: 'var(--border)' }} className="px-4 py-3.5 border-b flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
             {/* Logo mark */}
             <div className="w-8 h-8 gradient-bg rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
               <span className="text-white font-bold text-sm font-['Space_Grotesk']">A</span>
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div
                 style={{ color: 'var(--text-primary)', fontFamily: "'Space Grotesk', sans-serif" }}
                 className="font-bold text-sm leading-tight truncate"
@@ -183,7 +182,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 Abdora AI
               </div>
               <span
-                className={cn('badge badge-dot text-[10px] mt-0.5', ROLE_COLORS[user?.role] || 'badge-gray')}
+                className={cn('badge badge-dot text-[10px] mt-0.5 whitespace-nowrap', ROLE_COLORS[user?.role] || 'badge-gray')}
               >
                 {ROLE_LABELS[user?.role] || user?.role}
               </span>
@@ -192,7 +191,7 @@ export default function Sidebar({ isOpen, onClose }) {
           {/* Close / Collapse button */}
           <button
             onClick={onClose}
-            className="btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors flex-shrink-0"
+            className="btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors flex-shrink-0 p-1"
             aria-label="Sidebarni yopish"
             title="Sidebarni yopish"
           >
@@ -247,7 +246,7 @@ export default function Sidebar({ isOpen, onClose }) {
           {user?.role === 'student' && (
             <div className="mb-3 px-2">
               <div className="flex justify-between text-xs mb-1.5">
-                <span style={{ color: 'var(--text-secondary)' }}>Level {level}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{level}-daraja</span>
                 <span className="font-semibold" style={{ color: 'var(--primary)' }}>{user?.xp || 0} XP</span>
               </div>
               <div style={{ backgroundColor: 'var(--border)' }} className="h-1.5 rounded-full overflow-hidden">
@@ -265,12 +264,12 @@ export default function Sidebar({ isOpen, onClose }) {
           {user?.role === 'student' && (
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div style={{ backgroundColor: 'var(--secondary-background)', borderColor: 'var(--border)' }} className="rounded-xl p-2 text-center border">
-                <div className="font-bold text-sm" style={{ color: 'var(--primary)' }}>{user?.streak?.current || 0}</div>
-                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{t('streak')}</div>
+                <div className="font-bold text-sm" style={{ color: 'var(--primary)' }}>{user?.streakCurrent ?? user?.streak?.current ?? 0}</div>
+                <div className="text-[10px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>Ketma-ketlik</div>
               </div>
               <div style={{ backgroundColor: 'var(--secondary-background)', borderColor: 'var(--border)' }} className="rounded-xl p-2 text-center border">
                 <div className="font-bold text-sm" style={{ color: 'var(--secondary)' }}>{user?.coins || 0}</div>
-                <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{t('coins')}</div>
+                <div className="text-[10px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>Tangalar</div>
               </div>
             </div>
           )}

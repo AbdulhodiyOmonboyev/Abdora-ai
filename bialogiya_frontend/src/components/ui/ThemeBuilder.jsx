@@ -257,7 +257,7 @@ export default function ThemeBuilder({ embedded = false }) {
   }, [themes, searchQuery, filterMode]);
 
   return (
-    <div className={`w-full space-y-6 ${embedded ? '' : 'card p-4 sm:p-6'}`}>
+    <div className={`w-full space-y-5 sm:space-y-6 overflow-hidden ${embedded ? '' : 'card p-3.5 sm:p-6'}`}>
       {/* ── Yuqori sarlavha va tezkor harakatlar ── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-[var(--border)]">
         <div className="space-y-1">
@@ -304,41 +304,41 @@ export default function ThemeBuilder({ embedded = false }) {
       </div>
 
       {/* ── Bo'lim navigatsiyasi (Sub-tabs) ── */}
-      <div className="flex items-center gap-2 p-1.5 rounded-xl bg-[var(--secondary-background)] border border-[var(--border)] max-w-fit">
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--secondary-background)] border border-[var(--border)] overflow-x-auto scrollbar-none w-full sm:w-auto sm:max-w-fit">
         <button
           type="button"
           onClick={() => setActiveTab('presets')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
             activeTab === 'presets'
               ? 'bg-[var(--card)] text-[var(--primary)] shadow-sm'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <Sparkles size={15} /> Tayyor mavzular ({themes.length})
+          <Sparkles size={14} className="shrink-0" /> Tayyor mavzular ({themes.length})
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('customizer')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
             activeTab === 'customizer'
               ? 'bg-[var(--card)] text-[var(--primary)] shadow-sm'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <Sliders size={15} /> Ranglar konstruktori
+          <Sliders size={14} className="shrink-0" /> Ranglar konstruktori
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('preview')}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
             activeTab === 'preview'
               ? 'bg-[var(--card)] text-[var(--primary)] shadow-sm'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <Eye size={15} /> Jonli ko'rinish
+          <Eye size={14} className="shrink-0" /> Jonli ko'rinish
         </button>
       </div>
 
@@ -350,7 +350,7 @@ export default function ThemeBuilder({ embedded = false }) {
           {/* Filtr va Qidiruv */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             {/* Rejim filtrlari */}
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1 sm:pb-0 w-full sm:w-auto">
               {[
                 { id: 'all', label: 'Barchasi', icon: Layers },
                 { id: 'light', label: "Yorug'", icon: Sun },
@@ -361,13 +361,13 @@ export default function ThemeBuilder({ embedded = false }) {
                   key={id}
                   type="button"
                   onClick={() => setFilterMode(id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap flex-shrink-0 ${
                     filterMode === id
                       ? 'bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]'
                       : 'bg-[var(--card)] text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--secondary-background)]'
                   }`}
                 >
-                  <Icon size={13} /> {label}
+                  <Icon size={13} className="shrink-0" /> {label}
                 </button>
               ))}
             </div>
@@ -588,7 +588,7 @@ export default function ThemeBuilder({ embedded = false }) {
           </div>
 
           {/* Kategoriya tablari */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] pb-2">
+          <div className="flex items-center gap-2 border-b border-[var(--border)] pb-2 overflow-x-auto scrollbar-none">
             {COLOR_GROUPS.map((group) => {
               const Icon = group.icon;
               const isActive = activeColorGroup === group.id;
@@ -597,13 +597,13 @@ export default function ThemeBuilder({ embedded = false }) {
                   key={group.id}
                   type="button"
                   onClick={() => setActiveColorGroup(group.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
                     isActive
                       ? 'bg-[var(--primary)] text-white shadow-xs'
                       : 'text-[var(--text-secondary)] hover:bg-[var(--secondary-background)] hover:text-[var(--text-primary)]'
                   }`}
                 >
-                  <Icon size={14} /> {group.title}
+                  <Icon size={14} className="shrink-0" /> {group.title}
                 </button>
               );
             })}
