@@ -494,7 +494,13 @@ function VoiceSection({ lessonId, title }) {
   const [status, setStatus] = useState('idle'); // idle | loading | playing | error
 
   useEffect(() => {
-    return () => { if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current); };
+    return () => {
+      if (audioRef.current) audioRef.current.pause();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    };
   }, []);
 
   const speak = async () => {
@@ -514,13 +520,33 @@ function VoiceSection({ lessonId, title }) {
       await audio.play();
       setStatus('playing');
     } catch (err) {
-      console.error(err);
+      console.warn('Backend audio fetch error, falling back to Web Speech:', err.message);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window && title) {
+        window.speechSynthesis.cancel();
+        const text = `${title} mavzusi bo'yicha dars materiallari bilan tanishib chiqing.`;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'uz-UZ';
+        utterance.onend = () => setStatus('idle');
+        utterance.onerror = () => {
+          setStatus('error');
+          toast.error("Ovozni yuklab bo'lmadi");
+        };
+        window.speechSynthesis.speak(utterance);
+        setStatus('playing');
+        return;
+      }
       toast.error("Ovozni yuklab bo'lmadi");
       setStatus('error');
     }
   };
 
-  const stop = () => { audioRef.current?.pause(); setStatus('idle'); };
+  const stop = () => {
+    audioRef.current?.pause();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setStatus('idle');
+  };
   const playing = status === 'playing';
   const loading = status === 'loading';
 

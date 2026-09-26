@@ -32,6 +32,8 @@ export default function ExplainerVideoPlayer({ lessonId }) {
   const { data: script, isLoading } = useQuery({
     queryKey: ['explainer-video', lessonId],
     queryFn: () => api.get(`/lessons/${lessonId}/ai/explainer-video`).then(r => r.data.data),
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
   });
 
   const generate = useMutation({

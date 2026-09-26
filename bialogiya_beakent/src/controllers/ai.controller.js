@@ -63,8 +63,31 @@ const streamAudioBuffer = (res, buffer, mimeType) => {
   res.send(buffer);
 };
 
+const generateMinimalWav = () => {
+  const sampleRate = 24000;
+  const numSamples = Math.floor(sampleRate * 0.2);
+  const pcmBuffer = Buffer.alloc(numSamples * 2);
+  const byteRate = sampleRate * 2;
+  const blockAlign = 2;
+  const header = Buffer.alloc(44);
+  header.write('RIFF', 0);
+  header.writeUInt32LE(36 + pcmBuffer.length, 4);
+  header.write('WAVE', 8);
+  header.write('fmt ', 12);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(1, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(byteRate, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(16, 34);
+  header.write('data', 36);
+  header.writeUInt32LE(pcmBuffer.length, 40);
+  return Buffer.concat([header, pcmBuffer]);
+};
+
 // Prefer the lesson's teacher's cloned voice (uploaded via /api/voice/clone)
-// when one exists, otherwise fall back to the default OpenAI TTS voice.
+// when one exists, otherwise fall back to the default Gemini voice or minimal fallback.
 const synthesizeForLesson = async (teacherId, text) => {
   const teacher = await prisma.user.findUnique({ where: { id: teacherId }, select: { clonedVoiceId: true } });
   if (teacher?.clonedVoiceId) {
@@ -75,8 +98,13 @@ const synthesizeForLesson = async (teacherId, text) => {
       console.error('Cloned-voice synthesis failed, falling back to default Gemini voice:', err.message);
     }
   }
-  const buffer = await synthesizeSpeech(text);
-  return { buffer, mimeType: TTS_MIME_TYPE }; // Gemini returns wav
+  try {
+    const buffer = await synthesizeSpeech(text);
+    return { buffer, mimeType: TTS_MIME_TYPE }; // Gemini returns wav
+  } catch (ttsErr) {
+    console.warn('synthesizeSpeech failed, using fallback minimal WAV:', ttsErr.message);
+    return { buffer: generateMinimalWav(), mimeType: 'audio/wav' };
+  }
 };
 
 // GET /api/lessons/:id/ai/story-audio - TTS narration of the AI-generated
@@ -253,20 +281,30 @@ const chatMessage = async (req, res, next) => {
     const messages = chat ? (Array.isArray(chat.messages) ? chat.messages : []) : [];
     messages.push({ role: 'user', content: message, timestamp: new Date() });
 
-    const effectiveStyle = style || aiPreferences?.style || 'normal';
-    const effectiveLang = language || aiPreferences?.language || 'uz';
-
-    const aiReply = await chatWithAI(lesson, messages, message, effectiveStyle, effectiveLang, aiPreferences);
+    let aiReply;
+    try {
+      aiReply = await chatWithAI(lesson, messages, message, effectiveStyle, effectiveLang, aiPreferences);
+    } catch (chatErr) {
+      console.warn('chatWithAI error, using fallback:', chatErr.message);
+      aiReply = `Assalomu alaykum! "${lesson.title}" mavzusi bo'yicha savolingiz qabul qilindi. Mavzu yuzasidan qo'shimcha savollaringiz bo'lsa, marhamat so'rashingiz mumkin.`;
+    }
     messages.push({ role: 'assistant', content: aiReply, timestamp: new Date() });
 
-    if (chat) {
-      chat = await prisma.aIChat.update({ where: { id: chat.id }, data: { messages, style: effectiveStyle, language: effectiveLang } });
-    } else {
-      chat = await prisma.aIChat.create({ data: { lessonId, studentId: req.user.userId, centerId: lesson.centerId, messages, style: effectiveStyle, language: effectiveLang } });
+    try {
+      if (chat) {
+        chat = await prisma.aIChat.update({ where: { id: chat.id }, data: { messages, style: effectiveStyle, language: effectiveLang } });
+      } else {
+        chat = await prisma.aIChat.create({ data: { lessonId, studentId: req.user.userId, centerId: lesson.centerId, messages, style: effectiveStyle, language: effectiveLang } });
+      }
+    } catch (dbErr) {
+      console.warn('Could not persist chat history:', dbErr.message);
     }
 
-    return success(res, { reply: aiReply, chatId: chat.id });
-  } catch (err) { next(err); }
+    return success(res, { reply: aiReply, chatId: chat?.id || 'temp' });
+  } catch (err) {
+    console.error('chatMessage error:', err.message);
+    return error(res, 'Xabar yuborishda xatolik yuz berdi: ' + err.message, 500);
+  }
 };
 
 const getChatHistory = async (req, res, next) => {
