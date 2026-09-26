@@ -143,18 +143,25 @@ class TestModel {
     this.lastPassed,
   });
 
+int _parseInt(dynamic val, [int fallback = 0]) {
+  if (val == null) return fallback;
+  if (val is int) return val;
+  if (val is double) return val.toInt();
+  return int.tryParse(val.toString()) ?? fallback;
+}
+
   factory TestModel.fromJson(Map<String, dynamic> json) {
     final count = json['_count']?['questions'] ?? json['questions']?.length ?? 10;
     return TestModel(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
-      timeLimit: json['timeLimit'] ?? 20,
-      passingScore: json['passingScore'] ?? 60,
-      totalPoints: json['totalPoints'] ?? 100,
-      questionCount: count,
+      timeLimit: _parseInt(json['timeLimit'], 20),
+      passingScore: _parseInt(json['passingScore'], 60),
+      totalPoints: _parseInt(json['totalPoints'], 100),
+      questionCount: _parseInt(count, 10),
       isCompleted: json['result'] != null || json['isCompleted'] == true,
-      lastScore: json['result']?['percentage'],
-      lastPassed: json['result']?['passed'],
+      lastScore: json['result']?['percentage'] != null ? _parseInt(json['result']['percentage']) : null,
+      lastPassed: json['result']?['passed'] is bool ? json['result']['passed'] : null,
     );
   }
 }
@@ -187,7 +194,7 @@ class QuestionModel {
       id: json['id'] ?? '',
       text: json['text'] ?? '',
       options: opts,
-      points: json['points'] ?? 1,
+      points: _parseInt(json['points'], 1),
     );
   }
 }
@@ -224,12 +231,12 @@ class HomeworkModel {
       id: json['id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      dueDate: json['dueDate'] != null ? DateTime.tryParse(json['dueDate']) : null,
-      maxScore: json['maxScore'] ?? 100,
+      dueDate: json['dueDate'] != null ? DateTime.tryParse(json['dueDate'].toString()) : null,
+      maxScore: _parseInt(json['maxScore'], 100),
       isSubmitted: sub != null,
-      status: sub?['status'] ?? 'none',
-      finalScore: sub?['finalScore'],
-      feedback: sub?['teacherGrade']?['feedback'] ?? sub?['aiGrade']?['feedback'],
+      status: (sub?['status'] ?? 'none').toString(),
+      finalScore: sub?['finalScore'] != null ? _parseInt(sub?['finalScore']) : null,
+      feedback: sub?['teacherGrade']?['feedback']?.toString() ?? sub?['aiGrade']?['feedback']?.toString(),
     );
   }
 }
@@ -258,14 +265,14 @@ class LeaderboardEntry {
 
   factory LeaderboardEntry.fromJson(Map<String, dynamic> json, int rankIndex) {
     return LeaderboardEntry(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      username: json['username'] ?? '',
-      xp: json['xp'] ?? 0,
-      level: json['level'] ?? 1,
-      coins: json['coins'] ?? 0,
-      streak: json['streakCurrent'] ?? 0,
-      rank: rankIndex,
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      username: (json['username'] ?? '').toString(),
+      xp: _parseInt(json['xp'], 0),
+      level: _parseInt(json['level'], 1),
+      coins: _parseInt(json['coins'], 0),
+      streak: _parseInt(json['streakCurrent'] ?? json['streak'], 0),
+      rank: _parseInt(json['rank'], rankIndex),
     );
   }
 }

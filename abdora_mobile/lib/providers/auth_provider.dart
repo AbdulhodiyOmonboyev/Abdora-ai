@@ -23,18 +23,24 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final response = await ApiClient().dio.get(Endpoints.me);
-      if (response.statusCode == 200 && response.data['data'] != null) {
-        _user = UserModel.fromJson(response.data['data']);
-        await TokenStorage.saveUserJson(jsonEncode(_user!.toJson()));
-        notifyListeners();
-        return true;
+      if (response.statusCode == 200 && response.data != null) {
+        final userData = response.data['data'] ?? response.data['user'] ?? response.data;
+        if (userData is Map<String, dynamic>) {
+          _user = UserModel.fromJson(userData);
+          await TokenStorage.saveUserJson(jsonEncode(_user!.toJson()));
+          notifyListeners();
+          return true;
+        }
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AutoLogin API xatolik: $e, keshdan tekshirilmoqda');
       final cachedUser = await TokenStorage.getUserJson();
       if (cachedUser != null) {
-        _user = UserModel.fromJson(jsonDecode(cachedUser));
-        notifyListeners();
-        return true;
+        try {
+          _user = UserModel.fromJson(jsonDecode(cachedUser));
+          notifyListeners();
+          return true;
+        } catch (_) {}
       }
     }
     return false;
@@ -55,13 +61,23 @@ class AuthProvider extends ChangeNotifier {
         },
       );
 
-      if (response.statusCode == 200 && response.data['data'] != null) {
-        final data = response.data['data'];
-        final token = data['token'];
-        _user = UserModel.fromJson(data['user']);
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data['data'] ?? response.data;
+        // Backend 'accessToken' yoki 'token' qaytaradi
+        final rawToken = data['accessToken'] ?? data['token'];
+        final token = rawToken != null ? rawToken.toString() : '';
 
-        await TokenStorage.saveToken(token);
-        await TokenStorage.saveUserJson(jsonEncode(_user!.toJson()));
+        if (data['user'] != null && data['user'] is Map<String, dynamic>) {
+          _user = UserModel.fromJson(data['user']);
+        }
+
+        if (token.isNotEmpty) {
+          await TokenStorage.saveToken(token);
+        }
+
+        if (_user != null) {
+          await TokenStorage.saveUserJson(jsonEncode(_user!.toJson()));
+        }
 
         _isLoading = false;
         notifyListeners();
@@ -69,12 +85,14 @@ class AuthProvider extends ChangeNotifier {
       }
     } on DioException catch (e) {
       if (e.response != null && e.response?.data != null) {
-        _errorMessage = e.response?.data['message'] ?? 'Login yoki parol xato';
+        final resData = e.response?.data;
+        _errorMessage = resData['message'] ?? 'Login yoki parol xato';
       } else {
         _errorMessage = 'Serverga ulanishda xatolik yuz berdi';
       }
-    } catch (e) {
-      _errorMessage = 'Noma\'lum xatolik yuz berdi';
+    } catch (e, stack) {
+      debugPrint('Auth login error: $e\n$stack');
+      _errorMessage = 'Xatolik yuz berdi: ${e.toString()}';
     }
 
     _isLoading = false;

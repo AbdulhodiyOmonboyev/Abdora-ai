@@ -55,8 +55,13 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final rawLogin = _usernameController.text.trim();
-    // Agar telefon raqam bo'lsa, probellarni olib tashlaymiz
-    final cleanedLogin = rawLogin.startsWith('+') ? UzPhoneFormatter.clean(rawLogin) : rawLogin;
+    // Telefon raqamni tozalaymiz va formatlaymiz (+998 prefiksi bilan)
+    var cleanedLogin = UzPhoneFormatter.clean(rawLogin);
+    if (RegExp(r'^\d{9}$').hasMatch(cleanedLogin)) {
+      cleanedLogin = '+998$cleanedLogin';
+    } else if (RegExp(r'^998\d{9}$').hasMatch(cleanedLogin)) {
+      cleanedLogin = '+$cleanedLogin';
+    }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final success = await authProvider.login(

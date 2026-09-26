@@ -24,17 +24,24 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic val, [int fallback = 0]) {
+      if (val == null) return fallback;
+      if (val is int) return val;
+      if (val is double) return val.toInt();
+      return int.tryParse(val.toString()) ?? fallback;
+    }
+
     return UserModel(
-      id: json['id'] ?? '',
-      username: json['username'] ?? '',
-      name: json['name'] ?? '',
-      phone: json['phone'],
-      role: json['role'] ?? 'student',
-      coins: json['coins'] is int ? json['coins'] : int.tryParse(json['coins']?.toString() ?? '0') ?? 0,
-      xp: json['xp'] is int ? json['xp'] : int.tryParse(json['xp']?.toString() ?? '0') ?? 0,
-      level: json['level'] is int ? json['level'] : int.tryParse(json['level']?.toString() ?? '1') ?? 1,
-      centerId: json['centerId'],
-      branchId: json['branchId'],
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      username: (json['username'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      phone: json['phone']?.toString(),
+      role: (json['role'] ?? 'student').toString(),
+      coins: parseInt(json['coins'], 0),
+      xp: parseInt(json['xp'], 0),
+      level: parseInt(json['level'], 1),
+      centerId: json['centerId']?.toString(),
+      branchId: json['branchId']?.toString(),
     );
   }
 
