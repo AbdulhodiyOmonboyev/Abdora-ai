@@ -1,3 +1,11 @@
+// Top-level xavfsiz int parser
+int _parseInt(dynamic val, [int fallback = 0]) {
+  if (val == null) return fallback;
+  if (val is int) return val;
+  if (val is double) return val.toInt();
+  return int.tryParse(val.toString()) ?? fallback;
+}
+
 // Darsning AI tahlil va o'rganish kontenti
 class LessonAiContent {
   final String status;
@@ -142,13 +150,6 @@ class TestModel {
     this.lastScore,
     this.lastPassed,
   });
-
-int _parseInt(dynamic val, [int fallback = 0]) {
-  if (val == null) return fallback;
-  if (val is int) return val;
-  if (val is double) return val.toInt();
-  return int.tryParse(val.toString()) ?? fallback;
-}
 
   factory TestModel.fromJson(Map<String, dynamic> json) {
     final count = json['_count']?['questions'] ?? json['questions']?.length ?? 10;
