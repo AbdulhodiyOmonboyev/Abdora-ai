@@ -329,6 +329,21 @@ const updateProfile = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const updateLanguage = async (req, res, next) => {
+  try {
+    const { language } = req.body;
+    if (!language || !['uz', 'ru', 'en'].includes(language)) {
+      return error(res, 'Yaroqsiz til (uz, ru, en talab qilinadi)', 400);
+    }
+    const user = await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { language },
+      select: { id: true, language: true, name: true, username: true },
+    });
+    return success(res, user, 'Til muvaffaqiyatli yangilandi');
+  } catch (err) { next(err); }
+};
+
 const testAIPersonalization = async (req, res, next) => {
   try {
     const { message, aiPreferences: bodyPreferences } = req.body;
@@ -939,4 +954,5 @@ module.exports = {
   deleteStudentNote,
   awardStudentCoins,
   testAIPersonalization,
+  updateLanguage,
 };

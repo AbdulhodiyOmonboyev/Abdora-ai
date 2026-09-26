@@ -23,9 +23,17 @@ i18n.use(initReactI18next).init({
 });
 
 export function setLanguage(code) {
-  if (!resources[code]) return;
-  i18n.changeLanguage(code);
-  localStorage.setItem('neyron-lang', code);
+  if (!code) return;
+  const targetCode = resources[code] ? code : 'uz';
+  i18n.changeLanguage(targetCode);
+  try {
+    localStorage.setItem('neyron-lang', targetCode);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = targetCode;
+    }
+  } catch (err) {
+    console.warn('Unable to persist language to localStorage', err);
+  }
 }
 
 export function getAvailableLanguages() {

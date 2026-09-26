@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { formatRelativeTime } from '../../utils/format';
+import { setLanguage } from '../../config/i18n';
 
 const ROLE_LABELS = {
   admin: 'Admin',
@@ -30,7 +31,7 @@ const dropdownVariants = {
 };
 
 export default function Topbar({ onMenuClick, isSidebarOpen }) {
-  const { user, clearAuth } = useAuthStore();
+  const { user, updateUser, clearAuth } = useAuthStore();
   const { theme, toggle } = useThemeStore();
   const { selectedBranchId, selectedBranchName, setSelectedBranch } = useBranchStore();
   const { t, i18n } = useTranslation();
@@ -259,10 +260,15 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
   const notifications = notifData?.notifications || [];
   const unread = notifData?.unread || 0;
 
-  const changeLanguage = (lang) => {
-    i18n.changeLanguage(lang);
-    localStorage.setItem('neyron-lang', lang);
+  const changeLanguage = async (lang) => {
+    setLanguage(lang);
+    updateUser({ language: lang });
     setShowLang(false);
+    try {
+      await api.patch('/users/language', { language: lang });
+    } catch (err) {
+      // offline or silent catch
+    }
   };
 
   const initials = (user?.name || 'U').charAt(0).toUpperCase();
@@ -306,7 +312,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
             >
               <Building2 size={14} className="text-[var(--primary)] flex-shrink-0 group-hover:scale-110 transition-transform" />
               <span className="max-w-[100px] sm:max-w-[150px] truncate font-medium">
-                {selectedBranchName || "Barcha filiallar"}
+                {selectedBranchName || t('all_branches') || "Barcha filiallar"}
               </span>
               <ChevronDown size={12} className={`text-[var(--text-muted)] transition-transform duration-200 ${showBranchDropdown ? 'rotate-180' : ''}`} />
             </button>
@@ -494,7 +500,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
                                 </div>
                               </div>
                               <span className="badge badge-gray text-[10px] flex-shrink-0">
-                                {ROLE_LABELS[result.role] || result.role}
+                                {t(result.role) || ROLE_LABELS[result.role] || result.role}
                               </span>
                             </button>
                           ))}
@@ -653,7 +659,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
                   {user?.name}
                 </span>
                 <span className="text-[10px] leading-tight text-[var(--text-muted)]">
-                  {ROLE_LABELS[user?.role] || user?.role}
+                  {t(user?.role) || ROLE_LABELS[user?.role] || user?.role}
                 </span>
               </div>
               <ChevronDown size={13} className={`text-[var(--text-muted)] hidden sm:block flex-shrink-0 transition-transform duration-200 ${showProfile ? 'rotate-180' : ''}`} />
@@ -678,7 +684,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
                       : user?.role === 'manager' ? 'badge-info'
                       : 'badge-gray'
                     }`}>
-                      {ROLE_LABELS[user?.role] || user?.role}
+                      {t(user?.role) || ROLE_LABELS[user?.role] || user?.role}
                     </span>
                     {user?.isFrozen && (
                       <div className="mt-1.5 text-xs flex items-center gap-1.5" style={{ color: 'var(--info)' }}>

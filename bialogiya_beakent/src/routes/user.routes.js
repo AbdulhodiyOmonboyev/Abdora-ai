@@ -4,7 +4,8 @@ const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const {
   createStudent, createTeacher, createManager, getManagers, updateManager, deleteManager, getManagerBranches, getAllUsers, getStudentsByTeacher, getUserById,
   updateUser, updateProfile, deleteUser, resetStudentPassword, freezeStudent, changePassword,
-  getStudentHistory, addStudentNote, deleteStudentNote, awardStudentCoins, testAIPersonalization
+  getStudentHistory, addStudentNote, deleteStudentNote, awardStudentCoins, testAIPersonalization,
+  updateLanguage
 } = require('../controllers/user.controller');
 
 router.get('/', verifyToken, requireRole('admin', 'reception', 'manager'), getAllUsers);
@@ -20,6 +21,8 @@ router.put('/managers/:id', verifyToken, requireRole('admin'), updateManager);
 router.delete('/managers/:id', verifyToken, requireRole('admin'), deleteManager);
 router.get('/manager/branches', verifyToken, requireRole('manager'), getManagerBranches);
 router.put('/profile', verifyToken, updateProfile);
+router.patch('/language', verifyToken, updateLanguage);
+router.put('/language', verifyToken, updateLanguage);
 router.post('/change-password', verifyToken, changePassword);
 router.post('/ai-test', verifyToken, testAIPersonalization);
 

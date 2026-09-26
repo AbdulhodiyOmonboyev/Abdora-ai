@@ -19,15 +19,15 @@ const studentLinks = [
   { to: '/student/lessons', icon: BookOpen, key: 'lessons' },
   { to: '/student/homework', icon: ClipboardList, key: 'homework' },
   { to: '/student/tests', icon: FileText, key: 'tests' },
-  { to: '/student/shop', icon: ShoppingBag, key: 'shop', label: "Do'kon" },
+  { to: '/student/shop', icon: ShoppingBag, key: 'shop' },
   { to: '/student/results', icon: BarChart2, key: 'results' },
   { to: '/student/resources', icon: FolderOpen, key: 'resources' },
   { to: '/student/attendance', icon: UserCheck, key: 'attendance' },
-  { to: '/student/progress', icon: BarChart2, key: 'progress', label: 'Progress' },
-  { to: '/student/certificates', icon: Trophy, key: 'certificates', label: 'Sertifikatlar' },
+  { to: '/student/progress', icon: BarChart2, key: 'progress' },
+  { to: '/student/certificates', icon: Trophy, key: 'certificates' },
   { to: '/student/achievements', icon: Star, key: 'achievements' },
   { to: '/student/leaderboard', icon: Users, key: 'leaderboard' },
-  { to: '/student/settings', icon: Settings, key: 'settings', label: 'Sozlamalar' },
+  { to: '/student/settings', icon: Settings, key: 'settings' },
 ];
 
 const teacherLinks = [
@@ -38,7 +38,7 @@ const teacherLinks = [
   { to: '/teacher/homework', icon: ClipboardList, key: 'homework' },
   { to: '/teacher/tests', icon: FileText, key: 'tests' },
   { to: '/teacher/attendance', icon: Calendar, key: 'attendance' },
-  { to: '/teacher/gradebook', icon: FileText, key: 'gradebook', label: 'Jurnal' },
+  { to: '/teacher/gradebook', icon: FileText, key: 'gradebook' },
   { to: '/teacher/resources', icon: Upload, key: 'resources' },
   { to: '/teacher/voice', icon: Mic, key: 'voice' },
   { to: '/teacher/analytics', icon: BarChart2, key: 'analytics' },
@@ -47,26 +47,26 @@ const teacherLinks = [
 const adminLinks = [
   { to: '/admin/dashboard',    icon: LayoutDashboard, key: 'dashboard' },
   { to: '/admin/applications', icon: Inbox,           key: 'applications' },
-  { to: '/admin/centers',      icon: Building2,       key: 'centers',  label: "O'quv Markazlar" },
-  { to: '/admin/ai-agents',    icon: Bot,             key: 'aiAgents', label: 'AI Agentlar' },
+  { to: '/admin/centers',      icon: Building2,       key: 'centers' },
+  { to: '/admin/ai-agents',    icon: Bot,             key: 'aiAgents' },
   { to: '/admin/settings',     icon: Settings,        key: 'settings' },
 ];
 
 const managerLinks = [
   { to: '/manager/dashboard',  icon: LayoutDashboard, key: 'dashboard' },
-  { to: '/crm/dashboard',      icon: Bot,             key: 'crmDashboard', label: 'CRM Dashboard' },
-  { to: '/leads',              icon: UserPlus,        key: 'leads',    label: 'Lidlar' },
-  { to: '/manager/branches',   icon: Building2,       key: 'branches', label: 'Filiallar' },
-  { to: '/erp/rooms',          icon: BookOpen,        key: 'rooms',    label: 'Xonalar' },
-  { to: '/erp/timetable',      icon: Calendar,        key: 'timetable',label: 'Jadval' },
+  { to: '/crm/dashboard',      icon: Bot,             key: 'crmDashboard' },
+  { to: '/leads',              icon: UserPlus,        key: 'leads' },
+  { to: '/manager/branches',   icon: Building2,       key: 'branches' },
+  { to: '/erp/rooms',          icon: BookOpen,        key: 'rooms' },
+  { to: '/erp/timetable',      icon: Calendar,        key: 'timetable' },
   { to: '/manager/reception',  icon: UserCog,         key: 'reception' },
   { to: '/manager/teachers',   icon: BookMarked,      key: 'teachers' },
   { to: '/manager/groups',     icon: Users,           key: 'groups' },
   { to: '/manager/students',   icon: GraduationCap,   key: 'students' },
-  { to: '/manager/payments',   icon: Wallet,          key: 'payments', label: "To'lovlar" },
-  { to: '/finance',            icon: PieChart,        key: 'finance',  label: 'Moliya' },
-  { to: '/erp/cashbox',        icon: Wallet,          key: 'cashbox',  label: 'Kassa' },
-  { to: '/finance/payroll',    icon: Receipt,         key: 'payroll',  label: 'Ish haqi' },
+  { to: '/manager/payments',   icon: Wallet,          key: 'payments' },
+  { to: '/finance',            icon: PieChart,        key: 'finance' },
+  { to: '/erp/cashbox',        icon: Wallet,          key: 'cashbox' },
+  { to: '/finance/payroll',    icon: Receipt,         key: 'payroll' },
   { to: '/manager/settings',   icon: Settings,        key: 'settings' },
 ];
 
@@ -106,12 +106,12 @@ export default function Sidebar({ isOpen, onClose }) {
     return [
       { to: '/reception/dashboard', icon: LayoutDashboard, key: 'dashboard' },
       ...(perms.canManageLeads !== false ? [
-        { to: '/crm/dashboard', icon: Bot, key: 'crmDashboard', label: 'CRM Dashboard' },
-        { to: '/leads', icon: UserPlus, key: 'leads', label: 'Lidlar' },
+        { to: '/crm/dashboard', icon: Bot, key: 'crmDashboard' },
+        { to: '/leads', icon: UserPlus, key: 'leads' },
       ] : []),
       ...(perms.canManageTimetable !== false ? [
-        { to: '/erp/rooms', icon: BookOpen, key: 'rooms', label: 'Xonalar' },
-        { to: '/erp/timetable', icon: Calendar, key: 'timetable', label: 'Jadval' },
+        { to: '/erp/rooms', icon: BookOpen, key: 'rooms' },
+        { to: '/erp/timetable', icon: Calendar, key: 'timetable' },
       ] : []),
       ...(perms.canManageTeachers !== false ? [
         { to: '/reception/teachers', icon: BookMarked, key: 'teachers' },
@@ -126,10 +126,10 @@ export default function Sidebar({ isOpen, onClose }) {
         { to: '/reception/payments', icon: Wallet, key: 'payments' },
       ] : []),
       ...(perms.canViewFinance === true ? [
-        { to: '/finance', icon: PieChart, key: 'finance', label: 'Moliya' },
+        { to: '/finance', icon: PieChart, key: 'finance' },
       ] : []),
       ...(perms.canViewCashbox === true ? [
-        { to: '/erp/cashbox', icon: Wallet, key: 'cashbox', label: 'Kassa' },
+        { to: '/erp/cashbox', icon: Wallet, key: 'cashbox' },
       ] : []),
       { to: '/reception/settings', icon: Settings, key: 'settings' },
     ];
@@ -209,7 +209,7 @@ export default function Sidebar({ isOpen, onClose }) {
               style={{ color: 'var(--text-muted)' }}
               className="text-[10px] font-bold uppercase tracking-widest px-3 py-2 mb-1"
             >
-              Asosiy
+              {t('main_menu') || 'Asosiy'}
             </p>
           )}
 
@@ -234,7 +234,7 @@ export default function Sidebar({ isOpen, onClose }) {
               >
                 <Icon size={17} className="link-icon flex-shrink-0" />
                 <span className="truncate">
-                  {label || (user?.role === 'manager' && key === 'branches' ? 'Filiallar' : t(key))}
+                  {t(key) || label || (user?.role === 'manager' && key === 'branches' ? (t('branches') || 'Filiallar') : key)}
                 </span>
               </NavLink>
             </motion.div>
@@ -247,7 +247,7 @@ export default function Sidebar({ isOpen, onClose }) {
           {user?.role === 'student' && (
             <div className="mb-3 px-2">
               <div className="flex justify-between text-xs mb-1.5">
-                <span style={{ color: 'var(--text-secondary)' }}>{level}-daraja</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{level}-{t('level') || 'daraja'}</span>
                 <span className="font-semibold" style={{ color: 'var(--primary)' }}>{user?.xp || 0} XP</span>
               </div>
               <div style={{ backgroundColor: 'var(--border)' }} className="h-1.5 rounded-full overflow-hidden">
@@ -266,11 +266,11 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div style={{ backgroundColor: 'var(--secondary-background)', borderColor: 'var(--border)' }} className="rounded-xl p-2 text-center border">
                 <div className="font-bold text-sm" style={{ color: 'var(--primary)' }}>{user?.streakCurrent ?? user?.streak?.current ?? 0}</div>
-                <div className="text-[10px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>Ketma-ketlik</div>
+                <div className="text-[10px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{t('streak') || 'Ketma-ketlik'}</div>
               </div>
               <div style={{ backgroundColor: 'var(--secondary-background)', borderColor: 'var(--border)' }} className="rounded-xl p-2 text-center border">
                 <div className="font-bold text-sm" style={{ color: 'var(--secondary)' }}>{user?.coins || 0}</div>
-                <div className="text-[10px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>Tangalar</div>
+                <div className="text-[10px] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{t('coins') || 'Tangalar'}</div>
               </div>
             </div>
           )}
@@ -294,7 +294,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <button
               onClick={() => logoutMutation.mutate()}
               className="btn-icon flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              title="Chiqish"
+              title={t('logout') || "Chiqish"}
               disabled={logoutMutation.isPending}
             >
               <LogOut size={15} style={{ color: 'var(--error)' }} />

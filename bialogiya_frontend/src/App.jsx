@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from './config/axios';
 import { useAuthStore } from './store/authStore';
+import i18n, { setLanguage } from './config/i18n';
 import MainLayout from './components/layout/MainLayout';
 
 // Shared
@@ -137,6 +139,12 @@ const ProtectedRoute = ({ children, role, permission }) => {
 
 export default function App() {
   const { user } = useAuthStore();
+
+  useEffect(() => {
+    if (user?.language && i18n.language !== user.language) {
+      setLanguage(user.language);
+    }
+  }, [user?.language]);
 
   return (
     <BrowserRouter>

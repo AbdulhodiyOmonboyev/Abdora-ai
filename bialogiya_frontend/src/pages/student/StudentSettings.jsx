@@ -9,8 +9,10 @@ import {
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { setLanguage } from '../../config/i18n';
 import ThemeBuilder from '../../components/ui/ThemeBuilder';
 import PhoneInput from '../../components/ui/PhoneInput';
 import { cleanPhone } from '../../utils/formatPhone';
@@ -103,6 +105,7 @@ const THEME_PALETTES = [
 ];
 
 export default function StudentSettings() {
+  const { t, i18n } = useTranslation();
   const { user, updateUser } = useAuthStore();
   const { applyTheme, activeThemeId } = useThemeStore();
 
@@ -237,8 +240,11 @@ export default function StudentSettings() {
     mutationFn: (data) => api.put('/users/profile', { ...data, phone: cleanPhone(data.phone) }),
     onSuccess: ({ data }) => {
       updateUser(data.data);
+      if (data.data?.language) {
+        setLanguage(data.data.language);
+      }
       refetchMe();
-      toast.success('Profil ma\'lumotlari yangilandi');
+      toast.success(t('save') ? `${t('profile')} ${t('save')}` : 'Profil ma\'lumotlari yangilandi');
     },
     onError: (err) => toast.error(friendlyAiErrorMessage(err)),
   });
@@ -308,7 +314,7 @@ export default function StudentSettings() {
           >
             <Sparkles size={15} className="flex-shrink-0" />
             <span className="sm:hidden font-medium">AI</span>
-            <span className="hidden sm:inline">AI Shaxsiylashtirish</span>
+            <span className="hidden sm:inline">{t('ai_personalization') || "AI Shaxsiylashtirish"}</span>
             {interests.length > 0 && (
               <span className={`hidden md:inline-block px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === 'ai' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'}`}>
                 {interests.length}
@@ -326,8 +332,8 @@ export default function StudentSettings() {
             }`}
           >
             <Palette size={15} className="flex-shrink-0" />
-            <span className="sm:hidden font-medium">Ranglar</span>
-            <span className="hidden sm:inline">Ranglar va Mavzular</span>
+            <span className="sm:hidden font-medium">{t('themes_and_colors')?.split(' ')[0] || "Ranglar"}</span>
+            <span className="hidden sm:inline">{t('themes_and_colors') || "Ranglar va Mavzular"}</span>
           </button>
 
           <button
@@ -340,8 +346,8 @@ export default function StudentSettings() {
             }`}
           >
             <User size={15} className="flex-shrink-0" />
-            <span className="sm:hidden font-medium">Profil</span>
-            <span className="hidden sm:inline">Profil va Xavfsizlik</span>
+            <span className="sm:hidden font-medium">{t('profile') || "Profil"}</span>
+            <span className="hidden sm:inline">{t('profile_and_security') || "Profil va Xavfsizlik"}</span>
           </button>
         </div>
       </div>
@@ -826,7 +832,13 @@ export default function StudentSettings() {
                   </label>
                   <select
                     value={profileForm.language}
-                    onChange={(e) => setProfileForm({ ...profileForm, language: e.target.value })}
+                    onChange={(e) => {
+                      const newLang = e.target.value;
+                      setProfileForm((prev) => ({ ...prev, language: newLang }));
+                      setLanguage(newLang);
+                      updateUser({ language: newLang });
+                      api.patch('/users/language', { language: newLang }).catch(() => {});
+                    }}
                     className="input-field text-xs sm:text-sm"
                   >
                     <option value="uz">O'zbek tili</option>

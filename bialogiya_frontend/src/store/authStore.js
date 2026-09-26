@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { setLanguage } from '../config/i18n';
 
 export const useAuthStore = create(
   persist(
@@ -16,10 +17,19 @@ export const useAuthStore = create(
         } catch (err) {
           console.warn('Unable to persist auth tokens', err);
         }
+        if (user?.language) {
+          setLanguage(user.language);
+        }
         set({ user, accessToken, refreshToken, isAuthenticated: true });
       },
 
-      updateUser: (updates) => set((state) => ({ user: { ...state.user, ...updates } })),
+      updateUser: (updates) => set((state) => {
+        const nextUser = state.user ? { ...state.user, ...updates } : updates;
+        if (updates?.language) {
+          setLanguage(updates.language);
+        }
+        return { user: nextUser };
+      }),
 
       clearAuth: () => {
         try {
