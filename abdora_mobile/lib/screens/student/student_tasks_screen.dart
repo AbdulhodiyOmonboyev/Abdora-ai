@@ -9,7 +9,8 @@ import '../../widgets/status_badge.dart';
 import 'test_runner_screen.dart';
 
 class StudentTasksScreen extends StatefulWidget {
-  const StudentTasksScreen({super.key});
+  final int initialTab;
+  const StudentTasksScreen({super.key, this.initialTab = 0});
 
   @override
   State<StudentTasksScreen> createState() => _StudentTasksScreenState();
@@ -21,7 +22,11 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTab.clamp(0, 1),
+    );
     Future.microtask(() {
       final p = Provider.of<StudentProvider>(context, listen: false);
       p.fetchTests();

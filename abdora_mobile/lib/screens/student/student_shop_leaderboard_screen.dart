@@ -8,7 +8,8 @@ import '../../providers/student_provider.dart';
 import '../../widgets/glass_card.dart';
 
 class StudentShopLeaderboardScreen extends StatefulWidget {
-  const StudentShopLeaderboardScreen({super.key});
+  final int initialIndex;
+  const StudentShopLeaderboardScreen({super.key, this.initialIndex = 0});
 
   @override
   State<StudentShopLeaderboardScreen> createState() => _StudentShopLeaderboardScreenState();
@@ -21,11 +22,23 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialIndex.clamp(0, 1),
+    );
     Future.microtask(() {
       Provider.of<ShopProvider>(context, listen: false).fetchItems();
       Provider.of<StudentProvider>(context, listen: false).fetchLeaderboard();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant StudentShopLeaderboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      _tabController.animateTo(widget.initialIndex.clamp(0, 1));
+    }
   }
 
   @override

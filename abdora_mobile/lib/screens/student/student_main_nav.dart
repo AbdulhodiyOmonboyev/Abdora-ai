@@ -3,25 +3,40 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/responsive.dart';
 import 'student_home.dart';
 import 'student_lessons.dart';
-import 'student_tasks_screen.dart';
 import 'student_shop_leaderboard_screen.dart';
 import 'student_profile_screen.dart';
 
 class StudentMainNav extends StatefulWidget {
-  const StudentMainNav({super.key});
+  final int initialTab;
+  const StudentMainNav({super.key, this.initialTab = 0});
+
+  static _StudentMainNavState? of(BuildContext context) {
+    return context.findAncestorStateOfType<_StudentMainNavState>();
+  }
 
   @override
   State<StudentMainNav> createState() => _StudentMainNavState();
 }
 
 class _StudentMainNavState extends State<StudentMainNav> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTab.clamp(0, 3);
+  }
+
+  void setTab(int index) {
+    if (index >= 0 && index < 4) {
+      setState(() => _currentIndex = index);
+    }
+  }
 
   final List<Widget> _screens = const [
     StudentHomeScreen(),
     StudentLessonsScreen(),
-    StudentTasksScreen(),
-    StudentShopLeaderboardScreen(),
+    StudentShopLeaderboardScreen(initialIndex: 1), // Reyting tab
     StudentProfileScreen(),
   ];
 
@@ -51,11 +66,26 @@ class _StudentMainNavState extends State<StudentMainNav> {
               ),
               labelType: NavigationRailLabelType.all,
               destinations: const [
-                NavigationRailDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: Text('Asosiy')),
-                NavigationRailDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book_rounded), label: Text('Darslar')),
-                NavigationRailDestination(icon: Icon(Icons.assignment_outlined), selectedIcon: Icon(Icons.assignment_rounded), label: Text('Topshiriqlar')),
-                NavigationRailDestination(icon: Icon(Icons.shopping_bag_outlined), selectedIcon: Icon(Icons.shopping_bag_rounded), label: Text('Do\'kon')),
-                NavigationRailDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person_rounded), label: Text('Profil')),
+                NavigationRailDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home_rounded),
+                  label: Text('Asosiy'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.auto_stories_outlined),
+                  selectedIcon: Icon(Icons.auto_stories_rounded),
+                  label: Text('O\'qish'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.bar_chart_rounded),
+                  selectedIcon: Icon(Icons.leaderboard_rounded),
+                  label: Text('Reyting'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.person_outline_rounded),
+                  selectedIcon: Icon(Icons.person_rounded),
+                  label: Text('Profil'),
+                ),
               ],
             ),
             const VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
@@ -70,56 +100,64 @@ class _StudentMainNavState extends State<StudentMainNav> {
       );
     }
 
-    // Smartfonlar uchun Web bilan 100% uyg'un pastki panel (BottomNavigationBar)
+    // Smartfonlar uchun skrinshot bilan 100% bir xil zamonaviy 4-tabli panel
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.navbarBackground,
-          border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+        decoration: BoxDecoration(
+          color: AppColors.card.withOpacity(0.95),
+          border: const Border(
+            top: BorderSide(color: AppColors.border, width: 1),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
         child: SafeArea(
           top: false,
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) => setState(() => _currentIndex = index),
-            backgroundColor: AppColors.navbarBackground,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: AppColors.textMuted,
-            type: BottomNavigationBarType.fixed,
-            selectedFontSize: 11,
-            unselectedFontSize: 11,
-            elevation: 0,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard_outlined),
-                activeIcon: Icon(Icons.dashboard_rounded),
-                label: 'Asosiy',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.menu_book_outlined),
-                activeIcon: Icon(Icons.menu_book_rounded),
-                label: 'Darslar',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.assignment_outlined),
-                activeIcon: Icon(Icons.assignment_rounded),
-                label: 'Topshiriqlar',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.shopping_bag_outlined),
-                activeIcon: Icon(Icons.shopping_bag_rounded),
-                label: 'Do\'kon',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                activeIcon: Icon(Icons.person_rounded),
-                label: 'Profil',
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) => setState(() => _currentIndex = index),
+              backgroundColor: Colors.transparent,
+              selectedItemColor: AppColors.secondary,
+              unselectedItemColor: AppColors.textMuted,
+              type: BottomNavigationBarType.fixed,
+              selectedFontSize: 11,
+              unselectedFontSize: 11,
+              elevation: 0,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home_rounded),
+                  label: 'Asosiy',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.auto_stories_outlined),
+                  activeIcon: Icon(Icons.auto_stories_rounded),
+                  label: 'O\'qish',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.bar_chart_rounded),
+                  activeIcon: Icon(Icons.leaderboard_rounded),
+                  label: 'Reyting',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outline_rounded),
+                  activeIcon: Icon(Icons.person_rounded),
+                  label: 'Profil',
+                ),
+              ],
+            ),
           ),
         ),
       ),
