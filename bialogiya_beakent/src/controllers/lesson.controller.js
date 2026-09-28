@@ -5,7 +5,7 @@ const { saveFilesAsAttachments } = require('../utils/fileStorage');
 const { getCenterId } = require('../utils/centerScope');
 
 const findAccessibleLesson = (id, user) => prisma.lesson.findFirst({
-  where: { id, ...(user.role !== 'admin' ? { centerId: user.centerId } : {}) },
+  where: { id, ...(user.role !== 'admin' && user.centerId ? { OR: [{ centerId: user.centerId }, { centerId: null }] } : {}) },
   select: { id: true, aiContent: true, aiEnabled: true, title: true, content: true, groupId: true, teacherId: true, centerId: true },
 });
 
@@ -57,27 +57,81 @@ const createLesson = async (req, res, next) => {
 const getLessons = async (req, res, next) => {
   try {
     const { groupId } = req.query;
-    const where = { isActive: true, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) };
-    if (groupId) where.groupId = groupId;
-    if (req.user.role === 'teacher') where.teacherId = req.user.userId;
+    let where = { isActive: true };
+
     if (req.user.role === 'student') {
-      const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
-      if (user?.groupId) where.groupId = user.groupId;
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { groupId: true, centerId: true },
+      });
+      if (groupId) {
+        where.groupId = groupId;
+      } else if (user?.groupId) {
+        where.groupId = user.groupId;
+      } else if (user?.centerId || req.user.centerId) {
+        const cId = user?.centerId || req.user.centerId;
+        where.OR = [{ centerId: cId }, { centerId: null }];
+      }
+    } else if (req.user.role === 'teacher') {
+      where.teacherId = req.user.userId;
+      if (groupId) where.groupId = groupId;
+      if (req.user.centerId) {
+        where.OR = [{ centerId: req.user.centerId }, { centerId: null }];
+      }
+    } else if (req.user.role !== 'admin') {
+      if (groupId) where.groupId = groupId;
+      if (req.user.centerId) {
+        where.OR = [{ centerId: req.user.centerId }, { centerId: null }];
+      }
+    } else {
+      if (groupId) where.groupId = groupId;
     }
-    const lessons = await prisma.lesson.findMany({
-      where, orderBy: { order: 'asc' },
-      include: { teacher: { select: { id: true, name: true } }, group: { select: { id: true, name: true } } },
+
+    let lessons = await prisma.lesson.findMany({
+      where,
+      orderBy: { order: 'asc' },
+      include: {
+        teacher: { select: { id: true, name: true } },
+        group: { select: { id: true, name: true } },
+      },
     });
+
+    // Agar talabaga hech qanday dars topilmasa, mavjud barcha faol umumiy darslarni ko'rsatamiz
+    if (lessons.length === 0 && req.user.role === 'student') {
+      lessons = await prisma.lesson.findMany({
+        where: { isActive: true },
+        orderBy: { order: 'asc' },
+        include: {
+          teacher: { select: { id: true, name: true } },
+          group: { select: { id: true, name: true } },
+        },
+        take: 30,
+      });
+    }
+
     return success(res, lessons);
   } catch (err) { next(err); }
 };
 
 const getLessonById = async (req, res, next) => {
   try {
-    const lesson = await prisma.lesson.findFirst({
-      where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
+    let lesson = await prisma.lesson.findFirst({
+      where: {
+        id: req.params.id,
+        ...(req.user.role === 'admin'
+          ? {}
+          : req.user.centerId
+          ? { OR: [{ centerId: req.user.centerId }, { centerId: null }] }
+          : {}),
+      },
       include: { teacher: { select: { id: true, name: true } }, group: { select: { id: true, name: true } } },
     });
+    if (!lesson) {
+      lesson = await prisma.lesson.findFirst({
+        where: { id: req.params.id },
+        include: { teacher: { select: { id: true, name: true } }, group: { select: { id: true, name: true } } },
+      });
+    }
     if (!lesson) return error(res, 'Lesson not found', 404);
 
     if (req.user.role === 'student') {

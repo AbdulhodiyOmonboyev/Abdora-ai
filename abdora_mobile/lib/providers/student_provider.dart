@@ -52,9 +52,20 @@ class StudentProvider extends ChangeNotifier {
       final res = await ApiClient().dio.get(Endpoints.lessons);
       if (res.statusCode == 200 && res.data['data'] != null) {
         final List list = res.data['data'];
-        _lessons = list.map((item) => LessonModel.fromJson(item)).toList();
+        final fetched = list.map((item) => LessonModel.fromJson(item)).toList();
+        if (fetched.isNotEmpty) {
+          _lessons = fetched;
+        } else if (_lessons.isEmpty) {
+          _lessons = _getFallbackLessons();
+        }
+      } else if (_lessons.isEmpty) {
+        _lessons = _getFallbackLessons();
       }
-    } catch (_) {}
+    } catch (_) {
+      if (_lessons.isEmpty) {
+        _lessons = _getFallbackLessons();
+      }
+    }
 
     _isLoadingLessons = false;
     notifyListeners();
@@ -70,7 +81,45 @@ class StudentProvider extends ChangeNotifier {
         return _currentLessonAi;
       }
     } catch (_) {}
-    return null;
+
+    _currentLessonAi ??= LessonAiContent();
+    notifyListeners();
+    return _currentLessonAi;
+  }
+
+  List<LessonModel> _getFallbackLessons() {
+    return [
+      LessonModel(
+        id: 'lesson_bio_1',
+        title: '1-Dars: Sitologiya — Hujayra tuzilishi va organoidlari',
+        content: 'Hujayra barcha tirik organizmlarning eng kichik tuzilish va funksional birligidir. Prokariot va eukariot hujayralarning asosiy farqlari, membrana tuzilishi va organoidlar funksiyasi.',
+        orderIndex: 1,
+      ),
+      LessonModel(
+        id: 'lesson_bio_2',
+        title: '2-Dars: Moddalar almashinuvi va ATF sintezi (Metabolizm)',
+        content: 'Anabolizm va katabolizm jarayonlari. Hujayrada energiya almashinuvi bosqichlari: tayyorgarlik, glikoliz va kislorodli parchalanish (mitoxondriyada ATF hosil bo\'lishi).',
+        orderIndex: 2,
+      ),
+      LessonModel(
+        id: 'lesson_bio_3',
+        title: '3-Dars: Fotosintez va xemosintez mexanizmlari',
+        content: 'Xloroplastlar tuzilishi, xlorofill pigmenti, fotosintezning yorug\'lik va qorong\'ilik bosqichlari. Kalvin sikli va xemosintez qiluvchi bakteriyalar.',
+        orderIndex: 3,
+      ),
+      LessonModel(
+        id: 'lesson_bio_4',
+        title: '4-Dars: Genetika qonuniyatlari va irsiy belgilar',
+        content: 'Mendel qonunlari: dominantlik, ajralish va mustaqil taqsimlanish qonuni. Monogibrid va digibrid chatishtirish masalalari tahlili.',
+        orderIndex: 4,
+      ),
+      LessonModel(
+        id: 'lesson_bio_5',
+        title: '5-Dars: Seleksiya va biotexnologiya asoslari',
+        content: 'O\'simlik va hayvonlar seleksiyasi usullari, sun\'iy tanlash, geterozis hodisasi, poliploidiya hamda gen va hujayra muhandisligi yutuqlari.',
+        orderIndex: 5,
+      ),
+    ];
   }
 
   // 2. Testlarni yuklash
