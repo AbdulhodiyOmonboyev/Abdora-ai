@@ -11,11 +11,19 @@ class AppColors {
   static const Color inputBg = Color(0xFF0B111D);
   static const Color navbarBackground = Color(0xFF0B111D);
 
-  // Web brend rangi: Vibrant Electric Orange (Alanga va Biologiya energiyasi)
-  static const Color primary = Color(0xFFFF6A00);
-  static const Color primaryDark = Color(0xFFD9530B);
-  static const Color primaryLight = Color(0xFFFFA269);
-  static const Color primary50 = Color(0xFFFFF2E9);
+  // Web brend rangi: Dinamik tanlanuvchi aksent rangi (Dastlabki: Vibrant Electric Orange)
+  static Color primary = const Color(0xFFFF6A00);
+  static Color primaryDark = const Color(0xFFD9530B);
+  static Color primaryLight = const Color(0xFFFFA269);
+  static Color primary50 = const Color(0xFFFFF2E9);
+
+  /// Ilova rangini yangilash
+  static void updatePrimaryColor(Color newPrimary, {Color? dark, Color? light, Color? lightBg}) {
+    primary = newPrimary;
+    primaryDark = dark ?? HSLColor.fromColor(newPrimary).withLightness((HSLColor.fromColor(newPrimary).lightness - 0.1).clamp(0.0, 1.0)).toColor();
+    primaryLight = light ?? HSLColor.fromColor(newPrimary).withLightness((HSLColor.fromColor(newPrimary).lightness + 0.15).clamp(0.0, 1.0)).toColor();
+    primary50 = lightBg ?? newPrimary.withOpacity(0.12);
+  }
 
   // Ikkilamchi rang: Royal Electric Blue
   static const Color secondary = Color(0xFF4D8DFF);

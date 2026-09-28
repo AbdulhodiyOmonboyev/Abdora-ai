@@ -318,7 +318,7 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
     final user = Provider.of<AuthProvider>(context).user;
 
     if (student.isLoadingLeaderboard) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
     final list = student.leaderboard;
@@ -391,7 +391,7 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
                             radius: 18,
                             child: Text(
                               entry.name.isNotEmpty ? entry.name[0].toUpperCase() : 'U',
-                              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                             ),
                           ),
                           const SizedBox(width: 12),

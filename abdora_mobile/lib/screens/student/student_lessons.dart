@@ -5,6 +5,8 @@ import '../../models/lesson_model.dart';
 import '../../providers/student_provider.dart';
 import '../../widgets/glass_card.dart';
 import 'lesson_detail_screen.dart';
+import 'student_homework_screen.dart';
+import 'student_exams_screen.dart';
 
 class StudentLessonsScreen extends StatefulWidget {
   const StudentLessonsScreen({super.key});
@@ -62,7 +64,7 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+            icon: Icon(Icons.refresh_rounded, color: AppColors.primary),
             onPressed: () => student.fetchLessons(),
             tooltip: 'Yangilash',
           ),
@@ -74,6 +76,94 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
         backgroundColor: AppColors.card,
         child: Column(
           children: [
+            // Bo'limlar o'tkazgichi (Darslar, Uyga vazifa, Imtihonlar)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: AppColors.card,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.inputBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Darslar',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const StudentHomeworkScreen(),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: const Text(
+                            'Uyga vazifa',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const StudentExamsScreen(),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: const Text(
+                            'Imtihonlar',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             // Qidiruv maydoni
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -117,7 +207,7 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
             // Darslar ro'yxati yoki yuklanish holati
             Expanded(
               child: student.isLoadingLessons && student.lessons.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: CircularProgressIndicator(color: AppColors.primary),
                     )
                   : filteredLessons.isEmpty
@@ -142,7 +232,7 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                                       color: AppColors.primary.withOpacity(0.12),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.menu_book_rounded,
                                       color: AppColors.primary,
                                       size: 28,
@@ -231,11 +321,11 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                                           borderRadius: BorderRadius.circular(6),
                                           border: Border.all(color: AppColors.border),
                                         ),
-                                        child: const Row(
+                                        child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Icon(Icons.auto_awesome_rounded, color: AppColors.primaryLight, size: 12),
-                                            SizedBox(width: 4),
+                                            const SizedBox(width: 4),
                                             Text(
                                               '10 ta AI Modul',
                                               style: TextStyle(color: AppColors.primaryLight, fontSize: 11),

@@ -3,14 +3,18 @@ import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 
 class AppTheme {
-  static ThemeData get darkTheme {
+  static ThemeData get darkTheme => getTheme(primary: AppColors.primary);
+
+  static ThemeData getTheme({Color? primary}) {
+    final activePrimary = primary ?? AppColors.primary;
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
-      primaryColor: AppColors.primary,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
+      primaryColor: activePrimary,
+      colorScheme: ColorScheme.dark(
+        primary: activePrimary,
         secondary: AppColors.secondary,
         surface: AppColors.card,
         error: AppColors.danger,
@@ -71,13 +75,13 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: activePrimary, width: 1.5),
         ),
         hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.navbarBackground,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: activePrimary,
         unselectedItemColor: AppColors.textMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,

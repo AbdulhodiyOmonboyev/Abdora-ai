@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/responsive.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/student_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/status_badge.dart';
@@ -93,7 +94,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         title: const Text('Mening Profilim'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.lock_reset_rounded, color: AppColors.primaryLight),
+            icon: Icon(Icons.lock_reset_rounded, color: AppColors.primaryLight),
             onPressed: _showChangePasswordDialog,
           ),
         ],
@@ -121,7 +122,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     child: Center(
                       child: Text(
                         (user?.name.isNotEmpty ?? false) ? user!.name[0].toUpperCase() : 'U',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.primary,
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
@@ -143,7 +144,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                     child: Text(
                       'O\'quvchi • Daraja ${user?.level ?? 1}',
-                      style: const TextStyle(color: AppColors.primaryLight, fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: AppColors.primaryLight, fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -176,6 +177,106 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+
+            // Ilova mavzusi va rangi (Rang tanlash)
+            Consumer<ThemeProvider>(
+              builder: (context, themeProvider, _) {
+                return GlassCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.palette_outlined, color: AppColors.primary, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Ilova mavzusi va rangi',
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  themeProvider.currentColor.name,
+                                  style: TextStyle(
+                                    color: AppColors.primaryLight,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Sevimli rangingizni tanlang:',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 48,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: themeProvider.availableColors.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 10),
+                          itemBuilder: (context, index) {
+                            final option = themeProvider.availableColors[index];
+                            final isSelected = themeProvider.selectedIndex == index;
+
+                            return InkWell(
+                              onTap: () => themeProvider.setThemeColor(index),
+                              borderRadius: BorderRadius.circular(24),
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: option.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected ? Colors.white : Colors.transparent,
+                                    width: isSelected ? 3 : 1,
+                                  ),
+                                  boxShadow: [
+                                    if (isSelected)
+                                      BoxShadow(
+                                        color: option.primary.withOpacity(0.5),
+                                        blurRadius: 8,
+                                        spreadRadius: 2,
+                                      ),
+                                  ],
+                                ),
+                                child: isSelected
+                                    ? const Center(
+                                        child: Icon(Icons.check_rounded, color: Colors.white, size: 22),
+                                      )
+                                    : null,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 24),
 
             // Davomat Tarixi
@@ -189,7 +290,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             const SizedBox(height: 12),
 
             if (student.isLoadingAttendance)
-              const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary)))
+              Center(child: Padding(padding: const EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary)))
             else if (student.attendanceRecords.isEmpty)
               GlassCard(
                 child: Center(

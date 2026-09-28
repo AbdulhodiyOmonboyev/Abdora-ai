@@ -53,9 +53,9 @@ class _StudentMainNavState extends State<StudentMainNav> {
               selectedIndex: _currentIndex,
               onDestinationSelected: (index) => setState(() => _currentIndex = index),
               backgroundColor: AppColors.navbarBackground,
-              selectedIconTheme: const IconThemeData(color: AppColors.primary),
+              selectedIconTheme: IconThemeData(color: AppColors.primary),
               unselectedIconTheme: const IconThemeData(color: AppColors.textMuted),
-              selectedLabelTextStyle: const TextStyle(
+              selectedLabelTextStyle: TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
@@ -129,7 +129,7 @@ class _StudentMainNavState extends State<StudentMainNav> {
               currentIndex: _currentIndex,
               onTap: (index) => setState(() => _currentIndex = index),
               backgroundColor: Colors.transparent,
-              selectedItemColor: AppColors.secondary,
+              selectedItemColor: AppColors.primary,
               unselectedItemColor: AppColors.textMuted,
               type: BottomNavigationBarType.fixed,
               selectedFontSize: 11,

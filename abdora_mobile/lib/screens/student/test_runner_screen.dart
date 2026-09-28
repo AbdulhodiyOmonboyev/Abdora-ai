@@ -180,7 +180,7 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
           ],
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? Center(child: CircularProgressIndicator(color: AppColors.primary))
             : _resultData != null
                 ? _buildResultView()
                 : _buildExamView(),
@@ -302,7 +302,7 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
               children: [
                 Text(
                   'Savol ${_currentQuestionIndex + 1} / ${_questions.length}',
-                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 Text(

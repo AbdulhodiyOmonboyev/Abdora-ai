@@ -103,7 +103,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? Center(child: CircularProgressIndicator(color: AppColors.primary))
           : TabBarView(
               controller: _tabController,
               children: [
@@ -252,7 +252,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
             children: [
               Text(
                 ex['title'] ?? 'Misol',
-                style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 6),
               Text(
@@ -471,7 +471,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
                 const SizedBox(height: 8),
                 Text(
                   'Izoh: ${q.explanation}',
-                  style: const TextStyle(color: AppColors.primaryLight, fontSize: 11),
+                  style: TextStyle(color: AppColors.primaryLight, fontSize: 11),
                 ),
               ],
             ],
@@ -498,7 +498,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
             child: Text(
               widget.lesson.title,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 15),
+              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 15),
             ),
           ),
           const SizedBox(height: 20),
@@ -604,7 +604,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.send_rounded, color: AppColors.primary),
+                icon: Icon(Icons.send_rounded, color: AppColors.primary),
                 onPressed: _sendChatMessage,
               ),
             ],

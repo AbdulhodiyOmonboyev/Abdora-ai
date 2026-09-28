@@ -7,11 +7,14 @@ import '../../models/shop_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/student_provider.dart';
 import '../../providers/shop_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/useful_illustrations.dart';
 import 'lesson_detail_screen.dart';
 import 'student_lessons.dart';
 import 'student_tasks_screen.dart';
+import 'student_homework_screen.dart';
+import 'student_exams_screen.dart';
 import 'student_shop_leaderboard_screen.dart';
 import 'student_profile_screen.dart';
 import 'student_main_nav.dart';
@@ -357,6 +360,21 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               ),
             ],
           ),
+          const SizedBox(width: 4),
+
+          // Rang tanlash tugmasi (Theme Palette Picker)
+          IconButton(
+            onPressed: () => _showThemeColorPicker(context),
+            icon: const Icon(
+              Icons.palette_outlined,
+              color: AppColors.textPrimary,
+              size: 22,
+            ),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            splashRadius: 20,
+            tooltip: 'Ilova rangini tanlash',
+          ),
         ],
       ),
     );
@@ -395,7 +413,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const StudentTasksScreen(initialTab: 1),
+                      builder: (_) => const StudentExamsScreen(),
                     ),
                   );
                 },
@@ -427,18 +445,18 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         ),
         const SizedBox(height: 10),
 
-        // 3-qator: Qo'shimcha dars & Referal tizimi
+        // 3-qator: Uyga vazifa & Referal tizimi
         Row(
           children: [
             Expanded(
               child: _buildUsefulCard(
-                title: 'Qo\'shimcha\ndars',
+                title: 'Uyga\nvazifa',
                 illustration: const AdditionalLessonIllustration(size: 60),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const StudentTasksScreen(initialTab: 0),
+                      builder: (_) => const StudentHomeworkScreen(),
                     ),
                   );
                 },
@@ -1686,6 +1704,191 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 5-Modal: Ilova rangini tanlash (Theme Color Picker)
+  void _showThemeColorPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) => Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.palette_outlined, color: AppColors.primary, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Ilova rangini tanlash',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              themeProvider.currentColor.name,
+                              style: TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 20),
+                      onPressed: () => Navigator.pop(sheetCtx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
+                const Text(
+                  'Sevimli aksent rangingizni tanlang:',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+                const SizedBox(height: 14),
+
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: themeProvider.availableColors.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final option = themeProvider.availableColors[index];
+                    final isSelected = themeProvider.selectedIndex == index;
+
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          themeProvider.setThemeColor(index);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppColors.card,
+                              duration: const Duration(seconds: 1),
+                              behavior: SnackBarBehavior.floating,
+                              content: Text(
+                                '${option.name} rangi tanlandi',
+                                style: const TextStyle(color: Colors.white, fontSize: 12.5),
+                              ),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(14),
+                        child: Ink(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? option.primary.withOpacity(0.12) : AppColors.background,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isSelected ? option.primary : AppColors.border,
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: option.primary,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: option.primary.withOpacity(0.4),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                                child: isSelected
+                                    ? const Center(
+                                        child: Icon(Icons.check_rounded, color: Colors.white, size: 18),
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  option.name,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : AppColors.textPrimary,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: option.primary.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'Faol',
+                                    style: TextStyle(
+                                      color: option.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
