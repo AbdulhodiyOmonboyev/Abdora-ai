@@ -83,7 +83,6 @@ class ThemeProvider extends ChangeNotifier {
       final savedIndex = prefs.getInt(_keyThemeIndex);
       if (savedIndex != null && savedIndex >= 0 && savedIndex < availableColors.length) {
         _selectedIndex = savedIndex;
-        _applyColor(availableColors[_selectedIndex]);
         notifyListeners();
       }
     } catch (_) {}
@@ -92,21 +91,11 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> setThemeColor(int index) async {
     if (index < 0 || index >= availableColors.length) return;
     _selectedIndex = index;
-    final chosen = availableColors[index];
-    _applyColor(chosen);
     notifyListeners();
 
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_keyThemeIndex, index);
     } catch (_) {}
-  }
-
-  void _applyColor(ThemeColorOption option) {
-    AppColors.updatePrimaryColor(
-      option.primary,
-      dark: option.dark,
-      light: option.light,
-    );
   }
 }
