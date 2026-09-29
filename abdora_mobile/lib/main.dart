@@ -42,7 +42,9 @@ class AbdoraStudentApp extends StatelessWidget {
           return MaterialApp(
             title: 'Abdora Student',
             debugShowCheckedModeBanner: false,
-            theme: themeProvider.currentTheme,
+            themeMode: themeProvider.themeMode,
+            theme: themeProvider.lightTheme,
+            darkTheme: themeProvider.darkTheme,
             home: const SplashScreen(),
           );
         },

@@ -88,22 +88,22 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         title: Text(widget.lesson.title),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
+          indicatorColor: AppColors.of(context),
+          labelColor: AppColors.of(context),
+          unselectedLabelColor: AppColors.textM(context),
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: _tabs.map((tab) => Tab(text: tab)).toList(),
         ),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? Center(child: CircularProgressIndicator(color: AppColors.of(context)))
           : TabBarView(
               controller: _tabController,
               children: [
@@ -138,20 +138,20 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 20),
-                    SizedBox(width: 8),
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, color: AppColors.of(context), size: 20),
+                    const SizedBox(width: 8),
                     Text(
                       'AI Tushuntirishi (Oddiy tilda)',
-                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 15),
+                      style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold, fontSize: 15),
                     ),
                   ],
                 ),
                 const SizedBox(height: 14),
                 Text(
                   text,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: AppColors.text1(context),
                     fontSize: 14,
                     height: 1.6,
                   ),
@@ -190,7 +190,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
             const SizedBox(height: 14),
             Text(
               text,
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.6),
+              style: TextStyle(color: AppColors.text1(context), fontSize: 14, height: 1.6),
             ),
           ],
         ),
@@ -224,7 +224,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
             const SizedBox(height: 14),
             Text(
               text,
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, height: 1.6),
+              style: TextStyle(color: AppColors.text1(context), fontSize: 14, height: 1.6),
             ),
           ],
         ),
@@ -236,7 +236,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
   Widget _buildExamplesTab() {
     final examples = _aiContent?.realLifeExamples ?? [];
     if (examples.isEmpty) {
-      return const Center(child: Text('Hayotiy misollar mavjud emas', style: TextStyle(color: AppColors.textMuted)));
+      return Center(child: Text('Hayotiy misollar mavjud emas', style: TextStyle(color: AppColors.textM(context))));
     }
 
     return ListView.separated(
@@ -252,12 +252,12 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
             children: [
               Text(
                 ex['title'] ?? 'Misol',
-                style: TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 6),
               Text(
                 ex['desc'] ?? '',
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, height: 1.5),
+                style: TextStyle(color: AppColors.text1(context), fontSize: 13, height: 1.5),
               ),
             ],
           ),
@@ -270,7 +270,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
   Widget _buildSummaryTab() {
     final summary = _aiContent?.summary ?? [];
     if (summary.isEmpty) {
-      return const Center(child: Text('Xulosa tayyorlanmoqda', style: TextStyle(color: AppColors.textMuted)));
+      return Center(child: Text('Xulosa tayyorlanmoqda', style: TextStyle(color: AppColors.textM(context))));
     }
 
     return ListView.separated(
@@ -288,7 +288,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
               Expanded(
                 child: Text(
                   summary[index],
-                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, height: 1.4),
+                  style: TextStyle(color: AppColors.text1(context), fontSize: 13, height: 1.4),
                 ),
               ),
             ],
@@ -302,7 +302,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
   Widget _buildFlashcardsTab() {
     final cards = _aiContent?.flashcards ?? [];
     if (cards.isEmpty) {
-      return const Center(child: Text('Flashcardlar mavjud emas', style: TextStyle(color: AppColors.textMuted)));
+      return Center(child: Text('Flashcardlar mavjud emas', style: TextStyle(color: AppColors.textM(context))));
     }
 
     final card = cards[_currentFlashcardIndex];
@@ -314,7 +314,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
         children: [
           Text(
             'Karta ${_currentFlashcardIndex + 1} / ${cards.length}',
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.bold),
+            style: TextStyle(color: AppColors.textM(context), fontSize: 13, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           GestureDetector(
@@ -324,10 +324,10 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
               height: 240,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: _isCardFlipped ? AppColors.surface : AppColors.card,
+                color: _isCardFlipped ? AppColors.surfaceCol(context) : AppColors.cardBg(context),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: _isCardFlipped ? AppColors.primary : AppColors.border,
+                  color: _isCardFlipped ? AppColors.of(context) : AppColors.borderCol(context),
                   width: 1.5,
                 ),
               ),
@@ -338,7 +338,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
                     Text(
                       _isCardFlipped ? 'JAVOB' : 'SAVOL (Bosib aylantiring)',
                       style: TextStyle(
-                        color: _isCardFlipped ? AppColors.primary : AppColors.textMuted,
+                        color: _isCardFlipped ? AppColors.of(context) : AppColors.textM(context),
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
@@ -348,8 +348,8 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
                     Text(
                       _isCardFlipped ? card.back : card.front,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColors.text1(context),
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         height: 1.4,
@@ -371,7 +371,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
                           _isCardFlipped = false;
                         })
                     : null,
-                icon: const Icon(Icons.arrow_back_ios_rounded, color: AppColors.textPrimary),
+                icon: Icon(Icons.arrow_back_ios_rounded, color: AppColors.text1(context)),
               ),
               const SizedBox(width: 32),
               IconButton(
@@ -381,7 +381,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
                           _isCardFlipped = false;
                         })
                     : null,
-                icon: const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.textPrimary),
+                icon: Icon(Icons.arrow_forward_ios_rounded, color: AppColors.text1(context)),
               ),
             ],
           ),
@@ -394,7 +394,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
   Widget _buildQuizTab() {
     final quiz = _aiContent?.quizQuestions ?? [];
     if (quiz.isEmpty) {
-      return const Center(child: Text('Quiz savollari mavjud emas', style: TextStyle(color: AppColors.textMuted)));
+      return Center(child: Text('Quiz savollari mavjud emas', style: TextStyle(color: AppColors.textM(context))));
     }
 
     return ListView.separated(
@@ -412,15 +412,15 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
             children: [
               Text(
                 '${qIndex + 1}. ${q.question}',
-                style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 12),
               ...List.generate(q.options.length, (optIndex) {
                 final isSelected = selectedAnswer == optIndex;
                 final isCorrect = q.correctIndex == optIndex;
 
-                Color tileColor = AppColors.surface;
-                Color borderColor = AppColors.border;
+                Color tileColor = AppColors.surfaceCol(context);
+                Color borderColor = AppColors.borderCol(context);
 
                 if (selectedAnswer != null) {
                   if (isCorrect) {
@@ -456,7 +456,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
                           Expanded(
                             child: Text(
                               q.options[optIndex],
-                              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                              style: TextStyle(color: AppColors.text1(context), fontSize: 13),
                             ),
                           ),
                           if (selectedAnswer != null && isCorrect)
@@ -471,7 +471,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
                 const SizedBox(height: 8),
                 Text(
                   'Izoh: ${q.explanation}',
-                  style: TextStyle(color: AppColors.primaryLight, fontSize: 11),
+                  style: TextStyle(color: AppColors.of(context), fontSize: 11),
                 ),
               ],
             ],
@@ -491,30 +491,30 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.15),
+              color: AppColors.of(context).withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              border: Border.all(color: AppColors.of(context).withOpacity(0.3)),
             ),
             child: Text(
               widget.lesson.title,
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 15),
+              style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold, fontSize: 15),
             ),
           ),
           const SizedBox(height: 20),
           GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   'Bog\'liq Tushunchalar va Bo\'limlar',
-                  style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 14),
                 ),
-                SizedBox(height: 12),
-                Text('• Hujayraviy tuzilish va moddalar almashinuvi', style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
-                Text('• Energiya hosil bo\'lish jarayoni', style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
-                Text('• Kimyoviy reaksiyalar va fermentlar ta\'siri', style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
-                Text('• Organizmning atrof-muhit bilan aloqasi', style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
+                const SizedBox(height: 12),
+                Text('• Hujayraviy tuzilish va moddalar almashinuvi', style: TextStyle(color: AppColors.text2(context), fontSize: 13, height: 1.5)),
+                Text('• Energiya hosil bo\'lish jarayoni', style: TextStyle(color: AppColors.text2(context), fontSize: 13, height: 1.5)),
+                Text('• Kimyoviy reaksiyalar va fermentlar ta\'siri', style: TextStyle(color: AppColors.text2(context), fontSize: 13, height: 1.5)),
+                Text('• Organizmning atrof-muhit bilan aloqasi', style: TextStyle(color: AppColors.text2(context), fontSize: 13, height: 1.5)),
               ],
             ),
           ),
@@ -534,18 +534,18 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
                     padding: const EdgeInsets.all(32),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.smart_toy_outlined, color: AppColors.primary, size: 44),
-                        SizedBox(height: 12),
+                      children: [
+                        Icon(Icons.smart_toy_outlined, color: AppColors.of(context), size: 44),
+                        const SizedBox(height: 12),
                         Text(
                           'Dars bo\'yicha savolingiz bormi?',
-                          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 15),
                         ),
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
                         Text(
                           'AI Tyutorga savol bering, u sizga mavzuni sodda tilda tushuntirib beradi.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                          style: TextStyle(color: AppColors.textM(context), fontSize: 12),
                         ),
                       ],
                     ),
@@ -566,14 +566,14 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
                         constraints: BoxConstraints(maxWidth: context.screenWidth * 0.78),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: isUser ? AppColors.primary : AppColors.surface,
+                          color: isUser ? AppColors.of(context) : AppColors.surfaceCol(context),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: isUser ? AppColors.primary : AppColors.border),
+                          border: Border.all(color: isUser ? AppColors.of(context) : AppColors.borderCol(context)),
                         ),
                         child: Text(
                           msg['text'] ?? '',
                           style: TextStyle(
-                            color: isUser ? Colors.white : AppColors.textPrimary,
+                            color: isUser ? Colors.white : AppColors.text1(context),
                             fontSize: 13,
                             height: 1.4,
                           ),
@@ -585,26 +585,26 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> with SingleTick
         ),
         Container(
           padding: EdgeInsets.fromLTRB(16, 8, 16, context.bottomSafeArea > 0 ? context.bottomSafeArea : 12),
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            border: Border(top: BorderSide(color: AppColors.border)),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceCol(context),
+            border: Border(top: BorderSide(color: AppColors.borderCol(context))),
           ),
           child: Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _chatController,
-                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: AppColors.text1(context), fontSize: 14),
+                  decoration: InputDecoration(
                     hintText: 'Savolingizni yozing...',
-                    hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    hintStyle: TextStyle(color: AppColors.textM(context), fontSize: 13),
                     border: InputBorder.none,
                   ),
                   onSubmitted: (_) => _sendChatMessage(),
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.send_rounded, color: AppColors.primary),
+                icon: Icon(Icons.send_rounded, color: AppColors.of(context)),
                 onPressed: _sendChatMessage,
               ),
             ],

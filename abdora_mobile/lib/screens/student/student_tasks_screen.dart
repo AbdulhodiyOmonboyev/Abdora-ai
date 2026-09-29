@@ -46,11 +46,13 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.cardBg(ctx),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border(top: BorderSide(color: AppColors.borderCol(ctx), width: 1.5)),
+        ),
         padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -59,29 +61,29 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Vazifani topshirish',
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: AppColors.text1(ctx), fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textMuted),
+                  icon: Icon(Icons.close, color: AppColors.textM(ctx)),
                   onPressed: () => Navigator.pop(ctx),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            Text(hw.title, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
+            Text(hw.title, style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 16),
             TextField(
               controller: textController,
               maxLines: 5,
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+              style: TextStyle(color: AppColors.text1(ctx), fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Javobingizni yoki yechimlaringizni bu yerga yozing...',
-                hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                hintStyle: TextStyle(color: AppColors.textM(ctx), fontSize: 13),
                 filled: true,
-                fillColor: AppColors.surface,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                fillColor: AppColors.surfaceCol(ctx),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.borderCol(ctx))),
               ),
             ),
             const SizedBox(height: 20),
@@ -111,14 +113,14 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         title: const Text('Topshiriqlar Markazi'),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
+          indicatorColor: AppColors.of(context),
+          labelColor: AppColors.of(context),
+          unselectedLabelColor: AppColors.textM(context),
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           tabs: const [
             Tab(text: 'Imtihonlar & Testlar'),
@@ -140,17 +142,17 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
     final p = Provider.of<StudentProvider>(context);
 
     if (p.isLoadingTests) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return Center(child: CircularProgressIndicator(color: AppColors.of(context)));
     }
 
     if (p.tests.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.assignment_turned_in_outlined, color: AppColors.textMuted, size: 48),
-            SizedBox(height: 12),
-            Text('Hozircha faol testlar mavjud emas', style: TextStyle(color: AppColors.textMuted)),
+          children: [
+            Icon(Icons.assignment_turned_in_outlined, color: AppColors.textM(context), size: 48),
+            const SizedBox(height: 12),
+            Text('Hozircha faol testlar mavjud emas', style: TextStyle(color: AppColors.textM(context))),
           ],
         ),
       );
@@ -158,7 +160,7 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
 
     return RefreshIndicator(
       onRefresh: () => p.fetchTests(),
-      color: AppColors.primary,
+      color: AppColors.of(context),
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
@@ -176,23 +178,23 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
                   children: [
                     StatusBadge(
                       text: test.isCompleted ? 'Topshirilgan' : 'Faol Test',
-                      color: test.isCompleted ? AppColors.success : AppColors.primary,
+                      color: test.isCompleted ? AppColors.success : AppColors.of(context),
                     ),
                     Text(
                       '${test.timeLimit} daqiqa',
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                      style: TextStyle(color: AppColors.textM(context), fontSize: 12),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
                   test.title,
-                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: AppColors.text1(context), fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '${test.questionCount} ta savol • O\'tish bali: ${test.passingScore}%',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: TextStyle(color: AppColors.text2(context), fontSize: 12),
                 ),
                 const SizedBox(height: 14),
                 if (test.isCompleted)
@@ -228,17 +230,17 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
     final p = Provider.of<StudentProvider>(context);
 
     if (p.isLoadingHomework) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return Center(child: CircularProgressIndicator(color: AppColors.of(context)));
     }
 
     if (p.homeworkList.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.menu_book_outlined, color: AppColors.textMuted, size: 48),
-            SizedBox(height: 12),
-            Text('Uy vazifalari mavjud emas', style: TextStyle(color: AppColors.textMuted)),
+          children: [
+            Icon(Icons.menu_book_outlined, color: AppColors.textM(context), size: 48),
+            const SizedBox(height: 12),
+            Text('Uy vazifalari mavjud emas', style: TextStyle(color: AppColors.textM(context))),
           ],
         ),
       );
@@ -246,7 +248,7 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
 
     return RefreshIndicator(
       onRefresh: () => p.fetchHomework(),
-      color: AppColors.primary,
+      color: AppColors.of(context),
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
@@ -268,31 +270,31 @@ class _StudentTasksScreenState extends State<StudentTasksScreen> with SingleTick
                     ),
                     Text(
                       hw.dueDate != null ? 'Muddati: ${hw.dueDate!.day}.${hw.dueDate!.month}' : '',
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                      style: TextStyle(color: AppColors.textM(context), fontSize: 12),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
                   hw.title,
-                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: AppColors.text1(context), fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   hw.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(color: AppColors.text2(context), fontSize: 13),
                 ),
                 const SizedBox(height: 14),
                 if (hw.isSubmitted)
                   Row(
                     children: [
-                      const Icon(Icons.verified_rounded, color: AppColors.primary, size: 18),
+                      Icon(Icons.verified_rounded, color: AppColors.of(context), size: 18),
                       const SizedBox(width: 8),
                       Text(
                         hw.finalScore != null ? 'Baholandi: ${hw.finalScore} / ${hw.maxScore}' : 'Tekshirilmoqda',
-                        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ],
                   )

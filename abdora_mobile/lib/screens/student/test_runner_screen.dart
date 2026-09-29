@@ -82,20 +82,20 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.card,
-          title: const Text('Testni topshirish', style: TextStyle(color: AppColors.textPrimary)),
+          backgroundColor: AppColors.cardBg(ctx),
+          title: Text('Testni topshirish', style: TextStyle(color: AppColors.text1(ctx))),
           content: Text(
             'Siz ${_answers.length} ta savolga javob berdingiz (${_questions.length} tadan). Testni yakunlaysizmi?',
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: AppColors.text2(ctx)),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Davom etish', style: TextStyle(color: AppColors.textMuted)),
+              child: Text('Davom etish', style: TextStyle(color: AppColors.textM(ctx))),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.of(context)),
               child: const Text('Topshirish', style: TextStyle(color: Colors.white)),
             ),
           ],
@@ -132,14 +132,14 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
         final shouldPop = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            backgroundColor: AppColors.card,
-            title: const Text('Testdan chiqish', style: TextStyle(color: AppColors.textPrimary)),
-            content: const Text(
+            backgroundColor: AppColors.cardBg(ctx),
+            title: Text('Testdan chiqish', style: TextStyle(color: AppColors.text1(ctx))),
+            content: Text(
               'Test jarayonida chiqsangiz, natijangiz saqlanmasligi mumkin. Rostdan ham chiqmoqchimisiz?',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.text2(ctx)),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Qolish')),
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Qolish', style: TextStyle(color: AppColors.textM(ctx)))),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
@@ -153,7 +153,7 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.bg(context),
         appBar: AppBar(
           title: Text(widget.test.title),
           actions: [
@@ -162,17 +162,17 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
                 margin: const EdgeInsets.only(right: 16),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (_remainingSeconds < 120 ? AppColors.danger : AppColors.surface),
+                  color: (_remainingSeconds < 120 ? AppColors.danger : AppColors.surfaceCol(context)),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.borderCol(context)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.timer_outlined, size: 16, color: Colors.white),
+                    Icon(Icons.timer_outlined, size: 16, color: AppColors.text1(context)),
                     const SizedBox(width: 6),
                     Text(
                       _formatTimer(_remainingSeconds),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.text1(context)),
                     ),
                   ],
                 ),
@@ -180,7 +180,7 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
           ],
         ),
         body: _isLoading
-            ? Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? Center(child: CircularProgressIndicator(color: AppColors.of(context)))
             : _resultData != null
                 ? _buildResultView()
                 : _buildExamView(),
@@ -207,7 +207,7 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
             Text(
               passed ? 'Tabriklaymiz, testdan o\'tdingiz!' : 'Afsuski, testdan o\'ta olmadingiz',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(color: AppColors.text1(context), fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -221,7 +221,7 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
             const SizedBox(height: 12),
             Text(
               'Sarflangan vaqt: ${_formatTimer(_timeTaken)}',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              style: TextStyle(color: AppColors.textM(context), fontSize: 13),
             ),
             const SizedBox(height: 36),
             CustomButton(
@@ -236,7 +236,7 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
 
   Widget _buildExamView() {
     if (_questions.isEmpty) {
-      return const Center(child: Text('Savollar topilmadi', style: TextStyle(color: AppColors.textMuted)));
+      return Center(child: Text('Savollar topilmadi', style: TextStyle(color: AppColors.textM(context))));
     }
 
     final q = _questions[_currentQuestionIndex];
@@ -248,7 +248,7 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
         Container(
           height: 52,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          color: AppColors.surface,
+          color: AppColors.cardBg(context),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _questions.length,
@@ -266,20 +266,20 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
                     height: 34,
                     decoration: BoxDecoration(
                       color: isCurrent
-                          ? AppColors.primary
+                          ? AppColors.of(context)
                           : isAnswered
-                              ? AppColors.primary.withOpacity(0.2)
-                              : AppColors.card,
+                              ? AppColors.of(context).withOpacity(0.2)
+                              : AppColors.surfaceCol(context),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isCurrent ? AppColors.primary : AppColors.border,
+                        color: isCurrent ? AppColors.of(context) : AppColors.borderCol(context),
                       ),
                     ),
                     child: Center(
                       child: Text(
                         '${index + 1}',
                         style: TextStyle(
-                          color: isCurrent ? Colors.white : AppColors.textPrimary,
+                          color: isCurrent ? Colors.white : AppColors.text1(context),
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -302,13 +302,13 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
               children: [
                 Text(
                   'Savol ${_currentQuestionIndex + 1} / ${_questions.length}',
-                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   q.text,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: AppColors.text1(context),
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     height: 1.4,
@@ -328,24 +328,24 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
                         });
                       },
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : AppColors.border,
+                        color: isSelected ? AppColors.of(context) : AppColors.borderCol(context),
                         width: isSelected ? 2 : 1,
                       ),
-                      color: isSelected ? AppColors.primary.withOpacity(0.12) : AppColors.card,
+                      color: isSelected ? AppColors.of(context).withOpacity(0.12) : AppColors.cardBg(context),
                       child: Row(
                         children: [
                           Container(
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: isSelected ? AppColors.primary : AppColors.surface,
+                              color: isSelected ? AppColors.of(context) : AppColors.surfaceCol(context),
                               shape: BoxShape.circle,
                             ),
                             child: Center(
                               child: Text(
                                 optionLetter,
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                                  color: isSelected ? Colors.white : AppColors.text2(context),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
@@ -356,7 +356,7 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
                           Expanded(
                             child: Text(
                               q.options[optIndex],
-                              style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                              style: TextStyle(color: AppColors.text1(context), fontSize: 14),
                             ),
                           ),
                         ],
@@ -372,9 +372,9 @@ class _TestRunnerScreenState extends State<TestRunnerScreen> {
         // Pastki boshqaruv tugmalari
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            border: Border(top: BorderSide(color: AppColors.border)),
+          decoration: BoxDecoration(
+            color: AppColors.cardBg(context),
+            border: Border(top: BorderSide(color: AppColors.borderCol(context))),
           ),
           child: Row(
             children: [

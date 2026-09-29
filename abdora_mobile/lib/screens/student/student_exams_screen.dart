@@ -59,12 +59,12 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
     final int activeCount = totalCount - completedCount;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         title: const Text('Imtihonlar va Testlar'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh_rounded, color: AppColors.primary),
+            icon: Icon(Icons.refresh_rounded, color: AppColors.of(context)),
             onPressed: () => student.fetchTests(),
             tooltip: 'Yangilash',
           ),
@@ -72,8 +72,8 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () => student.fetchTests(),
-        color: AppColors.primary,
-        backgroundColor: AppColors.card,
+        color: AppColors.of(context),
+        backgroundColor: AppColors.cardBg(context),
         child: Column(
           children: [
             // Statistik ko'rsatkichlar paneli
@@ -83,15 +83,17 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
                 children: [
                   Expanded(
                     child: _buildMiniStat(
+                      context: context,
                       label: 'Jami testlar',
                       value: '$totalCount',
-                      color: AppColors.primary,
+                      color: AppColors.of(context),
                       icon: Icons.quiz_outlined,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildMiniStat(
+                      context: context,
                       label: 'Faol',
                       value: '$activeCount',
                       color: AppColors.warning,
@@ -101,6 +103,7 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildMiniStat(
+                      context: context,
                       label: 'Tugatilgan',
                       value: '$completedCount',
                       color: AppColors.success,
@@ -116,23 +119,23 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: AppColors.cardBg(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.borderCol(context)),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: TextField(
                   controller: _searchController,
                   onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                  style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                  style: TextStyle(color: AppColors.text1(context), fontSize: 13.5),
                   decoration: InputDecoration(
-                    icon: const Icon(Icons.search_rounded, color: AppColors.textMuted, size: 18),
+                    icon: Icon(Icons.search_rounded, color: AppColors.textM(context), size: 18),
                     hintText: 'Imtihon yoki test nomini qidirish...',
-                    hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    hintStyle: TextStyle(color: AppColors.textM(context), fontSize: 13),
                     border: InputBorder.none,
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, color: AppColors.textMuted, size: 18),
+                            icon: Icon(Icons.clear_rounded, color: AppColors.textM(context), size: 18),
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
@@ -156,18 +159,18 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
                       label: Text(
                         _filters[i],
                         style: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                          color: isSelected ? Colors.white : AppColors.text2(context),
                           fontSize: 12,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                       selected: isSelected,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.card,
+                      selectedColor: AppColors.of(context),
+                      backgroundColor: AppColors.cardBg(context),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                         side: BorderSide(
-                          color: isSelected ? AppColors.primary : AppColors.border,
+                          color: isSelected ? AppColors.of(context) : AppColors.borderCol(context),
                         ),
                       ),
                       onSelected: (_) => setState(() => _selectedFilterIndex = i),
@@ -181,7 +184,7 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
             // Imtihonlar ro'yxati
             Expanded(
               child: student.isLoadingTests && student.tests.isEmpty
-                  ? Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  ? Center(child: CircularProgressIndicator(color: AppColors.of(context)))
                   : filteredList.isEmpty
                       ? Center(
                           child: SingleChildScrollView(
@@ -190,9 +193,9 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(24),
                               decoration: BoxDecoration(
-                                color: AppColors.card,
+                                color: AppColors.cardBg(context),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: AppColors.borderCol(context)),
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -201,30 +204,30 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
                                     width: 56,
                                     height: 56,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.12),
+                                      color: AppColors.of(context).withOpacity(0.12),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       Icons.assignment_turned_in_outlined,
-                                      color: AppColors.primary,
+                                      color: AppColors.of(context),
                                       size: 28,
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  const Text(
+                                  Text(
                                     'Imtihonlar topilmadi',
                                     style: TextStyle(
-                                      color: AppColors.textPrimary,
+                                      color: AppColors.text1(context),
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text(
+                                  Text(
                                     'Hozircha topshirilishi kerak bo\'lgan yangi imtihonlar yoki testlar mavjud emas.',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.text2(context),
                                       fontSize: 12.5,
                                       height: 1.4,
                                     ),
@@ -238,7 +241,7 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
                                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
+                                      backgroundColor: AppColors.of(context),
                                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     ),
@@ -265,22 +268,22 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
                                     children: [
                                       StatusBadge(
                                         text: test.isCompleted ? 'Topshirilgan' : 'Faol Test',
-                                        color: test.isCompleted ? AppColors.success : AppColors.primary,
+                                        color: test.isCompleted ? AppColors.success : AppColors.of(context),
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
-                                          color: AppColors.surface,
+                                          color: AppColors.surfaceCol(context),
                                           borderRadius: BorderRadius.circular(6),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Icon(Icons.timer_outlined, color: AppColors.textMuted, size: 13),
+                                            Icon(Icons.timer_outlined, color: AppColors.textM(context), size: 13),
                                             const SizedBox(width: 4),
                                             Text(
                                               '${test.timeLimit} daqiqa',
-                                              style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5),
+                                              style: TextStyle(color: AppColors.textM(context), fontSize: 11.5),
                                             ),
                                           ],
                                         ),
@@ -290,8 +293,8 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
                                   const SizedBox(height: 12),
                                   Text(
                                     test.title,
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
+                                    style: TextStyle(
+                                      color: AppColors.text1(context),
                                       fontSize: 15.5,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -299,7 +302,7 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     '${test.questionCount} ta savol • O\'tish bali: ${test.passingScore}%',
-                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5),
+                                    style: TextStyle(color: AppColors.text2(context), fontSize: 12.5),
                                   ),
                                   const SizedBox(height: 14),
                                   if (test.isCompleted)
@@ -326,7 +329,7 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
                                           child: Text(
                                             'Qayta topshirish',
                                             style: TextStyle(
-                                              color: AppColors.primary,
+                                              color: AppColors.of(context),
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -357,6 +360,7 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
   }
 
   Widget _buildMiniStat({
+    required BuildContext context,
     required String label,
     required String value,
     required Color color,
@@ -365,9 +369,9 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.cardBg(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderCol(context)),
       ),
       child: Row(
         children: [
@@ -385,16 +389,16 @@ class _StudentExamsScreenState extends State<StudentExamsScreen> {
             children: [
               Text(
                 value,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: AppColors.text1(context),
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
                 label,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: AppColors.textM(context),
                   fontSize: 10.5,
                 ),
               ),

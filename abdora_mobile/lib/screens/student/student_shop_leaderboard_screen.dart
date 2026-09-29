@@ -52,7 +52,7 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
     final user = Provider.of<AuthProvider>(context).user;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         title: const Text('Do\'kon & Reyting'),
         actions: [
@@ -78,9 +78,9 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
+          indicatorColor: AppColors.of(context),
+          labelColor: AppColors.of(context),
+          unselectedLabelColor: AppColors.textM(context),
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           tabs: const [
             Tab(text: 'Tangalar Do\'koni'),
@@ -110,7 +110,7 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
 
     return RefreshIndicator(
       onRefresh: () => shop.fetchItems(),
-      color: AppColors.primary,
+      color: AppColors.of(context),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -121,13 +121,15 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                  gradient: LinearGradient(
+                    colors: AppColors.isDark(context)
+                        ? const [Color(0xFF1E293B), Color(0xFF0F172A)]
+                        : [AppColors.cardBg(context), AppColors.surfaceCol(context)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.borderCol(context)),
                 ),
                 child: Row(
                   children: [
@@ -145,7 +147,7 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Sizning tangalaringiz', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                          Text('Sizning tangalaringiz', style: TextStyle(color: AppColors.textM(context), fontSize: 12)),
                           const SizedBox(height: 2),
                           Text(
                             '${user?.coins ?? 0} tanga',
@@ -179,12 +181,12 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
 
           // Mahsulotlar to'ri
           if (shop.isLoading)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator(color: AppColors.of(context))),
             )
           else if (filteredItems.isEmpty)
-            const SliverFillRemaining(
-              child: Center(child: Text('Mahsulotlar mavjud emas', style: TextStyle(color: AppColors.textMuted))),
+            SliverFillRemaining(
+              child: Center(child: Text('Mahsulotlar mavjud emas', style: TextStyle(color: AppColors.textM(context)))),
             )
           else
             SliverPadding(
@@ -210,11 +212,11 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
                             child: Container(
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: AppColors.surface,
+                                color: AppColors.surfaceCol(context),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Center(
-                                child: Icon(Icons.card_giftcard_rounded, color: AppColors.primary, size: 36),
+                              child: Center(
+                                child: Icon(Icons.card_giftcard_rounded, color: AppColors.of(context), size: 36),
                               ),
                             ),
                           ),
@@ -223,14 +225,14 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
                             item.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                            style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             item.description,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                            style: TextStyle(color: AppColors.textM(context), fontSize: 11),
                           ),
                           const SizedBox(height: 10),
                           Row(
@@ -264,13 +266,13 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                   decoration: BoxDecoration(
-                                    color: canBuy ? AppColors.primary : AppColors.surface,
+                                    color: canBuy ? AppColors.of(context) : AppColors.surfaceCol(context),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     'Olish',
                                     style: TextStyle(
-                                      color: canBuy ? Colors.white : AppColors.textMuted,
+                                      color: canBuy ? Colors.white : AppColors.textM(context),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
                                     ),
@@ -300,14 +302,19 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
         label: Text(label),
         selected: isSelected,
         onSelected: (_) => setState(() => _selectedCategory = catKey),
-        backgroundColor: AppColors.surface,
-        selectedColor: AppColors.primary,
+        backgroundColor: AppColors.cardBg(context),
+        selectedColor: AppColors.of(context),
         labelStyle: TextStyle(
-          color: isSelected ? Colors.white : AppColors.textSecondary,
+          color: isSelected ? Colors.white : AppColors.text2(context),
           fontSize: 12,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isSelected ? AppColors.of(context) : AppColors.borderCol(context),
+          ),
+        ),
       ),
     );
   }
@@ -318,12 +325,12 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
     final user = Provider.of<AuthProvider>(context).user;
 
     if (student.isLoadingLeaderboard) {
-      return Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return Center(child: CircularProgressIndicator(color: AppColors.of(context)));
     }
 
     final list = student.leaderboard;
     if (list.isEmpty) {
-      return const Center(child: Text('Reyting ma\'lumotlari topilmadi', style: TextStyle(color: AppColors.textMuted)));
+      return Center(child: Text('Reyting ma\'lumotlari topilmadi', style: TextStyle(color: AppColors.textM(context))));
     }
 
     final first = list.isNotEmpty ? list[0] : null;
@@ -332,7 +339,7 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
 
     return RefreshIndicator(
       onRefresh: () => student.fetchLeaderboard(),
-      color: AppColors.primary,
+      color: AppColors.of(context),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -369,8 +376,8 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: GlassCard(
-                      color: isMe ? AppColors.primary.withOpacity(0.12) : AppColors.card,
-                      border: isMe ? Border.all(color: AppColors.primary, width: 1.5) : null,
+                      color: isMe ? AppColors.of(context).withOpacity(0.12) : AppColors.cardBg(context),
+                      border: isMe ? Border.all(color: AppColors.of(context), width: 1.5) : null,
                       child: Row(
                         children: [
                           Container(
@@ -379,7 +386,7 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
                             child: Text(
                               '#${entry.rank}',
                               style: TextStyle(
-                                color: isMe ? AppColors.primary : AppColors.textMuted,
+                                color: isMe ? AppColors.of(context) : AppColors.textM(context),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
@@ -387,11 +394,11 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
                           ),
                           const SizedBox(width: 12),
                           CircleAvatar(
-                            backgroundColor: AppColors.surface,
+                            backgroundColor: AppColors.surfaceCol(context),
                             radius: 18,
                             child: Text(
                               entry.name.isNotEmpty ? entry.name[0].toUpperCase() : 'U',
-                              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -402,14 +409,14 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
                                 Text(
                                   entry.name,
                                   style: TextStyle(
-                                    color: isMe ? AppColors.primaryLight : AppColors.textPrimary,
+                                    color: isMe ? AppColors.of(context) : AppColors.text1(context),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
                                 ),
                                 Text(
                                   'Daraja ${entry.level}',
-                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                                  style: TextStyle(color: AppColors.textM(context), fontSize: 11),
                                 ),
                               ],
                             ),
@@ -448,7 +455,7 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
           entry.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 11),
+          style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 11),
         ),
         Text(
           '${entry.xp} XP',

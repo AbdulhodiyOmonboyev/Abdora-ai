@@ -44,10 +44,10 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
+        decoration: BoxDecoration(
+          color: AppColors.cardBg(ctx),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(top: BorderSide(color: AppColors.borderCol(ctx), width: 1.5)),
         ),
         padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
         child: Column(
@@ -59,7 +59,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: AppColors.borderCol(ctx),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -68,16 +68,16 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Vazifani topshirish',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: AppColors.text1(ctx),
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: AppColors.textMuted, size: 20),
+                  icon: Icon(Icons.close_rounded, color: AppColors.textM(ctx), size: 20),
                   onPressed: () => Navigator.pop(ctx),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -89,14 +89,14 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
+                color: AppColors.of(context).withOpacity(0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                border: Border.all(color: AppColors.of(context).withOpacity(0.2)),
               ),
               child: Text(
                 hw.title,
                 style: TextStyle(
-                  color: AppColors.primary,
+                  color: AppColors.of(context),
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -106,15 +106,15 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
             TextField(
               controller: textController,
               maxLines: 5,
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+              style: TextStyle(color: AppColors.text1(ctx), fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Javobingiz yoki yechimlaringizni bu yerga batafsil yozing...',
-                hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                hintStyle: TextStyle(color: AppColors.textM(ctx), fontSize: 13),
                 filled: true,
-                fillColor: AppColors.inputBg,
+                fillColor: AppColors.inputCol(ctx),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: AppColors.borderCol(ctx)),
                 ),
               ),
             ),
@@ -133,12 +133,12 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       behavior: SnackBarBehavior.floating,
-                      backgroundColor: AppColors.card,
+                      backgroundColor: AppColors.cardBg(context),
                       content: Row(
                         children: [
                           Icon(
                             ok ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-                            color: ok ? AppColors.success : AppColors.primary,
+                            color: ok ? AppColors.success : AppColors.of(context),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -146,7 +146,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                               ok
                                   ? 'Vazifa muvaffaqiyatli topshirildi!'
                                   : 'Vazifa qabul qilindi. O\'qituvchi tez orada tekshiradi.',
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              style: TextStyle(color: AppColors.text1(context), fontSize: 13),
                             ),
                           ),
                         ],
@@ -185,12 +185,12 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
     final int pendingCount = totalCount - submittedCount;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         title: const Text('Uyga Vazifalar'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh_rounded, color: AppColors.primary),
+            icon: Icon(Icons.refresh_rounded, color: AppColors.of(context)),
             onPressed: () => student.fetchHomework(),
             tooltip: 'Yangilash',
           ),
@@ -198,8 +198,8 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () => student.fetchHomework(),
-        color: AppColors.primary,
-        backgroundColor: AppColors.card,
+        color: AppColors.of(context),
+        backgroundColor: AppColors.cardBg(context),
         child: Column(
           children: [
             // Statistik ko'rsatkichlar paneli
@@ -209,15 +209,17 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                 children: [
                   Expanded(
                     child: _buildMiniStat(
+                      context: context,
                       label: 'Jami',
                       value: '$totalCount',
-                      color: AppColors.primary,
+                      color: AppColors.of(context),
                       icon: Icons.assignment_outlined,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildMiniStat(
+                      context: context,
                       label: 'Kutilmoqda',
                       value: '$pendingCount',
                       color: AppColors.warning,
@@ -227,6 +229,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildMiniStat(
+                      context: context,
                       label: 'Topshirilgan',
                       value: '$submittedCount',
                       color: AppColors.success,
@@ -242,23 +245,23 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: AppColors.cardBg(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.borderCol(context)),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: TextField(
                   controller: _searchController,
                   onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                  style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                  style: TextStyle(color: AppColors.text1(context), fontSize: 13.5),
                   decoration: InputDecoration(
-                    icon: const Icon(Icons.search_rounded, color: AppColors.textMuted, size: 18),
+                    icon: Icon(Icons.search_rounded, color: AppColors.textM(context), size: 18),
                     hintText: 'Vazifa nomini qidirish...',
-                    hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    hintStyle: TextStyle(color: AppColors.textM(context), fontSize: 13),
                     border: InputBorder.none,
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, color: AppColors.textMuted, size: 18),
+                            icon: Icon(Icons.clear_rounded, color: AppColors.textM(context), size: 18),
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
@@ -282,18 +285,18 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                       label: Text(
                         _filters[i],
                         style: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                          color: isSelected ? Colors.white : AppColors.text2(context),
                           fontSize: 12,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                       selected: isSelected,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.card,
+                      selectedColor: AppColors.of(context),
+                      backgroundColor: AppColors.cardBg(context),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                         side: BorderSide(
-                          color: isSelected ? AppColors.primary : AppColors.border,
+                          color: isSelected ? AppColors.of(context) : AppColors.borderCol(context),
                         ),
                       ),
                       onSelected: (_) => setState(() => _selectedFilterIndex = i),
@@ -307,7 +310,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
             // Vazifalar ro'yxati
             Expanded(
               child: student.isLoadingHomework && student.homeworkList.isEmpty
-                  ? Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  ? Center(child: CircularProgressIndicator(color: AppColors.of(context)))
                   : filteredList.isEmpty
                       ? Center(
                           child: SingleChildScrollView(
@@ -316,9 +319,9 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(24),
                               decoration: BoxDecoration(
-                                color: AppColors.card,
+                                color: AppColors.cardBg(context),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: AppColors.borderCol(context)),
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -327,30 +330,30 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                                     width: 56,
                                     height: 56,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.12),
+                                      color: AppColors.of(context).withOpacity(0.12),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       Icons.assignment_outlined,
-                                      color: AppColors.primary,
+                                      color: AppColors.of(context),
                                       size: 28,
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  const Text(
+                                  Text(
                                     'Vazifalar topilmadi',
                                     style: TextStyle(
-                                      color: AppColors.textPrimary,
+                                      color: AppColors.text1(context),
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text(
+                                  Text(
                                     'Hozircha topshirish kerak bo\'lgan yangi uyga vazifalar mavjud emas.',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.text2(context),
                                       fontSize: 12.5,
                                       height: 1.4,
                                     ),
@@ -364,7 +367,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
+                                      backgroundColor: AppColors.of(context),
                                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     ),
@@ -397,15 +400,15 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                                         hw.dueDate != null
                                             ? 'Muddati: ${hw.dueDate!.day}.${hw.dueDate!.month}.${hw.dueDate!.year}'
                                             : 'Muddatsiz',
-                                        style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5),
+                                        style: TextStyle(color: AppColors.textM(context), fontSize: 11.5),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
                                     hw.title,
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
+                                    style: TextStyle(
+                                      color: AppColors.text1(context),
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -415,20 +418,20 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                                     hw.description,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                                    style: TextStyle(color: AppColors.text2(context), fontSize: 13),
                                   ),
                                   const SizedBox(height: 14),
                                   if (hw.isSubmitted)
                                     Row(
                                       children: [
-                                        Icon(Icons.verified_rounded, color: AppColors.primary, size: 18),
+                                        Icon(Icons.verified_rounded, color: AppColors.of(context), size: 18),
                                         const SizedBox(width: 8),
                                         Text(
                                           hw.finalScore != null
                                               ? 'Baholandi: ${hw.finalScore} / ${hw.maxScore} ball'
                                               : 'O\'qituvchi tekshirmoqda',
                                           style: TextStyle(
-                                            color: AppColors.primary,
+                                            color: AppColors.of(context),
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13,
                                           ),
@@ -454,6 +457,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
   }
 
   Widget _buildMiniStat({
+    required BuildContext context,
     required String label,
     required String value,
     required Color color,
@@ -462,9 +466,9 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.cardBg(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderCol(context)),
       ),
       child: Row(
         children: [
@@ -482,16 +486,16 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
             children: [
               Text(
                 value,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: AppColors.text1(context),
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
                 label,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: AppColors.textM(context),
                   fontSize: 10.5,
                 ),
               ),

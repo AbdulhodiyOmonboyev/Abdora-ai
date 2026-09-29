@@ -89,13 +89,22 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     final isTablet = context.isTablet;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
-        title: const Text('Mening Profilim'),
+        backgroundColor: AppColors.cardBg(context),
+        elevation: 0,
+        title: Text(
+          'Mening Profilim',
+          style: TextStyle(
+            color: AppColors.text1(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.lock_reset_rounded, color: AppColors.primaryLight),
+            icon: Icon(Icons.lock_reset_rounded, color: AppColors.of(context)),
             onPressed: _showChangePasswordDialog,
+            tooltip: 'Parolni o\'zgartirish',
           ),
         ],
       ),
@@ -191,20 +200,20 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.12),
+                              color: AppColors.of(context).withOpacity(0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Icon(Icons.palette_outlined, color: AppColors.primary, size: 20),
+                            child: Icon(Icons.palette_outlined, color: AppColors.of(context), size: 20),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Ilova mavzusi va rangi',
+                                Text(
+                                  'Ilova mavzusi va ko\'rinishi',
                                   style: TextStyle(
-                                    color: AppColors.textPrimary,
+                                    color: AppColors.text1(context),
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -213,7 +222,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                                 Text(
                                   themeProvider.currentColor.name,
                                   style: TextStyle(
-                                    color: AppColors.primaryLight,
+                                    color: AppColors.of(context),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -224,9 +233,128 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+
+                      // Rejim tanlash (Dark / Light / Tizim)
+                      Text(
+                        'Ko\'rinish rejimi:',
+                        style: TextStyle(color: AppColors.text2(context), fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.inputCol(context),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.borderCol(context)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: () => themeProvider.setThemeMode(ThemeMode.dark),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: themeProvider.themeMode == ThemeMode.dark ? AppColors.of(context) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.dark_mode_rounded,
+                                        size: 15,
+                                        color: themeProvider.themeMode == ThemeMode.dark ? Colors.white : AppColors.text2(context),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Qorong\'u',
+                                        style: TextStyle(
+                                          color: themeProvider.themeMode == ThemeMode.dark ? Colors.white : AppColors.text2(context),
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: InkWell(
+                                onTap: () => themeProvider.setThemeMode(ThemeMode.light),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: themeProvider.themeMode == ThemeMode.light ? AppColors.of(context) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.light_mode_rounded,
+                                        size: 15,
+                                        color: themeProvider.themeMode == ThemeMode.light ? Colors.white : AppColors.text2(context),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Yorug\'',
+                                        style: TextStyle(
+                                          color: themeProvider.themeMode == ThemeMode.light ? Colors.white : AppColors.text2(context),
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: InkWell(
+                                onTap: () => themeProvider.setThemeMode(ThemeMode.system),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: themeProvider.themeMode == ThemeMode.system ? AppColors.of(context) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.brightness_auto_rounded,
+                                        size: 15,
+                                        color: themeProvider.themeMode == ThemeMode.system ? Colors.white : AppColors.text2(context),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Tizim',
+                                        style: TextStyle(
+                                          color: themeProvider.themeMode == ThemeMode.system ? Colors.white : AppColors.text2(context),
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      Text(
                         'Sevimli rangingizni tanlang:',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                        style: TextStyle(color: AppColors.text2(context), fontSize: 12),
                       ),
                       const SizedBox(height: 12),
                       SizedBox(

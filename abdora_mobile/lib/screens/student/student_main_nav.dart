@@ -47,21 +47,22 @@ class _StudentMainNavState extends State<StudentMainNav> {
     // Planshetlar uchun Web Sidebar uslubidagi NavigationRail
     if (isTablet) {
       return Scaffold(
+        backgroundColor: AppColors.bg(context),
         body: Row(
           children: [
             NavigationRail(
               selectedIndex: _currentIndex,
               onDestinationSelected: (index) => setState(() => _currentIndex = index),
-              backgroundColor: AppColors.navbarBackground,
+              backgroundColor: AppColors.navBg(context),
               selectedIconTheme: IconThemeData(color: Theme.of(context).primaryColor),
-              unselectedIconTheme: const IconThemeData(color: AppColors.textMuted),
+              unselectedIconTheme: IconThemeData(color: AppColors.textM(context)),
               selectedLabelTextStyle: TextStyle(
                 color: Theme.of(context).primaryColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
-              unselectedLabelTextStyle: const TextStyle(
-                color: AppColors.textMuted,
+              unselectedLabelTextStyle: TextStyle(
+                color: AppColors.textM(context),
                 fontSize: 12,
               ),
               labelType: NavigationRailLabelType.all,
@@ -88,7 +89,7 @@ class _StudentMainNavState extends State<StudentMainNav> {
                 ),
               ],
             ),
-            const VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
+            VerticalDivider(width: 1, thickness: 1, color: AppColors.borderCol(context)),
             Expanded(
               child: IndexedStack(
                 index: _currentIndex,
@@ -100,26 +101,36 @@ class _StudentMainNavState extends State<StudentMainNav> {
       );
     }
 
-    // Smartfonlar uchun skrinshot bilan 100% bir xil zamonaviy 4-tabli panel
+    final isDark = AppColors.isDark(context);
+
+    // Smartfonlar uchun zamonaviy 4-tabli panel
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: AppColors.card.withOpacity(0.95),
-          border: const Border(
-            top: BorderSide(color: AppColors.border, width: 1),
+          color: AppColors.cardBg(context).withOpacity(0.96),
+          border: Border(
+            top: BorderSide(color: AppColors.borderCol(context), width: 1),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.35),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
+          boxShadow: isDark
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF64748B).withOpacity(0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
         ),
         child: SafeArea(
           top: false,
@@ -130,7 +141,7 @@ class _StudentMainNavState extends State<StudentMainNav> {
               onTap: (index) => setState(() => _currentIndex = index),
               backgroundColor: Colors.transparent,
               selectedItemColor: Theme.of(context).primaryColor,
-              unselectedItemColor: AppColors.textMuted,
+              unselectedItemColor: AppColors.textM(context),
               type: BottomNavigationBarType.fixed,
               selectedFontSize: 11,
               unselectedFontSize: 11,

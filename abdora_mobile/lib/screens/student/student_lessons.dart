@@ -50,21 +50,21 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
-        backgroundColor: AppColors.card,
+        backgroundColor: AppColors.cardBg(context),
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Mening Darslarim',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: AppColors.text1(context),
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh_rounded, color: AppColors.primary),
+            icon: Icon(Icons.refresh_rounded, color: AppColors.of(context)),
             onPressed: () => student.fetchLessons(),
             tooltip: 'Yangilash',
           ),
@@ -72,20 +72,20 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () => student.fetchLessons(),
-        color: AppColors.primary,
-        backgroundColor: AppColors.card,
+        color: AppColors.of(context),
+        backgroundColor: AppColors.cardBg(context),
         child: Column(
           children: [
             // Bo'limlar o'tkazgichi (Darslar, Uyga vazifa, Imtihonlar)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: AppColors.card,
+              color: AppColors.cardBg(context),
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.inputBg,
+                  color: AppColors.inputCol(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.borderCol(context)),
                 ),
                 child: Row(
                   children: [
@@ -93,7 +93,7 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: AppColors.of(context),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
@@ -121,11 +121,11 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: const Text(
+                          child: Text(
                             'Uyga vazifa',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: AppColors.textSecondary,
+                              color: AppColors.text2(context),
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                             ),
@@ -147,11 +147,11 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: const Text(
+                          child: Text(
                             'Imtihonlar',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: AppColors.textSecondary,
+                              color: AppColors.text2(context),
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                             ),
@@ -167,12 +167,12 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
             // Qidiruv maydoni
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: AppColors.card,
+              color: AppColors.cardBg(context),
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppColors.inputBg,
+                  color: AppColors.inputCol(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.borderCol(context)),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: TextField(
@@ -182,15 +182,15 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                       _searchQuery = val.trim();
                     });
                   },
-                  style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                  style: TextStyle(color: AppColors.text1(context), fontSize: 13.5),
                   decoration: InputDecoration(
-                    icon: const Icon(Icons.search_rounded, color: AppColors.textMuted, size: 20),
+                    icon: Icon(Icons.search_rounded, color: AppColors.textM(context), size: 20),
                     hintText: 'Dars nomi yoki mavzuni qidiring...',
-                    hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    hintStyle: TextStyle(color: AppColors.textM(context), fontSize: 13),
                     border: InputBorder.none,
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, color: AppColors.textMuted, size: 18),
+                            icon: Icon(Icons.clear_rounded, color: AppColors.textM(context), size: 18),
                             onPressed: () {
                               _searchController.clear();
                               setState(() {
@@ -208,7 +208,7 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
             Expanded(
               child: student.isLoadingLessons && student.lessons.isEmpty
                   ? Center(
-                      child: CircularProgressIndicator(color: AppColors.primary),
+                      child: CircularProgressIndicator(color: AppColors.of(context)),
                     )
                   : filteredLessons.isEmpty
                       ? Center(
@@ -218,9 +218,9 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(24),
                               decoration: BoxDecoration(
-                                color: AppColors.card,
+                                color: AppColors.cardBg(context),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: AppColors.borderCol(context)),
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -229,30 +229,30 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                                     width: 56,
                                     height: 56,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.12),
+                                      color: AppColors.of(context).withOpacity(0.12),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       Icons.menu_book_rounded,
-                                      color: AppColors.primary,
+                                      color: AppColors.of(context),
                                       size: 28,
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  const Text(
+                                  Text(
                                     'Darslar topilmadi',
                                     style: TextStyle(
-                                      color: AppColors.textPrimary,
+                                      color: AppColors.text1(context),
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text(
+                                  Text(
                                     'Hozirda yangi darslar ro\'yxatini qayta yuklash uchun quyidagi tugmani bosing.',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.text2(context),
                                       fontSize: 12.5,
                                       height: 1.4,
                                     ),
@@ -266,7 +266,7 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
+                                      backgroundColor: AppColors.of(context),
                                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     ),
@@ -301,13 +301,13 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: AppColors.primary.withOpacity(0.12),
+                                          color: AppColors.of(context).withOpacity(0.12),
                                           borderRadius: BorderRadius.circular(6),
                                         ),
                                         child: Text(
                                           'Dars #${index + 1}',
-                                          style: const TextStyle(
-                                            color: AppColors.primary,
+                                          style: TextStyle(
+                                            color: AppColors.of(context),
                                             fontWeight: FontWeight.bold,
                                             fontSize: 11,
                                           ),
@@ -317,26 +317,26 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: AppColors.surface,
+                                          color: AppColors.inputCol(context),
                                           borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: AppColors.border),
+                                          border: Border.all(color: AppColors.borderCol(context)),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(Icons.auto_awesome_rounded, color: AppColors.primaryLight, size: 12),
+                                            Icon(Icons.auto_awesome_rounded, color: AppColors.of(context), size: 12),
                                             const SizedBox(width: 4),
                                             Text(
                                               '10 ta AI Modul',
-                                              style: TextStyle(color: AppColors.primaryLight, fontSize: 11),
+                                              style: TextStyle(color: AppColors.of(context), fontSize: 11),
                                             ),
                                           ],
                                         ),
                                       ),
                                       const Spacer(),
-                                      const Icon(
+                                      Icon(
                                         Icons.arrow_forward_ios_rounded,
-                                        color: AppColors.textMuted,
+                                        color: AppColors.textM(context),
                                         size: 14,
                                       ),
                                     ],
@@ -344,8 +344,8 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                                   const SizedBox(height: 12),
                                   Text(
                                     lesson.title,
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
+                                    style: TextStyle(
+                                      color: AppColors.text1(context),
                                       fontSize: 15.5,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -357,8 +357,8 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                                         : 'Biologiya chuqurlashtirilgan o\'quv kursi darsi',
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
+                                    style: TextStyle(
+                                      color: AppColors.text2(context),
                                       fontSize: 12.5,
                                       height: 1.35,
                                     ),

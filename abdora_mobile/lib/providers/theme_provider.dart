@@ -19,6 +19,7 @@ class ThemeColorOption {
 
 class ThemeProvider extends ChangeNotifier {
   static const String _keyThemeIndex = 'selected_theme_color_index';
+  static const String _keyThemeMode = 'selected_theme_mode_preference';
 
   final List<ThemeColorOption> availableColors = const [
     ThemeColorOption(
@@ -66,12 +67,18 @@ class ThemeProvider extends ChangeNotifier {
   ];
 
   int _selectedIndex = 0;
+  ThemeMode _themeMode = ThemeMode.dark;
 
   int get selectedIndex => _selectedIndex;
   ThemeColorOption get currentColor => availableColors[_selectedIndex];
   Color get primaryColor => currentColor.primary;
 
-  ThemeData get currentTheme => AppTheme.getTheme(primary: currentColor.primary);
+  ThemeMode get themeMode => _themeMode;
+  bool get isDarkMode => _themeMode == ThemeMode.dark;
+
+  ThemeData get lightTheme => AppTheme.getLightTheme(primary: currentColor.primary);
+  ThemeData get darkTheme => AppTheme.getDarkTheme(primary: currentColor.primary);
+  ThemeData get currentTheme => _themeMode == ThemeMode.light ? lightTheme : darkTheme;
 
   ThemeProvider() {
     _loadSavedTheme();
@@ -80,14 +87,28 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> _loadSavedTheme() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      
+      // Rang indeksini yuklash
       final savedIndex = prefs.getInt(_keyThemeIndex);
       if (savedIndex != null && savedIndex >= 0 && savedIndex < availableColors.length) {
         _selectedIndex = savedIndex;
-        notifyListeners();
       }
+
+      // Rejimni yuklash (dark / light / system)
+      final savedMode = prefs.getString(_keyThemeMode);
+      if (savedMode == 'light') {
+        _themeMode = ThemeMode.light;
+      } else if (savedMode == 'system') {
+        _themeMode = ThemeMode.system;
+      } else {
+        _themeMode = ThemeMode.dark;
+      }
+
+      notifyListeners();
     } catch (_) {}
   }
 
+  /// Rangni o'zgartirish
   Future<void> setThemeColor(int index) async {
     if (index < 0 || index >= availableColors.length) return;
     _selectedIndex = index;
@@ -96,6 +117,29 @@ class ThemeProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_keyThemeIndex, index);
+    } catch (_) {}
+  }
+
+  /// Dark va Light rejim o'rtasida tezkor almashish
+  Future<void> toggleThemeMode() async {
+    if (_themeMode == ThemeMode.dark) {
+      await setThemeMode(ThemeMode.light);
+    } else {
+      await setThemeMode(ThemeMode.dark);
+    }
+  }
+
+  /// Maxsus rejimni o'rnatish
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String modeStr = 'dark';
+      if (mode == ThemeMode.light) modeStr = 'light';
+      if (mode == ThemeMode.system) modeStr = 'system';
+      await prefs.setString(_keyThemeMode, modeStr);
     } catch (_) {}
   }
 }

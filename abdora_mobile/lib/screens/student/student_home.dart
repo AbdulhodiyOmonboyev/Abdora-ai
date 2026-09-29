@@ -15,6 +15,7 @@ import 'student_lessons.dart';
 import 'student_tasks_screen.dart';
 import 'student_homework_screen.dart';
 import 'student_exams_screen.dart';
+import 'student_group_screen.dart';
 import 'student_shop_leaderboard_screen.dart';
 import 'student_profile_screen.dart';
 import 'student_main_nav.dart';
@@ -58,12 +59,12 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     final isTablet = context.isTablet;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _handleRefresh,
-          color: AppColors.primary,
-          backgroundColor: AppColors.card,
+          color: AppColors.of(context),
+          backgroundColor: AppColors.cardBg(context),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.symmetric(
@@ -78,10 +79,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 const SizedBox(height: 22),
 
                 // 2. "Foydali" bo'limi sarlavhasi
-                const Text(
+                Text(
                   'Foydali',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: AppColors.text1(context),
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.3,
@@ -98,10 +99,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Do\'kon',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColors.text1(context),
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -0.3,
@@ -203,21 +204,30 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         : 'Abdulxodiy Omonboyev';
 
     final int userCoins = user?.coins ?? 0;
+    final isDark = AppColors.isDark(context);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.cardBg(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.35),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.borderCol(context)),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: const Color(0xFF64748B).withOpacity(0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Row(
         children: [
@@ -232,7 +242,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              border: Border.all(color: AppColors.primary.withOpacity(0.6), width: 1.5),
+              border: Border.all(color: AppColors.of(context).withOpacity(0.6), width: 1.5),
             ),
             child: Center(
               child: Text(
@@ -265,8 +275,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     displayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: AppColors.text1(context),
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -274,19 +284,19 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   const SizedBox(height: 2),
                   Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       Text(
                         'o\'quvchi ma\'lumotlari',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: AppColors.text2(context),
                           fontSize: 12,
                         ),
                       ),
-                      SizedBox(width: 3),
+                      const SizedBox(width: 3),
                       Icon(
                         Icons.chevron_right_rounded,
                         size: 14,
-                        color: AppColors.textSecondary,
+                        color: AppColors.text2(context),
                       ),
                     ],
                   ),
@@ -297,7 +307,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
           // Tangalar hisoblagichi nishoni
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
               color: AppColors.coinGold.withOpacity(0.12),
               borderRadius: BorderRadius.circular(16),
@@ -311,7 +321,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   color: AppColors.coinGold,
                   size: 15,
                 ),
-                const SizedBox(width: 5),
+                const SizedBox(width: 4),
                 Text(
                   '$userCoins',
                   style: const TextStyle(
@@ -323,7 +333,39 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
+
+          // Dark va Light rejim tugmasi (1 bosishda tezkor almashtirish)
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, _) {
+              return IconButton(
+                onPressed: () => themeProvider.toggleThemeMode(),
+                icon: Icon(
+                  themeProvider.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  color: themeProvider.isDarkMode ? AppColors.coinGold : AppColors.of(context),
+                  size: 21,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                splashRadius: 18,
+                tooltip: themeProvider.isDarkMode ? 'Yorug\' rejimga o\'tish' : 'Qorong\'u rejimga o\'tish',
+              );
+            },
+          ),
+
+          // Rang tanlash tugmasi (Theme Palette Picker)
+          IconButton(
+            onPressed: () => _showThemeColorPicker(context),
+            icon: Icon(
+              Icons.palette_outlined,
+              color: AppColors.text1(context),
+              size: 21,
+            ),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            splashRadius: 18,
+            tooltip: 'Ilova rangini tanlash',
+          ),
 
           // Qo'ng'iroqcha / Bildirishnomalar tugmasi
           Stack(
@@ -331,21 +373,21 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             children: [
               IconButton(
                 onPressed: () => _showNotificationsSheet(context),
-                icon: const Icon(
+                icon: Icon(
                   Icons.notifications_none_rounded,
-                  color: AppColors.textPrimary,
-                  size: 24,
+                  color: AppColors.text1(context),
+                  size: 22,
                 ),
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                splashRadius: 20,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                splashRadius: 18,
               ),
               Positioned(
-                top: 4,
-                right: 4,
+                top: 2,
+                right: 2,
                 child: Container(
-                  width: 8,
-                  height: 8,
+                  width: 7,
+                  height: 7,
                   decoration: BoxDecoration(
                     color: const Color(0xFFEF4444),
                     shape: BoxShape.circle,
@@ -359,21 +401,6 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(width: 4),
-
-          // Rang tanlash tugmasi (Theme Palette Picker)
-          IconButton(
-            onPressed: () => _showThemeColorPicker(context),
-            icon: const Icon(
-              Icons.palette_outlined,
-              color: AppColors.textPrimary,
-              size: 22,
-            ),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            splashRadius: 20,
-            tooltip: 'Ilova rangini tanlash',
           ),
         ],
       ),
@@ -392,15 +419,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 title: 'Mening\nguruhim',
                 illustration: const ClassroomIllustration(size: 60),
                 onTap: () {
-                  final nav = StudentMainNav.of(context);
-                  if (nav != null) {
-                    nav.setTab(1);
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const StudentLessonsScreen()),
-                    );
-                  }
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StudentGroupScreen()),
+                  );
                 },
               ),
             ),
@@ -482,26 +504,36 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     required Widget illustration,
     required VoidCallback onTap,
   }) {
+    final isDark = AppColors.isDark(context);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        splashColor: AppColors.primary.withOpacity(0.08),
-        highlightColor: AppColors.primary.withOpacity(0.04),
+        splashColor: AppColors.of(context).withOpacity(0.08),
+        highlightColor: AppColors.of(context).withOpacity(0.04),
         child: Ink(
           height: 102,
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: AppColors.cardBg(context),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            border: Border.all(color: AppColors.borderCol(context)),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF64748B).withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
           ),
           child: Padding(
             padding: const EdgeInsets.only(left: 14, right: 8, top: 10, bottom: 10),
@@ -511,8 +543,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: AppColors.text1(context),
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       height: 1.25,
@@ -1716,11 +1748,15 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       isScrollControlled: true,
       builder: (sheetCtx) => Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
+          final isDark = AppColors.isDark(context);
+
           return Container(
-            decoration: const BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
+            decoration: BoxDecoration(
+              color: AppColors.cardBg(context),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(
+                top: BorderSide(color: AppColors.borderCol(context), width: 1.5),
+              ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             child: Column(
@@ -1732,7 +1768,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppColors.border,
+                      color: AppColors.borderCol(context),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1747,19 +1783,19 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.12),
+                            color: AppColors.of(context).withOpacity(0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(Icons.palette_outlined, color: AppColors.primary, size: 20),
+                          child: Icon(Icons.palette_outlined, color: AppColors.of(context), size: 20),
                         ),
                         const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Ilova rangini tanlash',
+                            Text(
+                              'Ilova mavzusi va ko\'rinishi',
                               style: TextStyle(
-                                color: AppColors.textPrimary,
+                                color: AppColors.text1(context),
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1767,7 +1803,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                             Text(
                               themeProvider.currentColor.name,
                               style: TextStyle(
-                                color: AppColors.primaryLight,
+                                color: AppColors.of(context),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1777,7 +1813,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 20),
+                      icon: Icon(Icons.close_rounded, color: AppColors.text2(context), size: 20),
                       onPressed: () => Navigator.pop(sheetCtx),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -1786,11 +1822,130 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 ),
                 const SizedBox(height: 18),
 
-                const Text(
-                  'Sevimli aksent rangingizni tanlang:',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                // 1. Rejim tanlash (Dark / Light / Tizim)
+                Text(
+                  'Ko\'rinish rejimi:',
+                  style: TextStyle(color: AppColors.text2(context), fontSize: 13, fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.inputCol(context),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.borderCol(context)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => themeProvider.setThemeMode(ThemeMode.dark),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: themeProvider.themeMode == ThemeMode.dark ? AppColors.of(context) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.dark_mode_rounded,
+                                  size: 16,
+                                  color: themeProvider.themeMode == ThemeMode.dark ? Colors.white : AppColors.text2(context),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Qorong\'u',
+                                  style: TextStyle(
+                                    color: themeProvider.themeMode == ThemeMode.dark ? Colors.white : AppColors.text2(context),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => themeProvider.setThemeMode(ThemeMode.light),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: themeProvider.themeMode == ThemeMode.light ? AppColors.of(context) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.light_mode_rounded,
+                                  size: 16,
+                                  color: themeProvider.themeMode == ThemeMode.light ? Colors.white : AppColors.text2(context),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Yorug\'',
+                                  style: TextStyle(
+                                    color: themeProvider.themeMode == ThemeMode.light ? Colors.white : AppColors.text2(context),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => themeProvider.setThemeMode(ThemeMode.system),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: themeProvider.themeMode == ThemeMode.system ? AppColors.of(context) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.brightness_auto_rounded,
+                                  size: 16,
+                                  color: themeProvider.themeMode == ThemeMode.system ? Colors.white : AppColors.text2(context),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Tizim',
+                                  style: TextStyle(
+                                    color: themeProvider.themeMode == ThemeMode.system ? Colors.white : AppColors.text2(context),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // 2. Aksent ranglar
+                Text(
+                  'Sevimli aksent rangingizni tanlang:',
+                  style: TextStyle(color: AppColors.text2(context), fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
 
                 ListView.separated(
                   shrinkWrap: true,
@@ -1822,10 +1977,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         child: Ink(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isSelected ? option.primary.withOpacity(0.12) : AppColors.background,
+                            color: isSelected ? option.primary.withOpacity(0.12) : AppColors.inputCol(context),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: isSelected ? option.primary : AppColors.border,
+                              color: isSelected ? option.primary : AppColors.borderCol(context),
                               width: isSelected ? 1.5 : 1,
                             ),
                           ),
@@ -1855,7 +2010,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                 child: Text(
                                   option.name,
                                   style: TextStyle(
-                                    color: isSelected ? Colors.white : AppColors.textPrimary,
+                                    color: isSelected ? option.primary : AppColors.text1(context),
                                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                     fontSize: 14,
                                   ),
