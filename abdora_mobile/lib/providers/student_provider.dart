@@ -35,6 +35,7 @@ class StudentProvider extends ChangeNotifier {
   bool get isLoadingTests => _isLoadingTests;
 
   List<HomeworkModel> get homeworkList => _homeworkList;
+  List<HomeworkModel> get homework => _homeworkList;
   bool get isLoadingHomework => _isLoadingHomework;
 
   List<LeaderboardEntry> get leaderboard => _leaderboard;

@@ -394,7 +394,7 @@ class _StudentGroupScreenState extends State<StudentGroupScreen> {
                   child: _buildQuickActionCard(
                     context,
                     title: 'Vazifalar',
-                    subtitle: '${student.homework.length} ta vazifa',
+                    subtitle: '${student.homeworkList.length} ta vazifa',
                     icon: Icons.assignment_outlined,
                     color: const Color(0xFF3B82F6),
                     onTap: () {
