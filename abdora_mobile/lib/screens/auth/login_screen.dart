@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final isTablet = context.isTablet;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -162,22 +162,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'O\'quvchi Tizimiga Kirish',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColors.text1(context),
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -0.3,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Telefon raqamingiz va parolingiz orqali shaxsiy kabinetga kiring',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: AppColors.text2(context),
                         fontSize: 13,
                         height: 1.4,
                       ),
@@ -245,19 +245,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: AppColors.surfaceCol(context),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: AppColors.borderCol(context)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.info_outline_rounded, color: AppColors.textMuted, size: 16),
-                            SizedBox(width: 8),
+                          children: [
+                            Icon(Icons.info_outline_rounded, color: AppColors.textM(context), size: 16),
+                            const SizedBox(width: 8),
                             Flexible(
                               child: Text(
                                 'Login ma\'lumotlarini o\'quv markazingizdan olishingiz mumkin',
-                                style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                                style: TextStyle(color: AppColors.textM(context), fontSize: 11),
                               ),
                             ),
                           ],

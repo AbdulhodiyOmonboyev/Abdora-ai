@@ -5,6 +5,7 @@ import '../../core/utils/responsive.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/student_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/status_badge.dart';
@@ -399,6 +400,130 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                             );
                           },
                         ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // Til sozlamalari (Ilova tili)
+            Consumer<LocaleProvider>(
+              builder: (context, localeProvider, _) {
+                return GlassCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.of(context).withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.language_rounded, color: AppColors.of(context), size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Ilova tili',
+                                  style: TextStyle(
+                                    color: AppColors.text1(context),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  localeProvider.currentLanguage.localName,
+                                  style: TextStyle(
+                                    color: AppColors.of(context),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'O\'zingizga qulay tilni tanlang:',
+                        style: TextStyle(color: AppColors.text2(context), fontSize: 12),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: localeProvider.supportedLanguages.map((lang) {
+                          final isSelected = localeProvider.currentLanguageCode == lang.code;
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3),
+                              child: InkWell(
+                                onTap: () {
+                                  localeProvider.setLanguage(lang.code);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      backgroundColor: AppColors.cardBg(context),
+                                      duration: const Duration(seconds: 1),
+                                      behavior: SnackBarBehavior.floating,
+                                      content: Text(
+                                        '${lang.name} tili tanlandi',
+                                        style: TextStyle(color: AppColors.text1(context), fontSize: 12.5),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? AppColors.of(context).withOpacity(0.12) : AppColors.inputCol(context),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected ? AppColors.of(context) : AppColors.borderCol(context),
+                                      width: isSelected ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isSelected ? AppColors.of(context) : AppColors.borderCol(context),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          lang.badge,
+                                          style: TextStyle(
+                                            color: isSelected ? Colors.white : AppColors.text2(context),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        lang.name,
+                                        style: TextStyle(
+                                          color: isSelected ? AppColors.of(context) : AppColors.text1(context),
+                                          fontSize: 12,
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ],
                   ),

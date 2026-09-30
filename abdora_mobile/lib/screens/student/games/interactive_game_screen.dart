@@ -494,16 +494,12 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     final isWonDuel = _currentGameMode == GameMode.duel && _playerScore >= _opponentScore;
 
     notifProvider.addNotification(
-      AppNotification(
-        id: UniqueKey().toString(),
-        title: _currentGameMode == GameMode.duel
-            ? (isWonDuel ? 'Bellashuvda g\'alaba qozondingiz!' : 'Guruhdosh bilan bellashuv yakunlandi')
-            : 'Mavzu o\'yini muvaffaqiyatli yakunlandi!',
-        message: '"${widget.topicTitle}" mavzusi bo\'yicha siz $_playerScore ball to\'pladingiz. +15 Abdora tangasi hisobingizga qo\'shildi!',
-        type: NotificationType.challenge,
-        timestamp: DateTime.now(),
-        targetRoute: '/games',
-      ),
+      title: _currentGameMode == GameMode.duel
+          ? (isWonDuel ? 'Bellashuvda g\'alaba qozondingiz!' : 'Guruhdosh bilan bellashuv yakunlandi')
+          : 'Mavzu o\'yini muvaffaqiyatli yakunlandi!',
+      description: '"${widget.topicTitle}" mavzusi bo\'yicha siz $_playerScore ball to\'pladingiz. +15 Abdora tangasi hisobingizga qo\'shildi!',
+      category: NotificationCategory.challenge,
+      route: 'homework',
     );
 
     // O'qituvchi nazorati va umumiy statistika uchun serverga yuborish
