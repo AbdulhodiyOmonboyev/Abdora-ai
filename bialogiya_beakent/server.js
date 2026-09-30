@@ -9,6 +9,7 @@ const path = require('path');
 const { connectDB } = require('./src/config/db');
 const { loadKeyFromDb } = require('./src/config/gemini');
 const errorHandler = require('./src/middleware/error.middleware');
+const antiSleepService = require('./src/services/antiSleep.service');
 
 const app = express();
 
@@ -45,8 +46,13 @@ app.use(compression());
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Rate limiters
-const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, message: "Juda ko'p so'rov yuborildi" });
+// Rate limiters (Anti-sleep va health check so'rovlari chegaralanmaydi)
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  message: "Juda ko'p so'rov yuborildi",
+  skip: (req) => req.path === '/health' || req.headers['x-anti-sleep-probe'] === 'true',
+});
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: "Juda ko'p urinish, birozdan so'ng qayta urinib ko'ring" });
 // Public, unauthenticated form on the landing page - tighter limit than
 // the general API limiter to prevent spam submissions.
@@ -68,19 +74,39 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api', require('./src/routes/index'));
 
-// Health check
+// Health check & Anti-sleep holati
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date(), service: 'Abdora AI Backend' });
+  res.json({
+    status: 'ok',
+    timestamp: new Date(),
+    service: 'Abdora AI Backend',
+    antiSleep: {
+      active: antiSleepService.isRunning,
+      intervalMinutes: 2,
+      totalPings: antiSleepService.totalPings,
+      lastPingTime: antiSleepService.lastPingTime,
+      lastStatus: antiSleepService.lastPingStatus,
+    },
+  });
 });
 
 // Global error handler
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n[Server] Abdora AI Server running on http://localhost:${PORT}`);
   console.log(`[Server] Environment: ${process.env.NODE_ENV}`);
   console.log(`[Server] OpenAI Model: ${process.env.OPENAI_MODEL || 'gpt-4o'}\n`);
+
+  // Anti-sleep funksiyasi: Har 2 minutda server o'ziga o'zi so'rov yuborib turadi
+  antiSleepService.start({ port: PORT });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  antiSleepService.stop();
+  server.close();
 });
 
 module.exports = app;

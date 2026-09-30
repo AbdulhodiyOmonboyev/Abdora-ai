@@ -43,4 +43,8 @@ class Endpoints {
   static const String markNotificationsRead = '/analytics/notifications/read';
   static const String gameActivity = '/analytics/game-activity';
   static const String teacherGameActivities = '/analytics/teacher/game-activities';
+
+  // Server monitoring va Anti-sleep
+  static const String health = '/health';
+  static const String antiSleep = '/anti-sleep';
 }
