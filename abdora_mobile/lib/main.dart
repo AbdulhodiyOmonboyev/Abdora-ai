@@ -5,6 +5,7 @@ import 'providers/auth_provider.dart';
 import 'providers/student_provider.dart';
 import 'providers/shop_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/notification_provider.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
@@ -33,6 +34,7 @@ class AbdoraStudentApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => StudentProvider()),
         ChangeNotifierProvider(create: (_) => ShopProvider()),

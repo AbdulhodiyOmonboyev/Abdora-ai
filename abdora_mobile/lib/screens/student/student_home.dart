@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/student_provider.dart';
 import '../../providers/shop_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/useful_illustrations.dart';
 import 'lesson_detail_screen.dart';
@@ -352,55 +353,55 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               );
             },
           ),
+          const SizedBox(width: 4),
 
-          // Rang tanlash tugmasi (Theme Palette Picker)
-          IconButton(
-            onPressed: () => _showThemeColorPicker(context),
-            icon: Icon(
-              Icons.palette_outlined,
-              color: AppColors.text1(context),
-              size: 21,
-            ),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            splashRadius: 18,
-            tooltip: 'Ilova rangini tanlash',
-          ),
-
-          // Qo'ng'iroqcha / Bildirishnomalar tugmasi
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                onPressed: () => _showNotificationsSheet(context),
-                icon: Icon(
-                  Icons.notifications_none_rounded,
-                  color: AppColors.text1(context),
-                  size: 22,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                splashRadius: 18,
-              ),
-              Positioned(
-                top: 2,
-                right: 2,
-                child: Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFEF4444).withOpacity(0.6),
-                        blurRadius: 4,
-                      ),
-                    ],
+          // Qo'ng'iroqcha / Real Bildirishnomalar tugmasi
+          Consumer<NotificationProvider>(
+            builder: (context, notifProvider, _) {
+              final unread = notifProvider.unreadCount;
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    onPressed: () => _showNotificationsSheet(context),
+                    icon: Icon(
+                      Icons.notifications_none_rounded,
+                      color: AppColors.text1(context),
+                      size: 22,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    splashRadius: 18,
+                    tooltip: 'Bildirishnomalar',
                   ),
-                ),
-              ),
-            ],
+                  if (unread > 0)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.cardBg(context), width: 1.5),
+                        ),
+                        child: Center(
+                          child: Text(
+                            unread > 9 ? '9+' : '$unread',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -993,167 +994,330 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
   }
 
-  /// 1-Modal: Bildirishnomalar
+  /// 1-Modal: Real Bildirishnomalar
   void _showNotificationsSheet(BuildContext context) {
-    final List<Map<String, dynamic>> notifications = [
-      {
-        'title': 'Yangi dars ochildi',
-        'desc': 'Hujayra biologiyasi va energiya almashinuvi darsi tayyor.',
-        'time': '5 daqiqa oldin',
-        'isNew': true,
-      },
-      {
-        'title': 'Uyga vazifa baholandi',
-        'desc': 'Topshirgan amaliy topshirig\'ingiz 95 ball bilan qabul qilindi.',
-        'time': 'Bugun, 10:30',
-        'isNew': true,
-      },
-      {
-        'title': 'AI Repetitor tahlili',
-        'desc': 'Test natijalaringiz bo\'yicha zaif mavzular tahlili shakllantirildi.',
-        'time': 'Kecha, 18:20',
-        'isNew': false,
-      },
-      {
-        'title': 'Reyting o\'sishi',
-        'desc': 'Guruh reytingida 2-o\'ringa ko\'tarildingiz! +30 tanga taqdim etildi.',
-        'time': '2 kun oldin',
-        'isNew': false,
-      },
-    ];
-
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (sheetCtx) => DraggableScrollableSheet(
-        initialChildSize: 0.65,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        builder: (_, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            children: [
-              // Tortish dastagi
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 14),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final notifProvider = Provider.of<NotificationProvider>(ctx);
+          final items = notifProvider.notifications;
+          final unreadCount = notifProvider.unreadCount;
 
-              // Sarlavha
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          return DraggableScrollableSheet(
+            initialChildSize: 0.72,
+            minChildSize: 0.45,
+            maxChildSize: 0.95,
+            builder: (_, scrollController) => Container(
+              decoration: BoxDecoration(
+                color: AppColors.cardBg(context),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border(top: BorderSide(color: AppColors.borderCol(context), width: 1.5)),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
                 children: [
-                  const Text(
-                    'Bildirishnomalar',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  // Tortish dastagi
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderCol(context),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 20),
-                    onPressed: () => Navigator.pop(sheetCtx),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
-              // Bildirishnomalar ro'yxati
-              Expanded(
-                child: ListView.separated(
-                  controller: scrollController,
-                  itemCount: notifications.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) {
-                    final item = notifications[i];
-                    return Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: item['isNew'] == true
-                            ? AppColors.primary.withOpacity(0.06)
-                            : AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: item['isNew'] == true
-                              ? AppColors.primary.withOpacity(0.3)
-                              : AppColors.border,
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  // Sarlavha va amallar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.notifications_active_outlined,
-                              color: AppColors.primary,
-                              size: 18,
+                          Text(
+                            'Bildirishnomalar',
+                            style: TextStyle(
+                              color: AppColors.text1(context),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
+                          if (unreadCount > 0) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.3)),
+                              ),
+                              child: Text(
+                                '$unreadCount yangi',
+                                style: const TextStyle(
+                                  color: Color(0xFFEF4444),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          if (unreadCount > 0)
+                            TextButton(
+                              onPressed: () {
+                                notifProvider.markAllAsRead();
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                              ),
+                              child: Text(
+                                'Barchasi o\'qildi',
+                                style: TextStyle(
+                                  color: AppColors.of(context),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          IconButton(
+                            icon: Icon(Icons.close_rounded, color: AppColors.textM(context), size: 20),
+                            onPressed: () => Navigator.pop(sheetCtx),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Bildirishnomalar ro'yxati
+                  Expanded(
+                    child: items.isEmpty
+                        ? Center(
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      item['title'] as String,
-                                      style: const TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13.5,
-                                      ),
-                                    ),
-                                    Text(
-                                      item['time'] as String,
-                                      style: const TextStyle(
-                                        color: AppColors.textMuted,
-                                        fontSize: 10.5,
-                                      ),
-                                    ),
-                                  ],
+                                Icon(
+                                  Icons.notifications_off_outlined,
+                                  size: 48,
+                                  color: AppColors.textM(context),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Bildirishnomalar mavjud emas',
+                                  style: TextStyle(
+                                    color: AppColors.text1(context),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  item['desc'] as String,
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
+                                  'Yangi dars, vazifa yoki natijalar haqidagi xabarlar shu yerda aks etadi.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppColors.text2(context),
                                     fontSize: 12,
-                                    height: 1.3,
                                   ),
                                 ),
                               ],
                             ),
+                          )
+                        : ListView.separated(
+                            controller: scrollController,
+                            itemCount: items.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 10),
+                            itemBuilder: (context, i) {
+                              final item = items[i];
+
+                              IconData getIcon() {
+                                switch (item.category) {
+                                  case NotificationCategory.lesson:
+                                    return Icons.menu_book_rounded;
+                                  case NotificationCategory.homework:
+                                    return Icons.assignment_outlined;
+                                  case NotificationCategory.exam:
+                                    return Icons.quiz_outlined;
+                                  case NotificationCategory.coin:
+                                    return Icons.monetization_on_rounded;
+                                  case NotificationCategory.challenge:
+                                    return Icons.sports_esports_rounded;
+                                  case NotificationCategory.group:
+                                    return Icons.groups_rounded;
+                                }
+                              }
+
+                              Color getIconColor() {
+                                switch (item.category) {
+                                  case NotificationCategory.lesson:
+                                    return AppColors.of(context);
+                                  case NotificationCategory.homework:
+                                    return const Color(0xFF3B82F6);
+                                  case NotificationCategory.exam:
+                                    return const Color(0xFFF59E0B);
+                                  case NotificationCategory.coin:
+                                    return AppColors.coinGold;
+                                  case NotificationCategory.challenge:
+                                    return const Color(0xFF8B5CF6);
+                                  case NotificationCategory.group:
+                                    return const Color(0xFF10B981);
+                                }
+                              }
+
+                              final iconColor = getIconColor();
+
+                              return InkWell(
+                                onTap: () {
+                                  notifProvider.markAsRead(item.id);
+                                  if (item.route == 'lessons') {
+                                    Navigator.pop(sheetCtx);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const StudentLessonsScreen()),
+                                    );
+                                  } else if (item.route == 'homework') {
+                                    Navigator.pop(sheetCtx);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const StudentHomeworkScreen()),
+                                    );
+                                  } else if (item.route == 'exams') {
+                                    Navigator.pop(sheetCtx);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const StudentExamsScreen()),
+                                    );
+                                  } else if (item.route == 'shop') {
+                                    Navigator.pop(sheetCtx);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const StudentShopLeaderboardScreen(initialIndex: 0),
+                                      ),
+                                    );
+                                  } else if (item.route == 'challenge') {
+                                    Navigator.pop(sheetCtx);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const StudentHomeworkScreen()),
+                                    );
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: !item.isRead
+                                        ? iconColor.withOpacity(0.08)
+                                        : AppColors.surfaceCol(context),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: !item.isRead
+                                          ? iconColor.withOpacity(0.35)
+                                          : AppColors.borderCol(context),
+                                      width: !item.isRead ? 1.5 : 1.0,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: iconColor.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Icon(getIcon(), color: iconColor, size: 20),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    item.title,
+                                                    style: TextStyle(
+                                                      color: AppColors.text1(context),
+                                                      fontWeight: !item.isRead
+                                                          ? FontWeight.bold
+                                                          : FontWeight.w600,
+                                                      fontSize: 13.5,
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (!item.isRead)
+                                                  Container(
+                                                    width: 8,
+                                                    height: 8,
+                                                    margin: const EdgeInsets.only(left: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: iconColor,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              item.description,
+                                              style: TextStyle(
+                                                color: AppColors.text2(context),
+                                                fontSize: 12,
+                                                height: 1.35,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  '${item.time.hour.toString().padLeft(2, '0')}:${item.time.minute.toString().padLeft(2, '0')} • ${item.time.day}.${item.time.month}.${item.time.year}',
+                                                  style: TextStyle(
+                                                    color: AppColors.textM(context),
+                                                    fontSize: 10.5,
+                                                  ),
+                                                ),
+                                                InkWell(
+                                                  onTap: () {
+                                                    notifProvider.deleteNotification(item.id);
+                                                  },
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                                    child: Icon(
+                                                      Icons.delete_outline_rounded,
+                                                      size: 15,
+                                                      color: AppColors.textM(context),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

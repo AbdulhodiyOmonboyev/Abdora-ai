@@ -6,6 +6,7 @@ import '../../providers/student_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/status_badge.dart';
+import 'games/interactive_game_screen.dart';
 
 class StudentHomeworkScreen extends StatefulWidget {
   const StudentHomeworkScreen({super.key});
@@ -420,7 +421,162 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(color: AppColors.text2(context), fontSize: 13),
                                   ),
-                                  const SizedBox(height: 14),
+                                  const SizedBox(height: 12),
+                                  // Mavzu bo'yicha interaktiv o'yin va bellashuv bloki
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.of(context).withOpacity(0.06),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: AppColors.of(context).withOpacity(0.2),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.sports_esports_rounded,
+                                              color: AppColors.of(context),
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Mavzu Bo\'yicha O\'yin',
+                                              style: TextStyle(
+                                                color: AppColors.of(context),
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12.5,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.success.withOpacity(0.12),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                '+15 Tanga',
+                                                style: TextStyle(
+                                                  color: AppColors.success,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'Vazifani o\'yin va juftliklar orqali oson o\'rganing yoki guruhdoshingiz bilan bellashing.',
+                                          style: TextStyle(
+                                            color: AppColors.text2(context),
+                                            fontSize: 11.5,
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: InkWell(
+                                                onTap: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) => InteractiveGameScreen(
+                                                        topicTitle: hw.title,
+                                                        topicDescription: hw.description,
+                                                        initialGameMode: GameMode.solo,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.cardBg(context),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(
+                                                      color: AppColors.of(context).withOpacity(0.4),
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.play_arrow_rounded,
+                                                        size: 15,
+                                                        color: AppColors.of(context),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        'Yakka O\'yin',
+                                                        style: TextStyle(
+                                                          color: AppColors.of(context),
+                                                          fontSize: 11.5,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: InkWell(
+                                                onTap: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) => InteractiveGameScreen(
+                                                        topicTitle: hw.title,
+                                                        topicDescription: hw.description,
+                                                        initialGameMode: GameMode.duel,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.of(context),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: const [
+                                                      Icon(
+                                                        Icons.people_alt_rounded,
+                                                        size: 14,
+                                                        color: Colors.white,
+                                                      ),
+                                                      SizedBox(width: 4),
+                                                      Text(
+                                                        'Bellashuv',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 11.5,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
                                   if (hw.isSubmitted)
                                     Row(
                                       children: [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/responsive.dart';
 import '../../models/lesson_model.dart';
 import '../../providers/student_provider.dart';
 import '../../widgets/glass_card.dart';
@@ -276,11 +277,16 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                             ),
                           ),
                         )
-                      : ListView.separated(
+                      : GridView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(14),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: Responsive.isTablet(context) ? 3 : 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.88,
+                          ),
                           itemCount: filteredLessons.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final lesson = filteredLessons[index];
 
@@ -297,15 +303,16 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                                         decoration: BoxDecoration(
                                           color: AppColors.of(context).withOpacity(0.12),
                                           borderRadius: BorderRadius.circular(6),
                                         ),
                                         child: Text(
-                                          'Dars #${index + 1}',
+                                          '${index + 1}-Dars',
                                           style: TextStyle(
                                             color: AppColors.of(context),
                                             fontWeight: FontWeight.bold,
@@ -313,54 +320,84 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.all(4),
                                         decoration: BoxDecoration(
                                           color: AppColors.inputCol(context),
-                                          borderRadius: BorderRadius.circular(6),
+                                          shape: BoxShape.circle,
                                           border: Border.all(color: AppColors.borderCol(context)),
                                         ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.auto_awesome_rounded, color: AppColors.of(context), size: 12),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              '10 ta AI Modul',
-                                              style: TextStyle(color: AppColors.of(context), fontSize: 11),
-                                            ),
-                                          ],
+                                        child: Icon(
+                                          Icons.auto_awesome_rounded,
+                                          color: AppColors.of(context),
+                                          size: 13,
                                         ),
-                                      ),
-                                      const Spacer(),
-                                      Icon(
-                                        Icons.arrow_forward_ios_rounded,
-                                        color: AppColors.textM(context),
-                                        size: 14,
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    lesson.title,
-                                    style: TextStyle(
-                                      color: AppColors.text1(context),
-                                      fontSize: 15.5,
-                                      fontWeight: FontWeight.bold,
+                                  const SizedBox(height: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          lesson.title,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: AppColors.text1(context),
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.bold,
+                                            height: 1.25,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Expanded(
+                                          child: Text(
+                                            lesson.content != null && lesson.content!.isNotEmpty
+                                                ? lesson.content!
+                                                : 'Mavzu bo\'yicha darslik va amaliy topshiriqlar',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: AppColors.text2(context),
+                                              fontSize: 11,
+                                              height: 1.3,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    lesson.content != null && lesson.content!.isNotEmpty
-                                        ? lesson.content!
-                                        : 'Biologiya chuqurlashtirilgan o\'quv kursi darsi',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: AppColors.text2(context),
-                                      fontSize: 12.5,
-                                      height: 1.35,
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.of(context).withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppColors.of(context).withOpacity(0.2),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          'O\'rganish',
+                                          style: TextStyle(
+                                            color: AppColors.of(context),
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          Icons.arrow_forward_ios_rounded,
+                                          color: AppColors.of(context),
+                                          size: 10,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
