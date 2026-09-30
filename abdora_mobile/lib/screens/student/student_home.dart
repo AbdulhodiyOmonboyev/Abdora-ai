@@ -20,6 +20,7 @@ import 'student_group_screen.dart';
 import 'student_shop_leaderboard_screen.dart';
 import 'student_profile_screen.dart';
 import 'student_main_nav.dart';
+import 'stats_history_sheet.dart';
 
 class StudentHomeScreen extends StatefulWidget {
   const StudentHomeScreen({super.key});
@@ -75,11 +76,15 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Yuqori profil paneli (Skrinshotdagi kabi qora suzuvchi kartochka)
+                // 1. Yuqori profil paneli (Soddalashtirilgan, no-coin/no-exp toza navbar)
                 _buildTopProfileCard(context, user),
+                const SizedBox(height: 14),
+
+                // 2. Tangalar va EXP ko'rsatkichlari (Yonma-yon bosiluvchi kartalar)
+                _buildCoinAndExpCards(context, user),
                 const SizedBox(height: 22),
 
-                // 2. "Foydali" bo'limi sarlavhasi
+                // 3. "Foydali" bo'limi sarlavhasi
                 Text(
                   'Foydali',
                   style: TextStyle(
@@ -306,36 +311,6 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             ),
           ),
 
-          // Tangalar hisoblagichi nishoni
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-            decoration: BoxDecoration(
-              color: AppColors.coinGold.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.coinGold.withOpacity(0.35)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.monetization_on_rounded,
-                  color: AppColors.coinGold,
-                  size: 15,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '$userCoins',
-                  style: const TextStyle(
-                    color: AppColors.coinGold,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 4),
-
           // Dark va Light rejim tugmasi (1 bosishda tezkor almashtirish)
           Consumer<ThemeProvider>(
             builder: (context, themeProvider, _) {
@@ -404,6 +379,157 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  /// Tangalar va EXP yonma-yon ko'rsatkich kartalari (Bosilganda tarixni ochadi)
+  Widget _buildCoinAndExpCards(BuildContext context, dynamic user) {
+    final int userCoins = user?.coins ?? 0;
+    final int userXp = user?.xp ?? 0;
+    final int userLevel = user?.level ?? 1;
+
+    return Row(
+      children: [
+        // 1. Tangalar kartasi
+        Expanded(
+          child: _buildMetricCard(
+            context: context,
+            title: 'Tangalar',
+            value: '$userCoins',
+            unit: 'tanga',
+            icon: Icons.monetization_on_rounded,
+            accentColor: AppColors.coinGold,
+            helperText: 'Tushumlar tarixi',
+            onTap: () => StatsHistorySheet.showCoinHistory(context, user: user),
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // 2. EXP kartasi
+        Expanded(
+          child: _buildMetricCard(
+            context: context,
+            title: 'Tajriba ballari',
+            value: '$userXp',
+            unit: 'EXP ($userLevel-daraja)',
+            icon: Icons.bolt_rounded,
+            accentColor: AppColors.primary,
+            helperText: 'Qo\'shilgan EXP tarixi',
+            onTap: () => StatsHistorySheet.showExpHistory(context, user: user),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricCard({
+    required BuildContext context,
+    required String title,
+    required String value,
+    required String unit,
+    required IconData icon,
+    required Color accentColor,
+    required String helperText,
+    required VoidCallback onTap,
+  }) {
+    final isDark = AppColors.isDark(context);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: AppColors.cardBg(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: accentColor.withOpacity(isDark ? 0.35 : 0.25),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: accentColor.withOpacity(isDark ? 0.08 : 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: accentColor, size: 18),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Tarix',
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 13,
+                        color: accentColor,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.text1(context),
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              unit,
+              style: TextStyle(
+                color: accentColor,
+                fontSize: 11.5,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              helperText,
+              style: TextStyle(
+                color: AppColors.textM(context),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

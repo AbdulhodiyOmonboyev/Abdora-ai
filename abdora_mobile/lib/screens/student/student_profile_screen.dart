@@ -10,6 +10,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/status_badge.dart';
 import '../auth/login_screen.dart';
+import 'stats_history_sheet.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
@@ -167,8 +168,20 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildMetric(Icons.bolt_rounded, '${user?.xp ?? 0}', 'XP Ball', AppColors.primaryLight),
-                  _buildMetric(Icons.monetization_on_rounded, '${user?.coins ?? 0}', 'Tangalar', AppColors.coinGold),
+                  _buildMetric(
+                    Icons.bolt_rounded,
+                    '${user?.xp ?? 0}',
+                    'XP Ball',
+                    AppColors.primaryLight,
+                    onTap: () => StatsHistorySheet.showExpHistory(context, user: user),
+                  ),
+                  _buildMetric(
+                    Icons.monetization_on_rounded,
+                    '${user?.coins ?? 0}',
+                    'Tangalar',
+                    AppColors.coinGold,
+                    onTap: () => StatsHistorySheet.showCoinHistory(context, user: user),
+                  ),
                   _buildMetric(Icons.local_fire_department_rounded, 'Kunlik', 'Seriya', AppColors.danger),
                 ],
               ),
@@ -647,15 +660,34 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     );
   }
 
-  Widget _buildMetric(IconData icon, String value, String label, Color color) {
-    return Column(
+  Widget _buildMetric(IconData icon, String value, String label, Color color, {VoidCallback? onTap}) {
+    final content = Column(
       children: [
         Icon(icon, color: color, size: 22),
         const SizedBox(height: 6),
         Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+            if (onTap != null) ...[
+              const SizedBox(width: 2),
+              const Icon(Icons.chevron_right_rounded, size: 12, color: AppColors.textMuted),
+            ],
+          ],
+        ),
       ],
+    );
+
+    if (onTap == null) return content;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: content,
+      ),
     );
   }
 
