@@ -114,6 +114,17 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
   bool _isMemoryFlipping = false;
   int _memoryMoves = 0;
 
+  // Interaktiv animatsiyalar holati
+  String? _floatingScoreText;
+  Key _floatingScoreKey = UniqueKey();
+  String? _wrongTerm;
+  String? _wrongDef;
+  bool _showStartCountdown = false;
+  int _countdownValue = 3;
+  Timer? _countdownTimer;
+  double _playerDuelProgress = 0.0;
+  double _opponentDuelProgress = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -133,6 +144,7 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     _gameTimer?.cancel();
     _blitzTimer?.cancel();
     _opponentSimTimer?.cancel();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
@@ -257,7 +269,8 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     _opponentSimTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (!_isGameOver && mounted) {
         setState(() {
-          _opponentScore += random.nextInt(25) + 15;
+          _opponentScore += random.nextInt(20) + 15;
+          _opponentDuelProgress = (_opponentDuelProgress + 0.15).clamp(0.0, 0.95);
         });
       }
     });
@@ -347,6 +360,47 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     _checkPairMatch();
   }
 
+  void _triggerFloatingScore(String text) {
+    setState(() {
+      _floatingScoreText = text;
+      _floatingScoreKey = UniqueKey();
+    });
+    Future.delayed(const Duration(milliseconds: 1400), () {
+      if (mounted && _floatingScoreText == text) {
+        setState(() {
+          _floatingScoreText = null;
+        });
+      }
+    });
+  }
+
+  void _startCountdownAnimation() {
+    _countdownTimer?.cancel();
+    setState(() {
+      _showStartCountdown = true;
+      _countdownValue = 3;
+    });
+
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_countdownValue > 1) {
+        setState(() {
+          _countdownValue--;
+        });
+        HapticFeedback.lightImpact();
+      } else {
+        timer.cancel();
+        setState(() {
+          _showStartCountdown = false;
+        });
+        HapticFeedback.heavyImpact();
+      }
+    });
+  }
+
   void _checkPairMatch() {
     if (_selectedTerm == null || _selectedDefinition == null) return;
 
@@ -357,13 +411,20 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
 
     if (isMatch) {
       HapticFeedback.lightImpact();
+      final earned = 20 + (_comboCount * 5);
+      final comboSuffix = _comboCount >= 2 ? ' (${_comboCount + 1}x Combo!)' : '';
+      _triggerFloatingScore('+$earned Ball!$comboSuffix');
+
       setState(() {
         _matchedPairIds.add(termItem.id);
         _comboCount++;
-        _playerScore += 20 + (_comboCount * 5);
+        _playerScore += earned;
+        _playerDuelProgress = (_matchedPairIds.length / _generatedPairs.length).clamp(0.0, 1.0);
         _selectedTerm = null;
         _selectedDefinition = null;
         _isCheckingPair = false;
+        _wrongTerm = null;
+        _wrongDef = null;
       });
 
       if (_matchedPairIds.length == _generatedPairs.length) {
@@ -371,13 +432,21 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
       }
     } else {
       HapticFeedback.heavyImpact();
-      _comboCount = 0;
-      Future.delayed(const Duration(milliseconds: 700), () {
+      final wrongT = _selectedTerm;
+      final wrongD = _selectedDefinition;
+      setState(() {
+        _comboCount = 0;
+        _wrongTerm = wrongT;
+        _wrongDef = wrongD;
+      });
+      Future.delayed(const Duration(milliseconds: 600), () {
         if (mounted) {
           setState(() {
             _selectedTerm = null;
             _selectedDefinition = null;
             _isCheckingPair = false;
+            _wrongTerm = null;
+            _wrongDef = null;
           });
         }
       });
@@ -397,10 +466,15 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
       _isBlitzAnswered = true;
       if (isCorrect) {
         _comboCount++;
-        _playerScore += 25 + (_comboCount * 5) + (_blitzSecondsLeft * 2);
+        final earned = 25 + (_comboCount * 5) + (_blitzSecondsLeft * 2);
+        _playerScore += earned;
+        _playerDuelProgress = ((_currentBlitzIndex + 1) / _blitzQuestions.length).clamp(0.0, 1.0);
+        final comboSuffix = _comboCount >= 2 ? ' (${_comboCount}x Combo!)' : '';
+        _triggerFloatingScore('+$earned Ball!$comboSuffix');
         HapticFeedback.lightImpact();
       } else {
         _comboCount = 0;
+        _triggerFloatingScore('Noto\'g\'ri! Izohga qarang');
         HapticFeedback.heavyImpact();
       }
     });
@@ -443,11 +517,16 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
         HapticFeedback.lightImpact();
         Future.delayed(const Duration(milliseconds: 400), () {
           if (mounted) {
+            final earned = 30 + (_comboCount * 5);
+            final comboSuffix = _comboCount >= 2 ? ' (${_comboCount + 1}x Combo!)' : '';
+            _triggerFloatingScore('+$earned Ball! Ajoyib xotira!$comboSuffix');
+
             setState(() {
               first['isMatched'] = true;
               second['isMatched'] = true;
               _comboCount++;
-              _playerScore += 30 + (_comboCount * 5);
+              _playerScore += earned;
+              _playerDuelProgress = (_memoryCards.where((c) => c['isMatched'] == true).length / _memoryCards.length).clamp(0.0, 1.0);
               _firstFlippedIndex = null;
               _secondFlippedIndex = null;
               _isMemoryFlipping = false;
@@ -660,8 +739,11 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     setState(() {
       _opponentName = opponentName;
       _currentGameMode = GameMode.duel;
+      _playerDuelProgress = 0.0;
+      _opponentDuelProgress = 0.0;
     });
     _initCurrentGame();
+    _startCountdownAnimation();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -782,7 +864,55 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
           ),
         ],
       ),
-      body: _isGameOver ? _buildGameOverView() : _buildGameActiveView(),
+      body: Stack(
+        children: [
+          _isGameOver ? _buildGameOverView() : _buildGameActiveView(),
+
+          // 3, 2, 1, START! Bellashuv animatsiyasi
+          if (_showStartCountdown)
+            Container(
+              color: Colors.black.withOpacity(0.75),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      key: ValueKey(_countdownValue),
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.of(context),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.of(context).withOpacity(0.5),
+                            blurRadius: 25,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$_countdownValue',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ).animate(key: ValueKey(_countdownValue)).scale(begin: const Offset(1.6, 1.6), end: const Offset(1.0, 1.0), duration: 400.ms).fadeIn(),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Tayyorlaning! Bellashuv boshlanmoqda...',
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    ).animate().fadeIn(duration: 300.ms),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -910,6 +1040,71 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               ),
             ],
           ),
+
+          // Combo va Mukofot banneri
+          if (_comboCount >= 2) ...[
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.amber.shade700,
+                    AppColors.of(context),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.amber.withOpacity(0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    _comboCount >= 5
+                        ? 'To\'xtatib bo\'lmas shiddat! ${_comboCount}x Combo!'
+                        : _comboCount >= 3
+                            ? 'Olovdek shiddatli bilim! ${_comboCount}x Combo!'
+                            : 'Zo\'r ketma-ketlik! ${_comboCount}x Combo!',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5),
+                  ),
+                ],
+              ),
+            ).animate().scale(duration: 250.ms).shimmer(duration: 1200.ms),
+          ],
+
+          // Floating Score ko'rsatkichi
+          if (_floatingScoreText != null) ...[
+            const SizedBox(height: 6),
+            Container(
+              key: _floatingScoreKey,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+              decoration: BoxDecoration(
+                color: _floatingScoreText!.contains('Noto\'g\'ri')
+                    ? Colors.red.shade700
+                    : AppColors.success,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: (_floatingScoreText!.contains('Noto\'g\'ri') ? Colors.red : AppColors.success).withOpacity(0.4),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Text(
+                _floatingScoreText!,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ).animate().fadeIn(duration: 150.ms).scale(begin: const Offset(0.8, 0.8), end: const Offset(1.0, 1.0)).slideY(begin: 0.2, end: 0),
+          ],
         ],
       ),
     );
@@ -955,21 +1150,21 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     );
   }
 
-  // DUEL REJIMIDA JONLI BALL TAQQOSLASH CHIZIG'I
+  // DUEL REJIMIDA JONLI POYGA VA BALL CHIZIG'I
   Widget _buildDuelScoreHeader() {
     final opponent = _opponentName ?? 'Guruhdoshingiz';
-    final total = max(_playerScore + _opponentScore, 1);
-    final playerRatio = _playerScore / total;
+    final isPlayerLeading = _playerScore >= _opponentScore;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 10, 14, 0),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.cardBg(context),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderCol(context)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -983,10 +1178,32 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text('Siz: $_playerScore', style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 13)),
+                  if (isPlayerLeading && _playerScore > 0) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('Peshqadam', style: TextStyle(color: AppColors.success, fontSize: 9.5, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
                 ],
               ),
               Row(
                 children: [
+                  if (!isPlayerLeading && _opponentScore > 0) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('Peshqadam', style: TextStyle(color: Colors.orange, fontSize: 9.5, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
                   Text('$opponent: $_opponentScore', style: TextStyle(color: AppColors.text2(context), fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(width: 8),
                   CircleAvatar(
@@ -998,24 +1215,55 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              height: 7,
-              child: Row(
+          const SizedBox(height: 10),
+          // Jonli poyga yo'lakchasi
+          Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              Container(
+                height: 10,
+                decoration: BoxDecoration(
+                  color: AppColors.inputCol(context),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              // Raqib chizig'i
+              FractionallySizedBox(
+                widthFactor: _opponentDuelProgress.clamp(0.05, 1.0),
+                child: Container(
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade600.withOpacity(0.55),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+              ),
+              // O'quvchi chizig'i
+              FractionallySizedBox(
+                widthFactor: _playerDuelProgress.clamp(0.05, 1.0),
+                child: Container(
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: AppColors.of(context),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Start', style: TextStyle(color: AppColors.textM(context), fontSize: 10)),
+              Row(
                 children: [
-                  Expanded(
-                    flex: max((playerRatio * 100).toInt(), 5),
-                    child: Container(color: AppColors.of(context)),
-                  ),
-                  Expanded(
-                    flex: max(((1 - playerRatio) * 100).toInt(), 5),
-                    child: Container(color: Colors.orange.shade700),
-                  ),
+                  Icon(Icons.flag_rounded, size: 12, color: AppColors.of(context)),
+                  const SizedBox(width: 2),
+                  Text('Finish (G\'alaba)', style: TextStyle(color: AppColors.of(context), fontSize: 10, fontWeight: FontWeight.bold)),
                 ],
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -1030,9 +1278,15 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Atama va mos ta\'rifni tanlab juftlang:',
-            style: TextStyle(color: AppColors.text2(context), fontSize: 13, fontWeight: FontWeight.w600),
+          Row(
+            children: [
+              Icon(Icons.touch_app_rounded, size: 16, color: AppColors.of(context)),
+              const SizedBox(width: 6),
+              Text(
+                'Atama va mos ta\'rifni tanlab juftlang:',
+                style: TextStyle(color: AppColors.text2(context), fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Row(
@@ -1041,19 +1295,22 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               // Chap ustun: Atamalar
               Expanded(
                 child: Column(
-                  children: _shuffledTerms.map((term) {
+                  children: _shuffledTerms.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final term = entry.value;
                     final pair = _generatedPairs.firstWhere((p) => p.term == term);
                     final isMatched = _matchedPairIds.contains(pair.id);
                     final isSelected = _selectedTerm == term;
+                    final isWrong = _wrongTerm == term;
 
                     if (isMatched) {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                          color: AppColors.success.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.success, width: 1.5),
                         ),
                         child: Row(
                           children: [
@@ -1067,36 +1324,75 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                             ),
                           ],
                         ),
-                      );
+                      ).animate().scale(begin: const Offset(0.92, 0.92), end: const Offset(1.0, 1.0), duration: 250.ms);
                     }
 
-                    return Container(
+                    Widget cardWidget = Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       child: InkWell(
                         onTap: () => _onTermTapped(term),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.of(context).withOpacity(0.15) : AppColors.cardBg(context),
-                            borderRadius: BorderRadius.circular(10),
+                            color: isWrong
+                                ? Colors.red.withOpacity(0.18)
+                                : isSelected
+                                    ? AppColors.of(context).withOpacity(0.18)
+                                    : AppColors.cardBg(context),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? AppColors.of(context) : AppColors.borderCol(context),
-                              width: isSelected ? 2 : 1,
+                              color: isWrong
+                                  ? Colors.red
+                                  : isSelected
+                                      ? AppColors.of(context)
+                                      : AppColors.borderCol(context),
+                              width: isSelected || isWrong ? 2 : 1,
                             ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.of(context).withOpacity(0.25),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
                           ),
-                          child: Text(
-                            term,
-                            style: TextStyle(
-                              color: isSelected ? AppColors.of(context) : AppColors.text1(context),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12.5,
-                            ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  term,
+                                  style: TextStyle(
+                                    color: isWrong
+                                        ? Colors.red
+                                        : isSelected
+                                            ? AppColors.of(context)
+                                            : AppColors.text1(context),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(Icons.radio_button_checked_rounded, size: 14, color: AppColors.of(context)),
+                            ],
                           ),
                         ),
                       ),
                     );
+
+                    if (isWrong) {
+                      cardWidget = cardWidget.animate().shake(hz: 4, offset: const Offset(6, 0), duration: 400.ms);
+                    } else if (isSelected) {
+                      cardWidget = cardWidget.animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 1200.ms);
+                    } else {
+                      cardWidget = cardWidget.animate(delay: (index * 50).ms).fadeIn(duration: 250.ms).slideX(begin: -0.05, end: 0);
+                    }
+
+                    return cardWidget;
                   }).toList(),
                 ),
               ),
@@ -1104,19 +1400,22 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               // O'ng ustun: Ta'riflar
               Expanded(
                 child: Column(
-                  children: _shuffledDefinitions.map((def) {
+                  children: _shuffledDefinitions.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final def = entry.value;
                     final pair = _generatedPairs.firstWhere((p) => p.definition == def);
                     final isMatched = _matchedPairIds.contains(pair.id);
                     final isSelected = _selectedDefinition == def;
+                    final isWrong = _wrongDef == def;
 
                     if (isMatched) {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                          color: AppColors.success.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.success, width: 1.5),
                         ),
                         child: Row(
                           children: [
@@ -1130,29 +1429,50 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                             ),
                           ],
                         ),
-                      );
+                      ).animate().scale(begin: const Offset(0.92, 0.92), end: const Offset(1.0, 1.0), duration: 250.ms);
                     }
 
-                    return Container(
+                    Widget cardWidget = Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       child: InkWell(
                         onTap: () => _onDefinitionTapped(def),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.of(context).withOpacity(0.15) : AppColors.cardBg(context),
-                            borderRadius: BorderRadius.circular(10),
+                            color: isWrong
+                                ? Colors.red.withOpacity(0.18)
+                                : isSelected
+                                    ? AppColors.of(context).withOpacity(0.18)
+                                    : AppColors.cardBg(context),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? AppColors.of(context) : AppColors.borderCol(context),
-                              width: isSelected ? 2 : 1,
+                              color: isWrong
+                                  ? Colors.red
+                                  : isSelected
+                                      ? AppColors.of(context)
+                                      : AppColors.borderCol(context),
+                              width: isSelected || isWrong ? 2 : 1,
                             ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.of(context).withOpacity(0.25),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: Text(
                             def,
                             style: TextStyle(
-                              color: isSelected ? AppColors.of(context) : AppColors.text2(context),
+                              color: isWrong
+                                  ? Colors.red
+                                  : isSelected
+                                      ? AppColors.of(context)
+                                      : AppColors.text2(context),
                               fontSize: 11.5,
                               height: 1.3,
                             ),
@@ -1160,6 +1480,16 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                         ),
                       ),
                     );
+
+                    if (isWrong) {
+                      cardWidget = cardWidget.animate().shake(hz: 4, offset: const Offset(6, 0), duration: 400.ms);
+                    } else if (isSelected) {
+                      cardWidget = cardWidget.animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 1200.ms);
+                    } else {
+                      cardWidget = cardWidget.animate(delay: (index * 50).ms).fadeIn(duration: 250.ms).slideX(begin: 0.05, end: 0);
+                    }
+
+                    return cardWidget;
                   }).toList(),
                 ),
               ),
@@ -1214,23 +1544,41 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               valueColor: AlwaysStoppedAnimation<Color>(
                 _blitzSecondsLeft <= 5 ? Colors.red : AppColors.of(context),
               ),
-              minHeight: 6,
+              minHeight: 7,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
+
           // Savol kartasi
           GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.of(context).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Tezkor sinov',
+                        style: TextStyle(color: AppColors.of(context), fontSize: 10.5, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 Text(
                   q.question,
-                  style: TextStyle(color: AppColors.text1(context), fontSize: 15.5, fontWeight: FontWeight.bold, height: 1.3),
+                  style: TextStyle(color: AppColors.text1(context), fontSize: 15.5, fontWeight: FontWeight.bold, height: 1.35),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
+          ).animate(key: ValueKey(_currentBlitzIndex)).fadeIn(duration: 250.ms).slideY(begin: 0.08, end: 0),
+          const SizedBox(height: 14),
+
           // Javob variantlari
           Expanded(
             child: ListView.separated(
@@ -1247,14 +1595,14 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                 if (_isBlitzAnswered) {
                   if (isCorrect) {
                     borderColor = AppColors.success;
-                    bgColor = AppColors.success.withOpacity(0.12);
+                    bgColor = AppColors.success.withOpacity(0.15);
                   } else if (isSelected) {
                     borderColor = Colors.red;
-                    bgColor = Colors.red.withOpacity(0.12);
+                    bgColor = Colors.red.withOpacity(0.15);
                   }
                 }
 
-                return InkWell(
+                Widget optWidget = InkWell(
                   onTap: () => _handleBlitzAnswer(idx),
                   borderRadius: BorderRadius.circular(12),
                   child: AnimatedContainer(
@@ -1263,7 +1611,19 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                     decoration: BoxDecoration(
                       color: bgColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderColor, width: isSelected || (_isBlitzAnswered && isCorrect) ? 2 : 1),
+                      border: Border.all(
+                        color: borderColor,
+                        width: isSelected || (_isBlitzAnswered && isCorrect) ? 2 : 1,
+                      ),
+                      boxShadow: isSelected || (_isBlitzAnswered && isCorrect)
+                          ? [
+                              BoxShadow(
+                                color: (isCorrect ? AppColors.success : Colors.red).withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Row(
                       children: [
@@ -1286,19 +1646,71 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                           child: Text(
                             opt,
                             style: TextStyle(
-                              color: AppColors.text1(context),
+                              color: isSelected || (_isBlitzAnswered && isCorrect)
+                                  ? (isCorrect ? AppColors.success : Colors.red)
+                                  : AppColors.text1(context),
                               fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: isSelected || (_isBlitzAnswered && isCorrect) ? FontWeight.bold : FontWeight.w500,
                             ),
                           ),
                         ),
+                        if (_isBlitzAnswered && isCorrect)
+                          const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18),
+                        if (_isBlitzAnswered && isSelected && !isCorrect)
+                          const Icon(Icons.cancel_rounded, color: Colors.red, size: 18),
                       ],
                     ),
                   ),
                 );
+
+                if (_isBlitzAnswered && isSelected && !isCorrect) {
+                  optWidget = optWidget.animate().shake(hz: 4, offset: const Offset(6, 0), duration: 400.ms);
+                } else if (_isBlitzAnswered && isCorrect) {
+                  optWidget = optWidget.animate().scale(begin: const Offset(0.98, 0.98), end: const Offset(1.02, 1.02), duration: 250.ms);
+                } else if (!_isBlitzAnswered) {
+                  optWidget = optWidget.animate(delay: (idx * 60).ms).fadeIn(duration: 250.ms).slideY(begin: 0.1, end: 0);
+                }
+
+                return optWidget;
               },
             ),
           ),
+
+          // Tushuntirish kartochkasi (Izoh)
+          if (_isBlitzAnswered) ...[
+            Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.of(context).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.of(context).withOpacity(0.3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.lightbulb_outline_rounded, color: AppColors.of(context), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Izoh va tahlil:',
+                          style: TextStyle(color: AppColors.of(context), fontSize: 11.5, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          q.explanation,
+                          style: TextStyle(color: AppColors.text1(context), fontSize: 11.5, height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.15, end: 0),
+          ],
         ],
       ),
     );
@@ -1336,47 +1748,90 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               final isFlipped = card['isFlipped'] == true || card['isMatched'] == true;
               final isMatched = card['isMatched'] == true;
 
+              Widget cardChild;
+              if (isFlipped) {
+                cardChild = Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (isMatched) ...[
+                      const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 16),
+                      const SizedBox(height: 4),
+                    ],
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          card['text'] as String,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isMatched ? AppColors.success : AppColors.text1(context),
+                            fontSize: card['isTerm'] == true ? 13 : 11,
+                            fontWeight: card['isTerm'] == true ? FontWeight.bold : FontWeight.w500,
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                cardChild = Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.of(context).withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        color: AppColors.of(context),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Karta ${idx + 1}',
+                      style: TextStyle(color: AppColors.textM(context), fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                );
+              }
+
               return InkWell(
                 onTap: () => _onMemoryCardTapped(idx),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isMatched
-                        ? AppColors.success.withOpacity(0.15)
+                        ? AppColors.success.withOpacity(0.18)
                         : isFlipped
                             ? AppColors.cardBg(context)
-                            : AppColors.of(context).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                            : AppColors.inputCol(context),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isMatched
                           ? AppColors.success
                           : isFlipped
                               ? AppColors.of(context)
                               : AppColors.borderCol(context),
-                      width: isFlipped ? 1.5 : 1,
+                      width: isFlipped || isMatched ? 1.8 : 1,
                     ),
-                  ),
-                  child: Center(
-                    child: isFlipped
-                        ? Text(
-                            card['text'] as String,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: isMatched ? AppColors.success : AppColors.text1(context),
-                              fontSize: card['isTerm'] == true ? 13 : 11,
-                              fontWeight: card['isTerm'] == true ? FontWeight.bold : FontWeight.normal,
+                    boxShadow: isMatched
+                        ? [
+                            BoxShadow(
+                              color: AppColors.success.withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
                             ),
-                          )
-                        : Icon(
-                            Icons.question_mark_rounded,
-                            color: AppColors.of(context),
-                            size: 26,
-                          ),
+                          ]
+                        : null,
                   ),
+                  child: cardChild,
                 ),
-              );
+              ).animate(target: isMatched ? 1 : 0).scale(begin: const Offset(0.95, 0.95), end: const Offset(1.0, 1.0), duration: 250.ms);
             },
           ),
         ),
@@ -1389,6 +1844,19 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     final isDuel = _currentGameMode == GameMode.duel;
     final isWon = _playerScore >= _opponentScore;
 
+    String rankBadge;
+    Color rankColor;
+    if (_playerScore >= 140) {
+      rankBadge = 'Oltin Bilimdon';
+      rankColor = Colors.amber.shade700;
+    } else if (_playerScore >= 80) {
+      rankBadge = 'Kumush Bilimdon';
+      rankColor = const Color(0xFF38BDF8);
+    } else {
+      rankBadge = 'Faol Tadqiqotchi';
+      rankColor = AppColors.of(context);
+    }
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(24),
@@ -1397,23 +1865,52 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
         children: [
           const SizedBox(height: 20),
           Container(
-            width: 80,
-            height: 80,
+            width: 86,
+            height: 86,
             decoration: BoxDecoration(
-              color: (isDuel ? (isWon ? AppColors.success : Colors.orange) : AppColors.of(context)).withOpacity(0.15),
+              color: (isDuel ? (isWon ? AppColors.success : Colors.orange) : AppColors.of(context)).withOpacity(0.18),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: (isDuel ? (isWon ? AppColors.success : Colors.orange) : AppColors.of(context)).withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
             child: Icon(
               isDuel ? (isWon ? Icons.emoji_events_outlined : Icons.military_tech_outlined) : Icons.celebration_outlined,
               color: isDuel ? (isWon ? AppColors.success : Colors.orange) : AppColors.of(context),
-              size: 42,
+              size: 46,
             ),
-          ).animate().scale(duration: 400.ms),
-          const SizedBox(height: 20),
+          ).animate().scale(duration: 400.ms).shimmer(duration: 1500.ms),
+          const SizedBox(height: 18),
+
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: BoxDecoration(
+              color: rankColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: rankColor.withOpacity(0.4)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.military_tech_rounded, color: rankColor, size: 16),
+                const SizedBox(width: 5),
+                Text(
+                  rankBadge,
+                  style: TextStyle(color: rankColor, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ],
+            ),
+          ).animate(delay: 150.ms).fadeIn().scale(),
+          const SizedBox(height: 12),
+
           Text(
             isDuel ? (isWon ? 'G\'alaba! Tabriklaymiz!' : 'Ajoyib Bellashuv!') : 'Barakalla! Dars mustahkamlandi!',
             style: TextStyle(color: AppColors.text1(context), fontSize: 20, fontWeight: FontWeight.bold),
-          ),
+          ).animate(delay: 200.ms).fadeIn(),
           const SizedBox(height: 8),
           Text(
             isDuel
@@ -1421,8 +1918,9 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                 : '"${widget.topicTitle}" mavzusi bo\'yicha topshiriqlarni a\'lo darajada bajardingiz.',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.text2(context), fontSize: 13, height: 1.4),
-          ),
+          ).animate(delay: 250.ms).fadeIn(),
           const SizedBox(height: 24),
+
           // Mukofotlar paneli
           Container(
             padding: const EdgeInsets.all(16),
@@ -1430,6 +1928,13 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               color: AppColors.cardBg(context),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.borderCol(context)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1439,8 +1944,9 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                 _buildAwardItem('Abdora Tanga', '+15', Icons.monetization_on_outlined, AppColors.success),
               ],
             ),
-          ),
+          ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.1, end: 0),
           const SizedBox(height: 28),
+
           Row(
             children: [
               Expanded(
@@ -1467,7 +1973,7 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                 ),
               ),
             ],
-          ),
+          ).animate(delay: 350.ms).fadeIn().slideY(begin: 0.1, end: 0),
         ],
       ),
     );
