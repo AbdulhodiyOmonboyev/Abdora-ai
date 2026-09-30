@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { BarChart2, Users, TrendingUp, Award, Gamepad2, Swords, Trophy, Sparkles } from 'lucide-react';
+import { BarChart2, Users, TrendingUp, Award, Gamepad2, Swords, Trophy } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
 import api from '../../config/axios';
 

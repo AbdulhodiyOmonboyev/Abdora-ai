@@ -9,7 +9,6 @@ import '../../../core/api/endpoints.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/student_models.dart';
 import '../../../providers/notification_provider.dart';
-import '../../../providers/student_provider.dart';
 import '../../../widgets/glass_card.dart';
 
 // O'yin turlari
