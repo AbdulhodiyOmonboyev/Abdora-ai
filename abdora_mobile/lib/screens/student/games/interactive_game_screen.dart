@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import '../../../core/api/api_client.dart';
+import '../../../core/api/endpoints.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/student_models.dart';
 import '../../../providers/notification_provider.dart';
@@ -504,6 +506,23 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
         targetRoute: '/games',
       ),
     );
+
+    // O'qituvchi nazorati va umumiy statistika uchun serverga yuborish
+    try {
+      ApiClient().dio.post(
+        Endpoints.gameActivity,
+        data: {
+          'topicTitle': widget.topicTitle,
+          'gameType': _currentGameType == GameType.matchPairs ? 'Juftliklar' : _currentGameType == GameType.blitzSprint ? 'Blitz Sprint' : 'Xotira',
+          'score': _playerScore,
+          'opponentName': _opponentName,
+          'isWon': isWonDuel,
+          'moves': _memoryMoves,
+          'duration': _secondsElapsed,
+          'mode': _currentGameMode == GameMode.duel ? 'duel' : 'solo',
+        },
+      ).catchError((_) {});
+    } catch (_) {}
   }
 
   // GURUHDOSHGA TAKLIF YUBORISH DIALOGI

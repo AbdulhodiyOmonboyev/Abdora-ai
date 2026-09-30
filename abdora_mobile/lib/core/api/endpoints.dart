@@ -41,4 +41,6 @@ class Endpoints {
   static const String certificates = '/student/certificates';
   static const String notifications = '/analytics/notifications';
   static const String markNotificationsRead = '/analytics/notifications/read';
+  static const String gameActivity = '/analytics/game-activity';
+  static const String teacherGameActivities = '/analytics/teacher/game-activities';
 }

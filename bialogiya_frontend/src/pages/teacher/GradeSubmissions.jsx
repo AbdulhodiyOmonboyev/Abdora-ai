@@ -73,6 +73,26 @@ export default function GradeSubmissions() {
               {sub.answerText || <span className="text-gray-400 italic">Matnli javob yo'q</span>}
             </div>
 
+            {/* O'quvchining interaktiv o'yin orqali tayyorgarligi */}
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-3 mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-emerald-500/10 text-emerald-600 rounded-lg">
+                  <Sparkles size={14} />
+                </span>
+                <div>
+                  <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                    Mavzu o'yini orqali tayyorgarlik ko'rilgan
+                  </div>
+                  <div className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                    O'quvchi vazifani topshirishdan oldin interaktiv o'yin bilan mavzuni mustahkamlagan
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full">
+                Faol
+              </span>
+            </div>
+
             {sub.aiGrade && (
               <div className="bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border border-purple-500/20 rounded-xl p-3.5 mb-3">
                 <div className="flex items-center justify-between gap-2 mb-2">

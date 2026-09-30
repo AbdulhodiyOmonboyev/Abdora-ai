@@ -7,6 +7,7 @@ import '../../widgets/glass_card.dart';
 import 'student_lessons.dart';
 import 'student_homework_screen.dart';
 import 'student_exams_screen.dart';
+import 'teacher_monitor_screen.dart';
 
 class StudentGroupScreen extends StatefulWidget {
   const StudentGroupScreen({super.key});
@@ -335,6 +336,60 @@ class _StudentGroupScreenState extends State<StudentGroupScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // O'qituvchi Nazorati & O'yinlar Monitoringi
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TeacherMonitorScreen()),
+                );
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.of(context).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.of(context).withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.of(context),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.analytics_outlined, color: Colors.white, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'O\'qituvchi Nazorati & Monitoring',
+                            style: TextStyle(
+                              color: AppColors.text1(context),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'O\'quvchilarning mavzu o\'yinlari, duellar va o\'zlashtirish tahlili',
+                            style: TextStyle(color: AppColors.text2(context), fontSize: 11.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.of(context)),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
