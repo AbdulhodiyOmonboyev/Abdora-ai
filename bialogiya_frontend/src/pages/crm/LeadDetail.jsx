@@ -141,7 +141,7 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
         open={open && !!leadId}
         onClose={onClose}
         title={isLoading ? 'Yuklanmoqda...' : (lead?.name || 'Lid')}
-        subtitle={isLoading ? '' : (currentSource?.icon + ' ' + currentSource?.label)}
+        subtitle={isLoading ? '' : (currentSource?.label || '')}
         width="520px"
         footer={
           lead?.status !== 'enrolled' ? (
@@ -434,13 +434,16 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
         }
       >
         <div className="space-y-4">
-          <div className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-850">
+          <div
+            className="flex items-center gap-3 p-3.5 rounded-xl"
+            style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)' }}
+          >
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white bg-primary">
               {lead?.name?.charAt(0)?.toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-semibold text-sm text-gray-900 dark:text-white truncate">{lead?.name}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{lead?.phone}</div>
+              <div className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{lead?.name}</div>
+              <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{lead?.phone}</div>
             </div>
           </div>
 

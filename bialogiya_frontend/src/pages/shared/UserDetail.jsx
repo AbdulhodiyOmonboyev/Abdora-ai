@@ -220,13 +220,18 @@ export default function UserDetail() {
 
   if (isError || !historyData || !historyData.student) {
     return (
-      <div className="dashboard-shell max-w-6xl mx-auto">
-        <div className="mb-6">{back}</div>
-        <ErrorState
-          error={error}
-          onRetry={refetch}
-          title={error?.response?.status === 404 ? 'Foydalanuvchi topilmadi' : "Ma'lumotni yuklab bo'lmadi"}
-        />
+      <div className="w-full flex justify-center py-4 sm:py-6">
+        <div
+          className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8"
+          style={{ margin: '0 auto', maxWidth: '1152px' }}
+        >
+          <div className="mb-6">{back}</div>
+          <ErrorState
+            error={error}
+            onRetry={refetch}
+            title={error?.response?.status === 404 ? 'Foydalanuvchi topilmadi' : "Ma'lumotni yuklab bo'lmadi"}
+          />
+        </div>
       </div>
     );
   }
@@ -249,8 +254,12 @@ export default function UserDetail() {
   const isTeacher = currentUser?.role === 'teacher';
 
   return (
-    <div className="dashboard-shell max-w-7xl mx-auto pb-16">
-      {/* Top Header */}
+    <div className="w-full flex justify-center py-2 sm:py-4">
+      <div
+        className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16 space-y-6"
+        style={{ margin: '0 auto', maxWidth: '1280px' }}
+      >
+        {/* Top Header */}
       <header className="dashboard-header flex-wrap gap-4 justify-between items-center mb-6">
         <div className="flex items-center gap-3 min-w-0">
           {back}
@@ -1526,6 +1535,7 @@ export default function UserDetail() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }
