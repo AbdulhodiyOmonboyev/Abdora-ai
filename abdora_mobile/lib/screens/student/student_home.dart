@@ -13,6 +13,7 @@ import '../../providers/notification_provider.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/useful_illustrations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/api/api_client.dart';
 import '../../core/api/endpoints.dart';
 import 'lesson_detail_screen.dart';
 import 'student_lessons.dart';
