@@ -32,7 +32,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*') || origin.endsWith('.onrender.com')) {
       callback(null, true);
     } else {
-      callback(null, true);
+      callback(new Error('CORS: origin not allowed: ' + origin));
     }
   },
   credentials: true,

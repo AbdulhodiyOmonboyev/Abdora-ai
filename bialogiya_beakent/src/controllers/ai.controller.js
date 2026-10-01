@@ -274,6 +274,9 @@ const chatMessage = async (req, res, next) => {
       aiPreferences = userRecord?.permissions?.aiPreferences || {};
     }
 
+    const effectiveStyle = style || aiPreferences?.style || 'friendly';
+    const effectiveLang  = language || aiPreferences?.language || 'uz';
+
     let chat = await prisma.aIChat.findUnique({
       where: { lessonId_studentId: { lessonId, studentId: req.user.userId } },
     });
