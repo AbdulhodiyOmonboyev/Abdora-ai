@@ -7,6 +7,7 @@ import '../../providers/student_provider.dart';
 import '../../widgets/glass_card.dart';
 import 'lesson_detail_screen.dart';
 import 'student_homework_screen.dart';
+import 'student_exams_screen.dart';
 
 class StudentLessonsScreen extends StatefulWidget {
   const StudentLessonsScreen({super.key});
@@ -123,6 +124,32 @@ class _StudentLessonsScreenState extends State<StudentLessonsScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Text(
                             'Uyga vazifa',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.text2(context),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const StudentExamsScreen(),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'Imtihonlar',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: AppColors.text2(context),

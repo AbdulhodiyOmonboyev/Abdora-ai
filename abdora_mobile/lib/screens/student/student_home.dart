@@ -17,6 +17,7 @@ import '../../core/api/endpoints.dart';
 import 'lesson_detail_screen.dart';
 import 'student_lessons.dart';
 import 'student_homework_screen.dart';
+import 'student_exams_screen.dart';
 import 'student_group_screen.dart';
 import 'student_shop_leaderboard_screen.dart';
 import 'student_profile_screen.dart';
@@ -37,6 +38,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     Future.microtask(() {
       final student = Provider.of<StudentProvider>(context, listen: false);
       student.fetchLessons();
+      student.fetchTests();
       student.fetchHomework();
 
       final shop = Provider.of<ShopProvider>(context, listen: false);
@@ -607,13 +609,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: _buildUsefulCard(
-                title: 'Reyting va\nPeshqadamlar',
-                illustration: const LeaderboardIllustration(size: 60),
+                title: 'Imtihonlarim',
+                illustration: const ExamIllustration(size: 60),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const StudentShopLeaderboardScreen(initialIndex: 1),
+                      builder: (_) => const StudentExamsScreen(),
                     ),
                   );
                 },
@@ -1324,7 +1326,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                       context,
                                       MaterialPageRoute(builder: (_) => const StudentHomeworkScreen()),
                                     );
-                                  } else if (item.route == 'exams' || item.route == 'leaderboard') {
+                                  } else if (item.route == 'exams') {
+                                    Navigator.pop(sheetCtx);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const StudentExamsScreen()),
+                                    );
+                                  } else if (item.route == 'leaderboard') {
                                     Navigator.pop(sheetCtx);
                                     Navigator.push(
                                       context,

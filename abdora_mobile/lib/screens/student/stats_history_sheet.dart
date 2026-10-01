@@ -213,7 +213,7 @@ class _StatsHistorySheetWidgetState extends State<_StatsHistorySheetWidget> {
       ),
       StatsHistoryItem(
         id: 'c2',
-        title: 'Sitologiya: Hujayra organoidlari topshirig\'i',
+        title: 'Dars bo\'yicha topshiriq muvaffaqiyatli bajarildi',
         category: 'Uyga vazifa',
         amount: 15,
         isPositive: true,
@@ -319,7 +319,7 @@ class _StatsHistorySheetWidgetState extends State<_StatsHistorySheetWidget> {
       ),
       StatsHistoryItem(
         id: 'e4',
-        title: 'Hujayra organoidlari topshirig\'i (95 ball)',
+        title: 'Mavzu bo\'yicha vazifa topshirig\'i (95 ball)',
         category: 'Uyga vazifa',
         amount: 95,
         isPositive: true,

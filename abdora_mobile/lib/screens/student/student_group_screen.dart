@@ -6,6 +6,7 @@ import '../../providers/student_provider.dart';
 import '../../widgets/glass_card.dart';
 import 'student_lessons.dart';
 import 'student_homework_screen.dart';
+import 'student_exams_screen.dart';
 import 'student_shop_leaderboard_screen.dart';
 import 'teacher_monitor_screen.dart';
 
@@ -164,6 +165,7 @@ class _StudentGroupScreenState extends State<StudentGroupScreen> {
             icon: Icon(Icons.refresh_rounded, color: AppColors.of(context)),
             onPressed: () {
               student.fetchLessons();
+              student.fetchTests();
               student.fetchHomework();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Guruh ma\'lumotlari yangilandi')),
@@ -256,7 +258,7 @@ class _StudentGroupScreenState extends State<StudentGroupScreen> {
                     children: [
                       _buildHeaderStat(context, Icons.person_rounded, '${_classmates.length} nafar', 'O\'quvchilar'),
                       _buildHeaderStat(context, Icons.menu_book_rounded, '${student.lessons.length} ta', 'Darslar'),
-                      _buildHeaderStat(context, Icons.assignment_late_rounded, '${student.homeworkList.length} ta', 'Vazifalar'),
+                      _buildHeaderStat(context, Icons.assignment_turned_in_rounded, '${student.tests.length} ta', 'Imtihonlar'),
                       _buildHeaderStat(context, Icons.check_circle_rounded, '98%', 'Faollik'),
                     ],
                   ),
@@ -463,14 +465,14 @@ class _StudentGroupScreenState extends State<StudentGroupScreen> {
                 Expanded(
                   child: _buildQuickActionCard(
                     context,
-                    title: 'Reyting',
-                    subtitle: 'Peshqadamlar',
-                    icon: Icons.leaderboard_rounded,
+                    title: 'Imtihonlar',
+                    subtitle: '${student.tests.length} ta test',
+                    icon: Icons.quiz_outlined,
                     color: AppColors.coinGold,
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const StudentShopLeaderboardScreen(initialIndex: 1)),
+                        MaterialPageRoute(builder: (_) => const StudentExamsScreen()),
                       );
                     },
                   ),

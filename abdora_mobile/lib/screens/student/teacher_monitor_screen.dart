@@ -61,99 +61,11 @@ class _TeacherMonitorScreenState extends State<TeacherMonitorScreen> with Single
       }
     } catch (_) {}
 
-    // Serverdan olinmasa yoki oflayn bo'lsa, namunaviy guruh ma'lumotlari bilan to'ldiramiz
     if (mounted) {
-      _loadFallbackData();
+      setState(() => _isLoading = false);
     }
   }
 
-  void _loadFallbackData() {
-    setState(() {
-      _summary = {
-        'totalGames': 38,
-        'totalDuels': 14,
-        'avgScore': 86,
-        'totalStudents': 8,
-      };
-
-      _activities = [
-        {
-          'studentName': 'Abdulxodiy Omonboyev',
-          'groupName': 'Biologiya Chuqurlashtirilgan',
-          'topicTitle': 'Lam bilan lan ning farqi (Arab tili)',
-          'gameType': 'Juftliklar',
-          'mode': 'duel',
-          'opponentName': 'Shukrona Rahimova',
-          'isWon': true,
-          'score': 125,
-          'duration': 42,
-          'createdAt': DateTime.now().subtract(const Duration(minutes: 12)).toIso8601String(),
-        },
-        {
-          'studentName': 'Shukrona Rahimova',
-          'groupName': 'Biologiya Chuqurlashtirilgan',
-          'topicTitle': 'Sitologiya — Hujayra organoidlari',
-          'gameType': 'Blitz Sprint',
-          'mode': 'solo',
-          'score': 110,
-          'duration': 55,
-          'createdAt': DateTime.now().subtract(const Duration(hours: 1, minutes: 5)).toIso8601String(),
-        },
-        {
-          'studentName': 'Jasurbek Aliyev',
-          'groupName': 'Biologiya Chuqurlashtirilgan',
-          'topicTitle': 'Moddalar almashinuvi va ATF sintezi',
-          'gameType': 'Xotira',
-          'mode': 'solo',
-          'score': 95,
-          'duration': 68,
-          'createdAt': DateTime.now().subtract(const Duration(hours: 2, minutes: 30)).toIso8601String(),
-        },
-        {
-          'studentName': 'Madina Karimova',
-          'groupName': 'Biologiya Chuqurlashtirilgan',
-          'topicTitle': 'Fotosintez va xemosintez',
-          'gameType': 'Juftliklar',
-          'mode': 'duel',
-          'opponentName': 'Bekzod Mirzayev',
-          'isWon': true,
-          'score': 105,
-          'duration': 48,
-          'createdAt': DateTime.now().subtract(const Duration(hours: 4)).toIso8601String(),
-        },
-        {
-          'studentName': 'Bekzod Mirzayev',
-          'groupName': 'Biologiya Chuqurlashtirilgan',
-          'topicTitle': 'Genetika qonuniyatlari',
-          'gameType': 'Blitz Sprint',
-          'mode': 'solo',
-          'score': 85,
-          'duration': 60,
-          'createdAt': DateTime.now().subtract(const Duration(hours: 6)).toIso8601String(),
-        },
-        {
-          'studentName': 'Dildora Yusupova',
-          'groupName': 'Biologiya Chuqurlashtirilgan',
-          'topicTitle': 'Seleksiya va biotexnologiya asoslari',
-          'gameType': 'Juftliklar',
-          'mode': 'solo',
-          'score': 90,
-          'duration': 50,
-          'createdAt': DateTime.now().subtract(const Duration(hours: 8)).toIso8601String(),
-        },
-      ];
-
-      _topLearners = [
-        {'name': 'Shukrona Rahimova', 'gamesCount': 12, 'duelsWon': 6, 'totalGameScore': 1240, 'xp': 2850},
-        {'name': 'Abdulxodiy Omonboyev', 'gamesCount': 11, 'duelsWon': 5, 'totalGameScore': 1180, 'xp': 2400},
-        {'name': 'Jasurbek Aliyev', 'gamesCount': 8, 'duelsWon': 3, 'totalGameScore': 890, 'xp': 2150},
-        {'name': 'Madina Karimova', 'gamesCount': 7, 'duelsWon': 2, 'totalGameScore': 780, 'xp': 1980},
-        {'name': 'Bekzod Mirzayev', 'gamesCount': 6, 'duelsWon': 1, 'totalGameScore': 640, 'xp': 1850},
-      ];
-
-      _isLoading = false;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -382,7 +294,7 @@ class _TeacherMonitorScreenState extends State<TeacherMonitorScreen> with Single
                           if (isDuel && opponent != null) ...[
                             const SizedBox(height: 4),
                             Text(
-                              'Raqib: $opponent • Natija: ${isWon ? "G'alaba qozondi" : "Teng kurash"}',
+                              'Raqib: $opponent • Natija: ${isWon ? "Gʻalaba qozondi" : "Teng kurash"}',
                               style: TextStyle(color: isWon ? AppColors.success : AppColors.text2(context), fontSize: 11.5),
                             ),
                           ],
@@ -484,13 +396,57 @@ class _TeacherMonitorScreenState extends State<TeacherMonitorScreen> with Single
 
   // 3. MAVZULAR BO'YICHA O'ZLASHTIRISH TABI
   Widget _buildTopicMasteryTab() {
-    final topics = [
-      {'title': 'Sitologiya — Hujayra organoidlari', 'players': 8, 'mastery': 94, 'games': 14},
-      {'title': 'Lam bilan lan farqi (Arab tili)', 'players': 7, 'mastery': 90, 'games': 12},
-      {'title': 'Moddalar almashinuvi (Metabolizm)', 'players': 6, 'mastery': 85, 'games': 9},
-      {'title': 'Fotosintez va xemosintez', 'players': 5, 'mastery': 82, 'games': 8},
-      {'title': 'Genetika qonuniyatlari', 'players': 5, 'mastery': 78, 'games': 6},
-    ];
+    final Map<String, Map<String, dynamic>> topicStats = {};
+    for (final act in _activities) {
+      final title = act['topicTitle']?.toString() ?? '';
+      if (title.isEmpty) continue;
+      if (!topicStats.containsKey(title)) {
+        topicStats[title] = {
+          'title': title,
+          'players': <String>{},
+          'games': 0,
+          'totalScore': 0,
+        };
+      }
+      topicStats[title]!['games'] = (topicStats[title]!['games'] as int) + 1;
+      topicStats[title]!['totalScore'] = (topicStats[title]!['totalScore'] as int) + ((act['score'] as num?)?.toInt() ?? 0);
+      final student = act['studentName']?.toString();
+      if (student != null) {
+        (topicStats[title]!['players'] as Set<String>).add(student);
+      }
+    }
+
+    final topics = topicStats.values.map((stat) {
+      final games = stat['games'] as int;
+      final avg = games > 0 ? ((stat['totalScore'] as int) / games).round() : 0;
+      final mastery = avg.clamp(0, 100);
+      return {
+        'title': stat['title'] as String,
+        'players': (stat['players'] as Set<String>).length,
+        'mastery': mastery,
+        'games': games,
+      };
+    }).toList();
+
+    if (topics.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_graph_rounded, size: 48, color: AppColors.textM(context)),
+              const SizedBox(height: 12),
+              Text(
+                'Hozircha mavzular statistikasi mavjud emas',
+                style: TextStyle(color: AppColors.text2(context), fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return ListView.separated(
       padding: const EdgeInsets.all(16),
