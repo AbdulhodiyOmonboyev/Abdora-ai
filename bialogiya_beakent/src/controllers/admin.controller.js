@@ -905,6 +905,13 @@ const updateSettings = async (req, res, next) => {
         sharedSettingsUpdate.leadStages = value;
       } else if (key === 'leadSources' && Array.isArray(value)) {
         sharedSettingsUpdate.leadSources = value;
+      } else if (key === 'gradeSettings' && typeof value === 'object') {
+        if (role === 'admin' || role === 'manager') {
+          sharedSettingsUpdate.gradeSettings = {
+            ...(currentSettings.gradeSettings || {}),
+            ...value,
+          };
+        }
       } else if (sharedFieldMap[key] !== undefined) {
         // Shared center-level fields
         if (key === 'centerName' && role !== 'admin') continue; // only admin can rename center

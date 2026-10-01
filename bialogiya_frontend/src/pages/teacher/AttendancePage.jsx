@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Clock, Save, Snowflake, Settings, Star, Coins, AlertCircle } from 'lucide-react';
+import { Check, X, Clock, Save, Snowflake, Star, Coins } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 
@@ -29,7 +29,6 @@ export default function AttendancePage() {
   const [date, setDate] = useState(today);
   const [attendance, setAttendance] = useState({});
   const [grades, setGrades] = useState({});
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Guruhlarni yuklash
   const { data: groups = [] } = useQuery({ 
@@ -42,25 +41,10 @@ export default function AttendancePage() {
   const group = Array.isArray(groups) ? groups.find(g => g.id === selectedGroup) : null;
   const activeStudents = Array.isArray(group?.students) ? group.students.filter(s => !s.isFrozen) : [];
 
-  // Baho va Coin sozlamalarini yuklash
+  // Baho va Coin sozlamalarini o'qish (faqat ma'lumot uchun)
   const { data: gradeSettings = DEFAULT_SETTINGS } = useQuery({
     queryKey: ['attendance-settings'],
     queryFn: () => api.get('/attendance/settings').then(r => r.data?.data || DEFAULT_SETTINGS).catch(() => DEFAULT_SETTINGS),
-  });
-
-  // Sozlamalarni saqlash
-  const [localSettings, setLocalSettings] = useState(null);
-  const settingsToUse = localSettings || gradeSettings;
-
-  const saveSettingsMutation = useMutation({
-    mutationFn: (newSettings) => api.put('/attendance/settings', newSettings),
-    onSuccess: (res) => {
-      qc.invalidateQueries(['attendance-settings']);
-      setLocalSettings(res.data?.data || null);
-      toast.success('Baho va coin sozlamalari saqlandi!');
-      setShowSettingsModal(false);
-    },
-    onError: (err) => toast.error(err.response?.data?.message || 'Sozlamalarni saqlashda xatolik'),
   });
 
   // Tanlangan sana va guruh bo'yicha davomat hamda baholarni yuklash
@@ -137,16 +121,10 @@ export default function AttendancePage() {
             O'quvchilarning darsdagi ishtiroki (bor/yo'q) hamda 1 dan 10 gacha dars baholari
           </p>
         </div>
-        <button
-          onClick={() => {
-            setLocalSettings({ ...gradeSettings });
-            setShowSettingsModal(true);
-          }}
-          className="btn-secondary text-xs flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-        >
-          <Settings size={15} />
-          <span>Baho & Coin sozlamalari</span>
-        </button>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--card)] text-xs text-[var(--text-secondary)] shadow-xs">
+          <Coins size={15} className="text-amber-500 flex-shrink-0" />
+          <span>Baho: <strong>1–10</strong>. Coin qoidalari <strong>menejer</strong> tomonidan belgilanadi.</span>
+        </div>
       </div>
 
       {/* Guruh va sana tanlash */}
@@ -329,167 +307,6 @@ export default function AttendancePage() {
           </button>
         </>
       )}
-
-      {/* Baho va Coin Sozlamalari Modali */}
-      <AnimatePresence>
-        {showSettingsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                    <Coins size={20} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Baho va Coin Sozlamalari</h2>
-                    <p className="text-xs text-gray-500">1 dan 10 gacha baholash va tangalarni taqsimlash qoidalari</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowSettingsModal(false)}
-                  className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="space-y-4 py-4 text-sm">
-                {/* Coin ayirish funksiyasi kaliti (Switch) */}
-                <div className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                      <Coins size={16} className="text-amber-500" />
-                      <span>Tangalarni ayirish tizimi</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      O'quvchi darsga kelmaganda yoki past baho olganda hisobidan tanga ayirish
-                    </p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settingsToUse.coinDeductionEnabled}
-                      onChange={(e) => setLocalSettings({ ...settingsToUse, coinDeductionEnabled: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-
-                {/* Darsga kelmaganda ayiriladigan tangalar */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Darsga kelmaganda (Yo'q) ayiriladigan tanga:
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={settingsToUse.deductCoinsOnAbsent}
-                    onChange={(e) => setLocalSettings({ ...settingsToUse, deductCoinsOnAbsent: parseInt(e.target.value, 10) || 0 })}
-                    className="input-field w-full p-2.5 rounded-lg border text-sm"
-                    disabled={!settingsToUse.coinDeductionEnabled}
-                  />
-                  <p className="text-[11px] text-gray-400 mt-1">Masalan: 5 tanga ayirilsin</p>
-                </div>
-
-                {/* Past baho chegarasi va ayiriladigan tangalar */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      Past bahoda ayirish (-):
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="30"
-                      value={settingsToUse.deductCoinsOnLowGrade}
-                      onChange={(e) => setLocalSettings({ ...settingsToUse, deductCoinsOnLowGrade: parseInt(e.target.value, 10) || 0 })}
-                      className="input-field w-full p-2.5 rounded-lg border text-sm"
-                      disabled={!settingsToUse.coinDeductionEnabled}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      Past baho chegarasi (≤):
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="5"
-                      value={settingsToUse.lowGradeThreshold}
-                      onChange={(e) => setLocalSettings({ ...settingsToUse, lowGradeThreshold: parseInt(e.target.value, 10) || 4 })}
-                      className="input-field w-full p-2.5 rounded-lg border text-sm"
-                      disabled={!settingsToUse.coinDeductionEnabled}
-                    />
-                  </div>
-                </div>
-
-                {/* Yuqori a'lo baho uchun mukofot tangalar */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      A'lo bahoda berish (+):
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="50"
-                      value={settingsToUse.awardCoinsOnHighGrade}
-                      onChange={(e) => setLocalSettings({ ...settingsToUse, awardCoinsOnHighGrade: parseInt(e.target.value, 10) || 0 })}
-                      className="input-field w-full p-2.5 rounded-lg border text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      Yuqori baho chegarasi (≥):
-                    </label>
-                    <input
-                      type="number"
-                      min="6"
-                      max="10"
-                      value={settingsToUse.highGradeThreshold}
-                      onChange={(e) => setLocalSettings({ ...settingsToUse, highGradeThreshold: parseInt(e.target.value, 10) || 8 })}
-                      className="input-field w-full p-2.5 rounded-lg border text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-xl text-xs">
-                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-                  <div>
-                    Baholash shkalasi <strong>1 dan 10 gacha</strong> qat'iy standartda ishlaydi. Tangalar faqat davomat saqlanganda avtomatik hisoblanadi va o'quvchi profilida aks etadi.
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-                <button
-                  type="button"
-                  onClick={() => setShowSettingsModal(false)}
-                  className="btn-secondary flex-1 py-2.5 rounded-xl border text-sm"
-                >
-                  Bekor qilish
-                </button>
-                <button
-                  type="button"
-                  onClick={() => saveSettingsMutation.mutate(settingsToUse)}
-                  disabled={saveSettingsMutation.isPending}
-                  className="btn-primary flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5"
-                >
-                  <Save size={15} />
-                  <span>{saveSettingsMutation.isPending ? 'Saqlanmoqda...' : 'Saqlash'}</span>
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

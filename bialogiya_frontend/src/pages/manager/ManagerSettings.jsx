@@ -8,7 +8,7 @@ import {
   BookMarked, Plus, X, Pencil, Trash2, Copy, Save, Check, KeyRound,
   Palette, Smartphone, Banknote, ChevronRight,
   Sparkles, ShoppingBag, Tag, Gift, Shirt, Package, Clock, CheckCircle2, Coins,
-  RefreshCw
+  RefreshCw, AlertCircle
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -24,13 +24,36 @@ const MANAGER_NAV_ITEMS = [
   { id: 'reception_control', label: 'Qabulxona (Reception)',       icon: ShieldCheck },
   { id: 'branch_info',       label: 'Filial ma\'lumotlari',        icon: Building2 },
   { id: 'payments',          label: 'To\'lovlar & Qoidalar',       icon: CreditCard },
-  { id: 'lms_rules',         label: 'LMS & Ta\'lim qoidalari',     icon: BookOpen },
+  { id: 'lms_rules',         label: 'LMS & Baholash (Coin)',       icon: BookOpen },
   { id: 'crm_leads',         label: 'CRM & Lidlar sozlamasi',      icon: Target },
   { id: 'coin_shop',         label: 'Online Do\'kon (Coin Shop)',  icon: ShoppingBag },
   { id: 'notifications',     label: 'Bildirishnomalar (SMS)',      icon: Bell },
   { id: 'themes',            label: 'Mavzular & Ko\'rinish',       icon: Palette },
   { id: 'personal',          label: 'Mening hisobim & Parol',      icon: User },
 ];
+
+const DEFAULT_GRADE_SETTINGS = {
+  minGrade: 1,
+  maxGrade: 10,
+  coinDeductionEnabled: true,
+  deductCoinsOnAbsent: 5,
+  deductCoinsOnLowGrade: 3,
+  lowGradeThreshold: 4,
+  awardCoinsOnHighGrade: 5,
+  highGradeThreshold: 8,
+  coinsPerGrade: {
+    1: -5,
+    2: -4,
+    3: -3,
+    4: -2,
+    5: 0,
+    6: 1,
+    7: 2,
+    8: 3,
+    9: 4,
+    10: 5,
+  },
+};
 
 const DEFAULT_LEAD_STAGES = [
   { id: 'new', name: 'Yangi murojaat', color: '#3B82F6' },
@@ -212,6 +235,36 @@ export default function ManagerSettings() {
   const { data: shopOrders = [], isLoading: isShopOrdersLoading } = useQuery({
     queryKey: ['shop-orders-manager'],
     queryFn: () => api.get('/shop/orders').then(r => r.data?.data || []),
+  });
+
+  // Baho va Coin (Tangalar) sozlamalari (Faqat Manager va Admin uchun)
+  const { data: serverGradeSettings = DEFAULT_GRADE_SETTINGS } = useQuery({
+    queryKey: ['attendance-settings'],
+    queryFn: () => api.get('/attendance/settings').then(r => r.data?.data || DEFAULT_GRADE_SETTINGS).catch(() => DEFAULT_GRADE_SETTINGS),
+  });
+
+  const [gradeSettings, setGradeSettings] = useState(DEFAULT_GRADE_SETTINGS);
+
+  useEffect(() => {
+    if (serverGradeSettings) {
+      setGradeSettings({
+        ...DEFAULT_GRADE_SETTINGS,
+        ...serverGradeSettings,
+        coinsPerGrade: {
+          ...DEFAULT_GRADE_SETTINGS.coinsPerGrade,
+          ...(serverGradeSettings.coinsPerGrade || {}),
+        },
+      });
+    }
+  }, [serverGradeSettings]);
+
+  const saveGradeSettingsMutation = useMutation({
+    mutationFn: (newSettings) => api.put('/attendance/settings', newSettings),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['attendance-settings'] });
+      toast.success('Baho va coin qoidalari muvaffaqiyatli saqlandi');
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Sozlamalarni saqlashda xatolik yuz berdi'),
   });
 
   const createShopItemMutation = useMutation({
@@ -859,51 +912,224 @@ export default function ManagerSettings() {
 
               {/* TAB 4: LMS & TA'LIM QOIDALARI */}
               {activeTab === 'lms_rules' && (
-                <div className="panel-card space-y-4">
-                  <SectionHeader
-                    kicker="Ta'lim"
-                    title="LMS va Dars jarayoni qoidalari"
-                    subtitle="Guruh sig'imi, davomat va imtihon me'yorlari"
-                  />
+                <div className="space-y-5">
+                  <div className="panel-card space-y-4">
+                    <SectionHeader
+                      kicker="Ta'lim"
+                      title="LMS va Dars jarayoni qoidalari"
+                      subtitle="Guruh sig'imi, davomat va imtihon me'yorlari"
+                    />
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="form-label">Guruhdagi maksimal sig'im</label>
-                      <input
-                        type="number"
-                        min="5"
-                        max="40"
-                        value={settings.maxStudentsPerGroup || 16}
-                        onChange={(e) => set('maxStudentsPerGroup', Number(e.target.value))}
-                        className="input-field font-mono font-bold"
-                      />
-                      <p className="form-hint">Bir guruhga biriktiriladigan maksimal o'quvchilar soni</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="form-label">Guruhdagi maksimal sig'im</label>
+                        <input
+                          type="number"
+                          min="5"
+                          max="40"
+                          value={settings.maxStudentsPerGroup || 16}
+                          onChange={(e) => set('maxStudentsPerGroup', Number(e.target.value))}
+                          className="input-field font-mono font-bold"
+                        />
+                        <p className="form-hint">Bir guruhga biriktiriladigan maksimal o'quvchilar soni</p>
+                      </div>
+
+                      <div>
+                        <label className="form-label">Minimal davomat talabi (%)</label>
+                        <input
+                          type="number"
+                          min="50"
+                          max="100"
+                          value={settings.minAttendancePercent || 80}
+                          onChange={(e) => set('minAttendancePercent', Number(e.target.value))}
+                          className="input-field font-mono font-bold"
+                        />
+                        <p className="form-hint">Sertifikat berish yoki darajadan o'tish uchun zarur davomat</p>
+                      </div>
+
+                      <div>
+                        <label className="form-label">Imtihon o'tish bali (%)</label>
+                        <input
+                          type="number"
+                          min="40"
+                          max="100"
+                          value={settings.passingScorePercent || 60}
+                          onChange={(e) => set('passingScorePercent', Number(e.target.value))}
+                          className="input-field font-mono font-bold"
+                        />
+                        <p className="form-hint">Test va oraliq imtihonlardan o'tish minimal chegarasi</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Baho va Coinlarni tenglashtirish qoidalari (Faqat Menejer uchun) */}
+                  <div className="panel-card space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--border)]">
+                      <div>
+                        <span className="panel-kicker text-amber-600 dark:text-amber-400">Gamifikatsiya & Iqtisodiyot</span>
+                        <h2 className="panel-title mt-0.5 flex items-center gap-2">
+                          <Coins className="w-5 h-5 text-amber-500" />
+                          <span>Baho va Tangalarni (Coin) Tenglash Qoidalari</span>
+                        </h2>
+                        <p className="panel-subtitle mt-1">
+                          O'qituvchilar darsda qo'yadigan 1 dan 10 gacha baholarga tanga berish yoki ayirish me'yorlarini belgilang
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => saveGradeSettingsMutation.mutate(gradeSettings)}
+                        disabled={saveGradeSettingsMutation.isPending}
+                        className="btn-primary text-xs px-4 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-sm self-start sm:self-auto"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>{saveGradeSettingsMutation.isPending ? "Saqlanmoqda..." : "Coin qoidalarini saqlash"}</span>
+                      </button>
                     </div>
 
-                    <div>
-                      <label className="form-label">Minimal davomat talabi (%)</label>
-                      <input
-                        type="number"
-                        min="50"
-                        max="100"
-                        value={settings.minAttendancePercent || 80}
-                        onChange={(e) => set('minAttendancePercent', Number(e.target.value))}
-                        className="input-field font-mono font-bold"
+                    {/* Tangalarni ayirish tizimi (Global Switch) */}
+                    <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                          <Coins className="w-4 h-4 text-amber-500" />
+                          <span>Davomatda tangalarni hisoblash va ayirish tizimi</span>
+                        </div>
+                        <p className="text-xs text-[var(--text-secondary)] mt-1">
+                          Agar yoqilgan bo'lsa, darsga kelmagan yoki past baho olgan o'quvchilardan tanga ayriladi, a'lo baholarga esa tanga qo'shiladi. O'chirilsa, faqat musbat tangalar beriladi.
+                        </p>
+                      </div>
+                      <ToggleSwitch
+                        checked={gradeSettings.coinDeductionEnabled}
+                        onChange={(v) => setGradeSettings(prev => ({ ...prev, coinDeductionEnabled: v }))}
                       />
-                      <p className="form-hint">Sertifikat berish yoki darajadan o'tish uchun zarur davomat</p>
                     </div>
 
+                    {/* Umumiy chegara me'yorlari */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--card)]">
+                        <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                          Darsga kelmaganda (Yo'q) ayirish:
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-red-500">-</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="50"
+                            value={gradeSettings.deductCoinsOnAbsent ?? 5}
+                            disabled={!gradeSettings.coinDeductionEnabled}
+                            onChange={(e) => setGradeSettings(prev => ({ ...prev, deductCoinsOnAbsent: Number(e.target.value) || 0 }))}
+                            className="input-field font-mono font-bold text-sm"
+                          />
+                          <span className="text-xs text-[var(--text-secondary)]">tanga</span>
+                        </div>
+                        <p className="text-[11px] text-[var(--text-secondary)] mt-1.5">Sababsiz qoldirilgan dars uchun jazo</p>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--card)]">
+                        <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                          Past baho chegarasi (≤):
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max="5"
+                            value={gradeSettings.lowGradeThreshold ?? 4}
+                            disabled={!gradeSettings.coinDeductionEnabled}
+                            onChange={(e) => setGradeSettings(prev => ({ ...prev, lowGradeThreshold: Number(e.target.value) || 4 }))}
+                            className="input-field font-mono font-bold text-sm"
+                          />
+                          <span className="text-xs text-[var(--text-secondary)]">baho</span>
+                        </div>
+                        <p className="text-[11px] text-[var(--text-secondary)] mt-1.5">Shu baho va undan pastida tanga ayriladi</p>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--card)]">
+                        <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                          A'lo baho chegarasi (≥):
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="6"
+                            max="10"
+                            value={gradeSettings.highGradeThreshold ?? 8}
+                            onChange={(e) => setGradeSettings(prev => ({ ...prev, highGradeThreshold: Number(e.target.value) || 8 }))}
+                            className="input-field font-mono font-bold text-sm"
+                          />
+                          <span className="text-xs text-[var(--text-secondary)]">baho</span>
+                        </div>
+                        <p className="text-[11px] text-[var(--text-secondary)] mt-1.5">Shu baho va undan yuqorisiga rag'bat beriladi</p>
+                      </div>
+                    </div>
+
+                    {/* 1 dan 10 gacha har bir bahoni coinga tenglashtirish jadvali */}
                     <div>
-                      <label className="form-label">Imtihon o'tish bali (%)</label>
-                      <input
-                        type="number"
-                        min="40"
-                        max="100"
-                        value={settings.passingScorePercent || 60}
-                        onChange={(e) => set('passingScorePercent', Number(e.target.value))}
-                        className="input-field font-mono font-bold"
-                      />
-                      <p className="form-hint">Test va oraliq imtihonlardan o'tish minimal chegarasi</p>
+                      <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-2 flex items-center justify-between">
+                        <span>1 dan 10 gacha har bir bahoga beriladigan / ayiriladigan tangalar</span>
+                        <span className="text-[11px] font-normal normal-case text-amber-600 dark:text-amber-400">Musbat (+) tanga beradi, Manfiy (-) tanga ayiradi</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
+                          const currentVal = gradeSettings.coinsPerGrade?.[num] !== undefined
+                            ? gradeSettings.coinsPerGrade[num]
+                            : (num <= 4 ? -(5 - num) : num >= 8 ? (num - 5) : 0);
+                          const isNegative = currentVal < 0;
+                          const isPositive = currentVal > 0;
+
+                          return (
+                            <div
+                              key={num}
+                              className={`p-3 rounded-xl border transition-all ${
+                                isPositive
+                                  ? 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20'
+                                  : isNegative
+                                  ? 'border-red-200 dark:border-red-900/40 bg-red-50/40 dark:bg-red-950/20'
+                                  : 'border-[var(--border)] bg-[var(--card)]'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)]">
+                                  {num} baho
+                                </span>
+                                <span className={`text-[11px] font-semibold ${
+                                  isPositive ? 'text-emerald-600 dark:text-emerald-400' : isNegative ? 'text-red-500' : 'text-gray-400'
+                                }`}>
+                                  {isPositive ? `+${currentVal}` : currentVal}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  min="-50"
+                                  max="50"
+                                  value={currentVal}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value, 10) || 0;
+                                    setGradeSettings(prev => ({
+                                      ...prev,
+                                      coinsPerGrade: {
+                                        ...(prev.coinsPerGrade || {}),
+                                        [num]: val,
+                                      },
+                                    }));
+                                  }}
+                                  className="input-field text-center font-mono font-bold text-xs py-1 px-2"
+                                />
+                                <span className="text-[11px] text-[var(--text-secondary)]">coin</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-300 text-xs">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                      <div>
+                        <strong>Eslatma:</strong> O'qituvchi o'z kabinetida faqat davomatni belgilaydi va 1 dan 10 gacha baho qo'yadi. Ushbu qoidalarni o'zgartirish huquqi <strong>faqat markaz menejeri</strong> uchun ochiq.
+                      </div>
                     </div>
                   </div>
                 </div>

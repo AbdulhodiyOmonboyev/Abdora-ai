@@ -12,7 +12,7 @@ const {
 router.post('/', verifyToken, requireRole('teacher', 'admin'), markAttendance);
 router.get('/my', verifyToken, requireRole('student'), getMyAttendance);
 router.get('/settings', verifyToken, requireRole('teacher', 'admin', 'manager'), getAttendanceGradeSettings);
-router.put('/settings', verifyToken, requireRole('teacher', 'admin', 'manager'), updateAttendanceGradeSettings);
+router.put('/settings', verifyToken, requireRole('admin', 'manager'), updateAttendanceGradeSettings);
 router.get('/group/:groupId', verifyToken, requireRole('teacher', 'admin'), getAttendanceByGroup);
 
 module.exports = router;
