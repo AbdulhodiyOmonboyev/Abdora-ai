@@ -133,6 +133,38 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  // Avatar rasm faylini serverga yuklash (multipart)
+  Future<bool> uploadAvatarFile(String filePath, String fileName) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final formData = FormData.fromMap({
+        'avatar': await MultipartFile.fromFile(filePath, filename: fileName),
+      });
+      final res = await ApiClient().dio.post(
+        '/users/avatar',
+        data: formData,
+      );
+      if (res.statusCode == 200 && res.data['data'] != null) {
+        _user = UserModel.fromJson(res.data['data']);
+        await TokenStorage.saveUserJson(jsonEncode(_user!.toJson()));
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Avatar yuklashda xatolik: $e');
+    }
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
+
+  // Avatar URL yoki ma'lumotlarini yangilash
+  Future<bool> updateAvatar(String avatarUrl) async {
+    return await updateProfile({'avatar': avatarUrl});
+  }
+
   // Tizimdan chiqish
   Future<void> logout() async {
     try {

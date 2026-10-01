@@ -1280,3 +1280,106 @@ class GadgetProductIllustration extends StatelessWidget {
   }
 }
 
+/// Reyting va Peshqadamlar illustratsiyasi
+class LeaderboardIllustration extends StatelessWidget {
+  final double size;
+  const LeaderboardIllustration({super.key, this.size = 72});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Nur / Doira orqa fon
+          Container(
+            width: size * 0.88,
+            height: size * 0.88,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFF59E0B).withOpacity(0.12),
+            ),
+          ),
+          // 2-o'rin (Chap podium)
+          Positioned(
+            left: size * 0.08,
+            bottom: size * 0.12,
+            child: Container(
+              width: size * 0.25,
+              height: size * 0.36,
+              decoration: BoxDecoration(
+                color: const Color(0xFF94A3B8),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                border: Border.all(color: const Color(0xFF64748B), width: 1),
+              ),
+              child: const Center(
+                child: Text(
+                  '2',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ),
+          ),
+          // 1-o'rin (O'rta baland podium)
+          Positioned(
+            left: size * 0.36,
+            bottom: size * 0.12,
+            child: Container(
+              width: size * 0.28,
+              height: size * 0.52,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                boxShadow: [
+                  BoxShadow(color: const Color(0xFFF59E0B).withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2)),
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  '1',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+            ),
+          ),
+          // 3-o'rin (O'ng podium)
+          Positioned(
+            right: size * 0.08,
+            bottom: size * 0.12,
+            child: Container(
+              width: size * 0.25,
+              height: size * 0.28,
+              decoration: BoxDecoration(
+                color: const Color(0xFFB45309),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                border: Border.all(color: const Color(0xFF92400E), width: 1),
+              ),
+              child: const Center(
+                child: Text(
+                  '3',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ),
+          ),
+          // Toj / Mukofot belgisi
+          Positioned(
+            top: size * 0.06,
+            child: const Icon(
+              Icons.workspace_premium_rounded,
+              color: Color(0xFFF59E0B),
+              size: 24,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

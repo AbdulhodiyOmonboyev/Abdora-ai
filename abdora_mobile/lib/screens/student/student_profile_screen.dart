@@ -1,7 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/api/endpoints.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/responsive.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/student_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -84,6 +89,350 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     );
   }
 
+  Widget _buildAvatarImage(UserModel? user) {
+    final avatar = user?.avatar;
+    final displayName = user?.name ?? 'O\'quvchi';
+
+    if (avatar != null && avatar.trim().isNotEmpty) {
+      final trimmed = avatar.trim();
+      if (trimmed.startsWith('data:image')) {
+        try {
+          final commaIndex = trimmed.indexOf(',');
+          final base64Str = commaIndex != -1 ? trimmed.substring(commaIndex + 1) : trimmed;
+          return Image.memory(
+            base64Decode(base64Str),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildAvatarInitial(displayName, 32),
+          );
+        } catch (_) {}
+      } else {
+        final fullUrl = trimmed.startsWith('http')
+            ? trimmed
+            : '${Endpoints.baseUrl.replaceAll('/api', '')}$trimmed';
+        return CachedNetworkImage(
+          imageUrl: fullUrl,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+            ),
+          ),
+          errorWidget: (_, __, ___) => _buildAvatarInitial(displayName, 32),
+        );
+      }
+    }
+    return _buildAvatarInitial(displayName, 32);
+  }
+
+  Widget _buildAvatarInitial(String name, double fontSize) {
+    return Center(
+      child: Text(
+        name.isNotEmpty ? name[0].toUpperCase() : 'U',
+        style: TextStyle(
+          color: AppColors.primary,
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Rasm yuklanmoqda...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final ok = await auth.uploadAvatarFile(picked.path, picked.name);
+
+      if (!mounted) return;
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil rasmi muvaffaqiyatli yuklandi!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        final bytes = await picked.readAsBytes();
+        final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+        final fallbackOk = await auth.updateAvatar(base64String);
+        if (!mounted) return;
+        if (fallbackOk) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil rasmi muvaffaqiyatli yuklandi!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Rasmni yuklashda xatolik yuz berdi'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Xatolik: ${e.toString()}'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showImageUrlDialog() {
+    final urlController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBg(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Rasm havolasini kiritish',
+          style: TextStyle(color: AppColors.text1(context), fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Internetdagi rasm to\'g\'ridan-to\'g\'ri havolasini (URL) kiriting:',
+              style: TextStyle(color: AppColors.text2(context), fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: urlController,
+              style: TextStyle(color: AppColors.text1(context)),
+              decoration: InputDecoration(
+                hintText: 'https://example.com/avatar.jpg',
+                hintStyle: TextStyle(color: AppColors.textM(context)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                prefixIcon: const Icon(Icons.link_rounded),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Bekor qilish', style: TextStyle(color: AppColors.textM(context))),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final url = urlController.text.trim();
+              if (url.isEmpty) return;
+              Navigator.pop(ctx);
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              final ok = await auth.updateAvatar(url);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(ok ? 'Profil rasmi saqlandi!' : 'Rasmni saqlashda xatolik'),
+                    backgroundColor: ok ? AppColors.success : AppColors.danger,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.of(context)),
+            child: const Text('Saqlash', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAvatarPresetsDialog() {
+    final List<String> presetUrls = [
+      'https://api.dicebear.com/7.x/bottts/png?seed=Alex',
+      'https://api.dicebear.com/7.x/bottts/png?seed=Oliver',
+      'https://api.dicebear.com/7.x/bottts/png?seed=Luna',
+      'https://api.dicebear.com/7.x/bottts/png?seed=Milo',
+      'https://api.dicebear.com/7.x/bottts/png?seed=Leo',
+      'https://api.dicebear.com/7.x/bottts/png?seed=Sam',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardBg(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tayyor avatarlardan tanlash',
+              style: TextStyle(
+                color: AppColors.text1(context),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: presetUrls.map((url) {
+                return InkWell(
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final auth = Provider.of<AuthProvider>(context, listen: false);
+                    final ok = await auth.updateAvatar(url);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(ok ? 'Avatar tanlandi!' : 'Xatolik yuz berdi'),
+                          backgroundColor: ok ? AppColors.success : AppColors.danger,
+                        ),
+                      );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(36),
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.borderCol(context), width: 1.5),
+                    ),
+                    child: ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl: url,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAvatarPickerSheet() {
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    final hasAvatar = user?.avatar != null && user!.avatar!.isNotEmpty;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardBg(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderCol(context),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Profil rasmini tanlash',
+                style: TextStyle(
+                  color: AppColors.text1(context),
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+                title: Text('Galereyadan tanlash', style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.w600)),
+                subtitle: Text('Telefon xotirasidagi rasmni yuklash', style: TextStyle(color: AppColors.textM(context), fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUploadImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                title: Text('Kameradan rasmga olish', style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.w600)),
+                subtitle: Text('Kamera orqali yangi rasm tushirish', style: TextStyle(color: AppColors.textM(context), fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUploadImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.link_rounded, color: AppColors.primary),
+                title: Text('Havola (URL) orqali kiritish', style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.w600)),
+                subtitle: Text('Internetdagi rasm manzilini ulash', style: TextStyle(color: AppColors.textM(context), fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showImageUrlDialog();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.face_rounded, color: AppColors.primary),
+                title: Text('Tayyor avatarlardan tanlash', style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.w600)),
+                subtitle: Text('Qulay va zamonaviy o\'quvchi avatarlari', style: TextStyle(color: AppColors.textM(context), fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showAvatarPresetsDialog();
+                },
+              ),
+              if (hasAvatar)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+                  title: const Text('Rasmni o\'chirish', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final auth = Provider.of<AuthProvider>(context, listen: false);
+                    final ok = await auth.updateAvatar('');
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(ok ? 'Profil rasmi o\'chirildi' : 'Xatolik yuz berdi'),
+                          backgroundColor: ok ? AppColors.success : AppColors.danger,
+                        ),
+                      );
+                    }
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
@@ -122,23 +471,44 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             Center(
               child: Column(
                 children: [
-                  Container(
-                    width: 76,
-                    height: 76,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.15),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primary, width: 2),
-                    ),
-                    child: Center(
-                      child: Text(
-                        (user?.name.isNotEmpty ?? false) ? user!.name[0].toUpperCase() : 'U',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
+                  GestureDetector(
+                    onTap: _showAvatarPickerSheet,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 88,
+                          height: 88,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.primary, width: 2.5),
+                          ),
+                          child: ClipOval(
+                            child: _buildAvatarImage(user),
+                          ),
                         ),
-                      ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.cardBg(context), width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 16),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 12),

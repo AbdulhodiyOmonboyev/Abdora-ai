@@ -344,6 +344,42 @@ const updateLanguage = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const uploadAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) return error(res, 'Rasm fayli yuklanmadi', 400);
+    const row = await prisma.uploadedFile.create({
+      data: {
+        name: req.file.originalname || 'avatar.jpg',
+        mimeType: req.file.mimetype || 'image/jpeg',
+        data: req.file.buffer,
+        centerId: req.user?.centerId || null,
+      },
+    });
+    const avatarUrl = `/api/users/avatar/${row.id}`;
+    const user = await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { avatar: avatarUrl },
+    });
+    return success(res, safeUser(user), 'Avatar muvaffaqiyatli saqlandi');
+  } catch (err) { next(err); }
+};
+
+const getAvatar = async (req, res, next) => {
+  try {
+    const file = await prisma.uploadedFile.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!file) return res.status(404).send('Avatar topilmadi');
+    res.set({
+      'Content-Type': file.mimeType || 'image/jpeg',
+      'Content-Length': file.data.length,
+      'Cache-Control': 'public, max-age=86400',
+    });
+    res.send(file.data);
+  } catch (err) { next(err); }
+};
+
+
 const testAIPersonalization = async (req, res, next) => {
   try {
     const { message, aiPreferences: bodyPreferences } = req.body;
@@ -955,4 +991,6 @@ module.exports = {
   awardStudentCoins,
   testAIPersonalization,
   updateLanguage,
+  uploadAvatar,
+  getAvatar,
 };

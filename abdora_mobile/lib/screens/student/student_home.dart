@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -11,11 +12,11 @@ import '../../providers/theme_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/useful_illustrations.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/api/endpoints.dart';
 import 'lesson_detail_screen.dart';
 import 'student_lessons.dart';
-import 'student_tasks_screen.dart';
 import 'student_homework_screen.dart';
-import 'student_exams_screen.dart';
 import 'student_group_screen.dart';
 import 'student_shop_leaderboard_screen.dart';
 import 'student_profile_screen.dart';
@@ -36,7 +37,6 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     Future.microtask(() {
       final student = Provider.of<StudentProvider>(context, listen: false);
       student.fetchLessons();
-      student.fetchTests();
       student.fetchHomework();
 
       final shop = Provider.of<ShopProvider>(context, listen: false);
@@ -100,60 +100,62 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 _buildUsefulGrid(context),
                 const SizedBox(height: 24),
 
-                // 4. "Do'kon" bo'limi sarlavhasi va "Hammasi >" havolasi
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Do\'kon',
-                      style: TextStyle(
-                        color: AppColors.text1(context),
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const StudentShopLeaderboardScreen(initialIndex: 0),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Text(
-                              'Hammasi',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(width: 2),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                          ],
+                // 4. "Do'kon" bo'limi (faqat tovarlar mavjud bo'lganda ko'rsatiladi)
+                if (shop.items.isNotEmpty) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Do\'kon',
+                        style: TextStyle(
+                          color: AppColors.text1(context),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const StudentShopLeaderboardScreen(initialIndex: 0),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Text(
+                                'Hammasi',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
 
-                // 5. "Do'kon" gorizontal mahsulotlar ro'yxati
-                _buildShopHorizontalList(context, shop, user?.coins ?? 0),
-                const SizedBox(height: 24),
+                  // 5. "Do'kon" gorizontal mahsulotlar ro'yxati
+                  _buildShopHorizontalList(context, shop, user?.coins ?? 0),
+                  const SizedBox(height: 24),
+                ],
 
                 // 6. "So'nggi darslar" bo'limi
                 Row(
@@ -238,26 +240,27 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       child: Row(
         children: [
           // Foydalanuvchi avatar rasmi
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: AppColors.of(context).withOpacity(0.6), width: 1.5),
-            ),
-            child: Center(
-              child: Text(
-                displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const StudentProfileScreen()),
+              );
+            },
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                border: Border.all(color: AppColors.of(context).withOpacity(0.6), width: 1.5),
+              ),
+              child: ClipOval(
+                child: _buildAvatarImageWidget(user, displayName, 18),
               ),
             ),
           ),
@@ -379,6 +382,54 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarImageWidget(dynamic user, String displayName, double fontSize) {
+    final String? avatar = user?.avatar;
+    if (avatar != null && avatar.trim().isNotEmpty) {
+      final trimmed = avatar.trim();
+      if (trimmed.startsWith('data:image')) {
+        try {
+          final commaIndex = trimmed.indexOf(',');
+          final base64Str = commaIndex != -1 ? trimmed.substring(commaIndex + 1) : trimmed;
+          return Image.memory(
+            base64Decode(base64Str),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildAvatarInitial(displayName, fontSize),
+          );
+        } catch (_) {}
+      } else {
+        final String fullUrl = trimmed.startsWith('http')
+            ? trimmed
+            : '${Endpoints.baseUrl.replaceAll('/api', '')}$trimmed';
+        return CachedNetworkImage(
+          imageUrl: fullUrl,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => Center(
+            child: SizedBox(
+              width: 14,
+              height: 14,
+              child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+          ),
+          errorWidget: (_, __, ___) => _buildAvatarInitial(displayName, fontSize),
+        );
+      }
+    }
+    return _buildAvatarInitial(displayName, fontSize);
+  }
+
+  Widget _buildAvatarInitial(String displayName, double fontSize) {
+    return Center(
+      child: Text(
+        displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: fontSize,
+        ),
       ),
     );
   }
@@ -556,13 +607,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: _buildUsefulCard(
-                title: 'Imtihonlarim',
-                illustration: const ExamIllustration(size: 60),
+                title: 'Reyting va\nPeshqadamlar',
+                illustration: const LeaderboardIllustration(size: 60),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const StudentExamsScreen(),
+                      builder: (_) => const StudentShopLeaderboardScreen(initialIndex: 1),
                     ),
                   );
                 },
@@ -689,51 +740,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
   /// 3. "Do'kon" gorizontal ro'yxati
   Widget _buildShopHorizontalList(BuildContext context, ShopProvider shop, int userCoins) {
-    // Agar serverdan mahsulotlar kelmagan bo'lsa, tanlangan saralangan ro'yxatni ko'rsatamiz
-    final List<ShopItemModel> displayItems = shop.items.isNotEmpty
-        ? shop.items
-        : [
-            ShopItemModel(
-              id: 'curated_airpods',
-              title: 'AirPods Max',
-              description: 'Yuqori sifatli simsiz quloqchin darslar va xorijiy tillarni tinglash mashqlari uchun',
-              priceCoins: 1500,
-              category: 'QULOQCHIN',
-              stock: 8,
-            ),
-            ShopItemModel(
-              id: 'curated_mindset',
-              title: 'Kitob: Mindset',
-              description: 'Kerol Dvekning o\'sish tafakkuri va muvaffaqiyat psixologiyasi kitobi',
-              priceCoins: 120,
-              category: 'KITOB',
-              stock: 25,
-            ),
-            ShopItemModel(
-              id: 'curated_hoodie',
-              title: 'Abdora AI Hoodie',
-              description: 'Eksklyuziv sifatli Abdora AI brendli issiq kiyim',
-              priceCoins: 450,
-              category: 'MERCH',
-              stock: 15,
-            ),
-            ShopItemModel(
-              id: 'curated_atomic',
-              title: 'Kitob: Atomic Habits',
-              description: 'Jeyms Klirning odatlar kuchi va unumdorlik bo\'yicha mashhur asari',
-              priceCoins: 140,
-              category: 'KITOB',
-              stock: 30,
-            ),
-            ShopItemModel(
-              id: 'curated_powerbank',
-              title: 'Powerbank 20000mAh',
-              description: 'Tezkor quvvatlovchi zamonaviy portativ batareya',
-              priceCoins: 350,
-              category: 'GADGET',
-              stock: 12,
-            ),
-          ];
+    if (shop.items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final List<ShopItemModel> displayItems = shop.items;
 
     return SizedBox(
       height: 215,
@@ -1314,11 +1324,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                       context,
                                       MaterialPageRoute(builder: (_) => const StudentHomeworkScreen()),
                                     );
-                                  } else if (item.route == 'exams') {
+                                  } else if (item.route == 'exams' || item.route == 'leaderboard') {
                                     Navigator.pop(sheetCtx);
                                     Navigator.push(
                                       context,
-                                      MaterialPageRoute(builder: (_) => const StudentExamsScreen()),
+                                      MaterialPageRoute(builder: (_) => const StudentShopLeaderboardScreen(initialIndex: 1)),
                                     );
                                   } else if (item.route == 'shop') {
                                     Navigator.pop(sheetCtx);
@@ -1467,9 +1477,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         'category': 'Qo\'llanma',
       },
       {
-        'title': 'Milliy sertifikat testlar tahlili 2026',
+        'title': 'Milliy sertifikat va olimpiada tahlili 2026',
         'info': 'PDF • 18.2 MB • 210 bet',
-        'category': 'Testlar',
+        'category': 'Qo\'llanma',
       },
       {
         'title': 'Xotirani kuchaytirish va samarali o\'qish sirlari',

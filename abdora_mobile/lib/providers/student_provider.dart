@@ -123,21 +123,9 @@ class StudentProvider extends ChangeNotifier {
     ];
   }
 
-  // 2. Testlarni yuklash
+  // 2. Testlar (Mobil ilovadan chiqarib tashlangan)
   Future<void> fetchTests() async {
-    _isLoadingTests = true;
-    notifyListeners();
-
-    try {
-      final res = await ApiClient().dio.get(Endpoints.tests);
-      if (res.statusCode == 200 && res.data['data'] != null) {
-        final List list = res.data['data'];
-        _tests = list.map((item) => TestModel.fromJson(item)).toList();
-      }
-    } catch (_) {}
-
-    _isLoadingTests = false;
-    notifyListeners();
+    _tests = [];
   }
 
   // Test savollarini olish
@@ -247,7 +235,6 @@ class StudentProvider extends ChangeNotifier {
   Future<void> refreshAll() async {
     await Future.wait([
       fetchLessons(),
-      fetchTests(),
       fetchHomework(),
       fetchLeaderboard(),
       fetchAttendance(),

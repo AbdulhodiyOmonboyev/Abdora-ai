@@ -50,11 +50,13 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
+    final shop = Provider.of<ShopProvider>(context);
+    final hasShopItems = shop.items.isNotEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       appBar: AppBar(
-        title: const Text('Do\'kon & Reyting'),
+        title: Text(hasShopItems ? 'Do\'kon & Reyting' : 'Peshqadamlar Jadvali'),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 16),
@@ -76,25 +78,29 @@ class _StudentShopLeaderboardScreenState extends State<StudentShopLeaderboardScr
             ),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.of(context),
-          labelColor: AppColors.of(context),
-          unselectedLabelColor: AppColors.textM(context),
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          tabs: const [
-            Tab(text: 'Tangalar Do\'koni'),
-            Tab(text: 'Peshqadamlar'),
-          ],
-        ),
+        bottom: hasShopItems
+            ? TabBar(
+                controller: _tabController,
+                indicatorColor: AppColors.of(context),
+                labelColor: AppColors.of(context),
+                unselectedLabelColor: AppColors.textM(context),
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                tabs: const [
+                  Tab(text: 'Tangalar Do\'koni'),
+                  Tab(text: 'Peshqadamlar'),
+                ],
+              )
+            : null,
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildShopTab(),
-          _buildLeaderboardTab(),
-        ],
-      ),
+      body: hasShopItems
+          ? TabBarView(
+              controller: _tabController,
+              children: [
+                _buildShopTab(),
+                _buildLeaderboardTab(),
+              ],
+            )
+          : _buildLeaderboardTab(),
     );
   }
 

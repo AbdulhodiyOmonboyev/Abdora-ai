@@ -9,6 +9,7 @@ class UserModel {
   final int level;
   final String? centerId;
   final String? branchId;
+  final String? avatar;
 
   UserModel({
     required this.id,
@@ -21,6 +22,7 @@ class UserModel {
     this.level = 1,
     this.centerId,
     this.branchId,
+    this.avatar,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -42,6 +44,7 @@ class UserModel {
       level: parseInt(json['level'], 1),
       centerId: json['centerId']?.toString(),
       branchId: json['branchId']?.toString(),
+      avatar: json['avatar']?.toString(),
     );
   }
 
@@ -57,6 +60,35 @@ class UserModel {
       'level': level,
       'centerId': centerId,
       'branchId': branchId,
+      'avatar': avatar,
     };
+  }
+
+  UserModel copyWith({
+    String? id,
+    String? username,
+    String? name,
+    String? phone,
+    String? role,
+    int? coins,
+    int? xp,
+    int? level,
+    String? centerId,
+    String? branchId,
+    String? avatar,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      role: role ?? this.role,
+      coins: coins ?? this.coins,
+      xp: xp ?? this.xp,
+      level: level ?? this.level,
+      centerId: centerId ?? this.centerId,
+      branchId: branchId ?? this.branchId,
+      avatar: avatar ?? this.avatar,
+    );
   }
 }
