@@ -2,7 +2,7 @@ name: Build Abdora Student iOS (IPA)
 
 on:
   push:
-    branches: [ main, master, v2/crm-erp-lms ]
+    branches: [ main, v2/crm-erp-lms, mobile ]
     paths:
       - 'abdora_mobile/**'
       - '.github/workflows/build-ios.yml'
@@ -65,7 +65,7 @@ jobs:
 
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v2/crm-erp-lms'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/mobile' || github.ref == 'refs/heads/v2/crm-erp-lms'
         with:
           tag_name: v1.0.0-ipa
           name: Abdora Student iOS IPA v1.0.0
