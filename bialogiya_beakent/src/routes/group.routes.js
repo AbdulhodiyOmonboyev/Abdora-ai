@@ -9,7 +9,10 @@ const {
 // Teachers can only VIEW their groups - creating/editing/deleting groups
 // and adding/removing students is reception's (and admin's) job now.
 router.get('/all', verifyToken, requireRole('admin', 'reception', 'manager'), getAllGroups);
-router.get('/', verifyToken, requireRole('teacher'), getMyGroups);
+router.get('/', verifyToken, requireRole('teacher', 'admin', 'manager', 'reception'), (req, res, next) => {
+  if (req.user.role === 'teacher') return getMyGroups(req, res, next);
+  return getAllGroups(req, res, next);
+});
 router.get('/:id', verifyToken, getGroupById);
 router.get('/:id/gradebook', verifyToken, requireRole('teacher', 'admin', 'manager', 'reception'), getGroupGradebook);
 router.post('/', verifyToken, requireRole('admin', 'reception', 'manager'), createGroup);

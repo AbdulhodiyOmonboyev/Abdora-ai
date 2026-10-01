@@ -33,6 +33,19 @@ const PAYMENT_METHODS = [
   { value: 'other', label: 'Boshqa' },
 ];
 
+const formatWeekDays = (wd) => {
+  if (!wd) return 'Belgilanmagan';
+  if (Array.isArray(wd)) return wd.join(', ');
+  if (typeof wd === 'string') {
+    try {
+      const parsed = JSON.parse(wd);
+      if (Array.isArray(parsed)) return parsed.join(', ');
+    } catch (_) {}
+    return wd;
+  }
+  return 'Belgilanmagan';
+};
+
 export default function UserDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -83,7 +96,16 @@ export default function UserDetail() {
   // Query: Groups (for edit modal assignment)
   const { data: groupsData } = useQuery({
     queryKey: ['groups-list-detail'],
-    queryFn: () => api.get('/groups').then((r) => r.data.data || []),
+    queryFn: async () => {
+      try {
+        const res = await api.get('/groups/all');
+        const list = res.data?.data || res.data || [];
+        if (Array.isArray(list) && list.length > 0) return list;
+      } catch (_) {}
+      const fallback = await api.get('/groups');
+      const list = fallback.data?.data || fallback.data || [];
+      return Array.isArray(list) ? list : [];
+    },
     enabled: showEditModal,
   });
 
@@ -196,7 +218,7 @@ export default function UserDetail() {
 
   if (isLoading) return <Loader />;
 
-  if (isError || !historyData) {
+  if (isError || !historyData || !historyData.student) {
     return (
       <div className="dashboard-shell max-w-6xl mx-auto">
         <div className="mb-6">{back}</div>
@@ -209,19 +231,17 @@ export default function UserDetail() {
     );
   }
 
-  const {
-    student,
-    group,
-    payments = [],
-    attendance = [],
-    tests = [],
-    homework = [],
-    coinHistory = [],
-    notes = [],
-    summary = {},
-  } = historyData;
+  const student = historyData.student || {};
+  const group = historyData.group || student.group || null;
+  const payments = Array.isArray(historyData.payments) ? historyData.payments : [];
+  const attendance = Array.isArray(historyData.attendance) ? historyData.attendance : [];
+  const tests = Array.isArray(historyData.tests) ? historyData.tests : [];
+  const homework = Array.isArray(historyData.homework) ? historyData.homework : [];
+  const coinHistory = Array.isArray(historyData.coinHistory) ? historyData.coinHistory : [];
+  const notes = Array.isArray(historyData.notes) ? historyData.notes : [];
+  const summary = historyData.summary || {};
 
-  const roleLabel = ROLE_LABELS[student.role] || student.role;
+  const roleLabel = ROLE_LABELS[student.role] || student.role || 'Foydalanuvchi';
   const isStudent = student.role === 'student';
   const { level, progress } = getLevelProgress(student.xp || 0);
 
@@ -619,7 +639,7 @@ export default function UserDetail() {
                     <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
                       <div className="text-[var(--text-muted)] mb-1">Dars jadvali</div>
                       <div className="font-bold text-[var(--text-primary)]">
-                        {group.weekDays ? group.weekDays.join(', ') : 'Belgilanmagan'}
+                        {formatWeekDays(group.weekDays)}
                       </div>
                       <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
                         {group.startTime || '14:00'} - {group.endTime || '16:00'}

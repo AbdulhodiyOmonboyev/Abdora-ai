@@ -70,7 +70,16 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
 
   const { data: groups = [] } = useQuery({
     queryKey: ['groups-list'],
-    queryFn: () => api.get('/groups').then(r => r.data?.data || []).catch(() => []),
+    queryFn: async () => {
+      try {
+        const res = await api.get('/groups/all');
+        const list = res.data?.data || res.data || [];
+        if (Array.isArray(list) && list.length > 0) return list;
+      } catch (_) {}
+      const fallback = await api.get('/groups');
+      const list = fallback.data?.data || fallback.data || [];
+      return Array.isArray(list) ? list : [];
+    },
     enabled: convertOpen,
   });
 
@@ -425,15 +434,13 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
         }
       >
         <div className="space-y-4">
-          <div className="flex items-center gap-3 p-3.5 rounded-xl"
-            style={{ background: 'var(--primary-50)', border: '1px solid var(--primary-100)' }}>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
-              style={{ background: 'var(--primary)', color: 'white' }}>
+          <div className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-850">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white bg-primary">
               {lead?.name?.charAt(0)?.toUpperCase()}
             </div>
-            <div>
-              <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{lead?.name}</div>
-              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{lead?.phone}</div>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-sm text-gray-900 dark:text-white truncate">{lead?.name}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{lead?.phone}</div>
             </div>
           </div>
 

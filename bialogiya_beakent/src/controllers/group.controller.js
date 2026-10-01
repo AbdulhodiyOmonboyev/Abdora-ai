@@ -127,7 +127,9 @@ const getAllGroups = async (req, res, next) => {
       where = { ...where, centerId: req.user.centerId };
       if (req.user.role === 'manager') {
         const ownBranchIds = await getOwnBranchIds(req.user);
-        where.branchId = { in: ownBranchIds || [] };
+        if (ownBranchIds && ownBranchIds.length > 0) {
+          where.branchId = { in: ownBranchIds };
+        }
       }
     }
     const groups = await prisma.group.findMany({

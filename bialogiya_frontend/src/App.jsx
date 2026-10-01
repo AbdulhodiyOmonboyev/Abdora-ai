@@ -5,6 +5,7 @@ import api from './config/axios';
 import { useAuthStore } from './store/authStore';
 import i18n, { setLanguage } from './config/i18n';
 import MainLayout from './components/layout/MainLayout';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 
 // Shared
 import ProfilePage from './pages/shared/ProfilePage';
@@ -150,8 +151,9 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
 
         <Route element={<PublicLayout />}>
           <Route path="/services" element={<ServicesPage />} />
@@ -297,7 +299,8 @@ export default function App() {
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }
