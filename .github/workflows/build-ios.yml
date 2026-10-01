@@ -1,0 +1,82 @@
+name: Build Abdora Student iOS (IPA)
+
+on:
+  push:
+    branches: [ main, master, v2/crm-erp-lms ]
+    paths:
+      - 'abdora_mobile/**'
+      - '.github/workflows/build-ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-ipa:
+    name: Build iOS Release IPA
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+          cache: true
+
+      - name: Configure iOS Xcode Workspace
+        run: |
+          cd abdora_mobile
+          # Mavjud Info.plist va AppDelegate.swift ni zaxiralash
+          cp ios/Runner/Info.plist /tmp/Info.plist
+          cp ios/Runner/AppDelegate.swift /tmp/AppDelegate.swift
+          # Xcode loyihasini to'liq yaratish
+          flutter create --platforms ios . --org uz.abdora
+          # Maxsus ruxsatlar va parametrlarni tiklash
+          cp /tmp/Info.plist ios/Runner/Info.plist
+          cp /tmp/AppDelegate.swift ios/Runner/AppDelegate.swift
+          flutter pub get
+          cd ios
+          pod install --repo-update
+
+      - name: Build iOS Application (Release)
+        run: |
+          cd abdora_mobile
+          flutter build ios --release --no-codesign
+
+      - name: Package IPA
+        run: |
+          mkdir -p release-output/Payload
+          cp -r abdora_mobile/build/ios/iphoneos/Runner.app release-output/Payload/
+          cd release-output
+          zip -r -y Abdora-Student.ipa Payload
+          rm -rf Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Abdora-Student-IPA
+          path: release-output/Abdora-Student.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v2/crm-erp-lms'
+        with:
+          tag_name: v1.0.0-ipa
+          name: Abdora Student iOS IPA v1.0.0
+          body: |
+            ## Abdora Student — Rasmiy iOS (IPA)
+            iOS (iPhone / iPad) foydalanuvchilari uchun maxsus tayyorlangan ilova paketi.
+
+            ### Qanday o'rnatiladi:
+            1. Ushbu `Abdora-Student.ipa` faylini yuklab oling.
+            2. [Sideloadly](https://sideloadly.io/) yoki [AltStore](https://altstore.io/) dasturi orqali iPhone telefoningizga o'rnating.
+            3. Telefonda: **Sozlamalar** -> **Asosiy** -> **VPN va qurilmani boshqarish** bo'limida o'z Apple ID hisobingizga ishonch bildiring (Trust).
+          files: release-output/Abdora-Student.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
