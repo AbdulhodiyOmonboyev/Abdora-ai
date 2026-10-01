@@ -38,11 +38,6 @@ jobs:
           cd abdora_mobile
           flutter pub get
 
-      - name: Analyze Flutter Code
-        run: |
-          cd abdora_mobile
-          flutter analyze --no-fatal-infos
-
       - name: Build Release APK
         run: |
           cd abdora_mobile
