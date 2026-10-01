@@ -336,12 +336,22 @@ const getReceptionUsers = async (req, res, next) => {
     if (center?.id) {
       orConditions.push({ centerId: center.id });
       orConditions.push({ branches: { some: { centerId: center.id } } });
+      orConditions.push({ branch: { centerId: center.id } });
     }
     if (req.user.centerId && req.user.centerId !== center?.id) {
       orConditions.push({ centerId: req.user.centerId });
+      orConditions.push({ branches: { some: { centerId: req.user.centerId } } });
+      orConditions.push({ branch: { centerId: req.user.centerId } });
     }
-    if (req.user.role === 'manager' && userId) {
-      orConditions.push({ branches: { some: { managerId: userId } } });
+    if (req.user.role === 'manager') {
+      if (userId) {
+        orConditions.push({ branches: { some: { managerId: userId } } });
+        orConditions.push({ branch: { managerId: userId } });
+      }
+      if (req.user.branchId) {
+        orConditions.push({ branchId: req.user.branchId });
+        orConditions.push({ branches: { some: { id: req.user.branchId } } });
+      }
     }
     if (req.user.role === 'admin') {
       orConditions.push({ centerId: null });
@@ -586,6 +596,10 @@ const createReceptionUser = async (req, res, next) => {
           receptionId: user.id,
           ...(req.user.role === 'manager' && req.user.userId ? { managerId: req.user.userId } : {})
         },
+      });
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { branchId },
       });
     }
 

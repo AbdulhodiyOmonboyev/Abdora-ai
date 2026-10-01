@@ -81,13 +81,21 @@ const markPayment = async (req, res, next) => {
     if (!studentId || !month) return error(res, 'studentId and month required', 400);
 
     const student = await prisma.user.findUnique({
-      where: { id: studentId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
-      select: { id: true, isActive: true, role: true, teacherId: true, group: { select: { monthlyFee: true, branchId: true } } },
+      where: { id: studentId },
+      select: {
+        id: true,
+        isActive: true,
+        role: true,
+        teacherId: true,
+        centerId: true,
+        branchId: true,
+        group: { select: { monthlyFee: true, branchId: true, centerId: true } },
+      },
     });
     if (!student || student.role !== 'student' || !student.isActive) return error(res, 'Student not found or inactive', 404);
     const ownBranchIds = await getOwnBranchIds(req.user);
     if (req.user.role === 'teacher' && student.teacherId !== req.user.userId) return error(res, 'Forbidden', 403);
-    if (ownBranchIds && !ownBranchIds.includes(student.group?.branchId)) return error(res, 'Forbidden', 403);
+    if (ownBranchIds && student.group?.branchId && !ownBranchIds.includes(student.group.branchId)) return error(res, 'Forbidden', 403);
 
     const expected = Number.isFinite(Number(expectedAmount))
       ? Math.max(0, Number(expectedAmount))
@@ -115,6 +123,9 @@ const markPayment = async (req, res, next) => {
       return error(res, "To'liq to'lanmagan bo'lsa, izoh yozing (nima sababdan to'lanmadi)", 400);
     }
 
+    const resolvedCenterId = req.user.centerId || student.centerId || student.group?.centerId || null;
+    const resolvedBranchId = student.group?.branchId || student.branchId || req.user.branchId || null;
+
     const data = {
       status,
       isPaid: status === 'paid',
@@ -122,8 +133,8 @@ const markPayment = async (req, res, next) => {
       expectedAmount: expected,
       method: method || 'cash',
       note: note?.trim() || null,
-      branchId: student.group?.branchId || null,
-      centerId: req.user.centerId,
+      branchId: resolvedBranchId,
+      centerId: resolvedCenterId,
       paidAt: new Date(),
     };
 

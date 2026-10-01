@@ -198,8 +198,11 @@ export default function ManagerSettings() {
 
   // Query reception accounts
   const { data: receptionUsers = [] } = useQuery({
-    queryKey: ['reception-users'],
-    queryFn: () => api.get('/admin/reception-users').then(r => r.data?.data || []).catch(() => []),
+    queryKey: ['admin-reception'],
+    queryFn: () => api.get('/admin/reception').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }).catch(() => []),
   });
 
   // Query branches
@@ -345,8 +348,9 @@ export default function ManagerSettings() {
   });
 
   const createReceptionMutation = useMutation({
-    mutationFn: (d) => api.post('/admin/reception-users', d),
+    mutationFn: (d) => api.post('/admin/reception', d),
     onSuccess: ({ data }) => {
+      qc.invalidateQueries({ queryKey: ['admin-reception'] });
       qc.invalidateQueries({ queryKey: ['reception-users'] });
       setNewReceptionCreds(data.data?.credentials);
       setReceptionForm({ name: '', phone: '+998 ', branchId: '', password: '' });
@@ -356,8 +360,11 @@ export default function ManagerSettings() {
   });
 
   const toggleReceptionStatusMutation = useMutation({
-    mutationFn: (id) => api.put(`/admin/users/${id}/toggle`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['reception-users'] }),
+    mutationFn: (id) => api.put(`/admin/reception/${id}/toggle-status`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-reception'] });
+      qc.invalidateQueries({ queryKey: ['reception-users'] });
+    },
   });
 
   const profileMutation = useMutation({

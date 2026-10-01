@@ -100,15 +100,29 @@ const emptyTx = () => ({
 export default function CashboxPage() {
   const qc = useQueryClient();
   const [month, setMonth] = useState(currentMonth());
+  const [selectedBranchId, setSelectedBranchId] = useState('');
   const [filterMethod, setFilterMethod] = useState('');
   const [filterType, setFilterType] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyTx());
 
+  const { data: branches = [] } = useQuery({
+    queryKey: ['cashbox-branches'],
+    queryFn: () => api.get('/admin/branches').then(r => {
+      const data = r.data?.data || r.data || [];
+      return Array.isArray(data) ? data : [];
+    }).catch(() => []),
+  });
+
   const { data: cashData, isLoading } = useQuery({
-    queryKey: ['cashbox', month, filterMethod, filterType],
+    queryKey: ['cashbox', month, filterMethod, filterType, selectedBranchId],
     queryFn: () => api.get('/finance/cashbox', {
-      params: { month, method: filterMethod || undefined, type: filterType || undefined }
+      params: {
+        month,
+        method: filterMethod || undefined,
+        type: filterType || undefined,
+        branchId: selectedBranchId || undefined,
+      }
     }).then(r => r.data?.data).catch(() => null),
   });
 
@@ -199,6 +213,19 @@ export default function CashboxPage() {
           <option value="income">Kirim</option>
           <option value="expense">Chiqim</option>
         </select>
+
+        {branches.length > 0 && (
+          <select
+            value={selectedBranchId}
+            onChange={e => setSelectedBranchId(e.target.value)}
+            className="input-field w-auto text-sm"
+          >
+            <option value="">Barcha filiallar</option>
+            {branches.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Transactions list */}

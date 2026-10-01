@@ -566,29 +566,43 @@ const getCashbox = async (req, res, next) => {
       });
       centerId = u?.centerId || u?.branch?.centerId;
     }
-    const centerScope = req.user.role !== 'admin' && centerId ? { centerId } : {};
-    const bId = branchId || (req.user.branchId || null);
+    // Center condition: include records for this center, or where student/group belongs to this center, or centerId is null
+    const centerCondition = (req.user.role !== 'admin' && centerId) ? {
+      OR: [
+        { centerId },
+        { student: { centerId } },
+        { student: { group: { centerId } } },
+        { centerId: null }
+      ]
+    } : null;
+
+    // Only filter by branch if explicitly provided in query, OR if role is reception
+    const bId = branchId || (req.user.role === 'reception' ? req.user.branchId : null);
 
     // 1. Get all payments in this month (all payments with positive amount are income)
     const paymentWhere = {
-      ...centerScope,
+      amount: { gt: 0 },
       OR: [
         { paidAt: { gte: start, lt: end } },
         { month }
       ],
-      amount: { gt: 0 },
     };
-    if (filterMethod) paymentWhere.method = filterMethod;
+
+    const andConditions = [];
+    if (centerCondition) andConditions.push(centerCondition);
+    if (filterMethod) andConditions.push({ method: filterMethod });
     if (bId) {
-      paymentWhere.AND = [
-        {
-          OR: [
-            { branchId: bId },
-            { student: { branchId: bId } },
-            { student: { group: { branchId: bId } } }
-          ]
-        }
-      ];
+      andConditions.push({
+        OR: [
+          { branchId: bId },
+          { student: { branchId: bId } },
+          { student: { group: { branchId: bId } } },
+          { branchId: null, student: { branchId: null } },
+        ]
+      });
+    }
+    if (andConditions.length > 0) {
+      paymentWhere.AND = andConditions;
     }
 
     const payments = await prisma.payment.findMany({
@@ -601,12 +615,31 @@ const getCashbox = async (req, res, next) => {
 
     // 2. Get all expenses/transactions in this month
     const expenseWhere = {
-      ...centerScope,
       date: { gte: start, lt: end },
     };
-    if (filterMethod) expenseWhere.method = filterMethod;
-    if (filterType) expenseWhere.type = filterType;
-    if (bId) expenseWhere.branchId = bId;
+    const expenseAnd = [];
+    if (req.user.role !== 'admin' && centerId) {
+      expenseAnd.push({
+        OR: [
+          { centerId },
+          { centerId: null },
+          { branch: { centerId } },
+        ]
+      });
+    }
+    if (filterMethod) expenseAnd.push({ method: filterMethod });
+    if (filterType) expenseAnd.push({ type: filterType });
+    if (bId) {
+      expenseAnd.push({
+        OR: [
+          { branchId: bId },
+          { branchId: null },
+        ]
+      });
+    }
+    if (expenseAnd.length > 0) {
+      expenseWhere.AND = expenseAnd;
+    }
 
     const expenses = await prisma.expense.findMany({
       where: expenseWhere,

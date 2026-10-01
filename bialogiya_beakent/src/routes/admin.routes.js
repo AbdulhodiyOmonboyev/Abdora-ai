@@ -53,8 +53,10 @@ router.post('/branches/cleanup-empty', ...adminOnly, cleanupEmptyBranches);
 
 // Reception accounts - admin & manager can create, view, configure permissions and deactivate them.
 router.get('/reception', ...adminOnly, getReceptionUsers);
+router.get('/reception-users', ...adminOnly, getReceptionUsers);
 router.get('/reception/:id', ...adminOnly, getReceptionStaffDetail);
 router.post('/reception', ...adminOnly, createReceptionUser);
+router.post('/reception-users', ...adminOnly, createReceptionUser);
 router.put('/reception/:id', ...adminOnly, updateReceptionUser);
 router.put('/reception/:id/permissions', ...adminOnly, updateReceptionStaffPermissions);
 router.put('/reception/:id/toggle-status', ...adminOnly, toggleReceptionStaffStatus);
