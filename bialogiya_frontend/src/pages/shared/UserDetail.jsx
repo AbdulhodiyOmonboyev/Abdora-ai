@@ -563,7 +563,7 @@ export default function UserDetail() {
         {/* Right Column: Tabbed Views */}
         <div className="lg:col-span-8 space-y-4">
           {/* Tabs Bar */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-[var(--border)] scrollbar-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto p-1.5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] scrollbar-none">
             {[
               { id: 'groups', label: 'Guruhlar', icon: Users, count: group ? 1 : 0 },
               { id: 'payments', label: "To'lovlar", icon: CreditCard, count: payments.length },
@@ -578,20 +578,21 @@ export default function UserDetail() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 py-2.5 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  style={isActive ? { backgroundColor: 'var(--primary)', color: '#ffffff' } : {}}
+                  className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border outline-none focus:outline-none ${
                     isActive
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)]'
+                      ? 'border-[var(--primary)] text-white shadow-sm'
+                      : 'border-transparent text-[var(--text-secondary)] hover:bg-[var(--card)] hover:text-[var(--text-primary)]'
                   }`}
                 >
                   <Icon size={14} />
                   <span>{tab.label}</span>
                   {tab.count !== undefined && (
                     <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                         isActive
                           ? 'bg-white/20 text-white'
-                          : 'bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)]'
+                          : 'bg-[var(--card)] text-[var(--text-muted)] border border-[var(--border)]'
                       }`}
                     >
                       {tab.count}
@@ -732,7 +733,7 @@ export default function UserDetail() {
                 </div>
 
                 {payments.length > 0 ? (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
                     <table className="w-full text-xs text-left">
                       <thead>
                         <tr className="border-b border-[var(--border)] text-[var(--text-muted)]">
@@ -833,7 +834,7 @@ export default function UserDetail() {
                 </h3>
 
                 {attendance.length > 0 ? (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
                     <table className="w-full text-xs text-left">
                       <thead>
                         <tr className="border-b border-[var(--border)] text-[var(--text-muted)]">
