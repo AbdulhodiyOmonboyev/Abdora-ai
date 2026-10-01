@@ -72,27 +72,23 @@ class _StatsHistorySheetWidget extends StatefulWidget {
 
 class _StatsHistorySheetWidgetState extends State<_StatsHistorySheetWidget> {
   int _selectedFilterIndex = 0;
-  bool _isLoading = false;
+  bool _isLoading = true;
   List<StatsHistoryItem> _items = [];
+  int? _serverEarnedCoins;
+  int? _serverSpentCoins;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
     _fetchLiveHistory();
-  }
-
-  void _loadInitialData() {
-    if (widget.type == StatsHistoryType.coin) {
-      _items = _getFallbackCoinHistory();
-    } else {
-      _items = _getFallbackExpHistory();
-    }
   }
 
   Future<void> _fetchLiveHistory() async {
     final userId = widget.user?.id?.toString() ?? '';
-    if (userId.isEmpty) return;
+    if (userId.isEmpty) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -101,36 +97,62 @@ class _StatsHistorySheetWidgetState extends State<_StatsHistorySheetWidget> {
       if (res.statusCode == 200 && res.data != null && res.data['data'] != null) {
         final data = res.data['data'];
         final List? rawCoinHistory = data['coinHistory'] as List?;
+        final List? rawExpHistory = data['expHistory'] as List?;
 
-        if (rawCoinHistory != null && rawCoinHistory.isNotEmpty) {
-          final List<StatsHistoryItem> parsed = [];
+        final summary = data['summary'];
+        if (summary != null) {
+          _serverEarnedCoins = summary['totalCoinsEarned'] is int
+              ? summary['totalCoinsEarned'] as int
+              : int.tryParse(summary['totalCoinsEarned']?.toString() ?? '');
+          _serverSpentCoins = summary['totalCoinsSpent'] is int
+              ? summary['totalCoinsSpent'] as int
+              : int.tryParse(summary['totalCoinsSpent']?.toString() ?? '');
+        }
+
+        final List<StatsHistoryItem> parsed = [];
+
+        if (widget.type == StatsHistoryType.coin && rawCoinHistory != null) {
           for (var item in rawCoinHistory) {
             final String title = item['title']?.toString() ?? 'Amaliyot';
             final String typeStr = item['type']?.toString() ?? 'other';
             final int coins = (item['coins'] is int)
                 ? item['coins'] as int
                 : int.tryParse(item['coins']?.toString() ?? '0') ?? 0;
-            final int xp = (item['xp'] is int)
-                ? item['xp'] as int
-                : int.tryParse(item['xp']?.toString() ?? '0') ?? 0;
             final DateTime date = DateTime.tryParse(item['date']?.toString() ?? '') ?? DateTime.now();
 
-            if (widget.type == StatsHistoryType.coin && coins != 0) {
+            if (coins != 0) {
               parsed.add(StatsHistoryItem(
                 id: item['id']?.toString() ?? '${DateTime.now().millisecondsSinceEpoch}_${parsed.length}',
                 title: title,
                 category: _getCategoryLabel(typeStr),
                 amount: coins,
-                isPositive: coins >= 0,
+                isPositive: coins > 0,
                 date: date,
                 icon: _getCategoryIcon(typeStr),
-                iconColor: coins >= 0 ? AppColors.coinGold : Colors.red,
+                iconColor: coins > 0 ? AppColors.coinGold : Colors.redAccent,
               ));
-            } else if (widget.type == StatsHistoryType.exp && xp > 0) {
+            }
+          }
+        } else if (widget.type == StatsHistoryType.exp) {
+          final targetList = (rawExpHistory != null && rawExpHistory.isNotEmpty)
+              ? rawExpHistory
+              : (rawCoinHistory ?? []);
+
+          for (var item in targetList) {
+            final String title = item['title']?.toString() ?? 'Faoliyat';
+            final String typeStr = item['type']?.toString() ?? 'other';
+            final int xp = (item['amount'] is int)
+                ? item['amount'] as int
+                : (item['xp'] is int
+                    ? item['xp'] as int
+                    : int.tryParse(item['xp']?.toString() ?? item['amount']?.toString() ?? '0') ?? 0);
+            final DateTime date = DateTime.tryParse(item['date']?.toString() ?? '') ?? DateTime.now();
+
+            if (xp > 0) {
               parsed.add(StatsHistoryItem(
                 id: item['id']?.toString() ?? '${DateTime.now().millisecondsSinceEpoch}_${parsed.length}',
                 title: title,
-                category: _getCategoryLabel(typeStr),
+                category: item['category']?.toString() ?? _getCategoryLabel(typeStr),
                 amount: xp,
                 isPositive: true,
                 date: date,
@@ -139,16 +161,16 @@ class _StatsHistorySheetWidgetState extends State<_StatsHistorySheetWidget> {
               ));
             }
           }
+        }
 
-          if (parsed.isNotEmpty && mounted) {
-            setState(() {
-              _items = parsed;
-            });
-          }
+        if (mounted) {
+          setState(() {
+            _items = parsed;
+          });
         }
       }
     } catch (_) {
-      // Offline yoki tarmoq xatoligida fallback ma'lumotlar saqlanadi
+      // Offline yoki tarmoq xatoligida mavjud ro'yxat saqlanadi
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -196,178 +218,6 @@ class _StatsHistorySheetWidgetState extends State<_StatsHistorySheetWidget> {
       default:
         return Icons.auto_awesome_rounded;
     }
-  }
-
-  List<StatsHistoryItem> _getFallbackCoinHistory() {
-    final now = DateTime.now();
-    return [
-      StatsHistoryItem(
-        id: 'c1',
-        title: 'Mavzu bo\'yicha interaktiv o\'yinda g\'alaba',
-        category: 'O\'yinlar',
-        amount: 25,
-        isPositive: true,
-        date: now.subtract(const Duration(minutes: 35)),
-        icon: Icons.sports_esports_rounded,
-        iconColor: AppColors.coinGold,
-      ),
-      StatsHistoryItem(
-        id: 'c2',
-        title: 'Dars bo\'yicha topshiriq muvaffaqiyatli bajarildi',
-        category: 'Uyga vazifa',
-        amount: 15,
-        isPositive: true,
-        date: now.subtract(const Duration(hours: 3, minutes: 15)),
-        icon: Icons.assignment_turned_in_rounded,
-        iconColor: AppColors.success,
-      ),
-      StatsHistoryItem(
-        id: 'c3',
-        title: 'Biologiya 1-oraliq test (100% to\'liq natija)',
-        category: 'Test sinovi',
-        amount: 20,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 1, hours: 2)),
-        icon: Icons.quiz_rounded,
-        iconColor: AppColors.coinGold,
-      ),
-      StatsHistoryItem(
-        id: 'c4',
-        title: 'Do\'kondan xarid: Abdora AI maxsus ramkasi',
-        category: 'Do\'kon xaridi',
-        amount: 120,
-        isPositive: false,
-        date: now.subtract(const Duration(days: 2, hours: 5)),
-        icon: Icons.shopping_bag_rounded,
-        iconColor: Colors.redAccent,
-      ),
-      StatsHistoryItem(
-        id: 'c5',
-        title: 'Guruhdosh bilan bellashuvda g\'alaba',
-        category: 'O\'yinlar',
-        amount: 30,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 3, hours: 1)),
-        icon: Icons.emoji_events_rounded,
-        iconColor: AppColors.coinGold,
-      ),
-      StatsHistoryItem(
-        id: 'c6',
-        title: '7 kunlik o\'rganish seriyasi (Streak bonusi)',
-        category: 'Kunlik seriya',
-        amount: 10,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 4, hours: 7)),
-        icon: Icons.local_fire_department_rounded,
-        iconColor: Colors.deepOrangeAccent,
-      ),
-      StatsHistoryItem(
-        id: 'c7',
-        title: 'Darsga o\'z vaqtida to\'liq qatnashish',
-        category: 'Davomat',
-        amount: 5,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 5, hours: 3)),
-        icon: Icons.event_available_rounded,
-        iconColor: AppColors.secondary,
-      ),
-      StatsHistoryItem(
-        id: 'c8',
-        title: 'O\'qituvchi bonusi: Eng yaxshi amaliy laboratoriya',
-        category: 'Rag\'bat bonusi',
-        amount: 35,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 6, hours: 4)),
-        icon: Icons.stars_rounded,
-        iconColor: AppColors.coinGold,
-      ),
-    ];
-  }
-
-  List<StatsHistoryItem> _getFallbackExpHistory() {
-    final now = DateTime.now();
-    return [
-      StatsHistoryItem(
-        id: 'e1',
-        title: '1-Dars: Sitologiya mavzusini to\'liq yakunlash',
-        category: 'Darslar',
-        amount: 120,
-        isPositive: true,
-        date: now.subtract(const Duration(minutes: 35)),
-        icon: Icons.menu_book_rounded,
-        iconColor: AppColors.primary,
-      ),
-      StatsHistoryItem(
-        id: 'e2',
-        title: 'Interaktiv o\'yin: Juftliklarni topish g\'alabasi',
-        category: 'O\'yinlar',
-        amount: 60,
-        isPositive: true,
-        date: now.subtract(const Duration(hours: 2, minutes: 10)),
-        icon: Icons.sports_esports_rounded,
-        iconColor: AppColors.secondary,
-      ),
-      StatsHistoryItem(
-        id: 'e3',
-        title: 'Biologiya oraliq nazorat testi (A\'lo baho)',
-        category: 'Test sinovi',
-        amount: 150,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 1, hours: 2)),
-        icon: Icons.quiz_rounded,
-        iconColor: AppColors.success,
-      ),
-      StatsHistoryItem(
-        id: 'e4',
-        title: 'Mavzu bo\'yicha vazifa topshirig\'i (95 ball)',
-        category: 'Uyga vazifa',
-        amount: 95,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 1, hours: 8)),
-        icon: Icons.assignment_turned_in_rounded,
-        iconColor: AppColors.primary,
-      ),
-      StatsHistoryItem(
-        id: 'e5',
-        title: 'Blitz Sprint tezkor savollari (5/5 to\'g\'ri)',
-        category: 'O\'yinlar',
-        amount: 50,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 2, hours: 4)),
-        icon: Icons.bolt_rounded,
-        iconColor: AppColors.coinGold,
-      ),
-      StatsHistoryItem(
-        id: 'e6',
-        title: 'Guruhdosh bilan bellashuvda peshqadamlik',
-        category: 'O\'yinlar',
-        amount: 80,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 3, hours: 1)),
-        icon: Icons.emoji_events_rounded,
-        iconColor: AppColors.secondary,
-      ),
-      StatsHistoryItem(
-        id: 'e7',
-        title: 'Kunlik faoliyat seriyasi (Streak)',
-        category: 'Kunlik seriya',
-        amount: 30,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 4, hours: 7)),
-        icon: Icons.local_fire_department_rounded,
-        iconColor: Colors.deepOrangeAccent,
-      ),
-      StatsHistoryItem(
-        id: 'e8',
-        title: 'Laboratoriya mashg\'ulotida a\'lo ishtirok',
-        category: 'Darslar',
-        amount: 70,
-        isPositive: true,
-        date: now.subtract(const Duration(days: 5, hours: 2)),
-        icon: Icons.science_rounded,
-        iconColor: AppColors.primary,
-      ),
-    ];
   }
 
   String _formatDate(DateTime date) {
@@ -584,38 +434,77 @@ class _StatsHistorySheetWidgetState extends State<_StatsHistorySheetWidget> {
 
             // Tranzaksiyalar ro'yxati
             Expanded(
-              child: _filteredItems.isEmpty
+              child: _isLoading
                   ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.history_toggle_off_rounded,
-                            size: 46,
-                            color: AppColors.textM(context).withOpacity(0.5),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Bu toifada amallar mavjud emas',
-                            style: TextStyle(
-                              color: AppColors.text2(context),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: CircularProgressIndicator(strokeWidth: 2.5, color: primaryThemeColor),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            Text(
+                              'Ma\'lumotlar yuklanmoqda...',
+                              style: TextStyle(color: AppColors.text2(context), fontSize: 13),
+                            ),
+                          ],
+                        ),
                       ),
                     )
-                  : ListView.separated(
-                      controller: scrollController,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: _filteredItems.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final item = _filteredItems[index];
-                        return _buildHistoryItemRow(context, item, isCoin, index);
-                      },
-                    ),
+                  : _filteredItems.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.history_toggle_off_rounded,
+                                  size: 46,
+                                  color: AppColors.textM(context).withOpacity(0.5),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  isCoin
+                                      ? 'Hozircha tangalar tarixi mavjud emas'
+                                      : 'Hozircha tajriba (EXP) tarixi mavjud emas',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppColors.text1(context),
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  isCoin
+                                      ? 'Darslarda qatnashish, testlar va o\'yinlar orqali tanga to\'plashingiz mumkin.'
+                                      : 'Darslar va topshiriqlarni yakunlab yangi darajalarga ko\'tariling.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppColors.text2(context),
+                                    fontSize: 12,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: scrollController,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _filteredItems.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final item = _filteredItems[index];
+                            return _buildHistoryItemRow(context, item, isCoin, index);
+                          },
+                        ),
             ),
           ],
         ),
@@ -625,13 +514,15 @@ class _StatsHistorySheetWidgetState extends State<_StatsHistorySheetWidget> {
 
   /// Tanga xulosasi kartasi
   Widget _buildCoinSummary(BuildContext context, int userCoins) {
-    int totalEarned = 0;
-    int totalSpent = 0;
-    for (var item in _items) {
-      if (item.isPositive) {
-        totalEarned += item.amount;
-      } else {
-        totalSpent += item.amount.abs();
+    int totalEarned = _serverEarnedCoins ?? 0;
+    int totalSpent = _serverSpentCoins ?? 0;
+    if (_serverEarnedCoins == null && _serverSpentCoins == null) {
+      for (var item in _items) {
+        if (item.isPositive) {
+          totalEarned += item.amount;
+        } else {
+          totalSpent += item.amount.abs();
+        }
       }
     }
 

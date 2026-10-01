@@ -724,14 +724,20 @@ const getStudentHistory = async (req, res, next) => {
           date: a.date,
           groupName: a.group?.name || student.group?.name,
           status: rec?.status || 'absent',
+          grade: rec?.grade !== undefined ? rec.grade : null,
+          coinsChange: rec?.coinsChange !== undefined ? rec.coinsChange : null,
           note: rec?.note || '',
         };
       });
     }
 
-    // 5. Notes and Custom transactions stored in achievements
+    // 5. Notes, Custom transactions, Game activities, and Referrals stored in achievements
     let notes = [];
     let customTransactions = [];
+    let gameActivities = [];
+    let referrals = [];
+    let referredBy = null;
+
     if (student.achievements) {
       if (Array.isArray(student.achievements)) {
         notes = student.achievements.filter((x) => x && x.type === 'note');
@@ -739,70 +745,181 @@ const getStudentHistory = async (req, res, next) => {
       } else if (typeof student.achievements === 'object') {
         notes = Array.isArray(student.achievements.notes) ? student.achievements.notes : [];
         customTransactions = Array.isArray(student.achievements.coinTransactions) ? student.achievements.coinTransactions : [];
+        gameActivities = Array.isArray(student.achievements.gameActivities) ? student.achievements.gameActivities : [];
+        referrals = Array.isArray(student.achievements.referrals) ? student.achievements.referrals : [];
+        referredBy = student.achievements.referredBy || null;
       }
     }
 
-    // 6. Chronological Coin & XP History
+    // 6. Chronological Coin & XP History (Barcha real operatsiyalar)
     const coinHistory = [];
 
-    // From tests
+    // a) From tests
     testResults.forEach((r) => {
       coinHistory.push({
         id: `test_${r.id}`,
         type: 'test',
         title: `Test: ${r.test?.title || 'Sinov'} (${r.percentage}%)`,
-        coins: r.passed ? (r.percentage === 100 ? 15 : 10) : 0,
+        coins: r.passed ? (r.percentage === 100 ? 20 : 10) : 0,
         xp: r.score || (r.passed ? 40 : 10),
         date: r.completedAt,
         status: r.passed ? 'Muvaffaqiyatli' : 'Yiqildi',
       });
     });
 
-    // From homework
+    // b) From homework
     submissions.forEach((s) => {
       const isGood = (s.finalScore || 0) >= 80;
       coinHistory.push({
         id: `hw_${s.id}`,
         type: 'homework',
         title: `Uyga vazifa: ${s.homework?.title || 'Topshiriq'}`,
-        coins: isGood ? 10 : 5,
+        coins: isGood ? 15 : ((s.finalScore || 0) > 0 ? 5 : 0),
         xp: s.finalScore || 20,
         date: s.submittedAt,
         status: s.status || 'Topshirildi',
       });
     });
 
-    // From attendance
+    // c) From attendance
     attendanceList.forEach((a) => {
-      if (a.status === 'present') {
+      let coins = a.coinsChange;
+      let xp = 0;
+      let title = `Dars davomati (${a.groupName || 'Guruh'})`;
+
+      if (a.grade !== null && a.grade !== undefined) {
+        title = `Dars davomati va baho: ${a.grade}/10`;
+        xp = a.grade * 10;
+        if (coins === null || coins === undefined) {
+          coins = a.grade >= 8 ? 5 : (a.grade <= 3 ? -3 : 0);
+        }
+      } else {
+        if (coins === null || coins === undefined) {
+          coins = a.status === 'present' ? 3 : (a.status === 'absent' ? -3 : 0);
+        }
+        xp = a.status === 'present' ? 15 : 0;
+      }
+
+      if (coins !== 0 || xp !== 0) {
         coinHistory.push({
           id: `att_${a.id}`,
           type: 'attendance',
-          title: `Dars davomati (${a.groupName || 'Guruh'})`,
-          coins: 3,
-          xp: 15,
+          title,
+          coins: coins || 0,
+          xp,
           date: a.date,
-          status: 'Qatnashdi',
+          status: a.status === 'present' ? 'Qatnashdi' : (a.status === 'absent' ? 'Qatnashmadi' : 'Kechikdi'),
         });
       }
     });
 
-    // Custom bonuses
+    // d) From Shop orders
+    try {
+      const center = await prisma.center.findFirst({
+        where: student.centerId ? { id: student.centerId } : { isActive: true },
+        select: { settings: true },
+      });
+      if (center && center.settings && Array.isArray(center.settings.shopOrders)) {
+        const studentOrders = center.settings.shopOrders.filter((o) => o.studentId === student.id);
+        studentOrders.forEach((o) => {
+          const cost = Math.abs(o.priceCoins || 0);
+          coinHistory.push({
+            id: `order_${o.id}`,
+            type: 'purchase',
+            title: `Do'kondan xarid: ${o.itemTitle || 'Mahsulot'}`,
+            coins: -cost,
+            xp: 0,
+            date: o.createdAt,
+            status: o.status === 'fulfilled' ? 'Yetkazildi' : (o.status === 'cancelled' ? 'Bekor qilindi' : 'Kutilmoqda'),
+          });
+        });
+      }
+    } catch (_) {}
+
+    // e) From Game activities
+    gameActivities.forEach((g) => {
+      coinHistory.push({
+        id: `game_${g.id || Math.random()}`,
+        type: 'game',
+        title: g.mode === 'duel'
+          ? `Guruhdosh bilan duel: ${g.topicTitle || 'Mavzu'}`
+          : `Interaktiv o'yin: ${g.topicTitle || 'Mavzu'}`,
+        coins: g.coinsGained || 15,
+        xp: g.xpGained || Math.max(10, Math.round((Number(g.score) || 0) / 2)),
+        date: g.createdAt,
+        status: g.isWon ? "G'alaba" : "Yakunlandi",
+      });
+    });
+
+    // f) From Referrals
+    referrals.forEach((ref) => {
+      coinHistory.push({
+        id: `ref_${ref.id || Math.random()}`,
+        type: 'bonus',
+        title: `Referal taklifi bonusi: ${ref.studentName || 'Do\'stingiz'}`,
+        coins: ref.coins || 50,
+        xp: 25,
+        date: ref.date || ref.createdAt || new Date().toISOString(),
+        status: 'Kirim',
+      });
+    });
+    if (referredBy) {
+      coinHistory.push({
+        id: `ref_by_${Math.random()}`,
+        type: 'bonus',
+        title: `Referal kodi sovg'asi (${referredBy.inviterName || 'Taklif'})`,
+        coins: 50,
+        xp: 25,
+        date: referredBy.date || new Date().toISOString(),
+        status: 'Kirim',
+      });
+    }
+
+    // g) Custom bonuses / penalties
     customTransactions.forEach((ct) => {
       coinHistory.push({
         id: ct.id || `custom_${Math.random()}`,
-        type: 'bonus',
+        type: ct.type || 'bonus',
         title: ct.title || "O'qituvchi/Admin bonusi",
         coins: ct.coins || 0,
         xp: ct.xp || 0,
         date: ct.date || ct.createdAt,
-        status: 'Bonus',
+        status: (ct.coins || 0) >= 0 ? 'Bonus' : 'Jarima',
         authorName: ct.authorName,
       });
     });
 
     // Sort by date descending
     coinHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // EXP tarixi (Alohida saralangan ro'yxat)
+    const expHistory = coinHistory
+      .filter((item) => (item.xp || 0) > 0)
+      .map((item) => ({
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        category: item.type === 'homework' ? 'Uyga vazifa' : (item.type === 'test' ? 'Test sinovi' : (item.type === 'game' ? 'O\'yinlar' : (item.type === 'attendance' ? 'Darslar' : 'Rag\'bat bonusi'))),
+        amount: item.xp,
+        isPositive: true,
+        date: item.date,
+        status: item.status,
+      }))
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Jami kirim va xaridlar
+    const totalCoinsEarned = coinHistory.reduce((acc, c) => c.coins > 0 ? acc + c.coins : acc, 0);
+    const totalCoinsSpent = coinHistory.reduce((acc, c) => c.coins < 0 ? acc + Math.abs(c.coins) : acc, 0);
+
+    // Referal ma'lumotlari
+    const referralCode = 'ABDORA-' + (student.username || 'TALABA').toUpperCase();
+    const referralData = {
+      code: referralCode,
+      invitedCount: referrals.length,
+      earnedCoins: referrals.length * 50,
+      hasUsedReferral: !!referredBy,
+      referrals,
+    };
 
     // 7. Financial Summary
     const monthlyFee = student.group?.monthlyFee || 0;
@@ -827,8 +944,16 @@ const getStudentHistory = async (req, res, next) => {
       tests: testResults,
       homework: submissions,
       coinHistory,
+      expHistory,
+      referral: referralData,
       notes,
       summary: {
+        totalCoins: student.coins || 0,
+        totalCoinsEarned,
+        totalCoinsSpent,
+        totalXP: student.xp || 0,
+        level: student.level || 1,
+        referral: referralData,
         totalPaid,
         totalDebt,
         monthlyFee,
@@ -962,7 +1087,179 @@ const awardStudentCoins = async (req, res, next) => {
       select: { id: true, name: true, coins: true, xp: true, level: true },
     });
 
+    // O'quvchiga bildirishnoma jo'natish
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: studentId,
+          type: coinAmount >= 0 ? 'achievement' : 'warning',
+          title: coinAmount >= 0 ? "Tangalar hisobingizga qo'shildi" : 'Tangalar yechildi',
+          message: `${reason || "Rag'batlantirish"}: ${coinAmount >= 0 ? '+' : ''}${coinAmount} tanga, +${xpAmount} XP`,
+          centerId: student.centerId || req.user.centerId || null,
+        },
+      });
+    } catch (_) {}
+
     return success(res, { updated, transaction: newTx }, 'Tangalar hisoblandi');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getReferralStats = async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { id: true, username: true, phone: true, name: true, coins: true, achievements: true },
+    });
+    if (!user) return error(res, 'Foydalanuvchi topilmadi', 404);
+
+    const achievements = user.achievements && typeof user.achievements === 'object' && !Array.isArray(user.achievements)
+      ? user.achievements
+      : {};
+
+    const referrals = Array.isArray(achievements.referrals) ? achievements.referrals : [];
+    const referralCode = 'ABDORA-' + (user.username || user.phone || 'TALABA').toUpperCase();
+
+    return success(res, {
+      referralCode,
+      invitedCount: referrals.length,
+      earnedCoins: referrals.length * 50,
+      hasUsedReferral: !!achievements.referredBy,
+      referrals,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const applyReferralCode = async (req, res, next) => {
+  try {
+    const { code } = req.body;
+    if (!code || !code.trim()) return error(res, 'Referal kodi kiritilmadi', 400);
+
+    const student = await prisma.user.findUnique({ where: { id: req.user.userId } });
+    if (!student) return error(res, 'Foydalanuvchi topilmadi', 404);
+
+    const existingAchievements = student.achievements && typeof student.achievements === 'object' && !Array.isArray(student.achievements)
+      ? student.achievements
+      : { notes: [], coinTransactions: [], referrals: [] };
+
+    if (existingAchievements.referredBy) {
+      return error(res, 'Siz allaqachon referal kodidan foydalangansiz', 400);
+    }
+
+    const clean = code.trim().replace(/^ABDORA-/i, '').toLowerCase();
+
+    // Taklif qilgan foydalanuvchini topish
+    const inviter = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { username: { equals: clean, mode: 'insensitive' } },
+          { phone: clean },
+          { phone: '+' + clean },
+        ],
+      },
+    });
+
+    if (!inviter) {
+      return error(res, 'Bunday referal kodi topilmadi', 404);
+    }
+
+    if (inviter.id === student.id) {
+      return error(res, "O'zingizning referal kodingizdan foydalana olmaysiz", 400);
+    }
+
+    const BONUS = 50;
+
+    // 1. Taklif qiluvchiga mukofot berish
+    const inviterAch = inviter.achievements && typeof inviter.achievements === 'object' && !Array.isArray(inviter.achievements)
+      ? inviter.achievements
+      : { notes: [], coinTransactions: [], referrals: [] };
+    const inviterRefs = Array.isArray(inviterAch.referrals) ? [...inviterAch.referrals] : [];
+    inviterRefs.unshift({
+      studentId: student.id,
+      studentName: student.name,
+      coins: BONUS,
+      date: new Date().toISOString(),
+    });
+    const inviterCoinTx = Array.isArray(inviterAch.coinTransactions) ? [...inviterAch.coinTransactions] : [];
+    inviterCoinTx.unshift({
+      id: `ref_award_${Date.now()}`,
+      type: 'bonus',
+      title: `Referal bonusi: ${student.name} taklifingiz bilan kirdi`,
+      coins: BONUS,
+      xp: 25,
+      date: new Date().toISOString(),
+    });
+
+    await prisma.user.update({
+      where: { id: inviter.id },
+      data: {
+        coins: { increment: BONUS },
+        achievements: {
+          ...inviterAch,
+          referrals: inviterRefs,
+          coinTransactions: inviterCoinTx,
+        },
+      },
+    });
+
+    // Taklif qiluvchiga bildirishnoma
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: inviter.id,
+          type: 'achievement',
+          title: "Yangi do'st qo'shildi!",
+          message: `${student.name} sizning referal kodingizdan foydalandi. Hisobingizga +${BONUS} tanga sovg'a qilindi!`,
+          centerId: inviter.centerId || null,
+        },
+      });
+    } catch (_) {}
+
+    // 2. Joriy o'quvchiga mukofot berish
+    const studentCoinTx = Array.isArray(existingAchievements.coinTransactions) ? [...existingAchievements.coinTransactions] : [];
+    studentCoinTx.unshift({
+      id: `ref_bonus_${Date.now()}`,
+      type: 'bonus',
+      title: `Referal sovg'asi: ${inviter.name} taklifi bo'yicha`,
+      coins: BONUS,
+      xp: 25,
+      date: new Date().toISOString(),
+    });
+
+    await prisma.user.update({
+      where: { id: student.id },
+      data: {
+        coins: { increment: BONUS },
+        achievements: {
+          ...existingAchievements,
+          referredBy: {
+            inviterId: inviter.id,
+            inviterName: inviter.name,
+            code: code.trim(),
+            date: new Date().toISOString(),
+          },
+          coinTransactions: studentCoinTx,
+        },
+      },
+    });
+
+    // Joriy o'quvchiga bildirishnoma
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: student.id,
+          type: 'achievement',
+          title: "Referal sovg'asi qabul qilindi!",
+          message: `Referal kodi faollashtirildi. Hisobingizga +${BONUS} oltin tanga qo'shildi!`,
+          centerId: student.centerId || null,
+        },
+      });
+    } catch (_) {}
+
+    return success(res, { coinsAwarded: BONUS, inviterName: inviter.name }, `Tabriklaymiz! Hisobingizga +${BONUS} tanga sovg'a qilindi.`);
   } catch (err) {
     next(err);
   }
@@ -993,4 +1290,6 @@ module.exports = {
   updateLanguage,
   uploadAvatar,
   getAvatar,
+  getReferralStats,
+  applyReferralCode,
 };

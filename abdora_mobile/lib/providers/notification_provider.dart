@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/api/api_client.dart';
+import '../core/api/endpoints.dart';
 
 enum NotificationCategory {
   lesson,
@@ -41,16 +43,29 @@ class AppNotification {
       };
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
+    NotificationCategory cat = NotificationCategory.lesson;
+    final rawCat = (json['type'] ?? json['category'] ?? '').toString().toLowerCase();
+    if (rawCat.contains('home') || rawCat.contains('vazifa')) {
+      cat = NotificationCategory.homework;
+    } else if (rawCat.contains('exam') || rawCat.contains('test')) {
+      cat = NotificationCategory.exam;
+    } else if (rawCat.contains('coin') || rawCat.contains('achieve') || rawCat.contains('bonus')) {
+      cat = NotificationCategory.coin;
+    } else if (rawCat.contains('chal') || rawCat.contains('game') || rawCat.contains('duel')) {
+      cat = NotificationCategory.challenge;
+    } else if (rawCat.contains('group')) {
+      cat = NotificationCategory.group;
+    } else {
+      cat = NotificationCategory.lesson;
+    }
+
     return AppNotification(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String,
-      time: DateTime.tryParse(json['time'] as String? ?? '') ?? DateTime.now(),
-      category: NotificationCategory.values.firstWhere(
-        (c) => c.name == json['category'],
-        orElse: () => NotificationCategory.lesson,
-      ),
-      route: json['route'] as String?,
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'Bildirishnoma',
+      description: json['message']?.toString() ?? json['description']?.toString() ?? '',
+      time: DateTime.tryParse(json['createdAt']?.toString() ?? json['time']?.toString() ?? '') ?? DateTime.now(),
+      category: cat,
+      route: json['link']?.toString() ?? json['route']?.toString(),
       isRead: json['isRead'] as bool? ?? false,
     );
   }
@@ -60,16 +75,38 @@ class NotificationProvider extends ChangeNotifier {
   static const String _storageKey = 'abdora_notifications_cache';
 
   List<AppNotification> _notifications = [];
-  bool _isInitialized = false;
+  bool _isLoading = false;
 
   List<AppNotification> get notifications => List.unmodifiable(_notifications);
-
+  bool get isLoading => _isLoading;
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
-
   bool get hasUnread => unreadCount > 0;
 
   NotificationProvider() {
-    _loadFromStorage();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _loadFromStorage();
+    await fetchNotifications();
+  }
+
+  Future<void> fetchNotifications() async {
+    try {
+      final res = await ApiClient().dio.get(Endpoints.notifications);
+      if (res.statusCode == 200 && res.data != null) {
+        final raw = res.data['data'] ?? res.data;
+        if (raw is List) {
+          _notifications = raw
+              .map((it) => AppNotification.fromJson(it as Map<String, dynamic>))
+              .toList();
+          await _saveToStorage();
+          notifyListeners();
+        }
+      }
+    } catch (_) {
+      // Xatolik yoki oflayn holatda keshdagi ma'lumot qoladi
+    }
   }
 
   Future<void> _loadFromStorage() async {
@@ -78,17 +115,22 @@ class NotificationProvider extends ChangeNotifier {
       final data = prefs.getString(_storageKey);
       if (data != null && data.isNotEmpty) {
         final List decoded = jsonDecode(data);
-        _notifications = decoded
-            .map((item) => AppNotification.fromJson(item as Map<String, dynamic>))
-            .toList();
+        // Eski soxta mock bildirishnomalarni tozalash
+        final isMock = decoded.any((it) => it['id'] == 'notif_1' || it['id'] == 'notif_2');
+        if (isMock) {
+          _notifications = [];
+          await prefs.remove(_storageKey);
+        } else {
+          _notifications = decoded
+              .map((item) => AppNotification.fromJson(item as Map<String, dynamic>))
+              .toList();
+        }
       } else {
-        _notifications = _generateInitialNotifications();
-        await _saveToStorage();
+        _notifications = [];
       }
     } catch (_) {
-      _notifications = _generateInitialNotifications();
+      _notifications = [];
     }
-    _isInitialized = true;
     notifyListeners();
   }
 
@@ -109,7 +151,7 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  void markAllAsRead() {
+  Future<void> markAllAsRead() async {
     bool changed = false;
     for (var n in _notifications) {
       if (!n.isRead) {
@@ -121,6 +163,9 @@ class NotificationProvider extends ChangeNotifier {
       _saveToStorage();
       notifyListeners();
     }
+    try {
+      await ApiClient().dio.put(Endpoints.markNotificationsRead);
+    } catch (_) {}
   }
 
   void deleteNotification(String id) {
@@ -153,56 +198,5 @@ class NotificationProvider extends ChangeNotifier {
     _notifications.insert(0, newNotif);
     _saveToStorage();
     notifyListeners();
-  }
-
-  List<AppNotification> _generateInitialNotifications() {
-    final now = DateTime.now();
-    return [
-      AppNotification(
-        id: 'notif_1',
-        title: 'Yangi interaktiv dars qo\'shildi',
-        description: 'Lam va Lan farqi arab tili mavzusidagi yangi dars ochildi. AI o\'yinlar bilan sinab ko\'ring.',
-        time: now.subtract(const Duration(minutes: 15)),
-        category: NotificationCategory.lesson,
-        route: 'lessons',
-        isRead: false,
-      ),
-      AppNotification(
-        id: 'notif_2',
-        title: 'Uyga vazifa baholandi',
-        description: 'Arab tili grammatikasi bo\'yicha topshirgan amaliy vazifangiz 95 ball bilan qabul qilindi.',
-        time: now.subtract(const Duration(hours: 2)),
-        category: NotificationCategory.homework,
-        route: 'homework',
-        isRead: false,
-      ),
-      AppNotification(
-        id: 'notif_3',
-        title: 'Guruhdoshdan duel taklifi',
-        description: 'Shukrona sizni "Lam va Lan" mavzusi bo\'yicha blitz o\'yiniga chaqirdi.',
-        time: now.subtract(const Duration(hours: 5)),
-        category: NotificationCategory.challenge,
-        route: 'challenge',
-        isRead: false,
-      ),
-      AppNotification(
-        id: 'notif_4',
-        title: 'Tangalar mukofoti',
-        description: 'Darslarni muvaffaqiyatli yakunlaganingiz uchun hisobingizga +30 ta oltin tanga qo\'shildi.',
-        time: now.subtract(const Duration(days: 1)),
-        category: NotificationCategory.coin,
-        route: 'shop',
-        isRead: true,
-      ),
-      AppNotification(
-        id: 'notif_5',
-        title: 'Oraliq imtihon e\'loni',
-        description: 'Juma kuni soat 14:00 da oraliq nazorat testi bo\'lib o\'tadi. Tayyorgarlik ko\'rishni unutmang.',
-        time: now.subtract(const Duration(days: 2)),
-        category: NotificationCategory.exam,
-        route: 'exams',
-        isRead: true,
-      ),
-    ];
   }
 }

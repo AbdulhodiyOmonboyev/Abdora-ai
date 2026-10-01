@@ -6,7 +6,8 @@ const {
   createStudent, createTeacher, createManager, getManagers, updateManager, deleteManager, getManagerBranches, getAllUsers, getStudentsByTeacher, getUserById,
   updateUser, updateProfile, deleteUser, resetStudentPassword, freezeStudent, changePassword,
   getStudentHistory, addStudentNote, deleteStudentNote, awardStudentCoins, testAIPersonalization,
-  updateLanguage, uploadAvatar, getAvatar
+  updateLanguage, uploadAvatar, getAvatar,
+  getReferralStats, applyReferralCode,
 } = require('../controllers/user.controller');
 
 router.get('/avatar/:id', getAvatar);
@@ -28,6 +29,10 @@ router.patch('/language', verifyToken, updateLanguage);
 router.put('/language', verifyToken, updateLanguage);
 router.post('/change-password', verifyToken, changePassword);
 router.post('/ai-test', verifyToken, testAIPersonalization);
+
+// Referal tizimi
+router.get('/referral/stats', verifyToken, getReferralStats);
+router.post('/referral/apply', verifyToken, applyReferralCode);
 
 // Student History, Notes, Coin Awards
 router.get('/:id/history', verifyToken, requireRole('admin', 'reception', 'manager', 'teacher', 'student'), getStudentHistory);

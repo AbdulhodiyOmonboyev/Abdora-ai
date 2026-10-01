@@ -50,6 +50,26 @@ const createLesson = async (req, res, next) => {
       setImmediate(() => generateLessonAI(lesson.id, title, content || '').catch(console.error));
     }
 
+    // Guruhdagi talabalarga yangi dars bildirishnomasini yuborish
+    try {
+      const students = await prisma.user.findMany({
+        where: { groupId, role: 'student', isActive: true },
+        select: { id: true },
+      });
+      if (students.length > 0) {
+        await prisma.notification.createMany({
+          data: students.map((s) => ({
+            userId: s.id,
+            type: 'lesson',
+            title: 'Yangi dars qo\'shildi!',
+            message: `"${title}" mavzusidagi yangi dars o'tildi va materiallari yuklandi.`,
+            link: `/student/lessons/${lesson.id}`,
+            centerId,
+          })),
+        });
+      }
+    } catch (_) {}
+
     return success(res, lesson, 'Lesson created', 201);
   } catch (err) { next(err); }
 };

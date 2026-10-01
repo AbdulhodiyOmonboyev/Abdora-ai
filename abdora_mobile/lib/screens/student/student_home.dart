@@ -43,15 +43,20 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
       final shop = Provider.of<ShopProvider>(context, listen: false);
       shop.fetchItems();
+
+      final notif = Provider.of<NotificationProvider>(context, listen: false);
+      notif.fetchNotifications();
     });
   }
 
   Future<void> _handleRefresh() async {
     final student = Provider.of<StudentProvider>(context, listen: false);
     final shop = Provider.of<ShopProvider>(context, listen: false);
+    final notif = Provider.of<NotificationProvider>(context, listen: false);
     await Future.wait([
       student.refreshAll(),
       shop.fetchItems(),
+      notif.fetchNotifications(),
     ]);
   }
 
@@ -1841,208 +1846,419 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   /// 4-Modal: Referal tizimi
   void _showReferralSheet(BuildContext context) {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
-    final String referralCode = 'ABDORA-${(user?.username.isNotEmpty == true ? user!.username : 'TALABA').toUpperCase()}';
+    final String referralCode = 'ABDORA-${(user?.username.isNotEmpty == true ? user!.username : (user?.phone ?? 'TALABA')).replaceAll('+', '').toUpperCase()}';
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (sheetCtx) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.45,
-        maxChildSize: 0.9,
-        builder: (_, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
+      builder: (sheetCtx) => _ReferralSheetContent(
+        referralCode: referralCode,
+        onClose: () => Navigator.pop(sheetCtx),
+      ),
+    );
+  }
+}
+
+class _ReferralSheetContent extends StatefulWidget {
+  final String referralCode;
+  final VoidCallback onClose;
+
+  const _ReferralSheetContent({
+    required this.referralCode,
+    required this.onClose,
+  });
+
+  @override
+  State<_ReferralSheetContent> createState() => _ReferralSheetContentState();
+}
+
+class _ReferralSheetContentState extends State<_ReferralSheetContent> {
+  final TextEditingController _inputController = TextEditingController();
+  int _invitedCount = 0;
+  int _earnedCoins = 0;
+  bool _hasUsedReferral = false;
+  bool _isLoading = true;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStats();
+  }
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchStats() async {
+    try {
+      final res = await ApiClient().dio.get(Endpoints.referralStats);
+      if (res.statusCode == 200 && res.data != null && res.data['data'] != null) {
+        final data = res.data['data'];
+        if (mounted) {
+          setState(() {
+            _invitedCount = data['invitedCount'] ?? 0;
+            _earnedCoins = data['earnedCoins'] ?? 0;
+            _hasUsedReferral = data['hasUsedReferral'] ?? false;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _applyReferral() async {
+    final code = _inputController.text.trim();
+    if (code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          content: Text('Referal kodini kiriting', style: TextStyle(color: Colors.white)),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final res = await ApiClient().dio.post(Endpoints.referralApply, data: {'code': code});
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              content: Text('Tabriklaymiz! Hisobingizga +50 tanga sovg\'a qilindi.', style: TextStyle(color: Colors.white)),
+            ),
+          );
+          _inputController.clear();
+          await _fetchStats();
+          // Profilni yangilash
+          final auth = Provider.of<AuthProvider>(context, listen: false);
+          await auth.checkAuth();
+        }
+      } else {
+        final msg = res.data?['message'] ?? 'Xatolik yuz berdi';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              content: Text(msg.toString(), style: const TextStyle(color: Colors.white)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      String msg = 'Referal kodini faollashtirib bo\'lmadi';
+      try {
+        if ((e as dynamic).response?.data?['message'] != null) {
+          msg = (e as dynamic).response.data['message'].toString();
+        }
+      } catch (_) {}
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            content: Text(msg, style: const TextStyle(color: Colors.white)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          child: Column(
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.45,
+      maxChildSize: 0.95,
+      builder: (_, scrollController) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.cardBg(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(top: BorderSide(color: AppColors.borderCol(context), width: 1.5)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: Column(
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderCol(context),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 14),
+            ),
+            const SizedBox(height: 14),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Referal tizimi',
+                  style: TextStyle(
+                    color: AppColors.text1(context),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close_rounded, color: AppColors.textM(context), size: 20),
+                  onPressed: widget.onClose,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            Expanded(
+              child: ListView(
+                controller: scrollController,
                 children: [
-                  const Text(
-                    'Referal tizimi',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 20),
-                    onPressed: () => Navigator.pop(sheetCtx),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  children: [
-                    // Oltin bonus banneri
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.coinGold.withOpacity(0.15),
-                            AppColors.primary.withOpacity(0.08),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.coinGold.withOpacity(0.35)),
-                      ),
-                      child: Column(
-                        children: const [
-                          Icon(Icons.stars_rounded, color: AppColors.coinGold, size: 36),
-                          SizedBox(height: 8),
-                          Text(
-                            'Do\'stingizni taklif qiling — +50 tanga oling!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            'Har bir yangi ro\'yxatdan o\'tgan do\'stingiz uchun ham sizga, ham do\'stingizga 50 oltin tanga sovg\'a qilinadi.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                              height: 1.35,
-                            ),
-                          ),
+                  // Oltin bonus banneri
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.coinGold.withOpacity(0.15),
+                          AppColors.primary.withOpacity(0.08),
                         ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.coinGold.withOpacity(0.35)),
                     ),
-                    const SizedBox(height: 18),
-
-                    // Referal kodi qutisi
-                    const Text(
-                      'Sizning shaxsiy referal kodingiz:',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            referralCode,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: referralCode));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  backgroundColor: AppColors.card,
-                                  behavior: SnackBarBehavior.floating,
-                                  content: Text(
-                                    'Referal kodi nusxalandi!',
-                                    style: TextStyle(color: Colors.white, fontSize: 13),
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.copy_rounded, size: 14, color: Colors.white),
-                            label: const Text('Nusxalash', style: TextStyle(color: Colors.white, fontSize: 12)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Referal statistikasi
-                    Row(
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('Taklif qilinganlar', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                                SizedBox(height: 4),
-                                Text(
-                                  '3 ta do\'st',
-                                  style: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
+                        const Icon(Icons.stars_rounded, color: AppColors.coinGold, size: 36),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Do\'stingizni taklif qiling — +50 tanga oling!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.text1(context),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('Jami mukofot', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                                SizedBox(height: 4),
-                                Text(
-                                  '+150 tanga',
-                                  style: TextStyle(color: AppColors.coinGold, fontSize: 15, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Har bir yangi ro\'yxatdan o\'tgan do\'stingiz uchun sizga ham, do\'stingizga ham 50 oltin tanga sovg\'a qilinadi.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.text2(context),
+                            fontSize: 12,
+                            height: 1.35,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Referal kodi qutisi
+                  Text(
+                    'Sizning shaxsiy referal kodingiz:',
+                    style: TextStyle(color: AppColors.textM(context), fontSize: 12),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.inputCol(context),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderCol(context)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.referralCode,
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: widget.referralCode));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                backgroundColor: AppColors.card,
+                                behavior: SnackBarBehavior.floating,
+                                content: Text(
+                                  'Referal kodi nusxalandi!',
+                                  style: TextStyle(color: Colors.white, fontSize: 13),
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.copy_rounded, size: 14, color: Colors.white),
+                          label: const Text('Nusxalash', style: TextStyle(color: Colors.white, fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Referal statistikasi (Haqiqiy backend ma'lumotlari)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.inputCol(context),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.borderCol(context)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Taklif qilinganlar', style: TextStyle(color: AppColors.textM(context), fontSize: 11)),
+                              const SizedBox(height: 4),
+                              _isLoading
+                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : Text(
+                                      '$_invitedCount ta do\'st',
+                                      style: TextStyle(color: AppColors.text1(context), fontSize: 15, fontWeight: FontWeight.bold),
+                                    ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.inputCol(context),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.borderCol(context)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Jami mukofot', style: TextStyle(color: AppColors.textM(context), fontSize: 11)),
+                              const SizedBox(height: 4),
+                              _isLoading
+                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : Text(
+                                      '+$_earnedCoins tanga',
+                                      style: const TextStyle(color: AppColors.coinGold, fontSize: 15, fontWeight: FontWeight.bold),
+                                    ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Do'stning referal kodini faollashtirish bo'limi
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.inputCol(context),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.borderCol(context)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Do\'stingizning referal kodini kiritish',
+                          style: TextStyle(
+                            color: AppColors.text1(context),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _hasUsedReferral
+                              ? 'Siz allaqachon referal kodini faollashtirgansiz (sovg\'a olingan).'
+                              : 'Do\'stingiz bergan kodni kiriting va hisobingizga +50 tanga oling.',
+                          style: TextStyle(
+                            color: _hasUsedReferral ? AppColors.success : AppColors.text2(context),
+                            fontSize: 11.5,
+                          ),
+                        ),
+                        if (!_hasUsedReferral) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _inputController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Masalan: ABDORA-DOST',
+                                    hintStyle: TextStyle(color: AppColors.textM(context), fontSize: 12),
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    filled: true,
+                                    fillColor: AppColors.cardBg(context),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: AppColors.borderCol(context)),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: AppColors.borderCol(context)),
+                                    ),
+                                  ),
+                                  style: TextStyle(color: AppColors.text1(context), fontSize: 13),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: _isSubmitting ? null : _applyReferral,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: _isSubmitting
+                                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                    : const Text('Faollashtirish', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

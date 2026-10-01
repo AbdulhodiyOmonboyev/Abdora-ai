@@ -132,6 +132,17 @@ const recordGameActivity = async (req, res, next) => {
       }).catch(() => {});
     }
 
+    // O'quvchiga o'z yutug'i haqida bildirishnoma jo'natish
+    await prisma.notification.create({
+      data: {
+        userId: studentId,
+        type: 'challenge',
+        title: mode === 'duel' ? (isWon ? "Duelda g'alaba qozondingiz!" : "Duel yakunlandi") : "O'yinda ball to'pladingiz",
+        message: `"${topicTitle}" mavzusida ${score} ball to'pladingiz (+${xpGained} XP, +${coinsGained} tanga)!`,
+        centerId: student.centerId || req.user.centerId || null,
+      },
+    }).catch(() => {});
+
     return success(res, {
       message: 'O\'yin faolligi muvaffaqiyatli saqlandi',
       activity: newActivity,

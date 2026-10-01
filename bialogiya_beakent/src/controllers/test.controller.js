@@ -28,6 +28,26 @@ const createTest = async (req, res, next) => {
 
     await prisma.test.update({ where: { id: test.id }, data: { totalPoints: test.questions.reduce((s, q) => s + q.points, 0) } });
 
+    // Guruhdagi talabalarga yangi test haqida bildirishnoma
+    try {
+      const students = await prisma.user.findMany({
+        where: { groupId, role: 'student', isActive: true },
+        select: { id: true },
+      });
+      if (students.length > 0) {
+        await prisma.notification.createMany({
+          data: students.map((s) => ({
+            userId: s.id,
+            type: 'exam',
+            title: 'Yangi test sinovi mavjud!',
+            message: `"${title}" testi guruhingiz uchun ochildi. O'z bilimingizni sinab ko'ring.`,
+            link: '/student/exams',
+            centerId,
+          })),
+        });
+      }
+    } catch (_) {}
+
     return success(res, test, 'Test created', 201);
   } catch (err) { next(err); }
 };
@@ -115,6 +135,20 @@ const submitTest = async (req, res, next) => {
         await prisma.result.update({ where: { id: result.id }, data: { aiAnalysis } });
       } catch (_) {}
     });
+
+    // O'quvchiga test natijasi haqida bildirishnoma
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: req.user.userId,
+          type: passed ? 'achievement' : 'info',
+          title: passed ? 'Testdan muvaffaqiyatli o\'tdingiz!' : 'Test yakunlandi',
+          message: `"${test.title}": ${score}/${totalPoints} ball (${percentage}%). ${passed ? "Tabriklaymiz!" : "Qaytadan harakat qilib ko'ring."}`,
+          link: '/student/exams',
+          centerId: test.centerId,
+        },
+      });
+    } catch (_) {}
 
     return success(res, { result, score, percentage, passed });
   } catch (err) { next(err); }

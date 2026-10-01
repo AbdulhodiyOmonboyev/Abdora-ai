@@ -174,7 +174,33 @@ const markAttendance = async (req, res, next) => {
             },
           },
         });
+
+        // O'quvchiga bildirishnoma jo'natish
+        await prisma.notification.create({
+          data: {
+            userId: updateItem.studentId,
+            type: updateItem.delta >= 0 ? 'achievement' : 'info',
+            title: 'Dars davomati va baho',
+            message: updateItem.reason,
+            centerId: group?.centerId || null,
+          },
+        }).catch(() => {});
       } catch (_) {}
+    }
+
+    // Baholangan, lekin tanga o'zgarmagan o'quvchilarga ham bildirishnoma
+    for (const r of cleanedRecords) {
+      if (r.grade !== null && !coinUpdates.some(u => u.studentId === r.studentId)) {
+        await prisma.notification.create({
+          data: {
+            userId: r.studentId,
+            type: 'info',
+            title: 'Darsdagi bahoyingiz',
+            message: `Davomat belgilandi. Sizga bugungi dars uchun ${r.grade}/10 baho qo'yildi.`,
+            centerId: group?.centerId || null,
+          },
+        }).catch(() => {});
+      }
     }
 
     return success(res, att, 'Davomat va baholar muvaffaqiyatli saqlandi');

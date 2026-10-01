@@ -26,6 +26,27 @@ const createHomework = async (req, res, next) => {
       data: { title, description, groupId, lessonId: lessonId || null, teacherId: req.user.userId, centerId, dueDate: new Date(dueDate), maxScore: parsedMaxScore, attachments },
       include: { group: { select: { id: true, name: true } }, teacher: { select: { id: true, name: true } } },
     });
+
+    // Guruhdagi talabalarga bildirishnoma yuborish
+    try {
+      const students = await prisma.user.findMany({
+        where: { groupId, role: 'student', isActive: true },
+        select: { id: true },
+      });
+      if (students.length > 0) {
+        await prisma.notification.createMany({
+          data: students.map((s) => ({
+            userId: s.id,
+            type: 'homework',
+            title: 'Yangi uyga vazifa!',
+            message: `"${title}" mavzusida yangi topshiriq yuklandi.`,
+            link: '/student/homework',
+            centerId,
+          })),
+        });
+      }
+    } catch (_) {}
+
     return success(res, hw, 'Homework created', 201);
   } catch (err) { next(err); }
 };
@@ -166,8 +187,22 @@ const gradeSubmission = async (req, res, next) => {
     const sub = await prisma.submission.update({
       where: { id },
       data: { finalScore: score, teacherGrade: { score, feedback }, status: 'graded' },
-      include: { student: { select: { id: true, name: true } } },
+      include: { student: { select: { id: true, name: true } }, homework: { select: { id: true, title: true } } },
     });
+
+    // O'quvchiga bildirishnoma yuborish
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: existing.studentId,
+          type: 'homework',
+          title: 'Uyga vazifangiz baholandi',
+          message: `"${existing.homework?.title || 'Uyga vazifa'}" bo'yicha baholandingiz: ${score} ball.${feedback ? " O'qituvchi izohi: " + feedback : ''}`,
+          link: '/student/homework',
+          centerId: existing.centerId || req.user.centerId || null,
+        },
+      });
+    } catch (_) {}
 
     return success(res, sub, 'Graded');
   } catch (err) { next(err); }
