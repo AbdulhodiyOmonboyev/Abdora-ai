@@ -1946,7 +1946,7 @@ class _ReferralSheetContentState extends State<_ReferralSheetContent> {
           await _fetchStats();
           // Profilni yangilash
           final auth = Provider.of<AuthProvider>(context, listen: false);
-          await auth.checkAuth();
+          await auth.tryAutoLogin();
         }
       } else {
         final msg = res.data?['message'] ?? 'Xatolik yuz berdi';

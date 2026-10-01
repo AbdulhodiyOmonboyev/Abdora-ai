@@ -46,6 +46,9 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  // checkAuth yordamchi aliasi
+  Future<bool> checkAuth() async => await tryAutoLogin();
+
   // Tizimga kirish
   Future<bool> login(String username, String password) async {
     _isLoading = true;
