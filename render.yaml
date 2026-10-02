@@ -28,7 +28,7 @@ services:
       # AI model overrides — update these on Render dashboard to switch models
       # without a code re-deploy (all have sensible defaults in code)
       - key: GEMINI_TEXT_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.5-flash
       - key: GEMINI_TTS_MODEL
         value: gemini-2.5-flash-preview-tts
       - key: GEMINI_IMAGE_MODEL

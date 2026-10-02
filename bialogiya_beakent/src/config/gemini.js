@@ -91,7 +91,7 @@ const updateCachedApiKey = (newKey) => {
 
 // Model names are overridable via env vars — Render dashboard can hot-swap them
 // without code re-deploy when Google releases a newer version.
-const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || 'gemini-2.5-flash';
+const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || 'gemini-3.5-flash';
 
 const getModel = (jsonMode = false) => {
   const key = getCleanApiKey();
