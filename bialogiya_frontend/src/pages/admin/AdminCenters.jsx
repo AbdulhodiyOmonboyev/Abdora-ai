@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2, Plus, Search, Pencil, Trash2, X,
   Users, BookOpen, GitBranch, ChevronRight, Loader2,
-  Phone, Mail, Globe, User, Lock, Check,
+  Phone, Mail, Globe, User, Lock, Check, Settings2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -198,10 +198,23 @@ function CenterCard({ center, onEdit, onDelete }) {
           <div className="text-xs" style={{ color: "var(--text-muted)" }}>
             {center.createdAt ? new Date(center.createdAt).toLocaleDateString("uz-UZ") : ""} da yaratilgan
           </div>
-          <Link to={`/admin/centers/${center.id}`}
-            className="flex items-center gap-1 text-xs font-medium hover:underline" style={{ color: "var(--primary)" }}>
-            Ko'rish <ChevronRight size={13} />
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              to={`/admin/centers/${center.id}/settings`}
+              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:bg-[var(--secondary-background)]"
+              style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
+              title="Markaz sozlamalari"
+            >
+              <Settings2 size={13} style={{ color: "var(--primary)" }} /> Sozlamalar
+            </Link>
+            <Link
+              to={`/admin/centers/${center.id}`}
+              className="flex items-center gap-1 text-xs font-semibold hover:underline"
+              style={{ color: "var(--primary)" }}
+            >
+              Ko'rish <ChevronRight size={13} />
+            </Link>
+          </div>
         </div>
       </div>
     </motion.div>

@@ -355,6 +355,13 @@ export default function AdminCenterDetail() {
         <div className="flex items-center gap-2">
           {!isEditing ? (
             <>
+              <Link
+                to={`/admin/centers/${id}/settings`}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-[var(--secondary-background)]"
+                style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
+              >
+                <Settings2 size={15} style={{ color: "var(--primary)" }} /> Sozlamalar sahifasi
+              </Link>
               <button
                 onClick={() => {
                   setEditForm({
