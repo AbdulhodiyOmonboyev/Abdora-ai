@@ -126,13 +126,24 @@ const PROVIDERS = [
     color: '#4285F4',
     bg: '#EBF3FF',
     docsUrl: 'https://aistudio.google.com/app/apikey',
-    description: 'Gemini 2.5 Flash, Pro, TTS, Live modellar',
+    description: 'Gemini 3.x, 2.5 — Matn, TTS, Rasm, Live Audio modellari',
     models: [
-      { id: 'gemini-2.5-flash',   label: 'Gemini 2.5 Flash',   use: 'Asosiy AI (tez)',   recommended: true, Icon: GeminiFlashIcon },
-      { id: 'gemini-2.5-pro',     label: 'Gemini 2.5 Pro',     use: 'Murakkab topshiriqlar', Icon: GeminiProIcon },
-      { id: 'gemini-2.0-flash',   label: 'Gemini 2.0 Flash',   use: 'Tez generatsiya', Icon: GeminiFlashIcon },
-      { id: 'gemini-tts',         label: 'Gemini TTS',          use: 'Ovozli dars (Audio)', Icon: GeminiTtsIcon },
-      { id: 'gemini-live',        label: 'Gemini Live',         use: 'Speaking practice', Icon: GeminiLiveIcon },
+      // ── Gemini 3.x (Yangi) ──────────────────────────────────
+      { id: 'gemini-3.8-flash',          label: 'Gemini 3.8 Flash',              use: 'Eng yangi — tez va kuchli',          recommended: true, Icon: GeminiFlashIcon,  badge: 'Yangi' },
+      { id: 'gemini-3.5-flash',          label: 'Gemini 3.5 Flash',              use: 'Tez, yuqori sifat, arzon',           recommended: false, Icon: GeminiFlashIcon, badge: 'Yangi' },
+      { id: 'gemini-3.5-flash-lite',     label: 'Gemini 3.5 Flash Lite',         use: 'Eng tez, ko\'p so\'rov uchun',      Icon: GeminiFlashIcon },
+      // ── Gemini 2.5 (Ishonchli) ──────────────────────────────
+      { id: 'gemini-2.5-flash',          label: 'Gemini 2.5 Flash',              use: 'Ishonchli asosiy model',             Icon: GeminiFlashIcon },
+      { id: 'gemini-2.5-pro',            label: 'Gemini 2.5 Pro',                use: 'Murakkab, katta vazifalar',          Icon: GeminiProIcon },
+      { id: 'gemini-2.0-flash',          label: 'Gemini 2.0 Flash',              use: 'Eski — backup uchun',               Icon: GeminiFlashIcon },
+      // ── TTS (Ovoz sintezi) ───────────────────────────────────
+      { id: 'gemini-3.8-flash-tts',      label: 'Gemini 3.8 Flash TTS',          use: 'Studio sifatli TTS (Yangi)',         Icon: GeminiTtsIcon,   badge: 'Yangi' },
+      { id: 'gemini-3.8-flash-lite-tts', label: 'Gemini 3.8 Flash Lite TTS',     use: 'Real-vaqt TTS, past kechikish',     Icon: GeminiTtsIcon },
+      { id: 'gemini-2.5-flash-preview-tts', label: 'Gemini 2.5 Flash TTS',       use: 'TTS (hozirgi ishlatilmoqda)',        Icon: GeminiTtsIcon },
+      // ── Live / Speaking ─────────────────────────────────────
+      { id: 'gemini-2.5-flash-native-audio-preview', label: 'Gemini Live (2.5)', use: 'Real-vaqt ovozli suhbat',           Icon: GeminiLiveIcon },
+      // ── Rasm generatsiya ────────────────────────────────────
+      { id: 'gemini-2.5-flash-image',    label: 'Gemini 2.5 Flash Image',        use: 'Dars slaydlari uchun rasm',         Icon: GeminiFlashIcon },
     ],
   },
   {
@@ -142,14 +153,18 @@ const PROVIDERS = [
     color: '#10A37F',
     bg: '#F0FFF8',
     docsUrl: 'https://platform.openai.com/api-keys',
-    description: 'GPT-4o, GPT-4 Turbo, DALL-E 3, Whisper',
+    description: 'GPT-4o, GPT-4.1, o3, DALL-E 3, Whisper, TTS',
     models: [
-      { id: 'gpt-4o',             label: 'GPT-4o',              use: 'Asosiy AI', recommended: true, Icon: OpenAIIcon },
-      { id: 'gpt-4-turbo',        label: 'GPT-4 Turbo',         use: 'Katta kontekst', Icon: OpenAIIcon },
-      { id: 'gpt-3.5-turbo',      label: 'GPT-3.5 Turbo',       use: 'Tez va arzon', Icon: OpenAIIcon },
-      { id: 'dall-e-3',           label: 'DALL·E 3',            use: 'Rasm generatsiyasi', Icon: OpenAIIcon },
-      { id: 'whisper-1',          label: 'Whisper',             use: 'Audio transkripsiya', Icon: GeminiTtsIcon },
-      { id: 'tts-1',              label: 'TTS-1',               use: 'Matndan ovoz', Icon: GeminiTtsIcon },
+      { id: 'gpt-4o',             label: 'GPT-4o',          use: 'Asosiy — tez va kuchli',   recommended: true, Icon: OpenAIIcon },
+      { id: 'gpt-4.1',           label: 'GPT-4.1',          use: 'Yangi, code+logic yaxshi',  Icon: OpenAIIcon,  badge: 'Yangi' },
+      { id: 'gpt-4o-mini',        label: 'GPT-4o Mini',     use: 'Tez, arzon',               Icon: OpenAIIcon },
+      { id: 'o3-mini',            label: 'o3-mini',          use: 'Murakkab tafakkur',         Icon: OpenAIIcon },
+      { id: 'gpt-4-turbo',        label: 'GPT-4 Turbo',     use: 'Katta kontekst (legacy)',   Icon: OpenAIIcon },
+      { id: 'gpt-3.5-turbo',      label: 'GPT-3.5 Turbo',   use: 'Eng arzon backup',          Icon: OpenAIIcon },
+      { id: 'dall-e-3',           label: 'DALL·E 3',         use: 'Rasm generatsiyasi',        Icon: OpenAIIcon },
+      { id: 'tts-1',              label: 'TTS-1',            use: 'Matndan ovoz',              Icon: GeminiTtsIcon },
+      { id: 'tts-1-hd',           label: 'TTS-1 HD',         use: 'Yuqori sifat TTS',          Icon: GeminiTtsIcon },
+      { id: 'whisper-1',          label: 'Whisper',          use: 'Audio → Matn (STT)',        Icon: GeminiTtsIcon },
     ],
   },
   {
@@ -159,11 +174,12 @@ const PROVIDERS = [
     color: '#CC9B6D',
     bg: '#FFF9F2',
     docsUrl: 'https://console.anthropic.com/settings/keys',
-    description: 'Claude 3.5 Sonnet, Haiku, Opus',
+    description: 'Claude 3.5, Claude 3.7 — Uzun kontekst, xavfsiz AI',
     models: [
-      { id: 'claude-3-5-sonnet',  label: 'Claude 3.5 Sonnet',  use: 'Asosiy AI', recommended: true, Icon: AnthropicIcon },
-      { id: 'claude-3-5-haiku',   label: 'Claude 3.5 Haiku',   use: 'Tez va arzon', Icon: AnthropicIcon },
-      { id: 'claude-3-opus',      label: 'Claude 3 Opus',       use: 'Eng kuchli', Icon: AnthropicIcon },
+      { id: 'claude-3-7-sonnet',  label: 'Claude 3.7 Sonnet', use: 'Eng yangi, kuchli',     recommended: true, Icon: AnthropicIcon, badge: 'Yangi' },
+      { id: 'claude-3-5-sonnet',  label: 'Claude 3.5 Sonnet', use: 'Ishonchli asosiy',      Icon: AnthropicIcon },
+      { id: 'claude-3-5-haiku',   label: 'Claude 3.5 Haiku',  use: 'Tez va arzon',          Icon: AnthropicIcon },
+      { id: 'claude-3-opus',      label: 'Claude 3 Opus',     use: 'Eng murakkab (legacy)',  Icon: AnthropicIcon },
     ],
   },
   {
@@ -173,7 +189,7 @@ const PROVIDERS = [
     color: '#7C3AED',
     bg: '#F5F0FF',
     docsUrl: null,
-    description: 'OpenAI API-compatible endpoint (Ollama, Together, Groq...)',
+    description: 'OpenAI API-compatible endpoint (Ollama, Together, Groq, Mistral...)',
     models: [],
   },
 ];
@@ -597,7 +613,7 @@ export default function AdminAIAgents() {
                           <Icon size={18} />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium" style={{ color: enabled ? 'var(--primary)' : 'var(--text-primary)' }}>
                               {m.label}
                             </span>
@@ -605,6 +621,12 @@ export default function AdminAIAgents() {
                               <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
                                 style={{ background: 'var(--primary)', color: 'white' }}>
                                 Tavsiya
+                              </span>
+                            )}
+                            {m.badge && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                                style={{ background: '#10b981', color: 'white' }}>
+                                {m.badge}
                               </span>
                             )}
                           </div>
