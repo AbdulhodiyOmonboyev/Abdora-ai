@@ -9,6 +9,10 @@ import ErrorBoundary from './components/ui/ErrorBoundary';
 
 // Shared
 import ProfilePage from './pages/shared/ProfilePage';
+import AdminManagers from './pages/admin/AdminManagers';
+import AdminManagerDetail from './pages/admin/AdminManagerDetail';
+import AdminUsers from './pages/admin/AdminUsers';
+import LeadDetail from './pages/crm/LeadDetail';
 
 // Public
 import LandingPage from './pages/public/LandingPage';
@@ -240,6 +244,10 @@ export default function App() {
           <Route path="reception/:id" element={<ReceptionStaffDetail />} />
           <Route path="students" element={<AdminStudents />} />
           <Route path="students/:id" element={<UserDetail />} />
+          <Route path="managers" element={<AdminManagers />} />
+          <Route path="managers/:id" element={<AdminManagerDetail />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="groups" element={<AdminGroups />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
@@ -268,6 +276,7 @@ export default function App() {
         {/* Leads CRM and Finance are shared by the management roles */}
         <Route path="/leads" element={<ProtectedRoute role={['manager', 'admin', 'reception']} permission="canManageLeads"><MainLayout /></ProtectedRoute>}>
           <Route index element={<ManagerLeads />} />
+          <Route path=":id" element={<LeadDetail />} />
         </Route>
         <Route path="/finance" element={<ProtectedRoute role={['admin', 'manager', 'reception']} permission="canViewFinance"><MainLayout /></ProtectedRoute>}>
           <Route index element={<FinanceDashboard />} />

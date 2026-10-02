@@ -49,6 +49,12 @@ const adminLinks = [
   { to: '/admin/applications', icon: Inbox,           key: 'applications' },
   { to: '/admin/centers',      icon: Building2,       key: 'centers' },
   { to: '/admin/branches',     icon: GitBranch,       key: 'branches' },
+  { to: '/admin/managers',     icon: UserCog,         key: 'managers' },
+  { to: '/admin/teachers',     icon: BookMarked,      key: 'teachers' },
+  { to: '/admin/reception',    icon: UserCheck,       key: 'reception' },
+  { to: '/admin/students',     icon: GraduationCap,   key: 'students' },
+  { to: '/admin/groups',       icon: Users,           key: 'groups' },
+  { to: '/admin/users',        icon: Users,           key: 'users' },
   { to: '/admin/ai-agents',    icon: Bot,             key: 'aiAgents' },
   { to: '/admin/settings',     icon: Settings,        key: 'settings' },
 ];
