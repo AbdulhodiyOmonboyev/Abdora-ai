@@ -67,6 +67,8 @@ const createSpeakingSession = async (req, res, next) => {
       model: LIVE_MODEL,
       topic: resolvedTopic,
       expireTime,
+      instructions,                        // always returned so client can put it in setup
+      isApiKey: token === apiKey,          // true = API Studio key; false = ephemeral token
     });
   } catch (err) {
     console.error('Gemini Live session error:', err.message);
