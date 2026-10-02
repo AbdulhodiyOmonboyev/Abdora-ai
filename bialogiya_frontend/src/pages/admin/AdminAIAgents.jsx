@@ -199,10 +199,11 @@ const PROVIDERS = [
 const emptyAgent = () => ({
   name: '',
   provider: 'gemini',
+  model: 'gemini-3.8-flash',
   apiKey: '',
   baseUrl: '',
   isActive: true,
-  enabledModels: [],
+  enabledModels: ['gemini-3.8-flash'],
   usedFor: [],
   notes: '',
 });
@@ -283,12 +284,24 @@ function AgentCard({ agent, onEdit, onDelete, onToggle }) {
         )}
       </div>
 
+      {/* Primary active model */}
+      <div className="mb-3 flex items-center justify-between text-xs px-3 py-2 rounded-xl"
+        style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)' }}>
+        <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
+          <Cpu size={12} className="inline mr-1" />
+          Asosiy model:
+        </span>
+        <span className="font-bold text-xs flex items-center gap-1.5" style={{ color: provider.color }}>
+          <ModelIcon modelId={agent.model} providerKey={agent.provider} size={13} />
+          {agent.model || 'Standart'}
+        </span>
+      </div>
+
       {/* Enabled models */}
       {agent.enabledModels?.length > 0 && (
         <div className="mb-3">
           <div className="text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-            <Cpu size={11} className="inline mr-1" />
-            Yoqilgan modellar
+            Qo'shimcha modellar
           </div>
           <div className="flex flex-wrap gap-1.5">
             {agent.enabledModels.map(m => (
@@ -375,7 +388,17 @@ export default function AdminAIAgents() {
   });
 
   const openCreate = () => { setForm(emptyAgent()); setEditingAgent(null); setShowKey(false); setModalOpen(true); };
-  const openEdit = (agent) => { setForm({ ...agent }); setEditingAgent(agent); setShowKey(false); setModalOpen(true); };
+  const openEdit = (agent) => {
+    const curModel = agent.model || agent.enabledModels?.[0] || 'gemini-3.8-flash';
+    setForm({
+      ...agent,
+      model: curModel,
+      enabledModels: agent.enabledModels?.length ? agent.enabledModels : [curModel],
+    });
+    setEditingAgent(agent);
+    setShowKey(false);
+    setModalOpen(true);
+  };
   const closeModal = () => { setModalOpen(false); setEditingAgent(null); };
 
   const handleSubmit = () => {
@@ -523,7 +546,13 @@ export default function AdminAIAgents() {
                   <button
                     key={p.key}
                     type="button"
-                    onClick={() => { setF('provider', p.key); setF('enabledModels', []); }}
+                    onClick={() => {
+                      const pModels = p.models || [];
+                      const def = pModels[0]?.id || '';
+                      setF('provider', p.key);
+                      setF('model', def);
+                      setF('enabledModels', def ? [def] : []);
+                    }}
                     className={`p-3 rounded-xl border-2 text-left transition-all ${
                       active ? 'border-[var(--primary)]' : 'border-[var(--border)] hover:border-[var(--primary)]/40'
                     }`}
@@ -543,6 +572,51 @@ export default function AdminAIAgents() {
                 {currentProvider.description}
               </p>
             )}
+          </div>
+
+          {/* AI Model Selection Dropdown (Select) */}
+          <div>
+            <label className="form-label flex items-center justify-between">
+              <span>Ishlatiladigan AI Model (Select) *</span>
+              <span className="text-[11px] font-normal" style={{ color: 'var(--primary)' }}>
+                Asosiy modelni tanlang
+              </span>
+            </label>
+            <select
+              value={form.model || ''}
+              onChange={e => {
+                const selected = e.target.value;
+                setF('model', selected);
+                const cur = form.enabledModels || [];
+                if (!cur.includes(selected)) {
+                  setF('enabledModels', [selected, ...cur]);
+                }
+              }}
+              className="input-field text-sm font-semibold cursor-pointer"
+            >
+              {currentProvider.models?.length ? (
+                currentProvider.models.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.label} {m.badge ? `[${m.badge}]` : ''} {m.recommended ? '[Tavsiya]' : ''} — {m.use}
+                  </option>
+                ))
+              ) : (
+                <option value="custom">Maxsus model</option>
+              )}
+            </select>
+            {form.provider === 'custom' && (
+              <input
+                type="text"
+                className="input-field mt-2 font-mono text-sm"
+                placeholder="Model nomini kiriting (masalan: mistral-large, llama-3.3...)"
+                value={form.model}
+                onChange={e => setF('model', e.target.value)}
+              />
+            )}
+            <p className="form-hint mt-1.5 flex items-center gap-1.5">
+              <CheckCircle2 size={13} className="text-emerald-500 inline flex-shrink-0" />
+              Agent so'rovlarni bajarishda dasturga yozilgan standart AI dan emas, aynan shu tanlangan modeldan foydalanadi.
+            </p>
           </div>
 
           {/* API Key */}
@@ -592,8 +666,8 @@ export default function AdminAIAgents() {
           {/* Enabled models */}
           {currentProvider.models.length > 0 && (
             <div>
-              <label className="form-label">Yoqilgan modellar</label>
-              <p className="form-hint mb-2">Bu markaz ishlatishi mumkin bo'lgan modellar</p>
+              <label className="form-label">Qo'shimcha yoqilgan modellar</label>
+              <p className="form-hint mb-2">Ushbu agent qo'llab-quvvatlaydigan boshqa modellar</p>
               <div className="space-y-2">
                 {currentProvider.models.map(m => {
                   const enabled = (form.enabledModels || []).includes(m.id);
