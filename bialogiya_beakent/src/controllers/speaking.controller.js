@@ -4,9 +4,10 @@ const { success, error } = require('../utils/apiResponse');
 const { getCleanApiKey, getApiKeyAsync } = require('../config/gemini');
 const { getSpeakingCoachInstructions } = require('../services/ai/prompts');
 
-// Gemini Live model names are preview/rotating - override via env if Google
-// renames/retires this one. See https://ai.google.dev/gemini-api/docs/models
-const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview-09-2025';
+// Gemini Live model — override via GEMINI_LIVE_MODEL env var on Render
+// without code re-deploy when Google releases a new version.
+// Latest as of 2026-10: gemini-2.5-flash-native-audio-preview (stable preview)
+const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview';
 
 // POST /api/speaking/session
 // Creates a Gemini Live session for real-time bidirectional audio.
