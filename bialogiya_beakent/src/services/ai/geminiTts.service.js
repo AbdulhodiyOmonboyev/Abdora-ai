@@ -29,17 +29,19 @@ const pcmToWav = (pcmBuffer, sampleRate = 24000, channels = 1, bitsPerSample = 1
   return Buffer.concat([header, pcmBuffer]);
 };
 
-const { getCleanApiKey, getApiKeyAsync } = require('../../config/gemini');
+const { getCleanApiKey, getApiKeyAsync, resolveAiConfig } = require('../../config/gemini');
 
 /**
  * Synthesize speech for a piece of text. Returns a Buffer of WAV audio.
  */
-const synthesizeSpeech = async (text, { voice = DEFAULT_VOICE } = {}) => {
+const synthesizeSpeech = async (text, { voice = DEFAULT_VOICE, centerId = null } = {}) => {
   const input = (text || '').trim().slice(0, MAX_CHARS);
-  const apiKey = (await getApiKeyAsync()) || getCleanApiKey();
+  const aiConfig = await resolveAiConfig(centerId);
+  const apiKey = aiConfig?.apiKey || (await getApiKeyAsync()) || getCleanApiKey();
   if (!apiKey) throw new Error('AI API kaliti serverda sozlanmagan');
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+  const ttsModel = process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel}:generateContent`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },

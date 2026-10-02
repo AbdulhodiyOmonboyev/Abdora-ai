@@ -1,4 +1,4 @@
-const { getModel } = require('../../config/gemini');
+const { getModel, getModelAsync } = require('../../config/gemini');
 const { getChatSystemPrompt } = require('./prompts');
 
 const generateFallbackChatReply = (lesson, userMessage, language = 'uz') => {
@@ -25,7 +25,7 @@ const chatWithAI = async (lesson, messages, userMessage, style = 'normal', langu
 
     const fullPrompt = `${systemPrompt}\n\nConversation so far:\n${historyText}\n\nStudent: ${userMessage}\nTeacher AI:`;
 
-    const model = getModel(false);
+    const model = await getModelAsync({ jsonMode: false, centerId: lesson?.centerId });
     const result = await model.generateContent(fullPrompt);
     const text = result?.response?.text ? result.response.text().trim() : '';
     if (text) return text;

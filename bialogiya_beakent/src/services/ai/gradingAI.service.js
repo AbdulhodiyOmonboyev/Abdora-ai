@@ -1,10 +1,10 @@
-const { getModel } = require('../../config/gemini');
+const { getModel, getModelAsync } = require('../../config/gemini');
 const { getGradingPrompt, getResultAnalysisPrompt, getTestInsightsPrompt } = require('./prompts');
 
-const gradeHomework = async (homeworkTitle, description, studentAnswer, maxScore = 100) => {
+const gradeHomework = async (homeworkTitle, description, studentAnswer, maxScore = 100, centerId = null) => {
   try {
     const prompt = `You are an expert teacher. Grade student work fairly and constructively. Always respond in valid JSON.\n\n${getGradingPrompt(homeworkTitle, description, studentAnswer, maxScore)}`;
-    const model = getModel(true);
+    const model = await getModelAsync({ jsonMode: true, centerId });
     const result = await model.generateContent(prompt);
     return JSON.parse(result.response.text());
   } catch (err) {

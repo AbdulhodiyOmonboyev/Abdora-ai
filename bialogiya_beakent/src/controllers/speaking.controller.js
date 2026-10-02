@@ -1,22 +1,20 @@
 const { GoogleGenAI } = require('@google/genai');
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
-const { getCleanApiKey, getApiKeyAsync } = require('../config/gemini');
+const { getCleanApiKey, getApiKeyAsync, resolveAiConfig } = require('../config/gemini');
 const { getSpeakingCoachInstructions } = require('../services/ai/prompts');
 
-// Gemini Live model — override via GEMINI_LIVE_MODEL env var on Render
-// without code re-deploy when Google releases a new version.
-// Latest as of 2026-10: gemini-2.5-flash-native-audio-preview (stable preview)
+// Gemini Live model fallback
 const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview';
 
 // POST /api/speaking/session
-// Creates a Gemini Live session for real-time bidirectional audio.
-// If ephemeral token creation succeeds (Vertex AI/OAuth), it uses the minted token.
-// If ephemeral token is unsupported by the API key (AI Studio keys), it safely falls
-// back to the cleaned API key so the client WebSocket can connect without 502 error.
 const createSpeakingSession = async (req, res, next) => {
   try {
-    const apiKey = (await getApiKeyAsync()) || getCleanApiKey();
+    const centerId = req.user?.centerId || null;
+    const aiConfig = await resolveAiConfig(centerId);
+    const apiKey = aiConfig?.apiKey || (await getApiKeyAsync()) || getCleanApiKey();
+    const activeLiveModel = aiConfig?.liveModel || LIVE_MODEL;
+
     if (!apiKey) {
       return error(res, 'AI API kaliti serverda sozlanmagan', 400);
     }
@@ -46,7 +44,7 @@ const createSpeakingSession = async (req, res, next) => {
           uses: 1,
           expireTime,
           liveConnectConstraints: {
-            model: LIVE_MODEL,
+            model: activeLiveModel,
             config: {
               responseModalities: ['AUDIO'],
               systemInstruction: instructions,
@@ -65,7 +63,7 @@ const createSpeakingSession = async (req, res, next) => {
 
     return success(res, {
       token,
-      model: LIVE_MODEL,
+      model: activeLiveModel,
       topic: resolvedTopic,
       expireTime,
       instructions,                        // always returned so client can put it in setup

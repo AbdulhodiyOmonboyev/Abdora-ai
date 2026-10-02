@@ -210,6 +210,8 @@ const DEFAULT_SETTINGS = {
   aiSpeakingPractice: true,
   aiFinanceAdvice: true,
   aiChatEnabled: true,
+  aiModel: 'gemini-3.8-flash',
+  aiLiveModel: 'gemini-2.5-flash-native-audio-preview',
 
   // Notifications
   notifyOnPayment: true,
@@ -1283,9 +1285,60 @@ export default function AdminSettings() {
                   >
                     <AlertCircle size={16} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: 2 }} />
                     <div className="text-xs" style={{ color: 'var(--primary-600)' }}>
-                      AI agentlarni qo'shish va API tokenlarni boshqarish uchun{' '}
+                      AI agentlarni to'liq API kalitlari bilan boshqarish uchun{' '}
                       <a href="/admin/ai-agents" className="font-semibold underline">AI Agentlar sahifasiga</a> o'ting.
-                      Bu yerda faqat funksiyalarni yoqish/o'chirish mumkin.
+                      Quyida asosiy AI modeli va funksiyalarni boshqarishingiz mumkin.
+                    </div>
+                  </div>
+
+                  {/* AI Model Selection */}
+                  <div className="p-4 rounded-2xl border space-y-4" style={{ borderColor: 'var(--border)', background: 'var(--secondary-background)' }}>
+                    <div className="flex items-center gap-2">
+                      <Bot size={18} style={{ color: 'var(--primary)' }} />
+                      <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Asosiy AI Model Dvigateli</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-primary)' }}>
+                          Matn va Dars Generatsiya Modeli
+                        </label>
+                        <select
+                          className="input-field text-sm"
+                          value={settings.aiModel || 'gemini-3.8-flash'}
+                          onChange={e => set('aiModel', e.target.value)}
+                        >
+                          <optgroup label="Google Gemini">
+                            <option value="gemini-3.8-flash">Gemini 3.8 Flash [Eng yangi / Tavsiya]</option>
+                            <option value="gemini-3.5-flash">Gemini 3.5 Flash [Yangi / Tezkor]</option>
+                            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                          </optgroup>
+                          <optgroup label="OpenAI">
+                            <option value="gpt-4o">GPT-4o [Tavsiya]</option>
+                            <option value="gpt-4.1">GPT-4.1 [Yangi]</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini</option>
+                            <option value="o3-mini">o3-mini</option>
+                          </optgroup>
+                          <optgroup label="Anthropic">
+                            <option value="claude-3-7-sonnet">Claude 3.7 Sonnet [Yangi]</option>
+                            <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                          </optgroup>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-primary)' }}>
+                          Jonli Speaking Ovoz Modeli
+                        </label>
+                        <input
+                          className="input-field text-sm font-mono"
+                          value={settings.aiLiveModel || 'gemini-2.5-flash-native-audio-preview'}
+                          onChange={e => set('aiLiveModel', e.target.value)}
+                          placeholder="gemini-2.5-flash-native-audio-preview"
+                        />
+                      </div>
                     </div>
                   </div>
 

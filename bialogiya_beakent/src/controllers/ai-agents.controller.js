@@ -57,7 +57,7 @@ const createAIAgent = async (req, res, next) => {
     });
 
     if (agent.isActive && agent.apiKey) {
-      updateCachedApiKey(agent.apiKey);
+      updateCachedApiKey({ apiKey: agent.apiKey, model: agent.model, provider: agent.provider });
     }
 
     return success(res, formatAgent(agent), 'AI Agent qo\'shildi', 201);
@@ -92,7 +92,7 @@ const updateAIAgent = async (req, res, next) => {
     });
 
     if (updated.isActive && updated.apiKey) {
-      updateCachedApiKey(updated.apiKey);
+      updateCachedApiKey({ apiKey: updated.apiKey, model: updated.model, provider: updated.provider });
     } else {
       updateCachedApiKey(null);
     }

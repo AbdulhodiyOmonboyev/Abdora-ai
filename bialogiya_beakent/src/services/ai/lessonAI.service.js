@@ -1,4 +1,4 @@
-const { getModel } = require('../../config/gemini');
+const { getModel, getModelAsync } = require('../../config/gemini');
 const { prisma } = require('../../config/db');
 const { LESSON_SYSTEM_PROMPT, getLessonGenerationPrompt } = require('./prompts');
 const { sanitizeAiContent } = require('../../utils/sanitizeAiText');
@@ -7,7 +7,8 @@ const generateLessonAI = async (lessonId, title, content, language = 'uz') => {
   await prisma.lesson.update({ where: { id: lessonId }, data: { aiContent: { status: 'generating' } } });
 
   try {
-    const model = getModel(true);
+    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId }, select: { centerId: true } });
+    const model = await getModelAsync({ jsonMode: true, centerId: lesson?.centerId });
     const prompt = `${LESSON_SYSTEM_PROMPT}\n\n${getLessonGenerationPrompt(title, content || title, language)}`;
     const result = await model.generateContent(prompt);
     const text = result.response.text();
