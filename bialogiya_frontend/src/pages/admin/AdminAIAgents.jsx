@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bot, Plus, Trash2, Eye, EyeOff, Check, X, RefreshCw,
   Sparkles, Key, Cpu, ShieldCheck, ChevronDown, AlertCircle,
-  ExternalLink, Copy, Settings2,
+  ExternalLink, Copy, Settings2, CheckCircle2,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -106,7 +106,7 @@ const CustomIcon = ({ size = 22 }) => (
 
 /* Helper to render the matching SVG icon for any model ID */
 const ModelIcon = ({ modelId, providerKey, size = 13 }) => {
-  if (!modelId) return null;
+  if (!modelId || typeof modelId !== 'string') return <GeminiIcon size={size} />;
   const id = modelId.toLowerCase();
   if (id.includes('tts') || id.includes('whisper')) return <GeminiTtsIcon size={size} />;
   if (id.includes('live')) return <GeminiLiveIcon size={size} />;
