@@ -133,7 +133,7 @@ const createCenter = async (req, res, next) => {
 const updateCenter = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, address, phone, isActive, settings } = req.body;
+    const { name, address, phone, email, website, isActive, settings } = req.body;
 
     const existing = await prisma.center.findUnique({ where: { id } });
     if (!existing) return error(res, 'O\'quv markaz topilmadi', 404);
@@ -144,6 +144,8 @@ const updateCenter = async (req, res, next) => {
         ...(name !== undefined && { name: name.trim() }),
         ...(address !== undefined && { address: address?.trim() || null }),
         ...(phone !== undefined && { phone: phone?.trim() || null }),
+        ...(email !== undefined && { email: email?.trim() || null }),
+        ...(website !== undefined && { website: website?.trim() || null }),
         ...(isActive !== undefined && { isActive }),
         ...(settings !== undefined && { settings }),
       },
@@ -215,6 +217,7 @@ const getCenterDetail = async (req, res, next) => {
 
     return success(res, {
       ...center,
+      managers: center.users, // alias for frontend compatibility
       _count: {
         ...center._count,
         students: studentsCount,
