@@ -147,7 +147,7 @@ function CenterCard({ center, onEdit, onDelete }) {
       style={{ background: "var(--card-background)", border: "1px solid var(--border)" }}>
       <div className="h-2" style={{ background: color }} />
       <div className="p-5">
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: color }}>
               {center.name?.[0]?.toUpperCase()}
@@ -165,6 +165,13 @@ function CenterCard({ center, onEdit, onDelete }) {
               <Trash2 size={14} className="text-red-400" />
             </button>
           </div>
+        </div>
+
+        {/* AI Model Badge */}
+        <div className="mb-3.5 flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg border w-fit"
+          style={{ borderColor: "var(--border)", background: "var(--secondary-background)", color: "var(--text-secondary)" }}>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>AI Model: <strong style={{ color: "var(--text-primary)" }}>{center.settings?.aiConfig?.model || "Standart"}</strong></span>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-4">

@@ -309,7 +309,7 @@ export default function AdminDashboard() {
                   {data.centers.map((c) => (
                     <tr
                       key={c.id}
-                      onClick={() => navigate(`/admin/centers`)}
+                      onClick={() => navigate(`/admin/centers/${c.id}`)}
                       style={{ cursor: 'pointer' }}
                     >
                       <td>
