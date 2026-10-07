@@ -14,6 +14,7 @@ import StatusBadge from "../../components/ui/StatusBadge";
 import PhoneInput from "../../components/ui/PhoneInput";
 import { cleanPhone } from "../../utils/formatPhone";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { useBranchStore } from "../../store/branchStore";
 
 export default function AdminCenterDetail() {
   const { id } = useParams();
@@ -59,6 +60,10 @@ export default function AdminCenterDetail() {
     onSuccess: () => {
       toast.success("O'quv markaz o'chirildi!");
       qc.invalidateQueries({ queryKey: ["admin-centers"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+      qc.invalidateQueries({ queryKey: ["header-branches"] });
+      qc.invalidateQueries({ queryKey: ["admin-branches"] });
+      useBranchStore.getState().resetBranch();
       navigate("/admin/centers");
     },
     onError: (e) => toast.error(e.response?.data?.message || "Xatolik yuz berdi"),

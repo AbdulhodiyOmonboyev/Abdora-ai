@@ -101,8 +101,21 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
     queryKey: ['header-branches', user?.role],
     queryFn: () => api.get('/admin/branches').then(r => (Array.isArray(r.data?.data) ? r.data.data : [])).catch(() => []),
     enabled: Boolean(isManagement),
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 30,
   });
+
+  // Agar tanlangan filial bazadan o'chirilgan bo'lsa yoki filiallar qolmagan bo'lsa, avtomatik 'Barcha filiallar'ga qaytarish
+  useEffect(() => {
+    if (!isLoadingBranches && Array.isArray(branches)) {
+      if (branches.length === 0) {
+        if (selectedBranchId || (selectedBranchName && selectedBranchName !== 'Barcha filiallar' && selectedBranchName !== (t('all_branches') || 'Barcha filiallar'))) {
+          setSelectedBranch('', 'Barcha filiallar');
+        }
+      } else if (selectedBranchId && !branches.some((b) => b.id === selectedBranchId)) {
+        setSelectedBranch('', 'Barcha filiallar');
+      }
+    }
+  }, [branches, selectedBranchId, selectedBranchName, isLoadingBranches, setSelectedBranch, t]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(headerSearch.trim()), 250);

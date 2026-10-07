@@ -11,6 +11,7 @@ import toast from "react-hot-toast";
 import api from "../../config/axios";
 import PhoneInput from "../../components/ui/PhoneInput";
 import { cleanPhone } from "../../utils/formatPhone";
+import { useBranchStore } from "../../store/branchStore";
 
 const emptyCenter = {
   name: "", phone: "+998 ", email: "", address: "", website: "",
@@ -244,6 +245,8 @@ export default function AdminCenters() {
     onSuccess: () => {
       toast.success("O'quv markaz yaratildi!");
       qc.invalidateQueries({ queryKey: ["admin-centers"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+      qc.invalidateQueries({ queryKey: ["header-branches"] });
       setModalOpen(false);
     },
     onError: (e) => toast.error(e.response?.data?.message || "Xato yuz berdi"),
@@ -254,6 +257,8 @@ export default function AdminCenters() {
     onSuccess: () => {
       toast.success("Markaz yangilandi!");
       qc.invalidateQueries({ queryKey: ["admin-centers"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+      qc.invalidateQueries({ queryKey: ["header-branches"] });
       setEditTarget(null);
     },
     onError: (e) => toast.error(e.response?.data?.message || "Xato yuz berdi"),
@@ -264,6 +269,9 @@ export default function AdminCenters() {
     onSuccess: () => {
       toast.success("O'quv markaz o'chirildi");
       qc.invalidateQueries({ queryKey: ["admin-centers"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+      qc.invalidateQueries({ queryKey: ["header-branches"] });
+      useBranchStore.getState().resetBranch();
     },
     onError: (e) => toast.error(e.response?.data?.message || "Xato yuz berdi"),
   });

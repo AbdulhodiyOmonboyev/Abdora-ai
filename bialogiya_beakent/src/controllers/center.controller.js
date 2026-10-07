@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
 const { generateUsername, generatePassword } = require('../utils/generateCredentials');
+const cache = require('../utils/simpleCache');
+const { cleanupOrphanedRecords } = require('../utils/cleanupOrphans');
 
 // GET /admin/centers
 const getCenters = async (req, res, next) => {
@@ -118,7 +120,8 @@ const createCenter = async (req, res, next) => {
         password: rawPassword,
       };
     }
-
+ 
+    cache.flushAll();
     return success(res, {
       center,
       manager,
@@ -151,6 +154,7 @@ const updateCenter = async (req, res, next) => {
       },
     });
 
+    cache.flushAll();
     return success(res, updated, 'O\'quv markaz yangilandi');
   } catch (err) {
     next(err);
@@ -273,6 +277,9 @@ const deleteCenter = async (req, res, next) => {
       if (uIds.length > 0) await tx.user.deleteMany({ where: { id: { in: uIds } } });
       await tx.center.delete({ where: { id } });
     });
+
+    cache.flushAll();
+    cleanupOrphanedRecords().catch(() => {});
 
     return success(res, null, 'O\'quv markaz va unga tegishli barcha foydalanuvchilar muvaffaqiyatli o\'chirildi');
   } catch (err) {

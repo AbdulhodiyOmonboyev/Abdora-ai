@@ -8,6 +8,7 @@ const { generateUsername, generatePassword } = require('../utils/generateCredent
 const { getOwnBranchIds } = require('../utils/branchScope');
 const { getCenterId } = require('../utils/centerScope');
 const cache = require('../utils/simpleCache');
+const { cleanupOrphanedRecords } = require('../utils/cleanupOrphans');
 
 const getStats = async (req, res, next) => {
   try {
@@ -73,9 +74,40 @@ const getStats = async (req, res, next) => {
     let totalAIAgents = 0;
 
     if (req.user.role === 'admin') {
-      const [branchRows, managersCount, applicationsCount, centerRows, aiAgentsCount] = await Promise.all([
+      const activeCenterCount = await prisma.center.count({ where: { isActive: true } });
+      totalCenters = activeCenterCount;
+
+      const [applicationsCount, aiAgentsCount] = await Promise.all([
+        prisma.application.count({ where: { status: 'new' } }),
+        prisma.aIAgent.count({ where: { isActive: true } }),
+      ]);
+      pendingApplications = applicationsCount;
+      totalAIAgents = aiAgentsCount;
+
+      // Agar barcha markazlar o'chirilgan bo'lsa, ularga bog'liq barcha filiallar, managerlar va o'quvchilar ko'rsatkichi 0 bo'ladi!
+      if (activeCenterCount === 0) {
+        cleanupOrphanedRecords().catch(() => {});
+        return success(res, {
+          totalTeachers: 0,
+          totalStudents: 0,
+          totalGroups: 0,
+          aiLessons: 0,
+          activeToday: 0,
+          newThisWeek: 0,
+          recentUsers: [],
+          branches: [],
+          totalBranches: 0,
+          totalManagers: 0,
+          pendingApplications,
+          centers: [],
+          totalCenters: 0,
+          totalAIAgents,
+        });
+      }
+
+      const [branchRows, managersCount, centerRows] = await Promise.all([
         prisma.branch.findMany({
-          where: { isActive: true },
+          where: { isActive: true, center: { isActive: true } },
           select: {
             id: true, name: true, address: true, studentCapacity: true,
             manager: { select: { id: true, name: true } },
@@ -83,8 +115,9 @@ const getStats = async (req, res, next) => {
           },
           orderBy: { createdAt: 'desc' },
         }),
-        prisma.user.count({ where: { role: 'manager', isActive: true } }),
-        prisma.application.count({ where: { status: 'new' } }),
+        prisma.user.count({
+          where: { role: 'manager', isActive: true, center: { isActive: true } },
+        }),
         prisma.center.findMany({
           where: { isActive: true },
           orderBy: { createdAt: 'desc' },
@@ -95,7 +128,6 @@ const getStats = async (req, res, next) => {
             _count: { select: { branches: true, groups: true } },
           },
         }),
-        prisma.aIAgent.count({ where: { isActive: true } }),
       ]);
 
       // count active students, branches, groups per center
@@ -114,8 +146,6 @@ const getStats = async (req, res, next) => {
           groups: centerGroupCounts[i],
         },
       }));
-      totalCenters = await prisma.center.count({ where: { isActive: true } });
-      totalAIAgents = aiAgentsCount;
 
       const studentCounts = await Promise.all(
         branchRows.map((b) => prisma.user.count({ where: { role: 'student', isActive: true, OR: [{ branchId: b.id }, { group: { branchId: b.id } }] } }))
@@ -132,7 +162,6 @@ const getStats = async (req, res, next) => {
         studentsCount: studentCounts[i],
       }));
       totalManagers = managersCount;
-      pendingApplications = applicationsCount;
     }
 
     return success(res, {
@@ -1266,14 +1295,33 @@ const getBranches = async (req, res, next) => {
     const cached = cache.get(cacheKey);
     if (cached) return success(res, cached);
     const ownBranchIds = await getOwnBranchIds(req.user);
+
+    // Agar admin bo'lsa va faol markazlar mavjud bo'lmasa, filiallar ham bo'sh bo'ladi
+    if (req.user.role === 'admin') {
+      const activeCenterCount = await prisma.center.count({ where: { isActive: true } });
+      if (activeCenterCount === 0) {
+        cache.set(cacheKey, [], 10000);
+        return success(res, []);
+      }
+    }
+
+    const centerFilter = req.user.role !== 'admin' && req.user.centerId
+      ? { centerId: req.user.centerId, center: { isActive: true } }
+      : { center: { isActive: true } };
+
     const branches = await prisma.branch.findMany({
-      where: { isActive: true, ...(ownBranchIds ? { id: { in: ownBranchIds } } : {}) },
+      where: {
+        isActive: true,
+        ...centerFilter,
+        ...(ownBranchIds ? { id: { in: ownBranchIds } } : {}),
+      },
       include: {
         reception: { select: { id: true, name: true } },
         _count: { select: { groups: true, teachers: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
+    cache.set(cacheKey, branches, 10000);
     return success(res, branches);
   } catch (err) { next(err); }
 };

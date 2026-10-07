@@ -18,4 +18,6 @@ const get = (key) => {
 
 const del = (key) => cache.delete(key);
 
-module.exports = { set, get, del };
+const flushAll = () => cache.clear();
+
+module.exports = { set, get, del, flushAll };

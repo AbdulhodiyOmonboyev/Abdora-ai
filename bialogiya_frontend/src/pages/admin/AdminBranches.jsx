@@ -168,19 +168,39 @@ export default function AdminBranches() {
 
   const createMutation = useMutation({
     mutationFn: (data) => api.post('/admin/branches', data),
-    onSuccess: () => { qc.invalidateQueries(['admin-branches']); setShowCreate(false); setForm(EMPTY_FORM); toast.success('Filial yaratildi'); },
+    onSuccess: () => {
+      qc.invalidateQueries(['admin-branches']);
+      qc.invalidateQueries(['header-branches']);
+      qc.invalidateQueries(['admin-stats']);
+      setShowCreate(false);
+      setForm(EMPTY_FORM);
+      toast.success('Filial yaratildi');
+    },
     onError: (error) => toast.error(friendlyAiErrorMessage(error)),
   });
 
   const updateMutation = useMutation({
     mutationFn: (data) => api.put(`/admin/branches/${editingBranch.id}`, data),
-    onSuccess: () => { qc.invalidateQueries(['admin-branches']); setShowEdit(false); setEditingBranch(null); setEditForm(EMPTY_FORM); toast.success('Filial tahrirlandi'); },
+    onSuccess: () => {
+      qc.invalidateQueries(['admin-branches']);
+      qc.invalidateQueries(['header-branches']);
+      qc.invalidateQueries(['admin-stats']);
+      setShowEdit(false);
+      setEditingBranch(null);
+      setEditForm(EMPTY_FORM);
+      toast.success('Filial tahrirlandi');
+    },
     onError: (error) => toast.error(friendlyAiErrorMessage(error)),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/admin/branches/${id}`),
-    onSuccess: () => { qc.invalidateQueries(['admin-branches']); qc.invalidateQueries(['header-branches']); toast.success("Filial o'chirildi"); },
+    onSuccess: () => {
+      qc.invalidateQueries(['admin-branches']);
+      qc.invalidateQueries(['header-branches']);
+      qc.invalidateQueries(['admin-stats']);
+      toast.success("Filial o'chirildi");
+    },
     onError: (error) => toast.error(friendlyAiErrorMessage(error)),
   });
 
@@ -189,6 +209,7 @@ export default function AdminBranches() {
     onSuccess: (res) => {
       qc.invalidateQueries(['admin-branches']);
       qc.invalidateQueries(['header-branches']);
+      qc.invalidateQueries(['admin-stats']);
       toast.success(res.data?.message || "Bo'sh filiallar tozalandi");
     },
     onError: (error) => toast.error(friendlyAiErrorMessage(error)),

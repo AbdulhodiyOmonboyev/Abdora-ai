@@ -8,14 +8,16 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { connectDB } = require('./src/config/db');
 const { loadKeyFromDb } = require('./src/config/gemini');
+const { cleanupOrphanedRecords } = require('./src/utils/cleanupOrphans');
 const errorHandler = require('./src/middleware/error.middleware');
 const antiSleepService = require('./src/services/antiSleep.service');
 
 const app = express();
 
-// Connect to PostgreSQL (Neon) and initialize AI agent keys
+// Connect to PostgreSQL (Neon), initialize AI agent keys, and clean orphaned data
 connectDB().then(() => {
   loadKeyFromDb().catch(() => {});
+  cleanupOrphanedRecords().catch(() => {});
 });
 
 // Trust proxy (Render sits behind a reverse proxy)
