@@ -20,8 +20,8 @@ const verifyToken = async (req, res, next) => {
         branchId: true,
         isActive: true,
         isFrozen: true,
-        center: { select: { id: true, isActive: true } },
-        branch: { select: { id: true, isActive: true, center: { select: { id: true, isActive: true } } } },
+        center: { select: { id: true, isActive: true, settings: true } },
+        branch: { select: { id: true, isActive: true, center: { select: { id: true, isActive: true, settings: true } } } },
       },
     });
     if (!user || !user.isActive) return error(res, "Bu account ma'lumotlari yo'q", 401);
@@ -33,6 +33,12 @@ const verifyToken = async (req, res, next) => {
         return error(res, "Bu account ma'lumotlari yo'q", 401);
       }
     }
+
+    
+      const centerSettings = user.center?.settings || user.branch?.center?.settings || {};
+      if (centerSettings.roles && centerSettings.roles[user.role]?.enabled === false) {
+        return error(res, `Ushbu markazda '${user.role}' roli faolsizlantirilgan`, 403);
+      }
 
     if (user.isFrozen && user.role === 'student') return error(res, 'Hisobingiz muzlatilgan', 403);
     req.user = { ...decoded, id: user.id, userId: user.id, role: user.role, centerId: user.centerId, branchId: user.branchId };

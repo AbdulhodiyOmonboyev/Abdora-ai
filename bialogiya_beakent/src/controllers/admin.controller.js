@@ -765,15 +765,104 @@ const toggleUserStatus = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const DEFAULT_CENTER_ROLES = {
+  manager: {
+    enabled: true,
+    label: "Menejer (Boshqaruvchi)",
+    description: "Filiallarni nazorat qilish, xodimlar va to'lovlar monitoringi",
+    permissions: {
+      canManageBranches: true,
+      canManageStaff: true,
+      canManageSalaries: true,
+      canViewReports: true,
+      canManageLeads: true,
+      canManageTimetable: true,
+      canExportData: true,
+    }
+  },
+  reception: {
+    enabled: true,
+    label: "Qabulxona (Reception)",
+    description: "Mijozlarni qabul qilish, lidlar va to'lovlar qabuli",
+    permissions: {
+      canViewFinance: false,
+      canViewCashbox: false,
+      canManagePayments: true,
+      canManageLeads: true,
+      canManageTimetable: true,
+      canManageGroups: true,
+      canManageStudents: true,
+      canManageTeachers: true,
+    }
+  },
+  teacher: {
+    enabled: true,
+    label: "O'qituvchi",
+    description: "Dars o'tish, dars materiallari, uy vazifasi va davomat",
+    permissions: {
+      canCreateLessons: true,
+      canUseAI: true,
+      canManageHomework: true,
+      canManageTests: true,
+      canMarkAttendance: true,
+      canAwardCoins: true,
+      canViewOwnSalary: true,
+    }
+  },
+  student: {
+    enabled: true,
+    label: "O'quvchi",
+    description: "Darslar, AI tyutor, topshiriqlar, testlar va do'kon",
+    permissions: {
+      canAccessAIChat: true,
+      canSubmitHomework: true,
+      canTakeTests: true,
+      canAccessShop: true,
+      canViewLeaderboard: true,
+      canViewAttendance: true,
+    }
+  }
+};
+
+const DEFAULT_CENTER_FEATURES = {
+  aiEnabled: true,
+  aiLessonGenEnabled: true,
+  aiChatEnabled: true,
+  aiSpeakingEnabled: true,
+  aiGradingEnabled: true,
+  aiTestGenEnabled: true,
+  financeEnabled: true,
+  cashboxEnabled: true,
+  paymentsEnabled: true,
+  payrollEnabled: true,
+  lessonsEnabled: true,
+  homeworkEnabled: true,
+  testsEnabled: true,
+  timetableEnabled: true,
+  attendanceEnabled: true,
+  certificatesEnabled: true,
+  leadsEnabled: true,
+  smsEnabled: true,
+  coinsEnabled: true,
+  shopEnabled: true,
+  leaderboardEnabled: true,
+};
+
+const DEFAULT_CENTER_LIMITS = {
+  maxBranches: 5,
+  maxStudents: 500,
+  maxGroups: 50,
+  maxTeachers: 30,
+  aiRequestsPerMonth: 1000,
+};
+
 const resolveSettingsCenter = async (req) => {
-  // 1. If a specific centerId is explicitly passed in query, body, or headers:
   const targetId = req.query?.centerId || req.body?.centerId || req.headers?.['x-center-id'];
   if (targetId) {
     const center = await prisma.center.findUnique({ where: { id: targetId } });
     if (center) return center;
   }
 
-  // 2. Lookup the authenticated user from the database
   const userId = req.user?.userId || req.user?.id;
   if (userId) {
     const dbUser = await prisma.user.findUnique({
@@ -786,84 +875,84 @@ const resolveSettingsCenter = async (req) => {
       if (center) return center;
     }
 
-    // For operational roles (reception, teacher, student), try finding the center via branch
-    if (['reception', 'teacher', 'student'].includes(dbUser?.role)) {
+    if (['reception', 'teacher', 'student', 'manager'].includes(dbUser?.role)) {
       if (dbUser?.branchId) {
         const branch = await prisma.branch.findUnique({ where: { id: dbUser.branchId }, select: { centerId: true } });
         if (branch?.centerId) {
           const center = await prisma.center.findUnique({ where: { id: branch.centerId } });
-          if (center) {
-            await prisma.user.update({ where: { id: userId }, data: { centerId: center.id } });
-            return center;
-          }
+          if (center) return center;
         }
       }
-      const recBranch = await prisma.branch.findFirst({ where: { receptionId: userId }, select: { centerId: true } });
+      const recBranch = await prisma.branch.findFirst({
+        where: { OR: [{ receptionId: userId }, { managerId: userId }] },
+        select: { centerId: true }
+      });
       if (recBranch?.centerId) {
         const center = await prisma.center.findUnique({ where: { id: recBranch.centerId } });
-        if (center) {
-          await prisma.user.update({ where: { id: userId }, data: { centerId: center.id } });
-          return center;
-        }
+        if (center) return center;
       }
     }
-
-    // 3. User does not have a center assigned yet.
-    // Auto-create a dedicated, isolated center for this user/admin so their settings
-    // NEVER overwrite or get overwritten by another user's settings!
-    const newCenter = await prisma.center.create({
-      data: {
-        name: req.body?.centerName || `${dbUser?.name || dbUser?.username || 'Asosiy'} O'quv Markazi`,
-        settings: {}
-      }
-    });
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { centerId: newCenter.id }
-    });
-
-    if (req.user) req.user.centerId = newCenter.id;
-    return newCenter;
   }
 
-  // 4. Fallback if called without auth context
-  let center = await prisma.center.findFirst({
+  const center = await prisma.center.findFirst({
     where: { isActive: true },
-    orderBy: { createdAt: 'asc' }
+    orderBy: { createdAt: 'desc' }
   });
-  if (center) return center;
-
-  center = await prisma.center.create({
-    data: {
-      name: req.body?.centerName || 'Abdora AI Markazi',
-      settings: {}
-    }
-  });
-  return center;
+  return center || null;
 };
 
 const getSettings = async (req, res, next) => {
   try {
-    const center = await resolveSettingsCenter(req);
-    const rawSettings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
     const role = req.user?.role || 'admin';
+    const center = await resolveSettingsCenter(req);
 
-    // Shared center-level info (same for all roles)
-    const shared = {
-      centerName: rawSettings.centerName || center.name || 'Abdora AI Markazi',
-      centerAddress: rawSettings.centerAddress || center.address || '',
-      centerPhone: rawSettings.centerPhone || center.phone || '',
-      centerEmail: rawSettings.centerEmail || center.email || '',
-      centerWebsite: rawSettings.centerWebsite || center.website || '',
-      centerId: center.id,
-      receptionPermissions: rawSettings.receptionPermissions || {},
-      features: rawSettings.features || {
-        aiEnabled: true,
-        coinsEnabled: true,
-        shopEnabled: true,
-        smsEnabled: true,
+    const allCenters = role === 'admin' ? await prisma.center.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        phone: true,
+        email: true,
+        website: true,
+        isActive: true,
+        _count: { select: { branches: true, users: true, groups: true } }
       },
+      orderBy: { createdAt: 'desc' }
+    }) : [];
+
+    if (!center) {
+      return success(res, {
+        centerId: null,
+        centerName: "O'quv markaz mavjud emas",
+        centers: allCenters,
+        features: DEFAULT_CENTER_FEATURES,
+        roles: DEFAULT_CENTER_ROLES,
+        limits: DEFAULT_CENTER_LIMITS,
+      });
+    }
+
+    const rawSettings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
+
+    const roles = {
+      manager: { ...DEFAULT_CENTER_ROLES.manager, ...(rawSettings.roles?.manager || {}) },
+      reception: { ...DEFAULT_CENTER_ROLES.reception, ...(rawSettings.roles?.reception || {}) },
+      teacher: { ...DEFAULT_CENTER_ROLES.teacher, ...(rawSettings.roles?.teacher || {}) },
+      student: { ...DEFAULT_CENTER_ROLES.student, ...(rawSettings.roles?.student || {}) },
+    };
+
+    const shared = {
+      centerName: center.name || 'Abdora AI Markazi',
+      centerAddress: center.address || '',
+      centerPhone: center.phone || '',
+      centerEmail: center.email || '',
+      centerWebsite: center.website || '',
+      centerId: center.id,
+      receptionPermissions: rawSettings.receptionPermissions || roles.reception.permissions,
+      features: { ...DEFAULT_CENTER_FEATURES, ...(rawSettings.features || {}) },
+      roles,
+      limits: { ...DEFAULT_CENTER_LIMITS, ...(rawSettings.limits || {}) },
+      centers: allCenters,
       leadStages: rawSettings.leadStages || [
         { id: 'new', label: 'Yangi murojaat', color: '#3b82f6', isSystem: true },
         { id: 'contacted', label: "Aloqa o'rnatildi", color: '#6366f1', isSystem: true },
@@ -877,14 +966,11 @@ const getSettings = async (req, res, next) => {
       ],
     };
 
-    // Role-scoped preferences namespace
     const rolePrefsKey = role === 'reception' ? 'receptionPrefs'
                        : role === 'manager'   ? 'managerPrefs'
                        :                         'adminPrefs';
     const rolePrefs = rawSettings[rolePrefsKey] || {};
 
-    // For backward compatibility: merge legacy flat keys into role prefs
-    // (only if rolePrefs is empty, meaning first load after migration)
     const legacyKeys = [
       'receiptFormat', 'receiptNote', 'autoPrintReceipt', 'copyReceiptNumber',
       'showStaffOnReceipt', 'defaultPaymentMethod', 'timetableDefaultView',
@@ -913,16 +999,17 @@ const getSettings = async (req, res, next) => {
 const updateSettings = async (req, res, next) => {
   try {
     const center = await resolveSettingsCenter(req);
+    if (!center) {
+      return error(res, "Sozlamalarni saqlash uchun kamida bitta faol markaz tanlanishi lozim", 400);
+    }
     const newSettings = req.body || {};
     const currentSettings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
     const role = req.user?.role || 'admin';
 
-    // Determine the role-specific prefs namespace key
     const rolePrefsKey = role === 'reception' ? 'receptionPrefs'
                        : role === 'manager'   ? 'managerPrefs'
                        :                         'adminPrefs';
 
-    // Extract shared center-level fields that should update the center record directly
     const sharedFieldMap = {
       centerName: 'name', centerAddress: 'address', centerPhone: 'phone',
       centerEmail: 'email', centerWebsite: 'website',
@@ -932,18 +1019,40 @@ const updateSettings = async (req, res, next) => {
     const sharedSettingsUpdate = {};
 
     for (const [key, value] of Object.entries(newSettings)) {
-      if (key === 'receptionPermissions' && typeof value === 'object') {
-        // receptionPermissions is a shared cross-role setting (admin/manager control it)
-        if (role === 'reception') continue; // reception cannot change its own permissions
-        sharedSettingsUpdate.receptionPermissions = {
-          ...(currentSettings.receptionPermissions || {}),
-          ...value,
-        };
+      if (key === 'roles' && typeof value === 'object') {
+        if (role === 'admin' || role === 'manager') {
+          sharedSettingsUpdate.roles = {
+            ...(currentSettings.roles || {}),
+            ...value,
+          };
+          if (value.reception?.permissions) {
+            sharedSettingsUpdate.receptionPermissions = {
+              ...(currentSettings.receptionPermissions || {}),
+              ...value.reception.permissions,
+            };
+          }
+        }
+      } else if (key === 'limits' && typeof value === 'object') {
+        if (role === 'admin') {
+          sharedSettingsUpdate.limits = {
+            ...(currentSettings.limits || {}),
+            ...value,
+          };
+        }
       } else if (key === 'features' && typeof value === 'object') {
-        sharedSettingsUpdate.features = {
-          ...(currentSettings.features || { aiEnabled: true, coinsEnabled: true, shopEnabled: true, smsEnabled: true }),
-          ...value,
-        };
+        if (role === 'admin' || role === 'manager') {
+          sharedSettingsUpdate.features = {
+            ...(currentSettings.features || {}),
+            ...value,
+          };
+        }
+      } else if (key === 'receptionPermissions' && typeof value === 'object') {
+        if (role === 'admin' || role === 'manager') {
+          sharedSettingsUpdate.receptionPermissions = {
+            ...(currentSettings.receptionPermissions || {}),
+            ...value,
+          };
+        }
       } else if (key === 'leadStages' && Array.isArray(value)) {
         sharedSettingsUpdate.leadStages = value;
       } else if (key === 'leadSources' && Array.isArray(value)) {
@@ -956,17 +1065,14 @@ const updateSettings = async (req, res, next) => {
           };
         }
       } else if (sharedFieldMap[key] !== undefined) {
-        // Shared center-level fields
-        if (key === 'centerName' && role !== 'admin') continue; // only admin can rename center
+        if (key === 'centerName' && role !== 'admin') continue;
         updateData[sharedFieldMap[key]] = value;
         sharedSettingsUpdate[key] = value;
       } else {
-        // Everything else goes into role-scoped namespace
         roleSpecificData[key] = value;
       }
     }
 
-    // Security: reception can only modify whitelisted keys
     if (role === 'reception') {
       const allowedReceptionKeys = [
         'receiptFormat', 'receiptNote', 'autoPrintReceipt', 'copyReceiptNumber',
@@ -982,14 +1088,12 @@ const updateSettings = async (req, res, next) => {
       Object.assign(roleSpecificData, filtered);
     }
 
-    // Security: manager cannot modify platform-level core AI keys
     if (role === 'manager') {
       delete roleSpecificData.openaiApiKey;
       delete roleSpecificData.geminiApiKey;
       delete roleSpecificData.anthropicApiKey;
     }
 
-    // Merge into center.settings preserving other roles' namespaces
     const mergedSettings = {
       ...currentSettings,
       ...sharedSettingsUpdate,
@@ -1006,27 +1110,24 @@ const updateSettings = async (req, res, next) => {
       data: updateData,
     });
 
-    // Return the merged view for this role
-    const rawSettings = typeof updated.settings === 'object' && updated.settings !== null ? updated.settings : {};
-    const rolePrefs = rawSettings[rolePrefsKey] || {};
-    const merged = {
-      centerName: updated.name || 'Abdora AI Markazi',
+    cache.flushAll();
+
+    return success(res, {
+      centerId: updated.id,
+      centerName: updated.name,
       centerAddress: updated.address || '',
       centerPhone: updated.phone || '',
       centerEmail: updated.email || '',
       centerWebsite: updated.website || '',
-      centerId: updated.id,
-      receptionPermissions: rawSettings.receptionPermissions || {},
-      ...rolePrefs,
-    };
-
-    return success(res, merged, 'Sozlamalar muvaffaqiyatli saqlandi');
-  }
-  catch (err) { next(err); }
+      features: mergedSettings.features || DEFAULT_CENTER_FEATURES,
+      roles: mergedSettings.roles || DEFAULT_CENTER_ROLES,
+      limits: mergedSettings.limits || DEFAULT_CENTER_LIMITS,
+      receptionPermissions: mergedSettings.receptionPermissions || {},
+      ...mergedSettings[rolePrefsKey],
+    }, 'Sozlamalar muvaffaqiyatli saqlandi');
+  } catch (err) { next(err); }
 };
 
-// One-stop overview for a specific teacher: profile, groups, students, lessons,
-// financial earnings, current balance, and salary payouts history.
 const getTeacherOverview = async (req, res, next) => {
   try {
     const teacher = await prisma.user.findUnique({

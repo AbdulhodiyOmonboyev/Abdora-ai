@@ -27,8 +27,8 @@ const login = async (req, res, next) => {
       },
       include: {
         group: { select: { id: true, name: true } },
-        center: { select: { id: true, isActive: true } },
-        branch: { select: { id: true, isActive: true, center: { select: { id: true, isActive: true } } } },
+        center: { select: { id: true, isActive: true, settings: true } },
+        branch: { select: { id: true, isActive: true, center: { select: { id: true, isActive: true, settings: true } } } },
       },
     });
 
@@ -46,6 +46,12 @@ const login = async (req, res, next) => {
     }
 
     if (user.isFrozen) return error(res, 'Hisobingiz muzlatilgan. O\'qituvchi bilan bog\'laning.', 403);
+      // Markazda foydalanuvchi roli yoqilganmi / o'chirilganmi tekshirish
+      const centerSettings = user.center?.settings || user.branch?.center?.settings || {};
+      if (centerSettings.roles && centerSettings.roles[user.role]?.enabled === false) {
+        return error(res, `Ushbu markazda '${user.role}' roli faolsizlantirilgan. Administrator bilan bog'laning.`, 403);
+      }
+
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) return error(res, "Bu account ma'lumotlari yo'q", 401);
