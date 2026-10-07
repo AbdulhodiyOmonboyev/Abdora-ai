@@ -10,7 +10,7 @@
   "enter_username": "Login, telefon yoki ism-familiya",
   "enter_password": "Parolni kiriting",
   "signing_in": "Kirish...",
-  "invalid_credentials": "Noto'g'ri foydalanuvchi nomi yoki parol",
+  "invalid_credentials": "Bu account ma'lumotlari yo'q",
   "dashboard": "Bosh sahifa",
   "lessons": "Darslar",
   "homework": "Uy vazifasi",

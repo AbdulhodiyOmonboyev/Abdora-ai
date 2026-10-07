@@ -275,7 +275,7 @@ export default function AdminCenters() {
   );
 
   const handleDelete = (center) => {
-    if (window.confirm(`"${center.name}" markazini o'chirishni xohlaysizmi? Bu jarayon qaytarilmas!`)) {
+    if (window.confirm(`"${center.name}" markazini o'chirishni xohlaysizmi? Markazga tegishli barcha foydalanuvchilar (menejerlar, o'qituvchilar, o'quvchilar) ham butunlay o'chiriladi va hisobiga kira olmaydi!`)) {
       deleteMut.mutate(center.id);
     }
   };

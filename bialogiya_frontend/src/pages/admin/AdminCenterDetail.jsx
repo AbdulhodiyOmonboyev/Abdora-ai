@@ -98,7 +98,7 @@ export default function AdminCenterDetail() {
   }
 
   const handleDelete = () => {
-    if (window.confirm(`"${center.name}" markazini o'chirishni xohlaysizmi? Markaz nofaol holatga o'tkaziladi.`)) {
+    if (window.confirm(`"${center.name}" markazini o'chirishni xohlaysizmi? Markaz va unga tegishli barcha foydalanuvchilar (menejerlar, o'qituvchilar, o'quvchilar) butunlay o'chiriladi va hisobiga kira olmaydi!`)) {
       deleteMutation.mutate();
     }
   };

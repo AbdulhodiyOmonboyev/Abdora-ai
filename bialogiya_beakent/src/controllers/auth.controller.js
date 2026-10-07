@@ -25,14 +25,30 @@ const login = async (req, res, next) => {
           { name: { equals: cleanInput, mode: 'insensitive' } },
         ],
       },
-      include: { group: { select: { id: true, name: true } } },
+      include: {
+        group: { select: { id: true, name: true } },
+        center: { select: { id: true, isActive: true } },
+        branch: { select: { id: true, isActive: true, center: { select: { id: true, isActive: true } } } },
+      },
     });
 
-    if (!user || !user.isActive) return error(res, 'Invalid credentials', 401);
+    if (!user || !user.isActive) {
+      return error(res, "Bu account ma'lumotlari yo'q", 401);
+    }
+
+    // Markazi nofaol yoki o'chirilgan foydalanuvchilar kirishini to'sish
+    if (user.role !== 'admin') {
+      const isCenterInactive = (user.center && user.center.isActive === false) ||
+                               (user.branch?.center && user.branch.center.isActive === false);
+      if (isCenterInactive) {
+        return error(res, "Bu account ma'lumotlari yo'q", 401);
+      }
+    }
+
     if (user.isFrozen) return error(res, 'Hisobingiz muzlatilgan. O\'qituvchi bilan bog\'laning.', 403);
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) return error(res, 'Invalid credentials', 401);
+    if (!isMatch) return error(res, "Bu account ma'lumotlari yo'q", 401);
 
     const lastPayment = await prisma.payment.findFirst({
       where: { studentId: user.id, isPaid: true },

@@ -13,9 +13,27 @@ const verifyToken = async (req, res, next) => {
     const decoded = verifyAccessToken(token);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, role: true, centerId: true, branchId: true, isActive: true, isFrozen: true },
+      select: {
+        id: true,
+        role: true,
+        centerId: true,
+        branchId: true,
+        isActive: true,
+        isFrozen: true,
+        center: { select: { id: true, isActive: true } },
+        branch: { select: { id: true, isActive: true, center: { select: { id: true, isActive: true } } } },
+      },
     });
-    if (!user || !user.isActive) return error(res, 'Account is inactive', 403);
+    if (!user || !user.isActive) return error(res, "Bu account ma'lumotlari yo'q", 401);
+
+    if (user.role !== 'admin') {
+      const isCenterInactive = (user.center && user.center.isActive === false) ||
+                               (user.branch?.center && user.branch.center.isActive === false);
+      if (isCenterInactive) {
+        return error(res, "Bu account ma'lumotlari yo'q", 401);
+      }
+    }
+
     if (user.isFrozen && user.role === 'student') return error(res, 'Hisobingiz muzlatilgan', 403);
     req.user = { ...decoded, id: user.id, userId: user.id, role: user.role, centerId: user.centerId, branchId: user.branchId };
     next();
