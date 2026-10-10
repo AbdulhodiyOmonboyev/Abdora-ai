@@ -6,6 +6,7 @@ const { synthesizeSpeech, MIME_TYPE: TTS_MIME_TYPE } = require('../services/ai/g
 const { synthesizeWithClonedVoice } = require('../services/ai/voiceClone.service');
 const { generateExplainerScript } = require('../services/ai/explainerVideoAI.service');
 const { generateImage } = require('../services/ai/geminiImage.service');
+const { trackAIUsage } = require('../utils/aiUsageTracker');
 
 // Access check for lessons and lesson AI media
 const assertLessonAccess = async (lesson, user) => {
@@ -302,6 +303,19 @@ const chatMessage = async (req, res, next) => {
     } catch (dbErr) {
       console.warn('Could not persist chat history:', dbErr.message);
     }
+
+    // AI Token sarfini hisoblash va log yozish
+    const tokensIn = Math.ceil((message.length + (lesson.content || '').length) / 4);
+    const tokensOut = Math.ceil((aiReply || '').length / 4);
+    trackAIUsage({
+      centerId: lesson.centerId || req.user.centerId,
+      userId: req.user.userId,
+      provider: 'gemini',
+      model: 'gemini-1.5-flash',
+      useCase: 'chat',
+      tokensIn,
+      tokensOut
+    }).catch(() => {});
 
     return success(res, { reply: aiReply, chatId: chat?.id || 'temp' });
   } catch (err) {

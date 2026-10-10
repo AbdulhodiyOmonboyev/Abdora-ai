@@ -15,9 +15,14 @@ const antiSleepService = require('./src/services/antiSleep.service');
 const app = express();
 
 // Connect to PostgreSQL (Neon), initialize AI agent keys, and clean orphaned data
+const { startSubscriptionCron } = require('./src/utils/cronJobs');
+const { ensureDefaultPlans } = require('./src/controllers/plan.controller');
+
 connectDB().then(() => {
   loadKeyFromDb().catch(() => {});
   cleanupOrphanedRecords().catch(() => {});
+  ensureDefaultPlans().catch(() => {});
+  startSubscriptionCron();
 });
 
 // Trust proxy (Render sits behind a reverse proxy)

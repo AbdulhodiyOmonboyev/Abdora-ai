@@ -21,14 +21,22 @@ import { useAuthStore } from '../../store/authStore';
 import PhoneInput from '../../components/ui/PhoneInput';
 import { cleanPhone } from '../../utils/formatPhone';
 import ThemeBuilder from '../../components/ui/ThemeBuilder';
+import PlansTab from './settings/PlansTab';
+import AIUsageTab from './settings/AIUsageTab';
+import SMSMonitorTab from './settings/SMSMonitorTab';
+import CustomRolesTab from './settings/CustomRolesTab';
 
 /* ─── Sidebar nav items ─────────────────────────────────────── */
 const NAV_ITEMS = [
   { id: 'center',        label: "Markaz sozlamalari",             icon: Building2,   badge: 'Asosiy' },
+  { id: 'plans',         label: "Tariflar & Obuna",               icon: CreditCard,  badge: 'Yangi' },
+  { id: 'ai_usage',      label: "AI Token Monitoring",            icon: Bot,         badge: 'Statistika' },
+  { id: 'sms_monitor',   label: "SMS Xabarnomalar & Sarf",        icon: Smartphone,  badge: 'Sarf' },
+  { id: 'custom_roles',  label: "Maxsus Rollar",                  icon: UserCog,     badge: 'Ruxsatlar' },
   { id: 'features',      label: "Markaz imkoniyatlari",           icon: Sparkles,    badge: 'Modullar' },
-  { id: 'roles',         label: "Rollar va ruxsatlar",            icon: ShieldCheck, badge: 'Muhim' },
+  { id: 'roles',         label: "Standart Rollar",                icon: ShieldCheck },
   { id: 'limits',        label: "Cheklovlar & Limitlar",          icon: Target },
-  { id: 'payments',      label: "To'lovlar & Kassa",              icon: CreditCard },
+  { id: 'payments',      label: "To'lovlar & Kassa",              icon: Wallet },
   { id: 'lms',           label: "LMS Sozlamalari",                icon: BookOpen },
   { id: 'gamification',  label: "Tangalar (Coins) & Gamifikatsiya", icon: Coins },
   { id: 'crm_settings',  label: "CRM & Lidlar",                   icon: Users },
@@ -650,6 +658,26 @@ export default function AdminSettings() {
               transition={{ duration: 0.15 }}
               className="space-y-5"
             >
+
+              {/* ═══════════════ TARIFLAR & OBUNA ═══════════════ */}
+              {activeTab === 'plans' && (
+                <PlansTab selectedCenterId={selectedCenterId} currentCenter={currentCenter} />
+              )}
+
+              {/* ═══════════════ AI TOKEN MONITORING ═══════════════ */}
+              {activeTab === 'ai_usage' && (
+                <AIUsageTab selectedCenterId={selectedCenterId} />
+              )}
+
+              {/* ═══════════════ SMS MONITORING & SOZLAMALAR ═══════════════ */}
+              {activeTab === 'sms_monitor' && (
+                <SMSMonitorTab selectedCenterId={selectedCenterId} />
+              )}
+
+              {/* ═══════════════ MAXSUS ROLLAR (CUSTOM ROLES) ═══════════════ */}
+              {activeTab === 'custom_roles' && (
+                <CustomRolesTab selectedCenterId={selectedCenterId} currentCenter={currentCenter} />
+              )}
 
               {/* ═══════════════ 1. MARKAZ SOZLAMALARI ═══════════════ */}
               {activeTab === 'center' && (

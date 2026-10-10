@@ -47,11 +47,14 @@ model Center {
   attendance Attendance[]
   resources Resource[]
   notifications Notification[]
-  aiChats   AIChat[]
-  aiAgents  AIAgent[]
-  files     UploadedFile[]
-  submissions Submission[]
-  results   Result[]
+  aiChats      AIChat[]
+  aiAgents     AIAgent[]
+  files        UploadedFile[]
+  submissions  Submission[]
+  results      Result[]
+  subscription Subscription?
+  customRoles  CustomRole[]
+  smsLogs      SMSLog[]
 
   @@index([name])
 }
@@ -127,6 +130,10 @@ model User {
   managedLeads  Lead[]         @relation("ManagerLeads")
   leadActivities LeadActivity[]
   expenses      Expense[]      @relation("UserExpenses")
+  parentPhone  String?
+  parentName   String?
+  customRoleId String?
+  customRole   CustomRole? @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
 
   centerId String?
   center   Center? @relation(fields: [centerId], references: [id])
@@ -624,4 +631,165 @@ model AIAgent {
 
   centerId  String?
   center    Center?  @relation(fields: [centerId], references: [id])
+}
+
+model Plan {
+  id                    String         @id @default(cuid())
+  name                  String         // "Starter", "Starter Pro", "Starter Pro Max"
+  description           String?
+  price                 Int            // monthly price (UZS)
+  currency              String         @default("UZS")
+  trialDays             Int            @default(7)
+  isActive              Boolean        @default(true)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  // AI capabilities
+  aiEnabled             Boolean        @default(false)
+  aiProvider            String?        // gemini | openai | anthropic | byok | all
+  aiModel               String?        // gemini-1.5-flash | gpt-4o | claude-3-5-sonnet
+  aiMonthlyTokenLimit   Int            @default(0)   // 0 = none, -1 = unlimited
+  aiMonthlyRequestLimit Int            @default(0)
+
+  // SMS capabilities
+  smsEnabled            Boolean        @default(false)
+  smsProvider           String?        // eskiz | playmobile | twilio | infobip | byos | all
+  smsMonthlyLimit       Int            @default(0)   // 0 = none, -1 = unlimited
+
+  // Resource quotas
+  maxBranches           Int            @default(1)
+  maxStudents           Int            @default(100)
+  maxTeachers           Int            @default(10)
+  maxGroups             Int            @default(10)
+
+  // Enabled modules
+  features              Json           @default("{}")
+
+  subscriptions         Subscription[]
+}
+
+model Subscription {
+  id                    String        @id @default(cuid())
+  status                String        @default("trial") // trial | active | grace | suspended | cancelled
+  startDate             DateTime      @default(now())
+  trialEndsAt           DateTime?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  nextDueDate           DateTime?
+  lastPaidAt            DateTime?
+  paymentMethod         String        @default("manual") // manual | payme | click
+
+  // AI BYOK (AES-256 encrypted)
+  aiApiKeySource        String        @default("platform") // platform | byok
+  aiApiKeyEncrypted     String?
+  aiApiKeyIV            String?
+  aiPreferredModel      String?
+
+  // SMS BYOS
+  smsProvider           String        @default("platform") // platform | byos
+  smsApiKeyEncrypted    String?
+  smsApiKeyIV           String?
+  smsSenderName         String?
+
+  // Current month AI counters
+  currentMonthTokens    Int           @default(0)
+  currentMonthRequests  Int           @default(0)
+  totalTokensUsed       Int           @default(0)
+  totalRequestsUsed     Int           @default(0)
+
+  // Current month SMS counters
+  currentMonthSms       Int           @default(0)
+  totalSmsSent          Int           @default(0)
+
+  centerId              String        @unique
+  center                Center        @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  planId                String
+  plan                  Plan          @relation(fields: [planId], references: [id])
+
+  invoices              Invoice[]
+  aiLogs                AIUsageLog[]
+  smsLogs               SMSLog[]
+
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model Invoice {
+  id             String       @id @default(cuid())
+  amount         Int
+  currency       String       @default("UZS")
+  status         String       @default("pending") // pending | paid | overdue | cancelled
+  dueDate        DateTime
+  paidAt         DateTime?
+  paidBy         String?      // admin ID or notes
+  note           String?
+
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime     @default(now())
+}
+
+model AIUsageLog {
+  id             String       @id @default(cuid())
+  provider       String       // gemini | openai | anthropic
+  model          String
+  useCase        String       // chat | test_gen | grading | lesson_gen | speaking
+  tokensIn       Int          @default(0)
+  tokensOut      Int          @default(0)
+  totalTokens    Int          @default(0)
+  requestCount   Int          @default(1)
+  costUsd        Float?
+  userId         String?
+  centerId       String
+
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime     @default(now())
+
+  @@index([centerId, createdAt])
+  @@index([subscriptionId])
+}
+
+model SMSLog {
+  id             String        @id @default(cuid())
+  provider       String        // eskiz | playmobile | twilio | infobip | byos
+  toPhone        String
+  recipientType  String        @default("parent") // parent | student | manager | teacher
+  trigger        String        // attendance_missed | payment_reminder | subscription_due | lead_new | custom
+  messageText    String        @db.Text
+  status         String        @default("sent") // sent | failed | pending
+  cost           Float?
+  currency       String        @default("UZS")
+  errorMessage   String?
+  userId         String?
+
+  centerId       String
+  center         Center        @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  sentAt         DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+
+  @@index([centerId, sentAt])
+  @@index([subscriptionId])
+}
+
+model CustomRole {
+  id          String   @id @default(cuid())
+  name        String   // "Qabulxonachi", "Hisobchi", "Kurator"
+  baseRole    String   @default("reception") // manager | reception | teacher
+  permissions Json     @default("{}")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  centerId    String
+  center      Center   @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  users       User[]
+
+  @@index([centerId])
 }

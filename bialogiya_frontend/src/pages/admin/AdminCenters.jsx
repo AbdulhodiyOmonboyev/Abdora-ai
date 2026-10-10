@@ -19,7 +19,7 @@ const emptyCenter = {
   managerUsername: "", managerPassword: "",
 };
 
-function CenterModal({ initial = emptyCenter, onClose, onSave, loading }) {
+function CenterModal({ initial = emptyCenter, onClose, onSave, loading, plans = [] }) {
   const [form, setForm] = useState(initial);
   const isEdit = !!initial.id;
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -44,7 +44,7 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading }) {
                 {isEdit ? "Markazni tahrirlash" : "Yangi O'quv Markaz"}
               </div>
               <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                {isEdit ? "Ma'lumotlarni o'zgartiring" : "Markaz va manager akkauntini yarating"}
+                {isEdit ? "Ma'lumotlarni o'zgartiring" : "Markaz, manager akkaunti va tarif rejasini tanlang"}
               </div>
             </div>
           </div>
@@ -83,38 +83,76 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading }) {
           </div>
 
           {!isEdit && (
-            <div>
-              <div className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
-                Manager akkaunt
-              </div>
-              <div className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-                Bu ma'lumotlar bilan markaz manageri tizimga kiradi
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Manager ismi *</label>
-                  <input className="input-field" placeholder="Ism Familiya" value={form.managerName} onChange={e => f("managerName", e.target.value)} />
+            <>
+              <div>
+                <div className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+                  Tarif rejasi (Subscription Plan)
                 </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Manager telefoni</label>
-                  <PhoneInput className="input-field" placeholder="+998 90 000 00 00" value={form.managerPhone} onChange={e => f("managerPhone", e.target.value)} />
+                <div className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+                  Markazning AI, SMS va resurs imkoniyatlarini belgilang
                 </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Username *</label>
-                  <div className="relative">
-                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
-                    <input className="input-field pl-8" placeholder="manager_username" value={form.managerUsername} onChange={e => f("managerUsername", e.target.value)} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Tarif</label>
+                    <select
+                      className="input-field"
+                      value={form.planId || ''}
+                      onChange={e => f("planId", e.target.value)}
+                    >
+                      <option value="">Standart (Starter)</option>
+                      {plans.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} — {p.price?.toLocaleString()} UZS/oy
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Sinov muddati (Demo kunlar)</label>
+                    <input
+                      type="number"
+                      className="input-field"
+                      placeholder="7"
+                      value={form.trialDays || ''}
+                      onChange={e => f("trialDays", e.target.value)}
+                    />
                   </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Parol *</label>
-                  <div className="relative">
-                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
-                    <input className="input-field pl-8" type="password" placeholder="Kamida 6 belgi" value={form.managerPassword} onChange={e => f("managerPassword", e.target.value)} />
+              </div>
+
+              <div>
+                <div className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+                  Manager akkaunt
+                </div>
+                <div className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+                  Bu ma'lumotlar bilan markaz manageri tizimga kiradi
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Manager ismi *</label>
+                    <input className="input-field" placeholder="Ism Familiya" value={form.managerName} onChange={e => f("managerName", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Manager telefoni</label>
+                    <PhoneInput className="input-field" placeholder="+998 90 000 00 00" value={form.managerPhone} onChange={e => f("managerPhone", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Username *</label>
+                    <div className="relative">
+                      <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+                      <input className="input-field pl-8" placeholder="manager_username" value={form.managerUsername} onChange={e => f("managerUsername", e.target.value)} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Parol *</label>
+                    <div className="relative">
+                      <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+                      <input className="input-field pl-8" type="password" placeholder="Kamida 6 belgi" value={form.managerPassword} onChange={e => f("managerPassword", e.target.value)} />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
@@ -168,11 +206,25 @@ function CenterCard({ center, onEdit, onDelete }) {
           </div>
         </div>
 
-        {/* AI Model Badge */}
-        <div className="mb-3.5 flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg border w-fit"
-          style={{ borderColor: "var(--border)", background: "var(--secondary-background)", color: "var(--text-secondary)" }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>AI Model: <strong style={{ color: "var(--text-primary)" }}>{center.settings?.aiConfig?.model || "Standart"}</strong></span>
+        {/* Subscription & AI Badges */}
+        <div className="mb-3.5 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg border w-fit"
+            style={{ borderColor: "var(--border)", background: "var(--secondary-background)", color: "var(--text-secondary)" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>AI: <strong style={{ color: "var(--text-primary)" }}>{center.subscription?.plan?.aiModel || center.settings?.aiConfig?.model || "Standart"}</strong></span>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg border w-fit"
+            style={{
+              borderColor: center.subscription?.status === 'grace' ? '#f59e0b' : 'var(--border)',
+              background: center.subscription?.status === 'grace' ? '#fef3c7' : 'var(--secondary-background)',
+              color: center.subscription?.status === 'grace' ? '#92400e' : 'var(--text-secondary)'
+            }}>
+            <span>Tarif: <strong style={{ color: "var(--text-primary)" }}>{center.subscription?.plan?.name || "Starter"}</strong></span>
+            <span className="capitalize text-[10px] px-1.5 py-0.5 rounded bg-black/5 font-semibold">
+              {center.subscription?.status === 'trial' ? 'Demo' : center.subscription?.status === 'active' ? 'Faol' : center.subscription?.status || 'Faol'}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
@@ -238,6 +290,11 @@ export default function AdminCenters() {
   const { data: centers = [], isLoading } = useQuery({
     queryKey: ["admin-centers"],
     queryFn: () => api.get("/admin/centers").then(r => r.data?.data || r.data || []),
+  });
+
+  const { data: plans = [] } = useQuery({
+    queryKey: ["admin-plans"],
+    queryFn: () => api.get("/plans").then(r => r.data?.data || r.data || []),
   });
 
   const createMut = useMutation({
@@ -351,10 +408,10 @@ export default function AdminCenters() {
       )}
 
       <AnimatePresence>
-        {modalOpen && <CenterModal onClose={() => setModalOpen(false)} onSave={d => createMut.mutate({ ...d, phone: cleanPhone(d.phone), managerPhone: cleanPhone(d.managerPhone) })} loading={createMut.isPending} />}
+        {modalOpen && <CenterModal plans={plans} onClose={() => setModalOpen(false)} onSave={d => createMut.mutate({ ...d, phone: cleanPhone(d.phone), managerPhone: cleanPhone(d.managerPhone) })} loading={createMut.isPending} />}
       </AnimatePresence>
       <AnimatePresence>
-        {editTarget && <CenterModal initial={editTarget} onClose={() => setEditTarget(null)} onSave={d => updateMut.mutate({ ...d, phone: cleanPhone(d.phone), managerPhone: cleanPhone(d.managerPhone) })} loading={updateMut.isPending} />}
+        {editTarget && <CenterModal plans={plans} initial={editTarget} onClose={() => setEditTarget(null)} onSave={d => updateMut.mutate({ ...d, phone: cleanPhone(d.phone), managerPhone: cleanPhone(d.managerPhone) })} loading={updateMut.isPending} />}
       </AnimatePresence>
     </div>
   );

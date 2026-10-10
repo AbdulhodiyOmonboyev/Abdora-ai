@@ -1,6 +1,7 @@
 const { verifyAccessToken } = require('../utils/tokenService');
 const { error } = require('../utils/apiResponse');
 const { prisma } = require('../config/db');
+const { checkSubscriptionStatus } = require('./subscriptionGuard');
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -42,7 +43,7 @@ const verifyToken = async (req, res, next) => {
 
     if (user.isFrozen && user.role === 'student') return error(res, 'Hisobingiz muzlatilgan', 403);
     req.user = { ...decoded, id: user.id, userId: user.id, role: user.role, centerId: user.centerId, branchId: user.branchId };
-    next();
+    return checkSubscriptionStatus(req, res, next);
   } catch (err) {
     return error(res, 'Invalid or expired token', 401);
   }

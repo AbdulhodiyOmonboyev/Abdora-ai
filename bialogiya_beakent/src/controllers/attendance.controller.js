@@ -1,6 +1,7 @@
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
 const { assertGroupAccess } = require('../utils/branchScope');
+const { sendCenterSMS } = require('../utils/smsProvider');
 
 const DEFAULT_GRADE_SETTINGS = {
   minGrade: 1,
@@ -201,6 +202,29 @@ const markAttendance = async (req, res, next) => {
           },
         }).catch(() => {});
       }
+    }
+
+    // Darsda qatnashmagan (absent) o'quvchilar ota-onasiga SMS xabar jo'natish
+    const absentRecords = cleanedRecords.filter(r => r.status === 'absent');
+    if (absentRecords.length > 0 && group?.centerId) {
+      const absentStudentIds = absentRecords.map(r => r.studentId);
+      prisma.user.findMany({
+        where: { id: { in: absentStudentIds }, parentPhone: { not: null } },
+        select: { id: true, name: true, parentPhone: true, parentName: true }
+      }).then(studentsWithParents => {
+        for (const s of studentsWithParents) {
+          if (!s.parentPhone) continue;
+          const msg = `Hurmatli ota-ona! Farzandingiz ${s.name} bugun ${group.name} guruhidagi darsda qatnashmadi.`;
+          sendCenterSMS({
+            centerId: group.centerId,
+            toPhone: s.parentPhone,
+            message: msg,
+            trigger: 'attendance_missed',
+            recipientType: 'parent',
+            userId: s.id
+          }).catch(() => {});
+        }
+      }).catch(() => {});
     }
 
     return success(res, att, 'Davomat va baholar muvaffaqiyatli saqlandi');

@@ -19,6 +19,9 @@ const getCenters = async (req, res, next) => {
           where: { role: 'manager', isActive: true },
           select: { id: true, name: true, username: true, phone: true },
         },
+        subscription: {
+          include: { plan: true }
+        },
         _count: {
           select: {
             users: true,
@@ -57,6 +60,7 @@ const getCenters = async (req, res, next) => {
       branches: c.branches,
       managers: c.users,
       primaryManager: c.users[0] || null,
+      subscription: c.subscription || null,
     }));
 
     return success(res, formatted);
@@ -120,12 +124,44 @@ const createCenter = async (req, res, next) => {
         password: rawPassword,
       };
     }
+
+    // 3. Auto-assign plan to new center
+    let subscription = null;
+    try {
+      let targetPlanId = req.body.planId;
+      if (!targetPlanId) {
+        const defaultPlan = await prisma.plan.findFirst({ where: { isActive: true }, orderBy: { price: 'asc' } });
+        targetPlanId = defaultPlan?.id;
+      }
+
+      if (targetPlanId) {
+        const plan = await prisma.plan.findUnique({ where: { id: targetPlanId } });
+        if (plan) {
+          const trialDays = req.body.trialDays ? parseInt(req.body.trialDays, 10) : plan.trialDays;
+          const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
+          subscription = await prisma.subscription.create({
+            data: {
+              centerId: center.id,
+              planId: plan.id,
+              status: 'trial',
+              trialEndsAt,
+              nextDueDate: trialEndsAt,
+              paymentMethod: 'manual'
+            },
+            include: { plan: true }
+          });
+        }
+      }
+    } catch (subErr) {
+      console.error('Failed to create initial subscription:', subErr.message);
+    }
  
     cache.flushAll();
     return success(res, {
       center,
       manager,
       credentials,
+      subscription,
     }, 'O\'quv markaz va boshqaruvchi hisobi muvaffaqiyatli yaratildi', 201);
   } catch (err) {
     next(err);

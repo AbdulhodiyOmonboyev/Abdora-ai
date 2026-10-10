@@ -30,8 +30,28 @@ const safeUser = (u) => {
 
 const createStudent = async (req, res, next) => {
   try {
-    let { name, groupId, language, phone, password, branchId } = req.body;
-    if (!name) return error(res, 'Name required', 400);
+    let {
+      name,
+      groupId,
+      language,
+      phone,
+      password,
+      branchId,
+      parentPhone,
+      parentName,
+      gender,
+      age,
+      address,
+      birthDate
+    } = req.body;
+    if (!name?.trim()) return error(res, "O'quvchi ismi kiritilishi shart", 400);
+
+    // Ota-ona telefon raqami tekshiruvi (SMS va xabarnomalar uchun)
+    const centerSettings = req.user?.center?.settings || {};
+    const requireParentPhone = centerSettings.studentForm?.requireParentPhone !== false;
+    if (requireParentPhone && !parentPhone && req.user.role !== 'admin') {
+      return error(res, "Ota-ona telefon raqami kiritilishi shart (SMS xabarlar uchun)", 400);
+    }
 
     let group = null;
     let teacherId = null;
@@ -57,8 +77,8 @@ const createStudent = async (req, res, next) => {
       }
     }
 
-    const code = generatePassword(phone, password);
-    let username = generateUsername(name, phone);
+    const code = generatePassword(phone || parentPhone, password);
+    let username = generateUsername(name, phone || parentPhone);
 
     const existing = await prisma.user.findUnique({ where: { username } });
     if (existing) username = `${username}${Math.floor(10 + Math.random() * 90)}`;
@@ -67,7 +87,7 @@ const createStudent = async (req, res, next) => {
 
     const user = await prisma.user.create({
       data: {
-        name,
+        name: name.trim(),
         username,
         passwordHash,
         role: 'student',
@@ -77,6 +97,12 @@ const createStudent = async (req, res, next) => {
         branchId: effectiveBranchId || null,
         centerId,
         phone: phone || null,
+        parentPhone: parentPhone ? String(parentPhone).trim() : null,
+        parentName: parentName ? String(parentName).trim() : null,
+        gender: gender || null,
+        age: age ? parseInt(age, 10) : null,
+        address: address || null,
+        birthDate: birthDate ? new Date(birthDate) : null,
       },
     });
 
@@ -419,7 +445,7 @@ const testAIPersonalization = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
-    const { name, email, isActive, groupId, language, phone, gender, age, address, studyLocation, residence, alternativeWorkplace, birthDate } = req.body;
+    const { name, email, isActive, groupId, language, phone, gender, age, address, studyLocation, residence, alternativeWorkplace, birthDate, parentPhone, parentName, customRoleId } = req.body;
     const access = await assertScopedUser(req.params.id, req.user, ['student', 'teacher']);
     if (access.error) return error(res, access.error, access.status);
     const target = access.target;
@@ -430,7 +456,24 @@ const updateUser = async (req, res, next) => {
     }
     const user = await prisma.user.update({
       where: { id: req.params.id },
-      data: { name, email, isActive, groupId, language, phone, gender, age: age ? Number(age) : null, address, studyLocation, residence, alternativeWorkplace, birthDate: birthDate ? new Date(birthDate) : null },
+      data: {
+        name,
+        email,
+        isActive,
+        groupId,
+        language,
+        phone,
+        gender,
+        age: age ? Number(age) : null,
+        address,
+        studyLocation,
+        residence,
+        alternativeWorkplace,
+        birthDate: birthDate ? new Date(birthDate) : null,
+        ...(parentPhone !== undefined && { parentPhone: parentPhone ? String(parentPhone).trim() : null }),
+        ...(parentName !== undefined && { parentName: parentName ? String(parentName).trim() : null }),
+        ...(customRoleId !== undefined && { customRoleId: customRoleId || null }),
+      },
     });
     return success(res, safeUser(user));
   } catch (err) { next(err); }

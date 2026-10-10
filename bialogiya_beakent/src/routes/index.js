@@ -24,5 +24,10 @@ router.use('/schedule', require('./schedule.routes'));
 router.use('/student', require('./student.routes'));
 router.use('/shop', require('./shop.routes'));
 router.use('/anti-sleep', require('./antiSleep.routes'));
+router.use('/plans', require('./plan.routes'));
+router.use('/subscriptions', require('./subscription.routes'));
+router.use('/ai-usage', require('./ai-usage.routes'));
+router.use('/sms', require('./sms.routes'));
+router.use('/custom-roles', require('./custom-role.routes'));
 
 module.exports = router;

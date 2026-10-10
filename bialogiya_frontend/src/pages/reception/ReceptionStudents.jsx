@@ -8,13 +8,14 @@ import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { getLevelProgress } from '../../utils/format';
 
+import toast from 'react-hot-toast';
 import { formatUzPhone, cleanPhone } from '../../utils/formatPhone';
 import PhoneInput from '../../components/ui/PhoneInput';
 
 export default function ReceptionStudents() {
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', groupId: '', phone: '+998 ', language: 'uz' });
+  const [form, setForm] = useState({ name: '', groupId: '', phone: '+998 ', parentPhone: '+998 ', parentName: '', language: 'uz' });
   const [newCreds, setNewCreds] = useState(null);
   const [branchFilter, setBranchFilter] = useState('');
   const [filterGroupId, setFilterGroupId] = useState('');
@@ -55,14 +56,18 @@ export default function ReceptionStudents() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (d) => api.post('/users/create-student', { ...d, phone: cleanPhone(d.phone) }),
+    mutationFn: (d) => api.post('/users/create-student', {
+      ...d,
+      phone: cleanPhone(d.phone),
+      parentPhone: cleanPhone(d.parentPhone)
+    }),
     onSuccess: ({ data }) => {
       qc.invalidateQueries(['reception-students']);
       qc.invalidateQueries(['reception-group-detail']);
       qc.invalidateQueries(['reception-groups']);
       qc.invalidateQueries(['all-students']);
       setNewCreds(data.data.credentials);
-      setForm({ name: '', groupId: form.groupId || '', phone: '+998 ', language: 'uz' });
+      setForm({ name: '', groupId: form.groupId || '', phone: '+998 ', parentPhone: '+998 ', parentName: '', language: 'uz' });
     },
   });
 
@@ -243,7 +248,27 @@ export default function ReceptionStudents() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Telefon raqami (Ixtiyoriy)</label>
+                    <label className="block text-sm font-medium mb-1.5 text-amber-600 dark:text-amber-400 font-semibold">
+                      Ota-ona telefon raqami * (SMS xabarlar uchun)
+                    </label>
+                    <PhoneInput
+                      value={form.parentPhone}
+                      onChange={e => setForm(f => ({ ...f, parentPhone: e.target.value }))}
+                      className="input-field font-mono border-amber-500/50"
+                      placeholder="+998 90 123 45 67"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Ota-ona ismi (Ixtiyoriy)</label>
+                    <input
+                      value={form.parentName}
+                      onChange={e => setForm(f => ({ ...f, parentName: e.target.value }))}
+                      placeholder="Masalan: Karim aka (otasi)"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">O'quvchi telefoni (Ixtiyoriy)</label>
                     <PhoneInput
                       value={form.phone}
                       onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
@@ -264,7 +289,11 @@ export default function ReceptionStudents() {
                   <div className="flex gap-3 pt-2">
                     <button onClick={() => setShowCreate(false)} className="btn-ghost flex-1">Bekor</button>
                     <button
-                      onClick={() => form.name && createMutation.mutate(form)}
+                      onClick={() => {
+                        if (!form.name?.trim()) return toast.error("O'quvchi ismi kiritilishi shart");
+                        if (!cleanPhone(form.parentPhone)) return toast.error("Ota-ona telefon raqami kiritilishi shart (SMS xabarlar uchun)");
+                        createMutation.mutate(form);
+                      }}
                       disabled={!form.name || createMutation.isPending}
                       className="btn-primary flex-1 disabled:opacity-40">
                       {createMutation.isPending ? "Qo'shilmoqda..." : "Qo'shish"}
