@@ -191,8 +191,10 @@ const runMigrations = async () => {
   await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "salaryType" TEXT NOT NULL DEFAULT 'percent'`);
   await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "salaryShare" INTEGER NOT NULL DEFAULT 50`);
   await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "hourlyRate" INTEGER`);
-  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "fixedSalary" INTEGER`);
   await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "branchId" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "parentPhone" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "parentName" TEXT`);
+  await safeRun(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "customRoleId" TEXT`);
 
   // 10. Resource columns
   await safeRun(`ALTER TABLE "Resource" ADD COLUMN IF NOT EXISTS "fileUrl" TEXT`);
@@ -313,6 +315,136 @@ const runMigrations = async () => {
     )
   `);
   await safeRun(`ALTER TABLE "UploadedFile" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+
+  // 17. CustomRole table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "CustomRole" (
+      "id" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "description" TEXT,
+      "baseRole" TEXT NOT NULL DEFAULT 'reception',
+      "permissions" JSONB NOT NULL DEFAULT '{}',
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "centerId" TEXT NOT NULL,
+      CONSTRAINT "CustomRole_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "CustomRole_centerId_idx" ON "CustomRole"("centerId")`);
+
+  // 18. Plan table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "Plan" (
+      "id" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "description" TEXT,
+      "price" INTEGER NOT NULL DEFAULT 199000,
+      "currency" TEXT NOT NULL DEFAULT 'UZS',
+      "trialDays" INTEGER NOT NULL DEFAULT 7,
+      "aiEnabled" BOOLEAN NOT NULL DEFAULT false,
+      "aiProvider" TEXT,
+      "aiModel" TEXT,
+      "aiMonthlyTokenLimit" INTEGER NOT NULL DEFAULT 0,
+      "aiMonthlyRequestLimit" INTEGER NOT NULL DEFAULT 0,
+      "smsEnabled" BOOLEAN NOT NULL DEFAULT false,
+      "smsProvider" TEXT,
+      "smsMonthlyLimit" INTEGER NOT NULL DEFAULT 0,
+      "maxBranches" INTEGER NOT NULL DEFAULT 1,
+      "maxStudents" INTEGER NOT NULL DEFAULT 100,
+      "maxTeachers" INTEGER NOT NULL DEFAULT 5,
+      "maxGroups" INTEGER NOT NULL DEFAULT 10,
+      "features" JSONB NOT NULL DEFAULT '{}',
+      "isActive" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "Plan_pkey" PRIMARY KEY ("id")
+    )
+  `);
+
+  // 19. Subscription table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "Subscription" (
+      "id" TEXT NOT NULL,
+      "centerId" TEXT NOT NULL,
+      "planId" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'trial',
+      "trialEndsAt" TIMESTAMP(3),
+      "currentPeriodStart" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "currentPeriodEnd" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "nextDueDate" TIMESTAMP(3),
+      "aiTokensUsed" INTEGER NOT NULL DEFAULT 0,
+      "aiRequestsUsed" INTEGER NOT NULL DEFAULT 0,
+      "smsUsed" INTEGER NOT NULL DEFAULT 0,
+      "aiApiKeyEncrypted" TEXT,
+      "aiApiKeyIV" TEXT,
+      "smsApiKeyEncrypted" TEXT,
+      "smsApiKeyIV" TEXT,
+      "smsSenderName" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "Subscription_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`CREATE UNIQUE INDEX IF NOT EXISTS "Subscription_centerId_key" ON "Subscription"("centerId")`);
+
+  // 20. Invoice table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "Invoice" (
+      "id" TEXT NOT NULL,
+      "subscriptionId" TEXT NOT NULL,
+      "amount" INTEGER NOT NULL,
+      "currency" TEXT NOT NULL DEFAULT 'UZS',
+      "status" TEXT NOT NULL DEFAULT 'paid',
+      "paymentMethod" TEXT NOT NULL DEFAULT 'manual',
+      "paidAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "periodStart" TIMESTAMP(3) NOT NULL,
+      "periodEnd" TIMESTAMP(3) NOT NULL,
+      "notes" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "Invoice_subscriptionId_idx" ON "Invoice"("subscriptionId")`);
+
+  // 21. AIUsageLog table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "AIUsageLog" (
+      "id" TEXT NOT NULL,
+      "centerId" TEXT,
+      "userId" TEXT,
+      "provider" TEXT NOT NULL,
+      "model" TEXT NOT NULL,
+      "useCase" TEXT NOT NULL DEFAULT 'chat',
+      "tokensIn" INTEGER NOT NULL DEFAULT 0,
+      "tokensOut" INTEGER NOT NULL DEFAULT 0,
+      "totalTokens" INTEGER NOT NULL DEFAULT 0,
+      "costUsd" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "AIUsageLog_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "AIUsageLog_centerId_idx" ON "AIUsageLog"("centerId")`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "AIUsageLog_createdAt_idx" ON "AIUsageLog"("createdAt")`);
+
+  // 22. SMSLog table
+  await safeRun(`
+    CREATE TABLE IF NOT EXISTS "SMSLog" (
+      "id" TEXT NOT NULL,
+      "centerId" TEXT,
+      "userId" TEXT,
+      "toPhone" TEXT NOT NULL,
+      "message" TEXT NOT NULL,
+      "provider" TEXT NOT NULL DEFAULT 'eskiz',
+      "status" TEXT NOT NULL DEFAULT 'sent',
+      "trigger" TEXT NOT NULL DEFAULT 'manual',
+      "errorMessage" TEXT,
+      "cost" INTEGER NOT NULL DEFAULT 85,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "SMSLog_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "SMSLog_centerId_idx" ON "SMSLog"("centerId")`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "SMSLog_createdAt_idx" ON "SMSLog"("createdAt")`);
 
   console.log('[DB] All schema migrations verified and applied');
 };
