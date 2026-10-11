@@ -50,9 +50,11 @@ const verifyToken = async (req, res, next) => {
 };
 
 const requireRole = (...roles) => {
+  // Accept both requireRole('admin') and requireRole(['admin', 'manager'])
+  const allowedRoles = roles.flat();
   return (req, res, next) => {
     if (!req.user) return error(res, 'Unauthorized', 401);
-    if (!roles.includes(req.user.role)) {
+    if (!allowedRoles.includes(req.user.role)) {
       return error(res, 'Forbidden: insufficient permissions', 403);
     }
     next();

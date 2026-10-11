@@ -22,8 +22,11 @@ router.post('/:centerId/suspend', requireRole(['admin']), suspendSubscription);
 router.post('/:centerId/activate', requireRole(['admin']), activateSubscription);
 
 // Center Manager & Admin routes
-router.get('/:centerId?', getCenterSubscription);
-router.post('/:centerId?/byok', configureBYOK);
-router.post('/:centerId?/byos', configureBYOS);
+router.get('/', getCenterSubscription);
+router.get('/:centerId', getCenterSubscription);
+router.post('/byok', configureBYOK);
+router.post('/:centerId/byok', configureBYOK);
+router.post('/byos', configureBYOS);
+router.post('/:centerId/byos', configureBYOS);
 
 module.exports = router;
