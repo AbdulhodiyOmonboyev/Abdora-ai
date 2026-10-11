@@ -21,7 +21,7 @@ export default function AIUsageTab({ selectedCenterId }) {
   });
 
   // 2. Fetch Detailed Logs
-  const { data: logsData, isLoading: logsLoading, refetch: refetchLogs } = useQuery({
+  const { data: logsData = { logs: [], pagination: {} }, isLoading: logsLoading, refetch: refetchLogs } = useQuery({
     queryKey: ['ai-usage-logs', selectedCenterId, page, providerFilter, useCaseFilter],
     queryFn: () => api.get('/ai-usage/logs', {
       params: {
@@ -33,6 +33,9 @@ export default function AIUsageTab({ selectedCenterId }) {
       }
     }).then(r => r.data?.data || { logs: [], pagination: {} })
   });
+
+  const logs = logsData?.logs || [];
+  const pagination = logsData?.pagination || {};
 
   const summary = stats?.summary || {
     totalRequests: 0,
@@ -59,13 +62,13 @@ export default function AIUsageTab({ selectedCenterId }) {
             <div>
               <div className="text-xs text-[var(--text-secondary)] font-medium">Jami Sarflangan Token</div>
               <div className="text-lg font-black text-[var(--text-primary)]">
-                {summary.totalTokens?.toLocaleString()}
+                {(summary.totalTokens || 0).toLocaleString()}
               </div>
             </div>
           </div>
           <div className="mt-2 text-[10px] text-[var(--text-muted)] flex justify-between">
-            <span>In: {summary.tokensIn?.toLocaleString()}</span>
-            <span>Out: {summary.tokensOut?.toLocaleString()}</span>
+            <span>In: {(summary.tokensIn || 0).toLocaleString()}</span>
+            <span>Out: {(summary.tokensOut || 0).toLocaleString()}</span>
           </div>
         </div>
 
@@ -77,7 +80,7 @@ export default function AIUsageTab({ selectedCenterId }) {
             <div>
               <div className="text-xs text-[var(--text-secondary)] font-medium">Jami AI So'rovlar</div>
               <div className="text-lg font-black text-[var(--text-primary)]">
-                {summary.totalRequests?.toLocaleString()}
+                {(summary.totalRequests || 0).toLocaleString()}
               </div>
             </div>
           </div>
@@ -94,7 +97,7 @@ export default function AIUsageTab({ selectedCenterId }) {
             <div>
               <div className="text-xs text-[var(--text-secondary)] font-medium">Taxminiy API Xarajat</div>
               <div className="text-lg font-black text-[var(--text-primary)]">
-                ${summary.totalCostUsd?.toFixed(4)} USD
+                ${(summary.totalCostUsd || 0).toFixed(4)} USD
               </div>
             </div>
           </div>
@@ -276,7 +279,7 @@ export default function AIUsageTab({ selectedCenterId }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {(logsData.logs || []).map((l) => (
+              {logs.map((l) => (
                 <tr key={l.id} className="hover:bg-[var(--secondary-background)] transition-colors">
                   <td className="py-2.5 text-[var(--text-muted)] whitespace-nowrap">
                     {new Date(l.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -294,14 +297,14 @@ export default function AIUsageTab({ selectedCenterId }) {
                     {l.tokensIn} / {l.tokensOut}
                   </td>
                   <td className="py-2.5 text-right font-bold text-[var(--text-primary)] whitespace-nowrap">
-                    {l.totalTokens?.toLocaleString()}
+                    {(l.totalTokens || 0).toLocaleString()}
                   </td>
                   <td className="py-2.5 text-right font-mono text-emerald-600 font-semibold whitespace-nowrap">
-                    ${l.costUsd?.toFixed(5)}
+                    ${(l.costUsd || 0).toFixed(5)}
                   </td>
                 </tr>
               ))}
-              {(!logsData.logs || logsData.logs.length === 0) && (
+              {logs.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-center py-10 text-xs text-[var(--text-muted)]">
                     Hozircha AI chaqiruvlari jurnali bo'sh
@@ -313,10 +316,10 @@ export default function AIUsageTab({ selectedCenterId }) {
         </div>
 
         {/* Pagination */}
-        {logsData.pagination?.totalPages > 1 && (
+        {pagination?.totalPages > 1 && (
           <div className="flex items-center justify-between pt-4 border-t border-[var(--border)] mt-2">
             <span className="text-xs text-[var(--text-muted)]">
-              Sahifa {logsData.pagination.page} / {logsData.pagination.totalPages}
+              Sahifa {pagination.page} / {pagination.totalPages}
             </span>
             <div className="flex gap-1.5">
               <button
@@ -327,7 +330,7 @@ export default function AIUsageTab({ selectedCenterId }) {
                 <ChevronLeft size={14} />
               </button>
               <button
-                disabled={page >= logsData.pagination.totalPages}
+                disabled={page >= pagination.totalPages}
                 onClick={() => setPage(p => p + 1)}
                 className="btn-outline p-1.5 rounded-lg disabled:opacity-40"
               >

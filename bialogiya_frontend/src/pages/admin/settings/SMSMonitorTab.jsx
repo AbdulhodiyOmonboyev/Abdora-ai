@@ -36,7 +36,7 @@ export default function SMSMonitorTab({ selectedCenterId }) {
   });
 
   // 2. Fetch SMS Logs
-  const { data: logsData, isLoading: logsLoading, refetch: refetchLogs } = useQuery({
+  const { data: logsData = { logs: [], pagination: {} }, isLoading: logsLoading, refetch: refetchLogs } = useQuery({
     queryKey: ['sms-logs', selectedCenterId, page],
     queryFn: () => api.get('/sms/logs', {
       params: {
@@ -46,6 +46,9 @@ export default function SMSMonitorTab({ selectedCenterId }) {
       }
     }).then(r => r.data?.data || { logs: [], pagination: {} })
   });
+
+  const logs = logsData?.logs || [];
+  const pagination = logsData?.pagination || {};
 
   // 3. Fetch SMS Templates
   const { data: loadedTemplates } = useQuery({
@@ -362,7 +365,7 @@ export default function SMSMonitorTab({ selectedCenterId }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {(logsData.logs || []).map((l) => (
+              {logs.map((l) => (
                 <tr key={l.id} className="hover:bg-[var(--secondary-background)] transition-colors">
                   <td className="py-2.5 text-[var(--text-muted)] whitespace-nowrap">
                     {new Date(l.sentAt || l.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
@@ -395,7 +398,7 @@ export default function SMSMonitorTab({ selectedCenterId }) {
                   </td>
                 </tr>
               ))}
-              {(!logsData.logs || logsData.logs.length === 0) && (
+              {logs.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-center py-10 text-xs text-[var(--text-muted)]">
                     Hozircha SMS xabarnomalar jurnali bo'sh
@@ -407,10 +410,10 @@ export default function SMSMonitorTab({ selectedCenterId }) {
         </div>
 
         {/* Pagination */}
-        {logsData.pagination?.totalPages > 1 && (
+        {pagination?.totalPages > 1 && (
           <div className="flex items-center justify-between pt-4 border-t border-[var(--border)] mt-2">
             <span className="text-xs text-[var(--text-muted)]">
-              Sahifa {logsData.pagination.page} / {logsData.pagination.totalPages}
+              Sahifa {pagination.page} / {pagination.totalPages}
             </span>
             <div className="flex gap-1.5">
               <button
@@ -421,7 +424,7 @@ export default function SMSMonitorTab({ selectedCenterId }) {
                 <ChevronLeft size={14} />
               </button>
               <button
-                disabled={page >= logsData.pagination.totalPages}
+                disabled={page >= pagination.totalPages}
                 onClick={() => setPage(p => p + 1)}
                 className="btn-outline p-1.5 rounded-lg disabled:opacity-40"
               >
