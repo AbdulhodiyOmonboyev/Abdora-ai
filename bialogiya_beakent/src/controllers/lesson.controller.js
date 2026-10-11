@@ -6,7 +6,7 @@ const { getCenterId } = require('../utils/centerScope');
 
 const findAccessibleLesson = (id, user) => prisma.lesson.findFirst({
   where: { id, ...(user.role !== 'admin' && user.centerId ? { OR: [{ centerId: user.centerId }, { centerId: null }] } : {}) },
-  select: { id: true, aiContent: true, aiEnabled: true, title: true, content: true, groupId: true, teacherId: true, centerId: true },
+  select: { id: true, aiContent: true, aiEnabled: true, title: true, content: true, groupId: true, teacherId: true, centerId: true, attachments: true },
 });
 
 const canAccessLesson = async (lesson, user) => {
@@ -25,13 +25,80 @@ const canAccessLesson = async (lesson, user) => {
   return true;
 };
 
+const extractTextFromFile = async (file) => {
+  const mime = file.mimetype;
+
+  // Plain text
+  if (mime === 'text/plain') {
+    return file.buffer ? file.buffer.toString('utf8') : '';
+  }
+
+  // PDF — pdf-parse v2 exports a PDFParse class, not a callable default.
+  if (mime === 'application/pdf') {
+    const { PDFParse } = require('pdf-parse');
+    const parser = new PDFParse({ data: new Uint8Array(file.buffer) });
+    try {
+      const result = await parser.getText();
+      // Join page texts instead of using result.text — the latter injects
+      // "-- 1 of N --" page separators that pollute the AI prompt.
+      return (result.pages || []).map(p => p.text).join('\n\n') || result.text || '';
+    } finally {
+      await parser.destroy().catch(() => {});
+    }
+  }
+
+  // DOCX / DOC
+  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      mime === 'application/msword') {
+    const mammoth = require('mammoth');
+    const result = await mammoth.extractRawText({ buffer: file.buffer });
+    return result.value || '';
+  }
+
+  // Images — use Gemini vision
+  if (mime && mime.startsWith('image/')) {
+    const { getModel } = require('../config/gemini');
+    const model = getModel(false);
+    const imagePart = { inlineData: { data: file.buffer.toString('base64'), mimeType: mime } };
+    const result = await model.generateContent([
+      'Bu rasmning barcha matnini va ta\'lim mazmunini batafsil yoz. Mavzu, tushunchalar, jadvallar va diagrammalardagi ma\'lumotlarni ham yoz.',
+      imagePart,
+    ]);
+    return result.response.text();
+  }
+
+  throw new Error('Qo\'llab-quvvatlanmaydigan fayl turi');
+};
+
 const createLesson = async (req, res, next) => {
   try {
-    const { title, content, groupId, subject, aiEnabled } = req.body;
+    const { title, content, groupId, subject, aiEnabled, language } = req.body;
     if (!title || !groupId) return error(res, 'Title and group required', 400);
     const centerId = getCenterId(req) || req.body.centerId || null;
     const group = await prisma.group.findFirst({ where: { id: groupId, ...(centerId ? { centerId } : {}) }, select: { id: true } });
     if (!group) return error(res, 'Group not found', 404);
+
+    // Yuklangan fayllardan (PDF, DOCX, TXT, Rasm) matn ajratib olish
+    let extractedResourceText = '';
+    if (req.files && req.files.length > 0) {
+      const extractedChunks = [];
+      for (const file of req.files) {
+        try {
+          const txt = await extractTextFromFile(file);
+          if (txt && txt.trim().length > 10) {
+            extractedChunks.push(`[Resurs fayl: ${file.originalname}]:\n${txt.trim()}`);
+          }
+        } catch (fErr) {
+          console.warn(`[Lesson] Fayldan matn ajratishda ogohlantirish (${file.originalname}):`, fErr.message);
+        }
+      }
+      if (extractedChunks.length > 0) {
+        extractedResourceText = extractedChunks.join('\n\n---\n\n');
+        if (extractedResourceText.length > 50000) {
+          extractedResourceText = extractedResourceText.slice(0, 50000) + '\n\n[... Qolgan qismi qisqartirildi ...]';
+        }
+      }
+    }
 
     const attachments = await saveFilesAsAttachments(req.files);
     // multipart/form-data sends booleans as strings.
@@ -47,7 +114,14 @@ const createLesson = async (req, res, next) => {
     });
 
     if (wantsAI) {
-      setImmediate(() => generateLessonAI(lesson.id, title, content || '').catch(console.error));
+      // O'qituvchi konspekti va yuklangan PDF/resurs matnlarini birlashtirib AI ga uzatamiz:
+      const fullContext = [
+        content ? `O'qituvchi kiritgan dars matni/konspekti:\n${content}` : '',
+        extractedResourceText ? `Yuklangan resurs/PDF darslikdan olingan asosiy ilmiy material:\n${extractedResourceText}` : ''
+      ].filter(Boolean).join('\n\n====================\n\n');
+
+      const lang = language || 'uz';
+      setImmediate(() => generateLessonAI(lesson.id, title, fullContext || title, lang).catch(console.error));
     }
 
     // Guruhdagi talabalarga yangi dars bildirishnomasini yuborish
@@ -247,55 +321,47 @@ const regenerateAI = async (req, res, next) => {
     if (!lesson) return error(res, 'Not found', 404);
     if (!(await canAccessLesson(lesson, req.user))) return error(res, 'Forbidden', 403);
     if (!lesson.aiEnabled) return error(res, 'Bu dars uchun AI o\'chirilgan', 400);
+
+    // Darsga biriktirilgan fayllardan matn ajratib olish
+    let extractedAttachmentsText = '';
+    const attachments = Array.isArray(lesson.attachments) ? lesson.attachments : [];
+    const fileIds = attachments.map(a => a.id).filter(Boolean);
+    if (fileIds.length > 0) {
+      try {
+        const files = await prisma.uploadedFile.findMany({
+          where: { id: { in: fileIds } },
+          select: { id: true, name: true, mimeType: true, data: true }
+        });
+        const chunks = [];
+        for (const f of files) {
+          try {
+            if (f && f.data) {
+              const txt = await extractTextFromFile({ buffer: f.data, mimetype: f.mimeType, originalname: f.name });
+              if (txt && txt.trim().length > 10) {
+                chunks.push(`[Resurs fayl: ${f.name}]:\n${txt.trim()}`);
+              }
+            }
+          } catch (e) {}
+        }
+        if (chunks.length > 0) {
+          extractedAttachmentsText = chunks.join('\n\n---\n\n');
+          if (extractedAttachmentsText.length > 50000) {
+            extractedAttachmentsText = extractedAttachmentsText.slice(0, 50000) + '\n\n[... Qolgan qismi qisqartirildi ...]';
+          }
+        }
+      } catch (e) {}
+    }
+
+    const fullContext = [
+      lesson.content ? `O'qituvchi kiritgan dars matni/konspekti:\n${lesson.content}` : '',
+      extractedAttachmentsText ? `Yuklangan resurs/PDF darslikdan olingan asosiy ilmiy material:\n${extractedAttachmentsText}` : ''
+    ].filter(Boolean).join('\n\n====================\n\n');
+
+    const language = req.body?.language || 'uz';
     await prisma.lesson.update({ where: { id: lesson.id }, data: { aiContent: { status: 'generating' } } });
-    setImmediate(() => generateLessonAI(lesson.id, lesson.title, lesson.content || '').catch(console.error));
+    setImmediate(() => generateLessonAI(lesson.id, lesson.title, fullContext || lesson.title, language).catch(console.error));
     return success(res, { status: 'generating' });
   } catch (err) { next(err); }
-};
-
-const extractTextFromFile = async (file) => {
-  const mime = file.mimetype;
-
-  // Plain text
-  if (mime === 'text/plain') {
-    return file.buffer.toString('utf8');
-  }
-
-  // PDF — pdf-parse v2 exports a PDFParse class, not a callable default.
-  if (mime === 'application/pdf') {
-    const { PDFParse } = require('pdf-parse');
-    const parser = new PDFParse({ data: new Uint8Array(file.buffer) });
-    try {
-      const result = await parser.getText();
-      // Join page texts instead of using result.text — the latter injects
-      // "-- 1 of N --" page separators that pollute the AI prompt.
-      return (result.pages || []).map(p => p.text).join('\n\n') || result.text || '';
-    } finally {
-      await parser.destroy().catch(() => {});
-    }
-  }
-
-  // DOCX / DOC
-  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      mime === 'application/msword') {
-    const mammoth = require('mammoth');
-    const result = await mammoth.extractRawText({ buffer: file.buffer });
-    return result.value;
-  }
-
-  // Images — use Gemini vision
-  if (mime.startsWith('image/')) {
-    const { getModel } = require('../config/gemini');
-    const model = getModel(false);
-    const imagePart = { inlineData: { data: file.buffer.toString('base64'), mimeType: mime } };
-    const result = await model.generateContent([
-      'Bu rasmning barcha matnini va ta\'lim mazmunini batafsil yoz. Mavzu, tushunchalar, jadvallar va diagrammalardagi ma\'lumotlarni ham yoz.',
-      imagePart,
-    ]);
-    return result.response.text();
-  }
-
-  throw new Error('Qo\'llab-quvvatlanmaydigan fayl turi');
 };
 
 // Runs after the HTTP response has been sent — see `source`/`aiStatus` on Test.

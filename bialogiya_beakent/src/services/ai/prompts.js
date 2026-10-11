@@ -20,6 +20,9 @@ embedding a formatted list inside a single string.
 Lesson Title: "${title}"
 Lesson Content: "${content}"
 
+SOURCE MATERIAL INSTRUCTION:
+If "Lesson Content" contains text extracted from uploaded PDF textbooks, Word files, or study resources, you MUST thoroughly study and utilize that material! Extract the core concepts, specific terms, rules, and facts directly from that source text. Your explanation, mnemonics, flashcards, mind map, and quiz questions must be strictly grounded in this provided educational content.
+
 Generate comprehensive educational materials in JSON format with these exact keys:
 {
   "simpleExplanation": "Very simple explanation using easy words, suitable for a 13-year-old student. Plain text, no markdown.",
