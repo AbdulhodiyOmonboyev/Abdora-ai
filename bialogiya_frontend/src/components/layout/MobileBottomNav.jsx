@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, ClipboardList, Trophy,
-  Users, GraduationCap, Building2, UserPlus, Wallet, Inbox, Menu,
+  Users, GraduationCap, Building2, UserPlus, Wallet, Inbox, Menu, User,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
@@ -10,16 +10,14 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../config/axios';
 import { cn } from '../../utils/cn';
 
-// A curated 4-item subset per role for the mobile bottom bar — the full
-// list (everything else) stays one tap away behind "Ko'proq", which opens
-// the existing sidebar drawer. Keeping this to 4 items is deliberate:
-// more than that and labels get too cramped to read on a phone.
+// A curated 4-item subset per role for the mobile bottom bar — matching the Flutter mobile app:
+// Student: Asosiy, O'qish, Reyting, Profil
 const PRIMARY_LINKS = {
   student: [
     { to: '/student/dashboard', icon: LayoutDashboard, key: 'dashboard', label: 'Asosiy' },
-    { to: '/student/lessons', icon: BookOpen, key: 'lessons', label: 'Darslar' },
-    { to: '/student/homework', icon: ClipboardList, key: 'homework', label: 'Vazifalar' },
-    { to: '/student/achievements', icon: Trophy, key: 'achievements', label: 'Yutuqlar' },
+    { to: '/student/lessons', icon: BookOpen, key: 'lessons', label: "O'qish" },
+    { to: '/student/leaderboard', icon: Trophy, key: 'leaderboard', label: 'Reyting' },
+    { to: '/student/settings', icon: User, key: 'profile', label: 'Profil' },
   ],
   teacher: [
     { to: '/teacher/dashboard', icon: LayoutDashboard, key: 'dashboard' },
