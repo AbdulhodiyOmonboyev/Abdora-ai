@@ -467,8 +467,8 @@ export default function AdminCenterSettings() {
             exit={{ opacity: 0, y: -8 }}
             className="space-y-6"
           >
-            <div className="panel-card space-y-5 border-2"
-              style={{ borderColor: "var(--primary)", background: "var(--card-background)" }}>
+            <div className="panel-card space-y-5 border-2 bg-white dark:bg-[#101827]"
+              style={{ borderColor: "var(--primary)" }}>
               <div className="flex items-center gap-3 pb-3 border-b" style={{ borderColor: "var(--border)" }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: "var(--primary-50)", color: "var(--primary)" }}>

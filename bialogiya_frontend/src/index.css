@@ -9,6 +9,7 @@
   --background: #F6F7F9;
   --secondary-background: #F1F3F6;
   --card: #FFFFFF;
+  --card-background: #FFFFFF;
   --surface: #F1F3F6;
 
   /* Brand */
@@ -109,6 +110,7 @@
   --background: #080D17;
   --secondary-background: #141E2D;
   --card: #101827;
+  --card-background: #101827;
   --surface: #141E2D;
 
   --primary: #FF6A00;

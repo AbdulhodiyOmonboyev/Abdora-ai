@@ -25,75 +25,108 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading, plans = 
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.5)" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
-        style={{ background: "var(--card-background)", border: "1px solid var(--border)" }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        transition={{ duration: 0.15 }}
+        className="relative w-full max-w-2xl max-h-[90vh] my-auto flex flex-col rounded-2xl shadow-2xl overflow-hidden bg-white dark:bg-[#101827] border border-gray-200 dark:border-gray-800"
       >
-        <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: "var(--border)" }}>
+        {/* Header */}
+        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4.5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#101827]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--primary-50)" }}>
-              <Building2 size={20} style={{ color: "var(--primary)" }} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
+              <Building2 size={20} />
             </div>
             <div>
-              <div className="font-bold text-base" style={{ color: "var(--text-primary)" }}>
+              <div className="font-bold text-base text-gray-900 dark:text-white">
                 {isEdit ? "Markazni tahrirlash" : "Yangi O'quv Markaz"}
               </div>
-              <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
                 {isEdit ? "Ma'lumotlarni o'zgartiring" : "Markaz, manager akkaunti va tarif rejasini tanlang"}
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-[var(--secondary-background)] transition-colors">
-            <X size={18} style={{ color: "var(--text-muted)" }} />
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <div className="p-5 overflow-y-auto max-h-[70vh] space-y-5">
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          {/* Section 1: Markaz ma'lumotlari */}
           <div>
-            <div className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>
+            <div className="text-sm font-semibold mb-3 text-gray-900 dark:text-white flex items-center gap-2">
+              <Building2 size={16} className="text-primary" />
               Markaz ma'lumotlari
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Markaz nomi *</label>
-                <input className="input-field" placeholder="Masalan: Najot Ta'lim" value={form.name} onChange={e => f("name", e.target.value)} />
+                <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Markaz nomi *</label>
+                <input
+                  className="input-field"
+                  placeholder="Masalan: Najot Ta'lim"
+                  value={form.name}
+                  onChange={e => f("name", e.target.value)}
+                />
               </div>
               <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Telefon</label>
-                <PhoneInput className="input-field" placeholder="+998 90 123 45 67" value={form.phone} onChange={e => f("phone", e.target.value)} />
+                <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Telefon</label>
+                <PhoneInput
+                  className="input-field"
+                  placeholder="+998 90 123 45 67"
+                  value={form.phone}
+                  onChange={e => f("phone", e.target.value)}
+                />
               </div>
               <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Email</label>
-                <input className="input-field" placeholder="info@markaz.uz" value={form.email} onChange={e => f("email", e.target.value)} />
+                <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Email</label>
+                <input
+                  className="input-field"
+                  placeholder="info@markaz.uz"
+                  value={form.email}
+                  onChange={e => f("email", e.target.value)}
+                />
               </div>
               <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Veb-sayt</label>
-                <input className="input-field" placeholder="https://markaz.uz" value={form.website} onChange={e => f("website", e.target.value)} />
+                <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Veb-sayt</label>
+                <input
+                  className="input-field"
+                  placeholder="https://markaz.uz"
+                  value={form.website}
+                  onChange={e => f("website", e.target.value)}
+                />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Manzil</label>
-                <input className="input-field" placeholder="Toshkent, Yunusobod tumani..." value={form.address} onChange={e => f("address", e.target.value)} />
+                <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Manzil</label>
+                <input
+                  className="input-field"
+                  placeholder="Toshkent, Yunusobod tumani..."
+                  value={form.address}
+                  onChange={e => f("address", e.target.value)}
+                />
               </div>
             </div>
           </div>
 
           {!isEdit && (
             <>
-              <div>
-                <div className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+              {/* Section 2: Tarif rejasi */}
+              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-0.5">
+                  <Settings2 size={16} className="text-blue-500" />
                   Tarif rejasi (Subscription Plan)
                 </div>
-                <div className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+                <div className="text-xs mb-3 text-gray-500 dark:text-gray-400">
                   Markazning AI, SMS va resurs imkoniyatlarini belgilang
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Tarif</label>
+                    <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Tarif</label>
                     <select
                       className="input-field"
                       value={form.planId || ''}
@@ -108,7 +141,7 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading, plans = 
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Sinov muddati (Demo kunlar)</label>
+                    <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Sinov muddati (Demo kunlar)</label>
                     <input
                       type="number"
                       className="input-field"
@@ -120,34 +153,57 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading, plans = 
                 </div>
               </div>
 
-              <div>
-                <div className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+              {/* Section 3: Manager akkaunt */}
+              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-0.5">
+                  <User size={16} className="text-emerald-500" />
                   Manager akkaunt
                 </div>
-                <div className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+                <div className="text-xs mb-3 text-gray-500 dark:text-gray-400">
                   Bu ma'lumotlar bilan markaz manageri tizimga kiradi
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Manager ismi *</label>
-                    <input className="input-field" placeholder="Ism Familiya" value={form.managerName} onChange={e => f("managerName", e.target.value)} />
+                    <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Manager ismi *</label>
+                    <input
+                      className="input-field"
+                      placeholder="Ism Familiya"
+                      value={form.managerName}
+                      onChange={e => f("managerName", e.target.value)}
+                    />
                   </div>
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Manager telefoni</label>
-                    <PhoneInput className="input-field" placeholder="+998 90 000 00 00" value={form.managerPhone} onChange={e => f("managerPhone", e.target.value)} />
+                    <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Manager telefoni</label>
+                    <PhoneInput
+                      className="input-field"
+                      placeholder="+998 90 000 00 00"
+                      value={form.managerPhone}
+                      onChange={e => f("managerPhone", e.target.value)}
+                    />
                   </div>
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Username *</label>
+                    <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Username *</label>
                     <div className="relative">
-                      <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
-                      <input className="input-field pl-8" placeholder="manager_username" value={form.managerUsername} onChange={e => f("managerUsername", e.target.value)} />
+                      <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        className="input-field pl-8"
+                        placeholder="manager_username"
+                        value={form.managerUsername}
+                        onChange={e => f("managerUsername", e.target.value)}
+                      />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>Parol *</label>
+                    <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Parol *</label>
                     <div className="relative">
-                      <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
-                      <input className="input-field pl-8" type="password" placeholder="Kamida 6 belgi" value={form.managerPassword} onChange={e => f("managerPassword", e.target.value)} />
+                      <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        className="input-field pl-8"
+                        type="password"
+                        placeholder="Kamida 6 belgi"
+                        value={form.managerPassword}
+                        onChange={e => f("managerPassword", e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
@@ -156,18 +212,20 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading, plans = 
           )}
         </div>
 
-        <div className="flex justify-end gap-3 p-5 border-t" style={{ borderColor: "var(--border)" }}>
-          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium border transition-colors hover:bg-[var(--secondary-background)]"
-            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
+        {/* Footer */}
+        <div className="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-[#0d1422]">
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
             Bekor qilish
           </button>
           <button
             onClick={() => onSave(form)}
             disabled={loading || !form.name || (!isEdit && (!form.managerUsername || !form.managerPassword || !form.managerName))}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
-            style={{ background: "var(--primary)" }}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary hover:bg-primary-dark transition-all disabled:opacity-50 shadow-md shadow-primary/25 cursor-pointer"
           >
-            {loading ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
             {isEdit ? "Saqlash" : "Yaratish"}
           </button>
         </div>
@@ -182,8 +240,7 @@ function CenterCard({ center, onEdit, onDelete }) {
 
   return (
     <motion.div layout initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl overflow-hidden transition-all hover:shadow-lg group"
-      style={{ background: "var(--card-background)", border: "1px solid var(--border)" }}>
+      className="rounded-2xl overflow-hidden transition-all hover:shadow-lg group bg-white dark:bg-[#101827] border border-gray-200 dark:border-gray-800">
       <div className="h-2" style={{ background: color }} />
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
@@ -366,7 +423,7 @@ export default function AdminCenters() {
           { label: "Jami o'quvchilar", value: centers.reduce((s, c) => s + (c._count?.students ?? 0), 0), color: "#10b981" },
           { label: "Jami guruhlar", value: centers.reduce((s, c) => s + (c._count?.groups ?? 0), 0), color: "#3b82f6" },
         ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-2xl p-4" style={{ background: "var(--card-background)", border: "1px solid var(--border)" }}>
+          <div key={label} className="rounded-2xl p-4 bg-white dark:bg-[#101827] border border-gray-200 dark:border-gray-800">
             <div className="text-2xl font-bold mb-1" style={{ color }}>{value}</div>
             <div className="text-xs" style={{ color: "var(--text-muted)" }}>{label}</div>
           </div>
