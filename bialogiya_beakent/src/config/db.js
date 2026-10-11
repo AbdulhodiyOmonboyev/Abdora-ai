@@ -365,64 +365,104 @@ const runMigrations = async () => {
   await safeRun(`
     CREATE TABLE IF NOT EXISTS "Subscription" (
       "id" TEXT NOT NULL,
-      "centerId" TEXT NOT NULL,
-      "planId" TEXT NOT NULL,
       "status" TEXT NOT NULL DEFAULT 'trial',
+      "startDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "trialEndsAt" TIMESTAMP(3),
-      "currentPeriodStart" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "currentPeriodEnd" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "currentPeriodStart" TIMESTAMP(3),
+      "currentPeriodEnd" TIMESTAMP(3),
       "nextDueDate" TIMESTAMP(3),
-      "aiTokensUsed" INTEGER NOT NULL DEFAULT 0,
-      "aiRequestsUsed" INTEGER NOT NULL DEFAULT 0,
-      "smsUsed" INTEGER NOT NULL DEFAULT 0,
+      "lastPaidAt" TIMESTAMP(3),
+      "paymentMethod" TEXT NOT NULL DEFAULT 'manual',
+      "aiApiKeySource" TEXT NOT NULL DEFAULT 'platform',
       "aiApiKeyEncrypted" TEXT,
       "aiApiKeyIV" TEXT,
+      "aiPreferredModel" TEXT,
+      "smsProvider" TEXT NOT NULL DEFAULT 'platform',
       "smsApiKeyEncrypted" TEXT,
       "smsApiKeyIV" TEXT,
       "smsSenderName" TEXT,
+      "currentMonthTokens" INTEGER NOT NULL DEFAULT 0,
+      "currentMonthRequests" INTEGER NOT NULL DEFAULT 0,
+      "totalTokensUsed" INTEGER NOT NULL DEFAULT 0,
+      "totalRequestsUsed" INTEGER NOT NULL DEFAULT 0,
+      "currentMonthSms" INTEGER NOT NULL DEFAULT 0,
+      "totalSmsSent" INTEGER NOT NULL DEFAULT 0,
+      "centerId" TEXT NOT NULL,
+      "planId" TEXT NOT NULL,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "Subscription_pkey" PRIMARY KEY ("id")
     )
   `);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "startDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "trialEndsAt" TIMESTAMP(3)`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "currentPeriodStart" TIMESTAMP(3)`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "currentPeriodEnd" TIMESTAMP(3)`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "nextDueDate" TIMESTAMP(3)`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "lastPaidAt" TIMESTAMP(3)`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT NOT NULL DEFAULT 'manual'`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "aiApiKeySource" TEXT NOT NULL DEFAULT 'platform'`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "aiApiKeyEncrypted" TEXT`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "aiApiKeyIV" TEXT`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "aiPreferredModel" TEXT`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "smsProvider" TEXT NOT NULL DEFAULT 'platform'`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "smsApiKeyEncrypted" TEXT`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "smsApiKeyIV" TEXT`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "smsSenderName" TEXT`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "currentMonthTokens" INTEGER NOT NULL DEFAULT 0`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "currentMonthRequests" INTEGER NOT NULL DEFAULT 0`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "totalTokensUsed" INTEGER NOT NULL DEFAULT 0`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "totalRequestsUsed" INTEGER NOT NULL DEFAULT 0`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "currentMonthSms" INTEGER NOT NULL DEFAULT 0`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "totalSmsSent" INTEGER NOT NULL DEFAULT 0`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "centerId" TEXT`);
+  await safeRun(`ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "planId" TEXT`);
   await safeRun(`CREATE UNIQUE INDEX IF NOT EXISTS "Subscription_centerId_key" ON "Subscription"("centerId")`);
 
   // 20. Invoice table
   await safeRun(`
     CREATE TABLE IF NOT EXISTS "Invoice" (
       "id" TEXT NOT NULL,
-      "subscriptionId" TEXT NOT NULL,
       "amount" INTEGER NOT NULL,
       "currency" TEXT NOT NULL DEFAULT 'UZS',
-      "status" TEXT NOT NULL DEFAULT 'paid',
-      "paymentMethod" TEXT NOT NULL DEFAULT 'manual',
-      "paidAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "periodStart" TIMESTAMP(3) NOT NULL,
-      "periodEnd" TIMESTAMP(3) NOT NULL,
-      "notes" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'pending',
+      "dueDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "paidAt" TIMESTAMP(3),
+      "paidBy" TEXT,
+      "note" TEXT,
+      "subscriptionId" TEXT NOT NULL,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
     )
   `);
+  await safeRun(`ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "dueDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+  await safeRun(`ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "paidAt" TIMESTAMP(3)`);
+  await safeRun(`ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "paidBy" TEXT`);
+  await safeRun(`ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "note" TEXT`);
+  await safeRun(`ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "subscriptionId" TEXT`);
   await safeRun(`CREATE INDEX IF NOT EXISTS "Invoice_subscriptionId_idx" ON "Invoice"("subscriptionId")`);
 
   // 21. AIUsageLog table
   await safeRun(`
     CREATE TABLE IF NOT EXISTS "AIUsageLog" (
       "id" TEXT NOT NULL,
-      "centerId" TEXT,
-      "userId" TEXT,
       "provider" TEXT NOT NULL,
       "model" TEXT NOT NULL,
       "useCase" TEXT NOT NULL DEFAULT 'chat',
       "tokensIn" INTEGER NOT NULL DEFAULT 0,
       "tokensOut" INTEGER NOT NULL DEFAULT 0,
       "totalTokens" INTEGER NOT NULL DEFAULT 0,
-      "costUsd" DOUBLE PRECISION NOT NULL DEFAULT 0,
+      "requestCount" INTEGER NOT NULL DEFAULT 1,
+      "costUsd" DOUBLE PRECISION,
+      "userId" TEXT,
+      "centerId" TEXT NOT NULL,
+      "subscriptionId" TEXT NOT NULL,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "AIUsageLog_pkey" PRIMARY KEY ("id")
     )
   `);
+  await safeRun(`ALTER TABLE "AIUsageLog" ADD COLUMN IF NOT EXISTS "requestCount" INTEGER NOT NULL DEFAULT 1`);
+  await safeRun(`ALTER TABLE "AIUsageLog" ADD COLUMN IF NOT EXISTS "subscriptionId" TEXT`);
   await safeRun(`CREATE INDEX IF NOT EXISTS "AIUsageLog_centerId_idx" ON "AIUsageLog"("centerId")`);
   await safeRun(`CREATE INDEX IF NOT EXISTS "AIUsageLog_createdAt_idx" ON "AIUsageLog"("createdAt")`);
 
@@ -430,19 +470,29 @@ const runMigrations = async () => {
   await safeRun(`
     CREATE TABLE IF NOT EXISTS "SMSLog" (
       "id" TEXT NOT NULL,
-      "centerId" TEXT,
-      "userId" TEXT,
-      "toPhone" TEXT NOT NULL,
-      "message" TEXT NOT NULL,
       "provider" TEXT NOT NULL DEFAULT 'eskiz',
-      "status" TEXT NOT NULL DEFAULT 'sent',
+      "toPhone" TEXT NOT NULL,
+      "recipientType" TEXT NOT NULL DEFAULT 'parent',
       "trigger" TEXT NOT NULL DEFAULT 'manual',
+      "messageText" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'sent',
+      "cost" DOUBLE PRECISION,
+      "currency" TEXT NOT NULL DEFAULT 'UZS',
       "errorMessage" TEXT,
-      "cost" INTEGER NOT NULL DEFAULT 85,
+      "userId" TEXT,
+      "centerId" TEXT NOT NULL,
+      "subscriptionId" TEXT,
+      "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "SMSLog_pkey" PRIMARY KEY ("id")
     )
   `);
+  await safeRun(`ALTER TABLE "SMSLog" ADD COLUMN IF NOT EXISTS "recipientType" TEXT NOT NULL DEFAULT 'parent'`);
+  await safeRun(`ALTER TABLE "SMSLog" ADD COLUMN IF NOT EXISTS "messageText" TEXT`);
+  await safeRun(`ALTER TABLE "SMSLog" ADD COLUMN IF NOT EXISTS "subscriptionId" TEXT`);
+  await safeRun(`ALTER TABLE "SMSLog" ADD COLUMN IF NOT EXISTS "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "SMSLog_centerId_idx" ON "SMSLog"("centerId")`);
+  await safeRun(`CREATE INDEX IF NOT EXISTS "SMSLog_createdAt_idx" ON "SMSLog"("createdAt")`);
   await safeRun(`CREATE INDEX IF NOT EXISTS "SMSLog_centerId_idx" ON "SMSLog"("centerId")`);
   await safeRun(`CREATE INDEX IF NOT EXISTS "SMSLog_createdAt_idx" ON "SMSLog"("createdAt")`);
 
