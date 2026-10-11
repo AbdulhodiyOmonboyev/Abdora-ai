@@ -26,23 +26,21 @@ import AIUsageTab from './settings/AIUsageTab';
 import SMSMonitorTab from './settings/SMSMonitorTab';
 import CustomRolesTab from './settings/CustomRolesTab';
 
-/* ─── Sidebar nav items (Super Admin view) ──────────────────── */
-// Groups: null = no separator before, string = separator label before this item
+/* ─── Sidebar nav items (SaaS Super Admin view) ──────────────── */
 const NAV_ITEMS = [
-  // ── Asosiy ──
-  { id: 'platform',     label: 'Platforma',              icon: Building2,   badge: 'Asosiy',   group: null },
-  { id: 'plans',        label: 'Tariflar & Modullar',    icon: CreditCard,  badge: 'SaaS',     group: null },
-  { id: 'features',     label: 'Markaz Imkoniyatlari',   icon: Sparkles,    badge: 'Modullar', group: null },
-  { id: 'roles',        label: 'Rollar & Ruxsatlar',     icon: ShieldCheck, badge: null,       group: null },
-  { id: 'limits',       label: 'Kvota & Limitlar',       icon: Target,      badge: null,       group: null },
-  // ── Monitoring ──
-  { id: 'ai_usage',     label: 'AI Monitoring',          icon: Bot,         badge: 'Live',     group: 'Monitoring' },
-  { id: 'sms_monitor',  label: 'SMS Monitoring',         icon: Smartphone,  badge: 'Sarf',     group: null },
-  // ── Konfiguratsiya ──
-  { id: 'custom_roles', label: 'Maxsus Rollar',          icon: UserCog,     badge: null,       group: 'Konfiguratsiya' },
-  { id: 'integrations', label: 'Integratsiyalar',        icon: Globe,       badge: null,       group: null },
-  { id: 'ai',           label: 'AI Konfiguratsiya',      icon: Bot,         badge: null,       group: null },
-  { id: 'appearance',   label: "Ko'rinish",              icon: Palette,     badge: null,       group: null },
+  // ── SaaS Sotuv & Konstruktor ──
+  { id: 'plans',        label: 'Tariflar & Paketlar (SaaS)', icon: CreditCard,  badge: 'Asosiy',   group: 'SaaS Sotuv & Paketlar' },
+  { id: 'features',     label: 'Markaz Modullari (Sotuv)',  icon: Sparkles,    badge: 'Ruxsat',   group: null },
+  { id: 'limits',       label: 'Kvotalar & Cheklovlar',     icon: Target,      badge: 'Limit',    group: null },
+  { id: 'custom_roles', label: 'Maxsus Rollar',             icon: UserCog,     badge: 'Yangi',    group: null },
+  { id: 'roles',        label: 'Markaz Rollari (Nazorat)',  icon: ShieldCheck, badge: null,       group: null },
+
+  // ── Sarf & Monitoring ──
+  { id: 'ai_usage',     label: 'AI Token Monitoring',       icon: Bot,         badge: 'Live',     group: 'Sarf & Tahlil' },
+  { id: 'sms_monitor',  label: 'SMS Sarfi & Monitoring',    icon: Smartphone,  badge: 'Sarf',     group: null },
+
+  // ── Global Tizim ──
+  { id: 'integrations', label: 'Platforma API Kalitlari',   icon: Key,         badge: 'Global',   group: 'Global Tizim' },
 ];
 
 /* ─── Reusable sub-components ─────────────────────────────────── */
@@ -314,7 +312,7 @@ export default function AdminSettings() {
   const urlCenterId = searchParams.get('centerId');
 
   const [activeTab, setActiveTabState] = useState(() => {
-    return urlTab || localStorage.getItem('admin_settings_tab') || 'platform';
+    return urlTab || localStorage.getItem('admin_settings_tab') || 'plans';
   });
 
   const [selectedCenterId, setSelectedCenterId] = useState(urlCenterId || '');
@@ -686,131 +684,28 @@ export default function AdminSettings() {
                 <CustomRolesTab selectedCenterId={selectedCenterId} currentCenter={currentCenter} />
               )}
 
-              {/* ═══════════════ 1. PLATFORMA SOZLAMALARI ═══════════════ */}
-              {activeTab === 'platform' && (
-                <div className="panel-card space-y-5">
-                  <SectionHeader
-                    kicker="SaaS Platforma"
-                    title="Abdora AI Platforma Sozlamalari"
-                    subtitle="Abdora SaaS platformasining nomi, logotipi, aloqa ma'lumotlari va umumiy konfiguratsiyasi"
-                  />
 
-                  {/* Logo upload area */}
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                      style={{ background: 'var(--secondary-background)', border: '2px dashed var(--border)' }}
-                    >
-                      {settings.centerLogo ? (
-                        <img src={settings.centerLogo} alt="Logo" className="w-full h-full object-contain" />
-                      ) : (
-                        <Image size={28} style={{ color: 'var(--text-muted)' }} />
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Markaz logotipi</div>
-                      <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>PNG, JPG, SVG — maks. 2MB</div>
-                      <div className="flex gap-2">
-                        <label className="btn-outline text-xs cursor-pointer">
-                          <Upload size={13} /> Yuklash
-                          <input type="file" accept="image/*" className="hidden" onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = ev => set('centerLogo', ev.target.result);
-                            reader.readAsDataURL(file);
-                          }} />
-                        </label>
-                        {settings.centerLogo && (
-                          <button className="btn-ghost text-xs text-red-500" onClick={() => set('centerLogo', '')}>
-                            O'chirish
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormGroup label="Markaz nomi" required>
-                      <input value={settings.centerName} onChange={e => set('centerName', e.target.value)}
-                        className="input-field" placeholder="Abdora AI Markazi" />
-                    </FormGroup>
-                    <FormGroup label="Telefon raqami">
-                      <div className="relative">
-                        <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                        <PhoneInput value={settings.centerPhone} onChange={e => set('centerPhone', e.target.value)}
-                          className="input-field pl-9" placeholder="+998 90 123 45 67" />
-                      </div>
-                    </FormGroup>
-                    <FormGroup label="Email manzil">
-                      <div className="relative">
-                        <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                        <input value={settings.centerEmail} onChange={e => set('centerEmail', e.target.value)}
-                          className="input-field pl-9" placeholder="info@markaz.uz" type="email" />
-                      </div>
-                    </FormGroup>
-                    <FormGroup label="Veb-sayt">
-                      <div className="relative">
-                        <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                        <input value={settings.centerWebsite} onChange={e => set('centerWebsite', e.target.value)}
-                          className="input-field pl-9" placeholder="https://markaz.uz" />
-                      </div>
-                    </FormGroup>
-                  </div>
-
-                  <FormGroup label="Manzil">
-                    <div className="relative">
-                      <MapPin size={14} className="absolute left-3 top-3" style={{ color: 'var(--text-muted)' }} />
-                      <input value={settings.centerAddress} onChange={e => set('centerAddress', e.target.value)}
-                        className="input-field pl-9" placeholder="Toshkent shahri, Yunusobod tumani..." />
-                    </div>
-                  </FormGroup>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                    <FormGroup label="Asosiy valyuta">
-                      <select value={settings.currency} onChange={e => set('currency', e.target.value)} className="input-field">
-                        {CURRENCIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                      </select>
-                    </FormGroup>
-                    <FormGroup label="Vaqt mintaqasi">
-                      <select value={settings.timezone} onChange={e => set('timezone', e.target.value)} className="input-field">
-                        {TIMEZONES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                      </select>
-                    </FormGroup>
-                    <FormGroup label="Sana formati">
-                      <select value={settings.dateFormat} onChange={e => set('dateFormat', e.target.value)} className="input-field">
-                        <option value="DD.MM.YYYY">DD.MM.YYYY</option>
-                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                      </select>
-                    </FormGroup>
-                  </div>
-
-                  <div className="pt-3 border-t border-[var(--border)]">
-                    <h3 className="text-sm font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                      <FileText size={16} className="text-[var(--primary)]" /> Kvitansiya matnlari
-                    </h3>
-                    <div className="space-y-3">
-                      <FormGroup label="Kvitansiya yuqori sarlavhasi (Header)">
-                        <input value={settings.receiptHeader} onChange={e => set('receiptHeader', e.target.value)}
-                          className="input-field" placeholder="Masalan: Abdora AI O'quv Markazi — Kvitansiya" />
-                      </FormGroup>
-                      <FormGroup label="Kvitansiya ostki xabari (Footer)">
-                        <input value={settings.receiptFooter} onChange={e => set('receiptFooter', e.target.value)}
-                          className="input-field" placeholder="Xizmatimizdan foydalanganingiz uchun rahmat!" />
-                      </FormGroup>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ═══════════════ 2. MARKAZ IMKONIYATLARI (FEATURES) ═══════════════ */}
+              {/* ═══════════════ 2. MARKAZ MODULLARI & SOTUV (FEATURES) ═══════════════ */}
               {activeTab === 'features' && (
                 <div className="panel-card space-y-6">
                   <SectionHeader
-                    kicker="Modullar va Ruxsatlar"
-                    title="Markaz imkoniyatlarini cheklash va kengaytirish"
-                    subtitle="Ushbu markaz foydalanuvchilari uchun qaysi xizmatlar va tizimlar ochiq bo'lishini boshqaring."
+                    kicker="SaaS Modullar Paketi"
+                    title="Markazga Sotilgan Xizmatlar & Ruxsatlar"
+                    subtitle="Tanlangan o'quv markaz uchun sotilgan modullarni (AI, CRM, LMS, ERP, Kassa, SMS) boshqaring. O'chirilgan tizimlar o'quv markaz uchun butunlay yopiladi."
                   />
+
+                  {/* SaaS Sales Info Alert */}
+                  <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5 flex items-start gap-3">
+                    <Sparkles size={18} className="text-indigo-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs space-y-1">
+                      <div className="font-bold text-[var(--text-primary)]">SaaS Sotuv Nazorati:</div>
+                      <div className="text-[var(--text-secondary)] leading-relaxed">
+                        Agar markaz faqat <b>CRM</b> sotib olgan bo'lsa, pastdagi <b>AI</b> va <b>LMS</b> modullarini o'chirib qo'yishingiz mumkin.
+                        Ushbu o'quv markaz xodimlari va talabalari faqat siz yoqib bergan bo'limlardan foydalana oladilar.
+                      </div>
+                    </div>
+                  </div>
 
                   {/* AI Capabilities */}
                   <div className="space-y-3">
@@ -1435,24 +1330,32 @@ export default function AdminSettings() {
 
 
 
-              {/* ═══════════════ 9. INTEGRATSIYALAR (INTEGRATIONS) ═══════════════ */}
+              {/* ═══════════════ PLATFORMA GLOBAL API KALITLARI (INTEGRATIONS) ═══════════════ */}
               {activeTab === 'integrations' && (
-                <div className="panel-card space-y-5">
+                <div className="panel-card space-y-6">
                   <SectionHeader
-                    kicker="API Ulanishlar"
-                    title="Platforma Integratsiyalari"
-                    subtitle="Abdora AI platformasining Gemini API, SMS provayder va boshqa tashqi servislar ulanish sozlamalari. Bu kalitlar barcha markazlar uchun umumiy platforma darajasida ishlaydi."
+                    kicker="SaaS Global Tizim"
+                    title="Platforma API Kalitlari & Konfiguratsiyasi"
+                    subtitle="Butun Abdora AI tizimining asosiy Gemini API kaliti, SMS shlyuzi va neyrotarmoq modellari. Bu sozlamalar tizim darajasida global ishlaydi."
                   />
 
-                  {/* Gemini API */}
-                  <div className="p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Bot size={18} className="text-purple-500" />
-                      <h4 className="text-sm font-bold text-[var(--text-primary)]">Google Gemini AI</h4>
-                      <span className="badge badge-success text-[10px]">Asosiy AI</span>
+                  {/* 1. Google Gemini AI Config */}
+                  <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
+                          <Bot size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-[var(--text-primary)]">Google Gemini AI (Asosiy Fikrlovchi Dvigatel)</h4>
+                          <p className="text-[11px] text-[var(--text-secondary)]">Dars yaratish, testlar, avtomatik baholash va 24/7 AI Tyutor uchun</p>
+                        </div>
+                      </div>
+                      <span className="badge badge-success text-[10px] py-0.5 px-2">Faol Tizim</span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <FormGroup label="Gemini API Kaliti" hint="Google AI Studio dan olingan kalit">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormGroup label="Gemini API Kaliti (Global)" hint="Google AI Studio dan olingan asosiy kalit">
                         <div className="relative">
                           <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                           <input
@@ -1464,26 +1367,52 @@ export default function AdminSettings() {
                           />
                         </div>
                       </FormGroup>
-                      <FormGroup label="Asosiy AI Model">
+
+                      <FormGroup label="Asosiy AI Model" hint="Matn, konspekt va savol-javoblar uchun">
                         <select
-                          value={settings.aiModel || 'gemini-2.5-flash'}
+                          value={settings.aiModel || 'gemini-3.8-flash'}
                           onChange={e => set('aiModel', e.target.value)}
                           className="input-field"
                         >
-                          <option value="gemini-2.5-flash">Gemini 2.5 Flash (Tavsiya)</option>
-                          <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                          <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                          <option value="gemini-3.8-flash">Google Gemini 3.8 Flash (Tavsiya / Eng tezkor & aqlli)</option>
+                          <option value="gemini-3.5-flash">Google Gemini 3.5 Flash</option>
+                          <option value="gemini-2.5-flash">Google Gemini 2.5 Flash</option>
+                          <option value="gemini-2.5-pro">Google Gemini 2.5 Pro (Chuqur tahlil)</option>
+                          <option value="gpt-4o">OpenAI GPT-4o (Omni)</option>
+                          <option value="claude-3-7-sonnet">Anthropic Claude 3.7 Sonnet</option>
                         </select>
                       </FormGroup>
+
+                      <div className="sm:col-span-2">
+                        <FormGroup label="Real-vaqt ovozli model (Speaking & Voice)" hint="Talabalar bilan jonli ingliz tili speaking mashqlari uchun">
+                          <select
+                            value={settings.aiLiveModel || 'gemini-2.5-flash-native-audio-preview'}
+                            onChange={e => set('aiLiveModel', e.target.value)}
+                            className="input-field"
+                          >
+                            <option value="gemini-2.5-flash-native-audio-preview">Gemini Native Audio Preview (Past kechikish & Ovoz)</option>
+                            <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
+                          </select>
+                        </FormGroup>
+                      </div>
                     </div>
                   </div>
 
-                  {/* SMS Integratsiya */}
-                  <div className="p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Smartphone size={18} className="text-emerald-500" />
-                      <h4 className="text-sm font-bold text-[var(--text-primary)]">SMS Provayder (Platforma uchun)</h4>
+                  {/* 2. SMS Provayder */}
+                  <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                          <Smartphone size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-[var(--text-primary)]">SMS Provayder (Platforma Bosh Kaliti)</h4>
+                          <p className="text-[11px] text-[var(--text-secondary)]">Eskiz.uz yoki Playmobile orqali butun O'zbekiston bo'yicha SMS jo'natish</p>
+                        </div>
+                      </div>
+                      <span className="badge text-[10px] py-0.5 px-2 bg-emerald-500/10 text-emerald-600">Eskiz.uz</span>
                     </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FormGroup label="Eskiz SMS Email">
                         <input
@@ -1494,25 +1423,33 @@ export default function AdminSettings() {
                         />
                       </FormGroup>
 
-                      <FormGroup label="Eskiz SMS Token">
+                      <FormGroup label="Eskiz SMS Token (Bearer Token)">
                         <input
                           value={settings.smsToken || ''}
                           onChange={e => set('smsToken', e.target.value)}
                           className="input-field font-mono"
                           type="password"
-                          placeholder="••••••••••••••••"
+                          placeholder="eyJ0eXAiOiJKV1QiLC..."
                         />
                       </FormGroup>
                     </div>
                   </div>
 
-                  {/* Telegram */}
-                  <div className="p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Bell size={18} className="text-blue-500" />
-                      <h4 className="text-sm font-bold text-[var(--text-primary)]">Telegram Bot</h4>
-                      <span className="badge text-[10px]" style={{ background: 'var(--secondary-background)', color: 'var(--text-muted)' }}>Ixtiyoriy</span>
+                  {/* 3. Telegram Bot */}
+                  <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                          <Bell size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-[var(--text-primary)]">Telegram Bot Integratsiyasi</h4>
+                          <p className="text-[11px] text-[var(--text-secondary)]">O'quvchilar va ota-onalarga bot orqali bildirishnoma yuborish</p>
+                        </div>
+                      </div>
+                      <span className="badge text-[10px] py-0.5 px-2 bg-[var(--secondary-background)] text-[var(--text-muted)]">Ixtiyoriy</span>
                     </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FormGroup label="Telegram Bot Token">
                         <input
@@ -1528,56 +1465,11 @@ export default function AdminSettings() {
                           value={settings.telegramBotUsername || ''}
                           onChange={e => set('telegramBotUsername', e.target.value)}
                           className="input-field"
-                          placeholder="@abdora_center_bot"
+                          placeholder="@abdora_ai_bot"
                         />
                       </FormGroup>
                     </div>
                   </div>
-                </div>
-              )}
-
-              {/* ═══════════════ 10. AI SOZLAMALARI (AI) ═══════════════ */}
-              {activeTab === 'ai' && (
-                <div className="panel-card space-y-5">
-                  <SectionHeader
-                    kicker="Neyrotarmoqlar"
-                    title="Sun'iy Intellekt Konfiguratsiyasi"
-                    subtitle="Platformaning asosiy fikrlovchi modellari va Gemini Live preview sozlamalari"
-                  />
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormGroup label="Asosiy AI Model">
-                      <select
-                        value={settings.aiModel || 'gemini-3.8-flash'}
-                        onChange={e => set('aiModel', e.target.value)}
-                        className="input-field"
-                      >
-                        <option value="gemini-3.8-flash">Google Gemini 3.8 Flash (Tavsiya / Tezkor)</option>
-                        <option value="gemini-3.5-flash">Google Gemini 3.5 Flash</option>
-                        <option value="gemini-2.5-pro">Google Gemini 2.5 Pro (Chuqur mantiq)</option>
-                        <option value="gpt-4o">OpenAI GPT-4o (Omni)</option>
-                        <option value="claude-3-7-sonnet">Anthropic Claude 3.7 Sonnet</option>
-                      </select>
-                    </FormGroup>
-
-                    <FormGroup label="Real-vaqt ovozli model (Speaking)">
-                      <select
-                        value={settings.aiLiveModel || 'gemini-2.5-flash-native-audio-preview'}
-                        onChange={e => set('aiLiveModel', e.target.value)}
-                        className="input-field"
-                      >
-                        <option value="gemini-2.5-flash-native-audio-preview">Gemini Native Audio Preview</option>
-                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
-                      </select>
-                    </FormGroup>
-                  </div>
-                </div>
-              )}
-
-              {/* ═══════════════ 11. MAVZULAR (APPEARANCE) ═══════════════ */}
-              {activeTab === 'appearance' && (
-                <div className="space-y-4">
-                  <ThemeBuilder embedded />
                 </div>
               )}
 
