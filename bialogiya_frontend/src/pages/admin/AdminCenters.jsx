@@ -318,11 +318,11 @@ function CenterCard({ center, onEdit, onDelete }) {
           <div className="flex items-center gap-2">
             <Link
               to={`/admin/centers/${center.id}/settings`}
-              className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:bg-[var(--secondary-background)]"
+              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all hover:border-[var(--primary)] hover:text-[var(--primary)]"
               style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
-              title="Markaz sozlamalari"
+              title="Markaz sozlamalari (Modullar, AI, Limitlar va Maxsus Rollar)"
             >
-              <Settings2 size={13} style={{ color: "var(--primary)" }} /> Sozlamalar
+              <Settings2 size={14} className="text-[var(--primary)]" /> Sozlamalar
             </Link>
             <Link
               to={`/admin/centers/${center.id}`}

@@ -895,7 +895,6 @@ const resolveSettingsCenter = async (req) => {
   }
 
   const center = await prisma.center.findFirst({
-    where: { isActive: true },
     orderBy: { createdAt: 'desc' }
   });
   return center || null;
@@ -907,7 +906,6 @@ const getSettings = async (req, res, next) => {
     const center = await resolveSettingsCenter(req);
 
     const allCenters = role === 'admin' ? await prisma.center.findMany({
-      where: { isActive: true },
       select: {
         id: true,
         name: true,

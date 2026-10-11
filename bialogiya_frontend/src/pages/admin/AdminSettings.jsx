@@ -8,7 +8,7 @@ import {
   Coins, Smartphone, Target, ShoppingBag, Sparkles,
   Banknote, Wallet, CheckCircle2, FileEdit,
   ShieldCheck, Lock, Unlock, PieChart, GraduationCap, BookMarked, Calendar,
-  Plus, Trash2, Pencil, UserCog, Copy, Sliders, Layers, UserCheck, CheckSquare, Key,
+  Plus, Trash2, Pencil, UserCog, Copy, Sliders, Layers, UserCheck, CheckSquare, Key, Settings2,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -342,6 +342,13 @@ export default function AdminSettings() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
 
+  // Load all centers directly
+  const { data: directCenters = [] } = useQuery({
+    queryKey: ['admin-centers'],
+    queryFn: () => api.get('/admin/centers').then(r => r.data?.data || r.data || []),
+    enabled: user?.role === 'admin',
+  });
+
   // Load settings with active center context
   const { data: serverSettings, isLoading } = useQuery({
     queryKey: ['admin-settings', user?.id, selectedCenterId],
@@ -351,8 +358,14 @@ export default function AdminSettings() {
     enabled: !!user,
   });
 
-  const centers = serverSettings?.centers || [];
-  const currentCenter = centers.find(c => c.id === (selectedCenterId || serverSettings?.centerId)) || null;
+  const centers = (directCenters && directCenters.length > 0) ? directCenters : (serverSettings?.centers || []);
+  const currentCenter = centers.find(c => c.id === (selectedCenterId || serverSettings?.centerId)) || centers[0] || null;
+
+  useEffect(() => {
+    if (!selectedCenterId && currentCenter?.id) {
+      setSelectedCenterId(currentCenter.id);
+    }
+  }, [currentCenter, selectedCenterId]);
 
   useEffect(() => {
     if (serverSettings && typeof serverSettings === 'object') {
@@ -513,6 +526,15 @@ export default function AdminSettings() {
                 <Link to="/admin/centers" className="btn-outline btn-xs flex items-center gap-1">
                   <Plus size={13} /> Yangi markaz
                 </Link>
+                {currentCenter && (
+                  <Link
+                    to={`/admin/centers/${currentCenter.id}/settings`}
+                    className="btn-primary btn-xs flex items-center gap-1"
+                    title="Ushbu markazning alohida sozlamalar sahifasini ochish"
+                  >
+                    <Settings2 size={13} /> Markaz sahifasi
+                  </Link>
+                )}
               </div>
             </div>
           ) : (
@@ -594,10 +616,32 @@ export default function AdminSettings() {
 
               {/* ═══════════════ MAXSUS ROLLAR (CUSTOM ROLES) ═══════════════ */}
               {activeTab === 'custom_roles' && (
-                <CustomRolesTab selectedCenterId={selectedCenterId} currentCenter={currentCenter} />
+                currentCenter ? (
+                  <div className="space-y-4">
+                    <div className="p-3.5 rounded-xl border border-indigo-500/25 bg-indigo-500/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-semibold">
+                        <Building2 size={16} className="text-indigo-600 flex-shrink-0" />
+                        <span>Hozirda <strong>"{currentCenter.name}"</strong> markazining maxsus rollari sozlanmoqda.</span>
+                      </div>
+                      <Link to={`/admin/centers/${currentCenter.id}/settings`} className="btn-outline btn-xs flex items-center gap-1 bg-[var(--card)]">
+                        <Settings2 size={12} /> Markaz sahifasida ochish
+                      </Link>
+                    </div>
+                    <CustomRolesTab selectedCenterId={currentCenter.id} currentCenter={currentCenter} />
+                  </div>
+                ) : (
+                  <div className="panel-card text-center py-12 space-y-3">
+                    <Building2 size={40} className="mx-auto text-amber-500 opacity-60" />
+                    <h3 className="font-bold text-base text-[var(--text-primary)]">Maxsus rollar uchun o'quv markaz tanlanmagan</h3>
+                    <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto">
+                      Maxsus rollar (Mock Examiner, Reception va boshqalar) umumiy emas, har bir markazga alohida biriktiriladi. Avval yuqoridagi ro'yxatdan markazni tanlang.
+                    </p>
+                    <Link to="/admin/centers" className="btn-primary btn-sm inline-flex items-center gap-1.5">
+                      <Plus size={14} /> Yangi markaz qo'shish
+                    </Link>
+                  </div>
+                )
               )}
-
-
 
               {/* ═══════════════ 2. MARKAZ MODULLARI & SOTUV (FEATURES) ═══════════════ */}
               {activeTab === 'features' && (
@@ -607,6 +651,31 @@ export default function AdminSettings() {
                     title="Markazga Sotilgan Xizmatlar & Ruxsatlar"
                     subtitle="Tanlangan o'quv markaz uchun sotilgan modullarni (AI, CRM, LMS, ERP, Kassa, SMS) boshqaring. O'chirilgan tizimlar o'quv markaz uchun butunlay yopiladi."
                   />
+
+                  {currentCenter ? (
+                    <div className="p-3.5 rounded-xl border border-indigo-500/25 bg-indigo-500/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-semibold">
+                        <Building2 size={16} className="text-indigo-600 flex-shrink-0" />
+                        <span>Hozirda tanlangan: <strong>"{currentCenter.name}"</strong>. Modullarni saqlash faqat ushbu markazga amal qiladi.</span>
+                      </div>
+                      <Link to={`/admin/centers/${currentCenter.id}/settings`} className="btn-outline btn-xs flex items-center gap-1 bg-[var(--card)]">
+                        <Settings2 size={12} /> Markaz sahifasida ochish
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex flex-wrap items-center justify-between gap-4 text-xs">
+                      <div className="flex items-center gap-3">
+                        <Building2 size={24} className="text-amber-500 flex-shrink-0" />
+                        <div>
+                          <div className="font-bold text-sm text-[var(--text-primary)]">O'quv markaz tanlanmagan</div>
+                          <div className="text-[var(--text-secondary)] mt-0.5">Ushbu modullar umumiy emas, aynan tanlangan markazga bog'lanadi. Avval markaz tanlang.</div>
+                        </div>
+                      </div>
+                      <Link to="/admin/centers" className="btn-primary btn-xs">
+                        Markazlar ro'yxati
+                      </Link>
+                    </div>
+                  )}
 
                   {/* SaaS Sales Info Alert */}
                   <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5 flex items-start gap-3">
@@ -771,6 +840,31 @@ export default function AdminSettings() {
                     title="Markaz cheklovlari va kvotalari"
                     subtitle="Markaz sig'imi, filiallar va oylik AI so'rovlar limitini belgilang. (0 kiritilsa cheksiz hisoblanadi)"
                   />
+
+                  {currentCenter ? (
+                    <div className="p-3.5 rounded-xl border border-indigo-500/25 bg-indigo-500/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-semibold">
+                        <Building2 size={16} className="text-indigo-600 flex-shrink-0" />
+                        <span>Hozirda tanlangan markaz: <strong>"{currentCenter.name}"</strong>. Limitlar faqat ushbu markaz uchun belgilanadi.</span>
+                      </div>
+                      <Link to={`/admin/centers/${currentCenter.id}/settings`} className="btn-outline btn-xs flex items-center gap-1 bg-[var(--card)]">
+                        <Settings2 size={12} /> Markaz sahifasida ochish
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex flex-wrap items-center justify-between gap-4 text-xs">
+                      <div className="flex items-center gap-3">
+                        <Building2 size={24} className="text-amber-500 flex-shrink-0" />
+                        <div>
+                          <div className="font-bold text-sm text-[var(--text-primary)]">O'quv markaz tanlanmagan</div>
+                          <div className="text-[var(--text-secondary)] mt-0.5">Kvotalar va limitlar har bir markazga alohida belgilanadi. Avval markaz tanlang.</div>
+                        </div>
+                      </div>
+                      <Link to="/admin/centers" className="btn-primary btn-xs">
+                        Markazlar ro'yxati
+                      </Link>
+                    </div>
+                  )}
 
                   {/* Presets */}
                   <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--secondary-background)]">
