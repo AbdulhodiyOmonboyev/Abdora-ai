@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="uz" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abdora AI — Pitch Deck (Hackathon Presentation)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      overflow-x: hidden;
+    }
+    .font-heading {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .slide {
+      display: none;
+      opacity: 0;
+      transform: scale(0.98);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .slide.active {
+      display: flex;
+      opacity: 1;
+      transform: scale(1);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+    .badge-gradient {
+      background: linear-gradient(135deg, #f06413 0%, #ff8c42 100%);
+      color: white;
+    }
+    .accent-gradient-text {
+      background: linear-gradient(135deg, #f06413 0%, #4338ca 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    /* Presentation Progress Bar */
+    #progress-bar {
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-orange-100 selection:text-orange-900">
+
+  <!-- TOP HEADER / CONTROLS -->
+  <header class="w-full bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 px-4 sm:px-8 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-orange-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-lg shadow-sm">
+        A
+      </div>
+      <div>
+        <div class="font-extrabold text-base tracking-tight text-slate-900 flex items-center gap-2">
+          ABDORA AI <span class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold border border-orange-200">Hackathon Pitch Deck</span>
+        </div>
+        <p class="text-[11px] text-slate-500 font-medium">7 ta Slayd • 5 Daqiqalik Taqdimot</p>
+      </div>
+    </div>
+
+    <!-- Timer & Navigation Controls -->
+    <div class="flex items-center gap-3 sm:gap-4">
+      <!-- 5-Minute Pitch Timer -->
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
+        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span id="timer-display" class="font-mono text-sm font-bold text-slate-900">05:00</span>
+        <button id="timer-btn" onclick="toggleTimer()" class="text-[11px] text-indigo-600 hover:text-indigo-800 underline">Boshlash</button>
+      </div>
+
+      <!-- Slide Counter -->
+      <div class="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-xs">
+        <span id="current-slide-num" class="text-orange-600 text-sm">1</span> / 7
+      </div>
+
+      <!-- Speaker Notes Toggle -->
+      <button onclick="toggleSpeakerNotes()" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition">
+        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+        <span>Nutq matni</span>
+      </button>
+
+      <!-- Fullscreen button -->
+      <button onclick="toggleFullscreen()" class="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition" title="To'liq ekran">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- PRESENTATION PROGRESS BAR -->
+  <div class="w-full bg-slate-200 h-1.5">
+    <div id="progress-bar" class="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-indigo-600 w-1/7"></div>
+  </div>
+
+  <!-- SLIDES WRAPPER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8 flex items-center justify-center">
+
+    <!-- ═════════════════════════════════════════════════════════
+         SLIDE 1: TITUL VA VISSIYA (Hook & Introduction)
+         ═════════════════════════════════════════════════════════ -->
+    <div class="slide active flex-col justify-center items-center text-center space-y-6 w-full py-8" data-slide="1">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold uppercase tracking-wider shadow-xs">
+        <span class="w-2 h-2 rounded-full bg-orange-500 animate-ping"></span>
+        Ta'lim Texnologiyalari (EdTech) & Sun'iy Intellekt
+      </div>
+
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 font-heading max-w-4xl leading-tight">
+        Maktablar va O'quv Markazlari uchun <br>
+        <span class="accent-gradient-text">Yagona Aqlli Boshqaruv Ekotizimi</span>
+      </h1>
+
+      <p class="text-lg sm:text-xl text-slate-600 max-w-2xl font-normal leading-relaxed">
+        <strong>Abdora AI</strong> — barcha darsliklar, testlar, qabulxona, moliyaviy hisob-kitoblar va o'qituvchi ishini yagona ko'p-agentli AI tizimiga birlashtiruvchi zamonaviy SaaS platforma.
+      </p>
+
+      <!-- Key Value Pillars -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl w-full pt-4">
+        <div class="glass-card p-5 rounded-2xl text-left border border-slate-200 hover:border-orange-300 transition shadow-sm">
+          <div class="text-orange-600 font-extrabold text-2xl mb-1">70%</div>
+          <div class="text-xs font-bold text-slate-800">Vaqt va Xarajat Tejalishi</div>
+          <p class="text-[12px] text-slate-500 mt-1">O'qituvchilarning darsga tayyorgarligi va qog'ozbozligi qisqaradi</p>
+        </div>
+        <div class="glass-card p-5 rounded-2xl text-left border border-slate-200 hover:border-indigo-300 transition shadow-sm">
+          <div class="text-indigo-600 font-extrabold text-2xl mb-1">Multi-AI</div>
+          <div class="text-xs font-bold text-slate-800">Mustaqil AI Dvigatellari</div>
+          <p class="text-[12px] text-slate-500 mt-1">Gemini 3.8 Flash, GPT-4o, Claude 3.7 orqali maxsus tayyorgarlik</p>
+        </div>
+        <div class="glass-card p-5 rounded-2xl text-left border border-slate-200 hover:border-emerald-300 transition shadow-sm">
+          <div class="text-emerald-600 font-extrabold text-2xl mb-1">10,000+</div>
+          <div class="text-xs font-bold text-slate-800">Maktab va Markazlarga Mos</div>
+          <p class="text-[12px] text-slate-500 mt-1">Davlat maktablari, xususiy litseylar va o'quv markazlariga to'la integratsiya</p>
+        </div>
+      </div>
+
+      <div class="text-xs text-slate-400 font-medium pt-2">
+        Taqdimotchi: <strong>Abdulhodiy Omonboyev</strong> & Abdora AI Jamoasi
+      </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════
+         SLIDE 2: MUAMMO (Problem Statement - 4 ta og'riqli nuqta)
+         ═════════════════════════════════════════════════════════ -->
+    <div class="slide flex-col space-y-6 w-full" data-slide="2">
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">Bozordagi Haqiqiy Muammo</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 font-heading">
+          Bugungi Maktab va O'quv Markazlari Nega Qiynalmoqda?
+        </h2>
+        <p class="text-sm text-slate-600">Ta'lim muassasalari har kuni 4 ta asosiy to'siqqa duch keladi:</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto w-full">
+        <!-- Muammo 1 -->
+        <div class="p-5 rounded-2xl bg-white border border-rose-100 shadow-sm flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
+            1
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">O'qituvchilarning Qog'ozbozlik Yuki</h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              O'qituvchi haftasiga <strong>15-20 soat vaqtini</strong> dars rejasi yozish, test tuzish, daftarlarni qo'lda tekshirishga sarflaydi. O'quvchi bilan jonli ishlashga kuch qolmaydi.
+            </p>
+          </div>
+        </div>
+
+        <!-- Muammo 2 -->
+        <div class="p-5 rounded-2xl bg-white border border-amber-100 shadow-sm flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
+            2
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Tarqoq va Qimmat Dasturlar Xaosi</h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              Lidlar uchun bitta dastur, kassa va to'lovga Excel, davomatga daftar, testga alohida sayt. Xodimlar chalkashadi, xarajatlar esa har oy oshib ketadi.
+            </p>
+          </div>
+        </div>
+
+        <!-- Muammo 3 -->
+        <div class="p-5 rounded-2xl bg-white border border-blue-100 shadow-sm flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
+            3
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Individual Repetitorsiz Ta'lim Sifati Pastligi</h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              30-40 kishilik sinfda har bir o'quvchiga alohida yondashish imkonsiz. Qoloq o'quvchi orqada qolib ketaveradi, chunki uning shaxsiy AI repetitori yo'q.
+            </p>
+          </div>
+        </div>
+
+        <!-- Muammo 4 -->
+        <div class="p-5 rounded-2xl bg-white border border-purple-100 shadow-sm flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 text-purple-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
+            4
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Shaffof Monitoring va Analitika Yetishmasligi</h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+              Direktor yoki markaz rahbari har bir filial, o'qituvchi va sinfning real bilim darajasi va daromad dinamikasini real-vaqt rejimida ko'ra olmaydi.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════
+         SLIDE 3: YECHIM (Solution - Abdora AI nima?)
+         ═════════════════════════════════════════════════════════ -->
+    <div class="slide flex-col space-y-6 w-full" data-slide="3">
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">Mukammal Yechim</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 font-heading">
+          Abdora AI: Yagona Integratsiyalashgan Ekotizim
+        </h2>
+        <p class="text-sm text-slate-600">Maktab va o'quv markazining barcha jarayonlarini bitta platformada avtomatlashtirish:</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-5xl mx-auto w-full">
+        <!-- Modul 1 -->
+        <div class="glass-card p-5 rounded-2xl border border-slate-200 text-center flex flex-col justify-between hover:border-orange-400 transition">
+          <div>
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xl mb-3 shadow-xs">
+              🤖
+            </div>
+            <h3 class="text-sm font-bold text-slate-900">Ko'p-Agentli AI Dvigateli</h3>
+            <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+              Dars konspektlari generatsiyasi, testlar tuzish, uy vazifasini AI tekshirishi va jonli audio speaking mashqi.
+            </p>
+          </div>
+          <div class="mt-4 text-[11px] font-bold text-orange-600 bg-orange-50 py-1 rounded-lg">Gemini 3.8 & Claude & GPT-4o</div>
+        </div>
+
+        <!-- Modul 2 -->
+        <div class="glass-card p-5 rounded-2xl border border-slate-200 text-center flex flex-col justify-between hover:border-indigo-400 transition">
+          <div>
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xl mb-3 shadow-xs">
+              📚
+            </div>
+            <h3 class="text-sm font-bold text-slate-900">Smart LMS & Darsliklar</h3>
+            <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+              Video darslar, interaktiv kartochkalar, davomat jurnali, xonalar bandligi va dars jadvali avtomatik boshqaruvi.
+            </p>
+          </div>
+          <div class="mt-4 text-[11px] font-bold text-indigo-600 bg-indigo-50 py-1 rounded-lg">To'liq Avtomatlashtirilgan</div>
+        </div>
+
+        <!-- Modul 3 -->
+        <div class="glass-card p-5 rounded-2xl border border-slate-200 text-center flex flex-col justify-between hover:border-emerald-400 transition">
+          <div>
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xl mb-3 shadow-xs">
+              💳
+            </div>
+            <h3 class="text-sm font-bold text-slate-900">Moliya & Kassa Tizimi</h3>
+            <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+              Click/Payme orqali to'lovlar, avto-kvitansiyalar, xarajatlar tahlili va o'qituvchilarga oylik maosh (Payroll) hisoblash.
+            </p>
+          </div>
+          <div class="mt-4 text-[11px] font-bold text-emerald-600 bg-emerald-50 py-1 rounded-lg">100% Shaffof Buxgalteriya</div>
+        </div>
+
+        <!-- Modul 4 -->
+        <div class="glass-card p-5 rounded-2xl border border-slate-200 text-center flex flex-col justify-between hover:border-amber-400 transition">
+          <div>
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xl mb-3 shadow-xs">
+              🏆
+            </div>
+            <h3 class="text-sm font-bold text-slate-900">Gamifikatsiya & Do'kon</h3>
+            <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+              O'quvchilar dars va testlar uchun Coins va XP yig'adi, bilim reytingida ko'tariladi va sovg'alar do'konida almashtiradi.
+            </p>
+          </div>
+          <div class="mt-4 text-[11px] font-bold text-amber-600 bg-amber-50 py-1 rounded-lg">2x Faolroq O'quvchilar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════
+         SLIDE 4: JONLI MAHSULOT & UI/UX (Screenshots & Mockups)
+         ═════════════════════════════════════════════════════════ -->
+    <div class="slide flex-col space-y-5 w-full" data-slide="4">
+      <div class="text-center max-w-2xl mx-auto space-y-1">
+        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">Tayyor Ishlayotgan Mahsulot</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">
+          Zamonaviy Light Mode UI/UX va Real Ekranlar
+        </h2>
+        <p class="text-xs text-slate-600">Faqat g'oya emas — to'liq ishga tushirilgan va backendga ulangan jonli platforma:</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto w-full items-center">
+        <!-- Mockup 1: Dashboard -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-md">
+          <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+            <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Super Admin & Markaz Dashboardi
+            </span>
+            <span class="text-[10px] text-slate-400">abdora.ai/dashboard</span>
+          </div>
+          <img src="abdora_dashboard_mockup_1791102444114.jpg" alt="Abdora AI Dashboard Mockup" class="w-full h-48 sm:h-56 object-cover rounded-xl border border-slate-100">
+          <div class="text-[11px] text-slate-500 mt-2 flex justify-between">
+            <span>✓ Multi-filiallar & Managerlar nazorati</span>
+            <span class="text-orange-600 font-semibold">Gemini 3.8 Flash ulangan</span>
+          </div>
+        </div>
+
+        <!-- Mockup 2: AI Tutor -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-md">
+          <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+            <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-indigo-500"></span> AI Dars Generator & Jonli Speaking Tutor
+            </span>
+            <span class="text-[10px] text-slate-400">O'quvchi & O'qituvchi ekrani</span>
+          </div>
+          <img src="abdora_ai_tutor_mockup_1791102458102.jpg" alt="Abdora AI Smart Lesson Mockup" class="w-full h-48 sm:h-56 object-cover rounded-xl border border-slate-100">
+          <div class="text-[11px] text-slate-500 mt-2 flex justify-between">
+            <span>✓ 24/7 Ovozli repetitor & testlar</span>
+            <span class="text-emerald-600 font-semibold">Avto-baholash: 94% aniqlik</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature badges -->
+      <div class="flex flex-wrap justify-center gap-2 text-xs font-medium text-slate-600">
+        <span class="px-3 py-1 rounded-xl bg-slate-100 border border-slate-200">⚡ React 18 + Vite Frontend</span>
+        <span class="px-3 py-1 rounded-xl bg-slate-100 border border-slate-200">🛡️ Node.js + Prisma + PostgreSQL</span>
+        <span class="px-3 py-1 rounded-xl bg-slate-100 border border-slate-200">📱 Mobil Ilova Mosligi (PWA & React Native)</span>
+        <span class="px-3 py-1 rounded-xl bg-slate-100 border border-slate-200">🌐 Markazlarga shaxsiy API kalit ulash</span>
+      </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════
+         SLIDE 5: MAKTABLARGA HAM TO'G'RI KELADIMI? (School Fit)
+         ═════════════════════════════════════════════════════════ -->
+    <div class="slide flex-col space-y-6 w-full" data-slide="5">
+      <div class="text-center max-w-3xl mx-auto space-y-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">Hakamlarning Asosiy Savoliga Javob</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 font-heading">
+          "Bu Tizim Umumta'lim va Xususiy Maktablarga Ham To'g'ri Keladimi?"
+        </h2>
+        <p class="text-base font-semibold text-emerald-600">
+          JAVOB: HA, 100% MOS KELADI VA KUNDALIK.COM (E-MAKTAB) BILAN RAQOBAT EMAS, BALKI UNI TO'LDIRADI!
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto w-full">
+        <!-- Maktab Ustunligi 1 -->
+        <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="p-2 rounded-xl bg-indigo-50 text-indigo-600 font-bold">1</span>
+            <h3 class="text-sm font-bold text-slate-900">e-Maktab (Kundalik) bilan Farqi nima?</h3>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            e-Maktab faqat <strong>rasmiy baho qo'yish va elektron jurnal</strong> hisoblanadi. Unda o'qitish vositasi yo'q! 
+            <strong>Abdora AI</strong> esa darsning ichiga kiradi: mavzu bo'yicha test tuzadi, o'quvchiga tushunmagan joyini tushuntiradi va o'qituvchining dars konspektini tayyorlab beradi.
+          </p>
+        </div>
+
+        <!-- Maktab Ustunligi 2 -->
+        <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="p-2 rounded-xl bg-orange-50 text-orange-600 font-bold">2</span>
+            <h3 class="text-sm font-bold text-slate-900">Maktab O'qituvchisi uchun "AI Metodist"</h3>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Davlat ta'lim standartlari (DTS) asosidagi dars rejalarini, 4 xil variantdagi BSB (Choraklik) va CHSB testlarini bir tugma bilan PDF formatda chiqarib beradi. O'qituvchi charchamaydi!
+          </p>
+        </div>
+
+        <!-- Maktab Ustunligi 3 -->
+        <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="p-2 rounded-xl bg-emerald-50 text-emerald-600 font-bold">3</span>
+            <h3 class="text-sm font-bold text-slate-900">Sinfdan Tashqari "24/7 Repetitor"</h3>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Maktabdan uyga borgan o'quvchi qimmat repetitor yollay olmaydi. Abdora AI o'quvchining telefonida istalgan fandan (biologiya, kimyo, ingliz tili, matematika) sabr bilan mavzuni tushuntirib beradi.
+          </p>
+        </div>
+
+        <!-- Maktab Ustunligi 4 -->
+        <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="p-2 rounded-xl bg-blue-50 text-blue-600 font-bold">4</span>
+            <h3 class="text-sm font-bold text-slate-900">Maktab Rahbariyati (Direktor/Zavuch) uchun Real Nazorat</h3>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Direktor oylik yig'ilishni kutmasdan, aynan qaysi sinf yoki o'quvchi qaysi mavzulardan oqsayotganini sun'iy intellekt tahlili orqali grafiklarda ko'rib turadi.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════
+         SLIDE 6: BOZOR VA BIZNES MODEL (Market & Business Model)
+         ═════════════════════════════════════════════════════════ -->
+    <div class="slide flex-col space-y-6 w-full" data-slide="6">
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">Monetizatsiya va Kengayish</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 font-heading">
+          Katta Bozor va Barqaror Biznes Model
+        </h2>
+        <p class="text-sm text-slate-600">B2B SaaS va B2C Freemium orqali barqaror daromad oqimi:</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto w-full">
+        <!-- Market Stats -->
+        <div class="glass-card p-6 rounded-2xl border border-slate-200 text-left">
+          <div class="text-xs font-bold text-slate-400 uppercase">O'zbekiston Bozori</div>
+          <div class="text-3xl font-extrabold text-slate-900 mt-2 font-heading">16,000+</div>
+          <p class="text-xs text-slate-600 mt-1 font-semibold">10,200 ta davlat maktabi, 600+ xususiy maktab, 5,500+ o'quv markazlari.</p>
+          <hr class="my-4 border-slate-200">
+          <div class="text-xs font-bold text-slate-400 uppercase">Foydalanuvchilar</div>
+          <div class="text-2xl font-extrabold text-orange-600 mt-1 font-heading">7.5M+</div>
+          <p class="text-[12px] text-slate-500 mt-0.5">O'quvchilar va talabalar auditoriyasi</p>
+        </div>
+
+        <!-- Monetization Streams -->
+        <div class="glass-card p-6 rounded-2xl border border-slate-200 text-left">
+          <div class="text-xs font-bold text-slate-400 uppercase">Daromad Manbalari</div>
+          <div class="space-y-3 mt-3">
+            <div class="p-2.5 rounded-xl bg-orange-50 border border-orange-100">
+              <div class="text-xs font-bold text-orange-900">1. B2B Oylik SaaS Obuna</div>
+              <div class="text-[11px] text-orange-700">Markaz va maktablar uchun 500k - 2.5 mln so'm / oy</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-indigo-50 border border-indigo-100">
+              <div class="text-xs font-bold text-indigo-900">2. AI Token / Model Paketlari</div>
+              <div class="text-[11px] text-indigo-700">AI savol-javob va speaking soatlari uchun to'lov</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100">
+              <div class="text-xs font-bold text-emerald-900">3. B2C O'quvchi Obunasi</div>
+              <div class="text-[11px] text-emerald-700">Shaxsiy AI repetitor uchun oylik mikro-obuna</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Raqobat Ustunligi -->
+        <div class="glass-card p-6 rounded-2xl border border-slate-200 text-left">
+          <div class="text-xs font-bold text-slate-400 uppercase">Nega Aynan Abdora AI?</div>
+          <div class="space-y-2.5 mt-3 text-xs text-slate-700">
+            <div class="flex items-start gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span><strong>All-in-One:</strong> CRM + LMS + AI bitta joyda, 3 ta boshqa dastur kerakmas.</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span><strong>Markazga xos AI:</strong> Har bir markaz o'z AI modelini (Gemini/Claude) tanlay oladi.</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span><strong>O'zbek tiliga to'la mos:</strong> O'zbek tili lug'ati va darsliklariga moslashtirilgan.</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span><strong>70% Tejamkor:</strong> Xaridorlar uchun narxi alohida xizmatlardan 3 baravar arzon.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════
+         SLIDE 7: XULOSA & CHAQRUQ (Team, Roadmap, CTA)
+         ═════════════════════════════════════════════════════════ -->
+    <div class="slide flex-col justify-center items-center text-center space-y-6 w-full py-8" data-slide="7">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider">
+        Kelajak Rejasi va Jamoa
+      </div>
+
+      <h2 class="text-3xl sm:text-5xl font-extrabold text-slate-900 font-heading max-w-3xl leading-tight">
+        Ta'lim Kelajagini Bugun <br><span class="accent-gradient-text">Abdora AI Bilan Birga Quramiz!</span>
+      </h2>
+
+      <!-- 3-bosqichli Roadmap -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl w-full text-left pt-2">
+        <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div class="text-xs font-bold text-orange-600">1-BOSQICH (Hozir)</div>
+          <div class="text-sm font-bold text-slate-900 mt-1">MVP & Pilot Sinov</div>
+          <p class="text-xs text-slate-500 mt-1">10+ o'quv markazlari va 500+ o'quvchi sinovidan o'tgan tayyor arxitektura.</p>
+        </div>
+        <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div class="text-xs font-bold text-indigo-600">2-BOSQICH (3 Oy)</div>
+          <div class="text-sm font-bold text-slate-900 mt-1">100 ta Maktab & Markaz</div>
+          <p class="text-xs text-slate-500 mt-1">Maktab darsliklari bazasi va mobil ilovani to'liq tarqatish.</p>
+        </div>
+        <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div class="text-xs font-bold text-emerald-600">3-BOSQICH (1 Yil)</div>
+          <div class="text-sm font-bold text-slate-900 mt-1">Markaziy Osiyo Bozoriga</div>
+          <p class="text-xs text-slate-500 mt-1">Qozog'iston va Qirg'iziston bozorlariga lokalizatsiya va eksport.</p>
+        </div>
+      </div>
+
+      <!-- Yakuniy Chaqiriq -->
+      <div class="p-6 rounded-3xl bg-gradient-to-r from-orange-500 to-indigo-600 text-white max-w-2xl w-full shadow-lg">
+        <div class="text-xl sm:text-2xl font-extrabold font-heading">
+          Savollar va Hamkorlik uchun Tayyormiz!
+        </div>
+        <p class="text-xs sm:text-sm text-white/90 mt-2 font-medium">
+          "Biz o'qituvchini almashtirmaymiz — biz unga sun'iy intellekt qanotlarini beramiz!"
+        </p>
+        <div class="mt-4 pt-3 border-t border-white/20 flex flex-wrap justify-between text-xs text-white/80">
+          <span>📧 info@abdora.ai</span>
+          <span>🌐 abdora.ai</span>
+          <span>📱 +998 90 000 00 00</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BOTTOM FLOATING SLIDE CONTROLS -->
+  <footer class="w-full bg-white/90 backdrop-blur-md border-t border-slate-200 py-3 px-4 sm:px-8 flex items-center justify-between sticky bottom-0 z-50">
+    <div class="flex items-center gap-2">
+      <!-- Dots indicator -->
+      <div class="flex items-center gap-1.5" id="dots-container">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="flex items-center gap-2">
+      <button onclick="prevSlide()" id="prev-btn" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center gap-1 shadow-xs disabled:opacity-40">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        Oldingi
+      </button>
+      <button onclick="nextSlide()" id="next-btn" class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition flex items-center gap-1 shadow-md">
+        Keyingi
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      </button>
+    </div>
+  </footer>
+
+  <!-- SPEAKER NOTES DRAWER (OPTIONAL POPUP) -->
+  <div id="speaker-notes-modal" class="fixed bottom-16 right-4 sm:right-8 z-50 max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 hidden">
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+      <span class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+        🎙️ Slayd bo'yicha Nutq (Speaker Script)
+      </span>
+      <button onclick="toggleSpeakerNotes()" class="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+    </div>
+    <div id="speaker-note-text" class="text-xs text-slate-600 space-y-2 leading-relaxed max-h-48 overflow-y-auto">
+      <!-- Injected per slide -->
+    </div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+
+    // Speaker scripts for each slide (in Uzbek)
+    const speakerNotes = [
+      "1-Slayd (0:00 - 0:40): 'Assalomu alaykum hurmatli hakamlar hay'ati! Bizning loyihamiz — Abdora AI. O'zbekistonda 16 mingdan ortiq maktab va o'quv markazlari bor. Ammo ularning 85 foizi hanuzgacha darslarni qog'ozda, testlarni qo'lda va boshqaruvni tarqoq Excel fayllarida olib boryapti. Biz buni bitta aqlli AI ekotizimga birlashtirdik!'",
+      "2-Slayd (0:40 - 1:20): 'Bozorda 4 ta katta og'riq bor: Birinchidan, o'qituvchi haftasiga 15 soatini keraksiz qog'ozbozlik va test tuzishga sarflaydi. Ikkinchidan, maktablar CRM, kassa va LMS uchun 4 ta alohida dasturga ortiqcha pul to'laydi. Uchinchidan, sinfda 35 ta bola bo'lsa, o'qituvchi har biriga alohida repetitor bo'lolmaydi. Va to'rtinchidan, direktorlarda dars sifatining aniq analitikasi yo'q.'",
+      "3-Slayd (1:20 - 2:05): 'Bizning yechimimiz — Abdora AI. Bu All-in-One platforma. Birinchisi — Ko'p agentli AI: test tuzadi, dars rejasi yozadi, ovozli speaking amaliyotini o'tkazadi. Ikkinchisi — LMS darsliklar va davomat. Uchinchisi — To'liq kassa va oylik maoshlar hisob-kitobi. Va to'rtinchisi — O'quvchilarni rag'batlantiruvchi Gamifikatsiya tangalari.'",
+      "4-Slayd (2:05 - 2:50): 'Biz shunchaki g'oya emas, to'liq ishlayotgan mahsulot qildik. Mana ko'rib turganingizdek: Super Admin paneli, markazlarning shaxsiy AI modellari (Gemini 3.8 Flash, Claude, GPT-4o) va jonli speaking mashqi. Har bir o'quv markazi o'zining shaxsiy API kalitini ulab, o'z brendi ostida ishlatishi mumkin.'",
+      "5-Slayd (2:50 - 3:45) [ENG MUHIM]: 'Ko'pchilik so'raydi: Bu tizim maktablarga ham to'g'ri keladimi? Javob: Ha, aynan maktablarga eng katta foyda beradi! e-Maktab faqat elektron jurnal xolos. Abdora AI esa o'qituvchiga 'AI Metodist' bo'lib, DTS standartidagi BSB/CHSB testlarini 10 soniyada chiqarib beradi. O'quvchiga esa kechqurun uyda 24/7 repetitor bo'lib xizmat qiladi!'",
+      "6-Slayd (3:45 - 4:25): 'Biznes modelimiz juda oddiy: B2B SaaS oylik obuna — har bir maktab yoki o'quv markazidan 500 mingdan 2.5 million so'mgacha. Shuningdek o'quvchilar uchun shaxsiy AI repetitor B2C mikro-obunasi. O'zbekistonning o'zida bozor hajmi 7.5 million o'quvchini tashkil qiladi!'",
+      "7-Slayd (4:25 - 5:00): 'Xulosa qilib aytganda, biz o'qituvchining o'rnini bosmoqchi emasmiz. Biz o'qituvchiga sun'iy intellekt qanotlarini beramiz, toki u dars sifatini 2 barobar oshirsin. E'tiboringiz uchun rahmat, savollaringizga mamnuniyat bilan javob beramiz!'"
+    ];
+
+    function renderDots() {
+      const container = document.getElementById('dots-container');
+      container.innerHTML = '';
+      for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement('button');
+        dot.className = `w-2.5 h-2.5 rounded-full transition-all ${i === currentSlide ? 'bg-orange-600 w-6' : 'bg-slate-300 hover:bg-slate-400'}`;
+        dot.onclick = () => goToSlide(i);
+        container.appendChild(dot);
+      }
+    }
+
+    function updateSlide() {
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentSlide);
+      });
+      document.getElementById('current-slide-num').innerText = currentSlide + 1;
+      document.getElementById('progress-bar').style.width = `${((currentSlide + 1) / totalSlides) * 100}%`;
+      document.getElementById('prev-btn').disabled = currentSlide === 0;
+      document.getElementById('next-btn').innerHTML = currentSlide === totalSlides - 1 
+        ? 'Yakunlash 🏁' 
+        : 'Keyingi <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>';
+      
+      document.getElementById('speaker-note-text').innerText = speakerNotes[currentSlide];
+      renderDots();
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function goToSlide(idx) {
+      currentSlide = idx;
+      updateSlide();
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevSlide();
+      }
+    });
+
+    // 5-minute Timer logic
+    let timeLeft = 300; // 5 minutes in seconds
+    let timerRunning = false;
+    let timerInterval = null;
+
+    function toggleTimer() {
+      const btn = document.getElementById('timer-btn');
+      if (timerRunning) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        btn.innerText = 'Davom etish';
+      } else {
+        timerRunning = true;
+        btn.innerText = 'To\'xtatish';
+        timerInterval = setInterval(() => {
+          if (timeLeft > 0) {
+            timeLeft--;
+            const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+            const secs = String(timeLeft % 60).padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${mins}:${secs}`;
+            if (timeLeft < 60) {
+              document.getElementById('timer-display').classList.add('text-rose-600', 'animate-pulse');
+            }
+          } else {
+            clearInterval(timerInterval);
+            document.getElementById('timer-display').innerText = '00:00';
+            btn.innerText = 'Vaqt tugadi!';
+          }
+        }, 1000);
+      }
+    }
+
+    function toggleSpeakerNotes() {
+      const modal = document.getElementById('speaker-notes-modal');
+      modal.classList.toggle('hidden');
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Initial setup
+    updateSlide();
+  </script>
+</body>
+</html>

@@ -253,7 +253,7 @@ export default function SMSMonitorTab({ selectedCenterId }) {
               <label className="font-medium block mb-1">Qabul qiluvchi telefon raqami *</label>
               <PhoneInput
                 value={testPhone}
-                onChange={setTestPhone}
+                onChange={(e) => setTestPhone(e?.target?.value ?? e)}
                 className="input-field font-mono"
                 placeholder="+998 90 123 45 67"
               />
