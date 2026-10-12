@@ -2573,16 +2573,96 @@ export default function ManagerSettings() {
             <button
               type="button"
               onClick={handleShopSubmit}
-              disabled={createShopItemMutation.isPending || updateShopItemMutation.isPending || !shopForm.title.trim()}
+              disabled={isUploadingShopImage || createShopItemMutation.isPending || updateShopItemMutation.isPending || !shopForm.title.trim()}
               className="btn-primary flex items-center gap-1.5"
             >
-              <Check size={14} />
-              {editingShopItem ? 'Saqlash' : 'Qo\'shish'}
+              {isUploadingShopImage ? (
+                <><Loader2 size={14} className="animate-spin" /> Rasm yuklanmoqda...</>
+              ) : editingShopItem ? (
+                <><Check size={14} /> Saqlash</>
+              ) : (
+                <><Plus size={14} /> Qo'shish</>
+              )}
             </button>
           </>
         }
       >
         <form onSubmit={handleShopSubmit} className="space-y-4">
+          {/* Mahsulot rasmini yuklash */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="form-label mb-0">Mahsulot rasmi</label>
+              {(shopImagePreview || shopForm.imageUrl) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShopImageFile(null);
+                    setShopImagePreview('');
+                    setShopForm(f => ({ ...f, imageUrl: '' }));
+                  }}
+                  className="text-[11px] text-red-500 hover:text-red-600 flex items-center gap-1 font-medium transition-colors"
+                >
+                  <Trash2 size={12} /> Rasmni olib tashlash
+                </button>
+              )}
+            </div>
+
+            {shopImagePreview || shopForm.imageUrl ? (
+              <div className="relative group rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--secondary-background)] h-44 sm:h-52 flex items-center justify-center">
+                <img
+                  src={shopImagePreview && shopImagePreview.startsWith('blob:') ? shopImagePreview : resolveMediaUrl(shopImagePreview || shopForm.imageUrl)}
+                  alt="Mahsulot rasmi"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <label className="btn-primary btn-sm cursor-pointer shadow-md flex items-center gap-1.5 text-xs">
+                    <Upload size={14} /> Rasmni almashtirish
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 15 * 1024 * 1024) return toast.error("Rasm hajmi 15MB dan oshmasligi kerak");
+                          setShopImageFile(file);
+                          setShopImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <label className="border-2 border-dashed border-[var(--border)] hover:border-primary/60 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all bg-[var(--secondary-background)]/50 hover:bg-primary/5">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                  <ImageIcon size={24} />
+                </div>
+                <div className="text-center">
+                  <span className="text-xs font-bold text-[var(--text-primary)] block">
+                    Mahsulot rasmini yuklang
+                  </span>
+                  <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">
+                    PNG, JPG, WEBP (maksimal 15 MB)
+                  </span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 15 * 1024 * 1024) return toast.error("Rasm hajmi 15MB dan oshmasligi kerak");
+                      setShopImageFile(file);
+                      setShopImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+              </label>
+            )}
+          </div>
+
           <div>
             <label className="form-label">Mahsulot nomi *</label>
             <input
