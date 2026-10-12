@@ -282,9 +282,10 @@ export default function AdminCenterSettings() {
           agentId,
           provider: selected.provider || "gemini",
           model: selected.model || prev.model,
+          apiKey: selected.apiKey || prev.apiKey,
         };
       }
-      return { ...prev, agentId };
+      return { ...prev, agentId: "" };
     });
   };
 
@@ -550,98 +551,187 @@ export default function AdminCenterSettings() {
                 </p>
               </div>
 
-              {/* 2. Aniq AI Modelni tanlash (Dropdown select) */}
-              <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
-                  Ishlatiladigan AI Model (Select) *
-                </label>
-                <select
-                  className="input-field text-sm font-semibold cursor-pointer"
-                  value={aiConfig.model}
-                  onChange={e => setAiConfig(p => ({ ...p, model: e.target.value }))}
-                >
-                  {AI_MODEL_OPTIONS.map(group => (
-                    <optgroup key={group.group} label={group.group}>
-                      {group.options.map(opt => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label} {opt.badge ? `[${opt.badge}]` : ""}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                  <option value="custom">Boshqa maxsus model kiritish...</option>
-                </select>
+              {/* Agar AI Agent tanlangan bo'lsa, qolgan qatorlar yashiriladi va faol agent kartochkasi ko'rsatiladi */}
+              {(() => {
+                const selectedAgent = aiAgents.find(a => a.id === aiConfig.agentId);
+                if (aiConfig.agentId && selectedAgent) {
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 sm:p-5 rounded-2xl border transition-all"
+                      style={{
+                        background: "rgba(16, 185, 129, 0.04)",
+                        borderColor: "rgba(16, 185, 129, 0.3)",
+                      }}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                            style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981" }}
+                          >
+                            <Bot size={24} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">
+                                {selectedAgent.name}
+                              </h3>
+                              <span className="badge text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold">
+                                AI Agent Faol
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                              Markaz barcha AI vazifalari uchun tanlangan shaxsiy agent kaliti va modelidan foydalanadi
+                            </p>
+                          </div>
+                        </div>
 
-                {aiConfig.model === "custom" && (
-                  <input
-                    className="input-field text-sm mt-2 font-mono"
-                    placeholder="Model identifikatorini kiriting (masalan: gemini-3.8-flash)"
-                    onChange={e => setAiConfig(p => ({ ...p, model: e.target.value }))}
-                  />
-                )}
-                <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
-                  <CheckCircle2 size={13} className="text-emerald-500" />
-                  Dasturga yozilgan standart model o'rniga aynan shu tanlangan model ishlaydi!
-                </div>
-              </div>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectAgent("")}
+                          className="btn-outline text-xs px-3 py-1.5 rounded-xl self-start sm:self-center"
+                          title="Agentni uzish va qo'lda kiritish"
+                        >
+                          Qo'lda sozlashga o'tish
+                        </button>
+                      </div>
 
-              {/* 3. Jonli Speaking Modeli */}
-              <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
-                  Jonli Ovozli Muloqot Modeli (Speaking Practice)
-                </label>
-                <input
-                  className="input-field text-sm font-mono"
-                  value={aiConfig.liveModel || "gemini-2.5-flash-native-audio-preview"}
-                  onChange={e => setAiConfig(p => ({ ...p, liveModel: e.target.value }))}
-                  placeholder="gemini-2.5-flash-native-audio-preview"
-                />
-              </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs pt-3 border-t" style={{ borderColor: "var(--border)" }}>
+                        <div className="p-3 rounded-xl bg-white dark:bg-gray-800/80 border" style={{ borderColor: "var(--border)" }}>
+                          <span className="text-gray-400 block text-[11px] mb-0.5">AI Provayder</span>
+                          <span className="font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wide">
+                            {selectedAgent.provider || "GEMINI"}
+                          </span>
+                        </div>
 
-              {/* 4. Markazning Shaxsiy API Kaliti */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
-                    Markaz Shaxsiy API Kaliti (Ixtiyoriy)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowApiKey(!showApiKey)}
-                    className="text-xs flex items-center gap-1"
-                    style={{ color: "var(--primary)" }}
+                        <div className="p-3 rounded-xl bg-white dark:bg-gray-800/80 border" style={{ borderColor: "var(--border)" }}>
+                          <span className="text-gray-400 block text-[11px] mb-0.5">Model</span>
+                          <span className="font-bold text-primary font-mono truncate block">
+                            {selectedAgent.model || "Standart model"}
+                          </span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-white dark:bg-gray-800/80 border" style={{ borderColor: "var(--border)" }}>
+                          <span className="text-gray-400 block text-[11px] mb-0.5">API Kalit Holati</span>
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <ShieldCheck size={14} /> Agent kaliti ishlatiladi
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-3.5 p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                        <CheckCircle2 size={15} className="flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        <span>
+                          Qo'lda API kalit va model kiritish shart emas — barcha darslar, savol-javoblar va testlar aynan ushbu shaxsiy AI agentingiz orqali amalga oshiriladi.
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                }
+
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-4 pt-1"
                   >
-                    {showApiKey ? <EyeOff size={12} /> : <Eye size={12} />}
-                    {showApiKey ? "Yashirish" : "Ko'rish"}
-                  </button>
-                </div>
-                <div className="relative">
-                  <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
-                  <input
-                    type={showApiKey ? "text" : "password"}
-                    className="input-field pl-9 font-mono text-xs"
-                    placeholder="Agar bo'sh qoldirilsa, tizim asosiy kaliti ishlatiladi"
-                    value={aiConfig.apiKey || ""}
-                    onChange={e => setAiConfig(p => ({ ...p, apiKey: e.target.value }))}
-                  />
-                </div>
-                <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
-                  Markaz o'zining shaxsiy API kalitini kiritsa, barcha dars va testlar o'sha kalit orqali ishlaydi.
-                </p>
-              </div>
+                    {/* 2. Aniq AI Modelni tanlash (Dropdown select) */}
+                    <div>
+                      <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
+                        Ishlatiladigan AI Model (Select) *
+                      </label>
+                      <select
+                        className="input-field text-sm font-semibold cursor-pointer"
+                        value={aiConfig.model}
+                        onChange={e => setAiConfig(p => ({ ...p, model: e.target.value }))}
+                      >
+                        {AI_MODEL_OPTIONS.map(group => (
+                          <optgroup key={group.group} label={group.group}>
+                            {group.options.map(opt => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label} {opt.badge ? `[${opt.badge}]` : ""}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                        <option value="custom">Boshqa maxsus model kiritish...</option>
+                      </select>
 
-              {/* 5. Markaz uchun Maxsus AI Prompt */}
-              <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
-                  Markazga xos AI ko'rsatmasi (System Prompt)
-                </label>
-                <textarea
-                  className="input-field text-xs resize-none"
-                  rows={3}
-                  placeholder="Masalan: Ushbu markaz biologiya va tibbiyotga yo'naltirilgan, har bir javobda tibbiy atamalar bilan boyiting..."
-                  value={aiConfig.customPrompt || ""}
-                  onChange={e => setAiConfig(p => ({ ...p, customPrompt: e.target.value }))}
-                />
-              </div>
+                      {aiConfig.model === "custom" && (
+                        <input
+                          className="input-field text-sm mt-2 font-mono"
+                          placeholder="Model identifikatorini kiriting (masalan: gemini-3.8-flash)"
+                          onChange={e => setAiConfig(p => ({ ...p, model: e.target.value }))}
+                        />
+                      )}
+                      <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                        <CheckCircle2 size={13} className="text-emerald-500" />
+                        Dasturga yozilgan standart model o'rniga aynan shu tanlangan model ishlaydi!
+                      </div>
+                    </div>
+
+                    {/* 3. Jonli Speaking Modeli */}
+                    <div>
+                      <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
+                        Jonli Ovozli Muloqot Modeli (Speaking Practice)
+                      </label>
+                      <input
+                        className="input-field text-sm font-mono"
+                        value={aiConfig.liveModel || "gemini-2.5-flash-native-audio-preview"}
+                        onChange={e => setAiConfig(p => ({ ...p, liveModel: e.target.value }))}
+                        placeholder="gemini-2.5-flash-native-audio-preview"
+                      />
+                    </div>
+
+                    {/* 4. Markazning Shaxsiy API Kaliti */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+                          Markaz Shaxsiy API Kaliti (Ixtiyoriy)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowApiKey(!showApiKey)}
+                          className="text-xs flex items-center gap-1"
+                          style={{ color: "var(--primary)" }}
+                        >
+                          {showApiKey ? <EyeOff size={12} /> : <Eye size={12} />}
+                          {showApiKey ? "Yashirish" : "Ko'rish"}
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+                        <input
+                          type={showApiKey ? "text" : "password"}
+                          className="input-field pl-9 font-mono text-xs"
+                          placeholder="Agar bo'sh qoldirilsa, tizim asosiy kaliti ishlatiladi"
+                          value={aiConfig.apiKey || ""}
+                          onChange={e => setAiConfig(p => ({ ...p, apiKey: e.target.value }))}
+                        />
+                      </div>
+                      <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+                        Markaz o'zining shaxsiy API kalitini kiritsa, barcha dars va testlar o'sha kalit orqali ishlaydi.
+                      </p>
+                    </div>
+
+                    {/* 5. Markaz uchun Maxsus AI Prompt */}
+                    <div>
+                      <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
+                        Markazga xos AI ko'rsatmasi (System Prompt)
+                      </label>
+                      <textarea
+                        className="input-field text-xs resize-none"
+                        rows={3}
+                        placeholder="Masalan: Ushbu markaz biologiya va tibbiyotga yo'naltirilgan, har bir javobda tibbiy atamalar bilan boyiting..."
+                        value={aiConfig.customPrompt || ""}
+                        onChange={e => setAiConfig(p => ({ ...p, customPrompt: e.target.value }))}
+                      />
+                    </div>
+                  </motion.div>
+                );
+              })()}
             </div>
           </motion.div>
         )}
