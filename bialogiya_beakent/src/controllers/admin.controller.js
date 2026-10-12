@@ -399,6 +399,8 @@ const getReceptionUsers = async (req, res, next) => {
         username: true,
         email: true,
         phone: true,
+        age: true,
+        gender: true,
         isActive: true,
         isFrozen: true,
         permissions: true,
@@ -428,6 +430,8 @@ const getReceptionStaffDetail = async (req, res, next) => {
         username: true,
         email: true,
         phone: true,
+        age: true,
+        gender: true,
         role: true,
         language: true,
         isActive: true,
@@ -584,8 +588,22 @@ const toggleReceptionStaffStatus = async (req, res, next) => {
 
 const createReceptionUser = async (req, res, next) => {
   try {
-    const { name, email, phone, language, maxBranches, password, branchId, permissions } = req.body;
-    if (!name) return error(res, 'Name required', 400);
+    const { name, email, phone, language, maxBranches, password, branchId, permissions, age, gender } = req.body;
+    if (!name || !name.trim()) return error(res, 'F.I.SH (ism) kiritilishi shart', 400);
+
+    const cleanPhoneDigits = (phone || '').replace(/\D/g, '');
+    if (!phone || cleanPhoneDigits.length < 9) {
+      return error(res, 'Telefon raqami to\'liq kiritilishi shart (+998...)', 400);
+    }
+
+    const parsedAge = age !== undefined && age !== '' && age !== null ? parseInt(age, 10) : null;
+    if (!parsedAge || isNaN(parsedAge) || parsedAge < 14 || parsedAge > 100) {
+      return error(res, 'Qabulxonachi yoshi kiritilishi shart (14 - 100 oralig\'ida)', 400);
+    }
+
+    if (!gender || !['male', 'female', 'other'].includes(gender.toLowerCase())) {
+      return error(res, 'Qabulxonachi jinsi (Erkak yoki Ayol) tanlanishi shart', 400);
+    }
 
     const code = generatePassword(phone, password);
     let username = generateUsername(name, phone);
@@ -604,9 +622,11 @@ const createReceptionUser = async (req, res, next) => {
 
     const user = await prisma.user.create({
       data: {
-        name,
-        email,
+        name: name.trim(),
+        email: email?.trim() || null,
         phone: phone || null,
+        age: parsedAge,
+        gender: gender.toLowerCase(),
         username,
         passwordHash,
         role: 'reception',
@@ -615,7 +635,7 @@ const createReceptionUser = async (req, res, next) => {
         maxBranches: Number.isFinite(Number(maxBranches)) && Number(maxBranches) > 0 ? Number(maxBranches) : 3,
         permissions: permissions && typeof permissions === 'object' ? permissions : {},
       },
-      select: { id: true, name: true, username: true, email: true, phone: true, role: true, maxBranches: true, centerId: true, permissions: true, createdAt: true },
+      select: { id: true, name: true, username: true, email: true, phone: true, age: true, gender: true, role: true, maxBranches: true, centerId: true, permissions: true, createdAt: true },
     });
 
     if (branchId) {
@@ -639,7 +659,7 @@ const createReceptionUser = async (req, res, next) => {
 // PUT /admin/reception/:id - admin/manager can change details, branch assignment, or active status
 const updateReceptionUser = async (req, res, next) => {
   try {
-    const { name, phone, email, maxBranches, branchId, isActive, isFrozen, permissions } = req.body;
+    const { name, phone, email, maxBranches, branchId, isActive, isFrozen, permissions, age, gender } = req.body;
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user || user.role !== 'reception') return error(res, 'Reception user not found', 404);
 
@@ -648,18 +668,23 @@ const updateReceptionUser = async (req, res, next) => {
       if (existingEmail && existingEmail.id !== req.params.id) return error(res, 'This email is already registered', 409);
     }
 
+    const parsedAge = (age !== undefined && age !== '' && age !== null) ? parseInt(age, 10) : undefined;
+    const normalizedGender = gender ? gender.toLowerCase() : undefined;
+
     const updated = await prisma.user.update({
       where: { id: req.params.id },
       data: {
-        ...(name && { name }),
+        ...(name && { name: name.trim() }),
         ...(phone !== undefined && { phone }),
+        ...(parsedAge !== undefined && { age: parsedAge }),
+        ...(normalizedGender !== undefined && { gender: normalizedGender }),
         ...(email !== undefined && { email }),
         ...(isActive !== undefined && { isActive }),
         ...(isFrozen !== undefined && { isFrozen }),
         ...(permissions !== undefined && typeof permissions === 'object' && { permissions }),
         ...(maxBranches !== undefined && Number(maxBranches) > 0 && { maxBranches: Number(maxBranches) }),
       },
-      select: { id: true, name: true, username: true, email: true, phone: true, maxBranches: true, isActive: true, isFrozen: true, permissions: true },
+      select: { id: true, name: true, username: true, email: true, phone: true, age: true, gender: true, maxBranches: true, isActive: true, isFrozen: true, permissions: true },
     });
 
     if (branchId !== undefined) {

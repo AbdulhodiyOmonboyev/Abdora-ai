@@ -17,7 +17,7 @@ import { cleanPhone } from '../../utils/formatPhone';
 import ToggleSwitch from '../../components/ui/ToggleSwitch';
 import toast from 'react-hot-toast';
 
-const EMPTY_FORM = { name: '', phone: '+998 ', email: '', language: 'uz', branchId: '' };
+const EMPTY_FORM = { name: '', phone: '+998 ', email: '', language: 'uz', branchId: '', age: '', gender: '' };
 
 export default function AdminReception() {
   const qc = useQueryClient();
@@ -120,20 +120,44 @@ export default function AdminReception() {
   const openEdit = (u) => {
     setEditingId(u.id);
     setForm({
-      name: u.name,
+      name: u.name || '',
       phone: u.phone || '+998 ',
       email: u.email || '',
       language: 'uz',
-      branchId: u.branches?.[0]?.id || u.branchId || ''
+      branchId: u.branches?.[0]?.id || u.branchId || '',
+      age: u.age !== null && u.age !== undefined ? String(u.age) : '',
+      gender: u.gender || '',
     });
     setShowCreate(true);
   };
 
   const submit = () => {
-    if (!form.name) return;
+    if (!form.name || !form.name.trim()) {
+      return toast.error("To'liq ism (F.I.SH) kiritilishi shart");
+    }
     const phone = cleanPhone(form.phone);
-    if (editingId) updateMutation.mutate({ id: editingId, data: { name: form.name, phone, email: form.email, branchId: form.branchId || null } });
-    else createMutation.mutate({ ...form, phone });
+    if (!phone || phone.replace(/\D/g, '').length < 9) {
+      return toast.error("Telefon raqami to'liq kiritilishi shart (+998...)");
+    }
+    const parsedAge = form.age !== '' && form.age !== null ? parseInt(form.age, 10) : null;
+    if (!parsedAge || isNaN(parsedAge) || parsedAge < 14 || parsedAge > 100) {
+      return toast.error("Qabulxonachi yoshi kiritilishi shart (14 - 100 oralig'ida)");
+    }
+    if (!form.gender) {
+      return toast.error("Qabulxonachi jinsi (Erkak yoki Ayol) tanlanishi shart");
+    }
+
+    const payload = {
+      name: form.name.trim(),
+      phone,
+      email: form.email?.trim() || null,
+      age: parsedAge,
+      gender: form.gender,
+      branchId: form.branchId || null,
+    };
+
+    if (editingId) updateMutation.mutate({ id: editingId, data: payload });
+    else createMutation.mutate({ ...payload, language: 'uz' });
   };
 
   const handleDelete = (u) => {
@@ -373,6 +397,16 @@ export default function AdminReception() {
                         Faol
                       </span>
                     )}
+                    {u.gender && (
+                      <span className="badge text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
+                        {u.gender === 'male' ? 'Erkak' : u.gender === 'female' ? 'Ayol' : 'Boshqa'}
+                      </span>
+                    )}
+                    {u.age && (
+                      <span className="badge text-[10px] bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium">
+                        {u.age} yosh
+                      </span>
+                    )}
                     {u.permissions?.canViewFinance && (
                       <span className="badge text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                         Moliya ochiq
@@ -507,25 +541,57 @@ export default function AdminReception() {
                       className="input-field"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Telefon raqami</label>
-                    <PhoneInput
-                      value={form.phone}
-                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                      placeholder="+998 90 123 45 67"
-                      className="input-field font-mono"
-                    />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Telefon raqami *</label>
+                      <PhoneInput
+                        value={form.phone}
+                        onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                        placeholder="+998 90 123 45 67"
+                        className="input-field font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Email</label>
+                      <input
+                        value={form.email}
+                        onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                        placeholder="email@example.com"
+                        type="email"
+                        className="input-field"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Email</label>
-                    <input
-                      value={form.email}
-                      onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                      placeholder="email@example.com"
-                      type="email"
-                      className="input-field"
-                    />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Yoshi *</label>
+                      <input
+                        type="number"
+                        min="14"
+                        max="100"
+                        value={form.age}
+                        onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
+                        placeholder="Masalan: 22"
+                        className="input-field"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Jinsi *</label>
+                      <select
+                        value={form.gender}
+                        onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
+                        className="input-field"
+                      >
+                        <option value="">Tanlang</option>
+                        <option value="male">Erkak</option>
+                        <option value="female">Ayol</option>
+                        <option value="other">Boshqa</option>
+                      </select>
+                    </div>
                   </div>
+
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>Filial</label>
                     <select
@@ -547,7 +613,7 @@ export default function AdminReception() {
                     <button
                       type="button"
                       onClick={submit}
-                      disabled={!form.name || isSaving}
+                      disabled={!form.name || !form.phone || !form.age || !form.gender || isSaving}
                       className="btn-primary flex-1 disabled:opacity-40"
                     >
                       {isSaving ? "Saqlanmoqda..." : editingId ? 'Saqlash' : "Qo'shish"}

@@ -92,7 +92,7 @@ export default function ReceptionStaffDetail() {
 
   const [confirm, setConfirm] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', branchId: '' });
+  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', branchId: '', age: '', gender: '' });
   const [localPermissions, setLocalPermissions] = useState({});
   const [hasUnsavedPerms, setHasUnsavedPerms] = useState(false);
 
@@ -124,6 +124,8 @@ export default function ReceptionStaffDetail() {
         phone: staff.phone || '+998 ',
         email: staff.email || '',
         branchId: staff.branches?.[0]?.id || staff.branchId || '',
+        age: staff.age !== null && staff.age !== undefined ? String(staff.age) : '',
+        gender: staff.gender || '',
       });
     }
   }, [staff]);
@@ -248,10 +250,24 @@ export default function ReceptionStaffDetail() {
   const handleSaveProfile = (e) => {
     e.preventDefault();
     if (!editForm.name.trim()) return toast.error("Ism kiritilishi shart");
+    const phone = cleanPhone(editForm.phone);
+    if (!phone || phone.replace(/\D/g, '').length < 9) {
+      return toast.error("Telefon raqami to'liq kiritilishi shart (+998...)");
+    }
+    const parsedAge = editForm.age !== '' && editForm.age !== null ? parseInt(editForm.age, 10) : null;
+    if (!parsedAge || isNaN(parsedAge) || parsedAge < 14 || parsedAge > 100) {
+      return toast.error("Qabulxonachi yoshi kiritilishi shart (14 - 100 oralig'ida)");
+    }
+    if (!editForm.gender) {
+      return toast.error("Qabulxonachi jinsi (Erkak yoki Ayol) tanlanishi shart");
+    }
+
     updateProfileMutation.mutate({
-      name: editForm.name,
-      phone: cleanPhone(editForm.phone),
-      email: editForm.email || null,
+      name: editForm.name.trim(),
+      phone,
+      email: editForm.email?.trim() || null,
+      age: parsedAge,
+      gender: editForm.gender,
       branchId: editForm.branchId || null,
     });
   };
@@ -402,6 +418,16 @@ export default function ReceptionStaffDetail() {
                 <span className="badge text-xs bg-primary/10 text-primary font-semibold">
                   Qabulxona Xodimi
                 </span>
+                {staff.gender && (
+                  <span className="badge text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
+                    {staff.gender === 'male' ? 'Erkak' : staff.gender === 'female' ? 'Ayol' : 'Boshqa'}
+                  </span>
+                )}
+                {staff.age && (
+                  <span className="badge text-xs bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium">
+                    {staff.age} yosh
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -825,27 +851,61 @@ export default function ReceptionStaffDetail() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
-                    Telefon raqami
-                  </label>
-                  <PhoneInput
-                    value={editForm.phone}
-                    onChange={v => setEditForm(f => ({ ...f, phone: v }))}
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
+                      Telefon raqami <span className="text-red-500">*</span>
+                    </label>
+                    <PhoneInput
+                      value={editForm.phone}
+                      onChange={v => setEditForm(f => ({ ...f, phone: v }))}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
+                      Elektron pochta (ixtiyoriy)
+                    </label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
+                      className="input-field text-sm"
+                      placeholder="reception@markaz.uz"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
-                    Elektron pochta (ixtiyoriy)
-                  </label>
-                  <input
-                    type="email"
-                    value={editForm.email}
-                    onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
-                    className="input-field text-sm"
-                    placeholder="reception@markaz.uz"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
+                      Yoshi <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="14"
+                      max="100"
+                      required
+                      value={editForm.age}
+                      onChange={e => setEditForm(f => ({ ...f, age: e.target.value }))}
+                      className="input-field text-sm"
+                      placeholder="Masalan: 22"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
+                      Jinsi <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={editForm.gender}
+                      onChange={e => setEditForm(f => ({ ...f, gender: e.target.value }))}
+                      className="input-field text-sm cursor-pointer"
+                    >
+                      <option value="">Tanlang</option>
+                      <option value="male">Erkak</option>
+                      <option value="female">Ayol</option>
+                      <option value="other">Boshqa</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
