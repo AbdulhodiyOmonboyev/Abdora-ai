@@ -106,7 +106,6 @@ const TABS = [
   { id: "permissions", label: "Modullar va Ruxsatlar", icon: Settings2 },
   { id: "custom_roles",label: "Maxsus Rollar",         icon: UserCog },
   { id: "ai",          label: "AI Model Dvigateli",     icon: Cpu },
-  { id: "reception",   label: "Qabulxona Huquqlari",    icon: ShieldCheck },
   { id: "receipts",    label: "Kvitansiya va To'lov",   icon: Receipt },
 ];
 
@@ -153,18 +152,6 @@ export default function AdminCenterSettings() {
     customPrompt: "",
   });
 
-  // Reception permissions state
-  const [receptionPermissions, setReceptionPermissions] = useState({
-    canViewFinance: false,
-    canViewCashbox: false,
-    canManagePayments: true,
-    canManageLeads: true,
-    canManageTimetable: true,
-    canManageGroups: true,
-    canManageStudents: true,
-    canManageTeachers: true,
-  });
-
   // Receipts and Payment settings
   const [receiptSettings, setReceiptSettings] = useState({
     receiptHeader: "",
@@ -191,7 +178,6 @@ export default function AdminCenterSettings() {
       const s = center.settings || {};
       const f = s.features || {};
       const ai = s.aiConfig || {};
-      const rp = s.receptionPermissions || {};
 
       setFeatures({
         financeEnabled:     f.financeEnabled     !== false,
@@ -227,17 +213,6 @@ export default function AdminCenterSettings() {
         customPrompt: ai.customPrompt || "",
       });
 
-      setReceptionPermissions({
-        canViewFinance:    rp.canViewFinance    === true,
-        canViewCashbox:    rp.canViewCashbox    === true,
-        canManagePayments: rp.canManagePayments !== false,
-        canManageLeads:    rp.canManageLeads    !== false,
-        canManageTimetable:rp.canManageTimetable!== false,
-        canManageGroups:   rp.canManageGroups   !== false,
-        canManageStudents: rp.canManageStudents !== false,
-        canManageTeachers: rp.canManageTeachers !== false,
-      });
-
       setReceiptSettings({
         receiptHeader: s.receiptHeader || center.name || "",
         receiptFooter: s.receiptFooter || "Xizmatimizdan foydalanganingiz uchun rahmat!",
@@ -255,7 +230,6 @@ export default function AdminCenterSettings() {
           ...(center?.settings || {}),
           features,
           aiConfig,
-          receptionPermissions,
           receiptHeader: receiptSettings.receiptHeader,
           receiptFooter: receiptSettings.receiptFooter,
           enabledPaymentMethods: receiptSettings.enabledPaymentMethods,
@@ -271,7 +245,6 @@ export default function AdminCenterSettings() {
   });
 
   const toggleFeature = (key) => setFeatures(p => ({ ...p, [key]: !p[key] }));
-  const toggleReception = (key) => setReceptionPermissions(p => ({ ...p, [key]: !p[key] }));
 
   const handleSelectAgent = (agentId) => {
     setAiConfig(prev => {
@@ -736,66 +709,7 @@ export default function AdminCenterSettings() {
           </motion.div>
         )}
 
-        {/* TAB 3: QABULXONA (RECEPTION) HUQUQLARI */}
-        {activeTab === "reception" && (
-          <motion.div
-            key="reception"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="panel-card space-y-4"
-          >
-            <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: "var(--border)" }}>
-              <div>
-                <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
-                  Qabulxona (Reception) xodimlari huquqlari
-                </h2>
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  Ushbu markaz qabulxonachilari nimalarni ko'rishi va boshqarishi mumkinligini belgilang.
-                </p>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { key: "canViewFinance",    label: "Moliyani ko'rish",        hint: "Umumiy markaz daromadlarini ko'rish (Odatiy: O'chiq)" },
-                { key: "canViewCashbox",    label: "Kassani ko'rish",         hint: "Kassa qoldig'i va chiqimlarni ko'rish (Odatiy: O'chiq)" },
-                { key: "canManagePayments", label: "To'lovlar qabuli",        hint: "O'quvchilardan to'lovlarni qabul qilish va kvitansiya" },
-                { key: "canManageLeads",    label: "Lidlar va CRM",           hint: "Yangi mijozlar, murojaatlar va lidlarni yuritish" },
-                { key: "canManageTimetable",label: "Dars jadvali va xonalar", hint: "Xonalar bandligini va dars jadvallarini boshqarish" },
-                { key: "canManageGroups",   label: "Guruhlar ro'yxati",       hint: "Guruhlarni ko'rish va o'quvchilarni taqsimlash" },
-                { key: "canManageStudents", label: "O'quvchilar ro'yxati",     hint: "O'quvchilar ma'lumotlarini kiritish va tahrirlash" },
-                { key: "canManageTeachers", label: "O'qituvchilar ro'yxati",   hint: "O'qituvchilar kontaktlari va guruhlarini ko'rish" },
-              ].map(item => {
-                const isChecked = receptionPermissions[item.key] === true;
-                return (
-                  <div
-                    key={item.key}
-                    className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
-                      isChecked
-                        ? "border-emerald-500/30 bg-[var(--secondary-background)]"
-                        : "border-[var(--border)] opacity-60 bg-[var(--card)]"
-                    }`}
-                  >
-                    <div className="min-w-0 pr-2">
-                      <div className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
-                        {item.label}
-                      </div>
-                      <div className="text-[11px] mt-0.5 line-clamp-1" style={{ color: "var(--text-muted)" }}>
-                        {item.hint}
-                      </div>
-                    </div>
-                    <ToggleSwitch
-                      checked={isChecked}
-                      onChange={() => toggleReception(item.key)}
-                      size="sm"
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
 
         {/* TAB 4: KVITANSIYA VA TO'LOV */}
         {activeTab === "receipts" && (
