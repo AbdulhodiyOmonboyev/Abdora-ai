@@ -62,7 +62,7 @@ const createStudent = async (req, res, next) => {
       group = await prisma.group.findFirst({ where: { id: groupId, ...(centerId ? { centerId } : {}) } });
       if (!group) return error(res, 'Group not found', 404);
 
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== 'admin' && req.user.role !== 'manager') {
         const ownBranchIds = await getOwnBranchIds(req.user);
         if (group.branchId && ownBranchIds && !ownBranchIds.includes(group.branchId)) {
           return error(res, 'Forbidden: not your branch', 403);
@@ -72,7 +72,7 @@ const createStudent = async (req, res, next) => {
       effectiveBranchId = group.branchId || effectiveBranchId;
     } else if (req.user.role !== 'admin') {
       const ownBranchIds = await getOwnBranchIds(req.user);
-      if (ownBranchIds && ownBranchIds.length > 0) {
+      if (ownBranchIds && ownBranchIds.length > 0 && !effectiveBranchId) {
         effectiveBranchId = ownBranchIds[0];
       }
     }
@@ -594,8 +594,15 @@ const deleteManager = async (req, res, next) => {
 
 const getManagerBranches = async (req, res, next) => {
   try {
-    const branches = await prisma.branch.findMany({
-      where: { managerId: req.user.userId, centerId: req.user.centerId, isActive: true },
+    let branches = await prisma.branch.findMany({
+      where: {
+        centerId: req.user.centerId,
+        isActive: true,
+        OR: [
+          { managerId: req.user.userId },
+          ...(req.user.branchId ? [{ id: req.user.branchId }] : []),
+        ]
+      },
       include: {
         reception: { select: { id: true, name: true } },
         manager: { select: { id: true, name: true } },
@@ -618,6 +625,33 @@ const getManagerBranches = async (req, res, next) => {
         _count: { select: { teachers: true } },
       },
     });
+
+    if (branches.length === 0 && req.user.centerId) {
+      branches = await prisma.branch.findMany({
+        where: { centerId: req.user.centerId, isActive: true },
+        include: {
+          reception: { select: { id: true, name: true } },
+          manager: { select: { id: true, name: true } },
+          teachers: { select: { id: true, name: true, username: true, phone: true, isActive: true } },
+          groups: {
+            select: {
+              id: true,
+              name: true,
+              subject: true,
+              monthlyFee: true,
+              weekDays: true,
+              startTime: true,
+              endTime: true,
+              room: true,
+              teacher: { select: { id: true, name: true } },
+              _count: { select: { students: true } },
+            },
+            orderBy: { name: 'asc' },
+          },
+          _count: { select: { teachers: true } },
+        },
+      });
+    }
 
     const branchesWithCounts = await Promise.all(branches.map(async (branch) => {
       const studentsCount = await prisma.user.count({

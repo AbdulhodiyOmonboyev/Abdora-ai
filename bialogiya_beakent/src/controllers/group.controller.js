@@ -10,14 +10,20 @@ const assertGroupAccess = async (groupId, user) => {
   if (user.role === 'admin') return null;
   const group = await prisma.group.findFirst({ where: { id: groupId, ...(user.role !== 'admin' ? { centerId: user.centerId } : {}) }, select: { branchId: true, centerId: true } });
   if (!group) return { message: 'Guruh topilmadi', status: 404 };
-  if (!group.branchId) return { message: "Ruxsat yo'q", status: 403 };
   if (user.role === 'teacher') {
     const owned = await prisma.group.findFirst({ where: { id: groupId, teacherId: user.userId }, select: { id: true } });
     if (!owned) return { message: "Ruxsat yo'q", status: 403 };
-  } else {
-    const ownBranchIds = await getOwnBranchIds(user);
-    if (!ownBranchIds?.includes(group.branchId)) return { message: "Ruxsat yo'q", status: 403 };
+    return null;
   }
+  if (user.role === 'manager' && group.centerId === user.centerId) {
+    const ownBranchIds = await getOwnBranchIds(user);
+    if (!group.branchId || ownBranchIds?.includes(group.branchId) || ownBranchIds.length === 0) {
+      return null;
+    }
+  }
+  if (!group.branchId) return { message: "Ruxsat yo'q", status: 403 };
+  const ownBranchIds = await getOwnBranchIds(user);
+  if (!ownBranchIds?.includes(group.branchId)) return { message: "Ruxsat yo'q", status: 403 };
   return null;
 };
 
@@ -33,8 +39,8 @@ const createGroup = async (req, res, next) => {
     if (req.user.role !== 'admin' && !centerId) return error(res, 'Center context required', 403);
 
     const ownBranchIds = await getOwnBranchIds(req.user);
-    if (ownBranchIds) {
-      if (!branchId && ownBranchIds.length > 0) branchId = ownBranchIds[0];
+    if (ownBranchIds && ownBranchIds.length > 0) {
+      if (!branchId) branchId = ownBranchIds[0];
       if (branchId && !ownBranchIds.includes(branchId)) {
         return error(res, 'Forbidden: not your branch', 403);
       }
@@ -49,7 +55,14 @@ const createGroup = async (req, res, next) => {
     if (!teacher) return error(res, 'Teacher not found', 404);
     if (ownBranchIds && teacher.branchId && !ownBranchIds.includes(teacher.branchId)) return error(res, 'Forbidden', 403);
 
-    if (branchId && teacher.branchId !== branchId) return error(res, 'Teacher must belong to the selected branch', 403);
+    if (branchId && teacher.branchId && teacher.branchId !== branchId) {
+      return error(res, 'Teacher must belong to the selected branch', 403);
+    }
+    if (branchId && !teacher.branchId) {
+      try {
+        await prisma.user.update({ where: { id: teacher.id }, data: { branchId } });
+      } catch (_) {}
+    }
 
     let roomName = room ? String(room).trim() : null;
     let actualRoomId = roomId || null;
@@ -105,12 +118,15 @@ const createGroup = async (req, res, next) => {
 
 const getMyGroups = async (req, res, next) => {
   try {
+    let where = { teacherId: req.user.userId, isActive: true };
     if (req.user.role === 'manager') {
       const ownBranchIds = await getOwnBranchIds(req.user);
-      where.branchId = { in: ownBranchIds || [] };
+      if (ownBranchIds && ownBranchIds.length > 0) {
+        where.branchId = { in: ownBranchIds };
+      }
     }
     const groups = await prisma.group.findMany({
-      where: { teacherId: req.user.userId, isActive: true },
+      where,
       include: { students: { select: { id: true, name: true, username: true } }, _count: { select: { students: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -289,8 +305,16 @@ const addStudentToGroup = async (req, res, next) => {
     const student = await prisma.user.findFirst({ where: { id: studentId, role: 'student', ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { id: true, branchId: true, group: { select: { branchId: true } } } });
     if (!student) return error(res, 'Student not found', 404);
     const group = await prisma.group.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { branchId: true } });
-    if (req.user.role !== 'admin' && ((student.branchId && student.branchId !== group.branchId) || (student.group?.branchId && student.group.branchId !== group.branchId))) return error(res, 'Forbidden', 403);
-    await prisma.user.update({ where: { id: studentId }, data: { groupId: req.params.id } });
+    if (req.user.role !== 'admin' && req.user.role !== 'manager' && ((student.branchId && group?.branchId && student.branchId !== group.branchId) || (student.group?.branchId && group?.branchId && student.group.branchId !== group.branchId))) {
+      return error(res, 'Forbidden: student belongs to different branch', 403);
+    }
+    await prisma.user.update({
+      where: { id: studentId },
+      data: {
+        groupId: req.params.id,
+        ...(group?.branchId ? { branchId: group.branchId } : {}),
+      }
+    });
     return success(res, null, 'Student added');
   } catch (err) { next(err); }
 };

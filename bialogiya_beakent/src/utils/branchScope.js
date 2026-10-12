@@ -39,6 +39,15 @@ const getOwnBranchIds = async (user) => {
       select: { id: true }
     });
     branchIds = branches.map(b => b.id);
+
+    // If manager has no specific branch assignment, manager manages all branches of their center!
+    if (branchIds.length === 0 && user.centerId) {
+      const allBranches = await prisma.branch.findMany({
+        where: { centerId: user.centerId, isActive: true },
+        select: { id: true }
+      });
+      branchIds = allBranches.map(b => b.id);
+    }
   }
 
   // Never fall back to every branch in the business. A manager/reception account
@@ -62,6 +71,12 @@ const assertGroupAccess = async (groupId, user, prisma) => {
     const student = await prisma.user.findUnique({ where: { id: user.userId }, select: { groupId: true } });
     if (student?.groupId !== group.id) return { error: 'Forbidden', status: 403 };
     return { group };
+  }
+  if (user.role === 'manager' && group.centerId === user.centerId) {
+    const ownBranchIds = await getOwnBranchIds(user);
+    if (!group.branchId || ownBranchIds?.includes(group.branchId) || ownBranchIds.length === 0) {
+      return { group };
+    }
   }
   const ownBranchIds = await getOwnBranchIds(user);
   if (!ownBranchIds?.includes(group.branchId)) return { error: 'Forbidden', status: 403 };

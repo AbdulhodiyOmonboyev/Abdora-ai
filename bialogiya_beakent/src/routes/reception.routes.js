@@ -3,7 +3,7 @@ const router = express.Router();
 const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const { createTeacher, getTeachers, getGroups, getMyBranches, getBranchDetail } = require('../controllers/reception.controller');
 
-const receptionOnly = [verifyToken, requireRole('reception', 'admin')];
+const receptionOnly = [verifyToken, requireRole('reception', 'admin', 'manager')];
 
 router.get('/teachers', ...receptionOnly, getTeachers);
 router.post('/teachers', ...receptionOnly, createTeacher);

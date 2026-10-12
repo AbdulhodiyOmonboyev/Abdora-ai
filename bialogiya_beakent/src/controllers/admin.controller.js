@@ -210,12 +210,13 @@ const getTeachers = async (req, res, next) => {
 // shows up in a reception/manager's own branch list (and therefore in their
 // UI dropdowns) could get rejected here with a false 403.
 const assertBranchAccess = async (branchId, user) => {
-  if (!branchId) return user.role === 'manager' ? 'Branch is required' : null;
+  if (!branchId) return user.role === 'manager' ? 'Filial tanlanishi shart' : null;
   const branch = await prisma.branch.findUnique({ where: { id: branchId } });
-  if (!branch) return 'Branch not found';
+  if (!branch) return 'Filial topilmadi';
   if (user.role === 'admin') return null;
   if (branch.centerId !== user.centerId) return 'Forbidden: not your center';
-  if (user.role === 'reception' || user.role === 'manager') {
+  if (user.role === 'manager') return null;
+  if (user.role === 'reception') {
     const ownBranchIds = await getOwnBranchIds(user);
     if (!ownBranchIds?.includes(branch.id)) return 'Forbidden: not your branch';
   }
