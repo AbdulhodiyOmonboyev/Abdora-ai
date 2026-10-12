@@ -2057,70 +2057,91 @@ export default function ManagerSettings() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                             {shopItems.map((item) => {
                               const Icon = SHOP_ICON_MAP[item.icon] || Gift;
+                              const itemImg = item.imageUrl ? resolveMediaUrl(item.imageUrl) : null;
                               return (
                                 <div
                                   key={item.id}
-                                  className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                                  className={`rounded-2xl border transition-all flex flex-col justify-between overflow-hidden ${
                                     item.isActive !== false ? 'border-[var(--border)] bg-[var(--card)]' : 'border-[var(--border)] bg-gray-50/50 dark:bg-gray-900/40 opacity-70'
                                   }`}
                                 >
-                                  <div>
-                                    <div className="flex items-start justify-between gap-3 mb-3">
-                                      <div className="w-10 h-10 rounded-xl bg-[var(--primary-50)] text-[var(--primary)] flex items-center justify-center flex-shrink-0">
-                                        <Icon size={20} />
+                                  {/* Rasm yoki Icon banneri */}
+                                  <div className="relative w-full h-36 bg-[var(--secondary-background)] flex items-center justify-center overflow-hidden border-b border-[var(--border)]">
+                                    {itemImg ? (
+                                      <img
+                                        src={itemImg}
+                                        alt={item.title}
+                                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                        loading="lazy"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 text-primary">
+                                        <Icon size={32} />
                                       </div>
-                                      <div className="flex items-center gap-1.5">
-                                        <span className={`badge text-[10px] font-bold px-2 py-0.5 ${
-                                          item.isActive !== false ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-gray-100 text-gray-500'
-                                        }`}>
-                                          {item.isActive !== false ? 'Faol' : 'Nofaol'}
-                                        </span>
-                                      </div>
-                                    </div>
+                                    )}
 
-                                    <h4 className="font-bold text-sm text-[var(--text-primary)] mb-1">
-                                      {item.title}
-                                    </h4>
-                                    <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-3">
-                                      {item.description || 'Tavsif kiritilmagan'}
-                                    </p>
+                                    {/* Kategoriya va Faol/Nofaol nishonlari */}
+                                    <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 pointer-events-none">
+                                      <span className="badge backdrop-blur-md bg-black/55 text-white border border-white/20 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
+                                        {item.category === 'merch' ? 'Merch' :
+                                         item.category === 'book' ? 'Kitob' :
+                                         item.category === 'discount' ? 'Chegirma' : "Sovg'a"}
+                                      </span>
+
+                                      <span className={`badge text-[10px] font-bold px-2 py-0.5 backdrop-blur-md ${
+                                        item.isActive !== false ? 'bg-emerald-500/90 text-white' : 'bg-gray-500/80 text-white'
+                                      }`}>
+                                        {item.isActive !== false ? 'Faol' : 'Nofaol'}
+                                      </span>
+                                    </div>
                                   </div>
 
-                                  <div className="pt-3 border-t border-[var(--border)] space-y-2">
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="text-[var(--text-secondary)]">Narxi:</span>
-                                      <span className="font-black text-amber-500 flex items-center gap-1">
-                                        <Coins size={14} /> {item.priceCoins} tanga
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="text-[var(--text-secondary)]">Zaxirada:</span>
-                                      <span className="font-semibold text-[var(--text-primary)]">
-                                        {item.stock !== null && item.stock !== undefined ? `${item.stock} dona` : 'Cheksiz'}
-                                      </span>
+                                  <div className="p-4 flex-1 flex flex-col justify-between">
+                                    <div>
+                                      <h4 className="font-bold text-sm text-[var(--text-primary)] mb-1">
+                                        {item.title}
+                                      </h4>
+                                      <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-3">
+                                        {item.description || 'Tavsif kiritilmagan'}
+                                      </p>
                                     </div>
 
-                                    <div className="flex items-center justify-end gap-1.5 pt-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => openEditShopModal(item)}
-                                        className="btn-outline btn-xs flex items-center gap-1 text-[11px]"
-                                        title="Tahrirlash"
-                                      >
-                                        <Pencil size={12} /> Tahrirlash
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          if (window.confirm(`"${item.title}" mahsulotini o'chirishni tasdiqlaysizmi?`)) {
-                                            deleteShopItemMutation.mutate(item.id);
-                                          }
-                                        }}
-                                        className="btn-ghost btn-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-1 text-[11px]"
-                                        title="O'chirish"
-                                      >
-                                        <Trash2 size={12} />
-                                      </button>
+                                    <div className="pt-3 border-t border-[var(--border)] space-y-2">
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="text-[var(--text-secondary)]">Narxi:</span>
+                                        <span className="font-black text-amber-500 flex items-center gap-1">
+                                          <Coins size={14} /> {item.priceCoins} tanga
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="text-[var(--text-secondary)]">Zaxirada:</span>
+                                        <span className="font-semibold text-[var(--text-primary)]">
+                                          {item.stock !== null && item.stock !== undefined ? `${item.stock} dona` : 'Cheksiz'}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center justify-end gap-1.5 pt-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => openEditShopModal(item)}
+                                          className="btn-outline btn-xs flex items-center gap-1 text-[11px]"
+                                          title="Tahrirlash"
+                                        >
+                                          <Pencil size={12} /> Tahrirlash
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (window.confirm(`"${item.title}" mahsulotini o'chirishni tasdiqlaysizmi?`)) {
+                                              deleteShopItemMutation.mutate(item.id);
+                                            }
+                                          }}
+                                          className="btn-ghost btn-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-1 text-[11px]"
+                                          title="O'chirish"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
