@@ -804,7 +804,6 @@ export default function AdminGroups() {
                     </div>
                   </div>
                 )}
-                </div>
 
                 <div className="pt-4 flex items-center justify-end gap-2.5 border-t border-gray-100 dark:border-gray-800">
                   <button

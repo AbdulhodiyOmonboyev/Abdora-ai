@@ -62,6 +62,15 @@ const TIME_PRESETS = [
 const TIME_HOURS = Array.from({ length: 15 }, (_, i) => String(i + 8).padStart(2, '0'));
 const TIME_MINUTES = ['00', '15', '30', '45'];
 
+const DEFAULT_COURSE_LEVELS = [
+  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000 },
+  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000 },
+  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000 },
+  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000 },
+  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000 },
+  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000 },
+];
+
 function addMinutesToTime(timeStr, minutesToAdd) {
   if (!timeStr) return '';
   const [h, m] = timeStr.split(':').map(Number);
@@ -311,6 +320,8 @@ export default function ReceptionGroups() {
   const [editingGroup, setEditingGroup] = useState(null); // null = create mode
   const [form, setForm] = useState(EMPTY_FORM);
   const [customRoomMode, setCustomRoomMode] = useState(false);
+  const [isCustomLevel, setIsCustomLevel] = useState(false);
+  const [levelFilter, setLevelFilter] = useState('');
   const [confirm, setConfirm] = useState(null);
 
   const { data: groups = [] } = useQuery({ 
@@ -341,8 +352,64 @@ export default function ReceptionGroups() {
       return Array.isArray(data) ? data : [];
     }).catch(() => [])
   });
+  const { data: serverSettings } = useQuery({
+    queryKey: ['center-settings'],
+    queryFn: () => api.get('/admin/settings').then(r => r.data?.data || {}).catch(() => ({})),
+  });
 
-  const closeModal = () => { setShowModal(false); setEditingGroup(null); setForm(EMPTY_FORM); setCustomRoomMode(false); };
+  const courseLevels = serverSettings?.courseLevels && serverSettings.courseLevels.length > 0
+    ? serverSettings.courseLevels
+    : DEFAULT_COURSE_LEVELS;
+
+  const existingGroupLevels = Array.from(new Set(groups.map(g => g.level).filter(Boolean)));
+  const knownLevelNames = new Set(courseLevels.map(cl => cl.name));
+  const extraLevels = existingGroupLevels.filter(lvl => !knownLevelNames.has(lvl)).map(lvl => ({
+    id: `extra_${lvl}`,
+    name: lvl,
+    description: "Mavjud guruh darajasi",
+    defaultFee: null,
+  }));
+  const allLevels = [...courseLevels, ...extraLevels];
+
+  const getTeachersForLevel = (levelName) => {
+    if (!levelName) return [];
+    const lvlObj = courseLevels.find(cl => cl.name?.toLowerCase() === levelName?.toLowerCase());
+    const assignedIds = new Set(lvlObj?.teacherIds || []);
+    groups.forEach(g => {
+      if (g.level && g.level.toLowerCase() === levelName.toLowerCase()) {
+        const tid = g.teacher?.id || g.teacherId;
+        if (tid) assignedIds.add(tid);
+      }
+    });
+    return teachers.filter(t => assignedIds.has(t.id));
+  };
+
+  const selectedLevelTeachers = getTeachersForLevel(form.level);
+
+  const handleLevelChange = (selectedVal) => {
+    if (selectedVal === '__custom__') {
+      setIsCustomLevel(true);
+      setForm(f => ({ ...f, level: '' }));
+    } else {
+      setIsCustomLevel(false);
+      const matched = allLevels.find(l => l.name === selectedVal);
+      setForm(f => {
+        const updated = { ...f, level: selectedVal };
+        if ((!f.monthlyFee || f.monthlyFee === '0' || f.monthlyFee === '') && matched?.defaultFee) {
+          updated.monthlyFee = String(matched.defaultFee);
+        }
+        return updated;
+      });
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingGroup(null);
+    setForm(EMPTY_FORM);
+    setCustomRoomMode(false);
+    setIsCustomLevel(false);
+  };
 
   const toPayload = (d) => ({
     ...d,
@@ -366,8 +433,21 @@ export default function ReceptionGroups() {
     onSuccess: () => qc.invalidateQueries(['reception-groups']),
   });
 
-  const openCreate = () => { setEditingGroup(null); setForm(EMPTY_FORM); setShowModal(true); };
-  const openEdit = (e, g) => { e.stopPropagation(); setEditingGroup(g); setForm(groupToForm(g)); setShowModal(true); };
+  const openCreate = () => {
+    setEditingGroup(null);
+    setForm(EMPTY_FORM);
+    setIsCustomLevel(false);
+    setShowModal(true);
+  };
+
+  const openEdit = (e, g) => {
+    e.stopPropagation();
+    setEditingGroup(g);
+    const isKnownLevel = allLevels.some(l => l.name === g.level);
+    setIsCustomLevel(Boolean(g.level && !isKnownLevel));
+    setForm(groupToForm(g));
+    setShowModal(true);
+  };
   const handleDelete = (e, g) => {
     e.stopPropagation();
     setConfirm({
@@ -391,22 +471,41 @@ export default function ReceptionGroups() {
   const saveError = createMutation.error || updateMutation.error;
   const canSubmit = form.name && form.teacherId && !saving;
 
+  const filteredGroups = Array.isArray(groups) ? groups.filter(g => {
+    if (levelFilter && g.level !== levelFilter) return false;
+    return true;
+  }) : [];
+
   return (
     <div className="dashboard-shell max-w-5xl mx-auto">
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
 
       <PageHeader
         title="Guruhlar"
-        subtitle="Guruh yarating, jadval va xona belgilang."
+        subtitle={`Guruh yarating, jadval va xona belgilang (${filteredGroups.length} / ${groups.length})`}
         actions={
-          <button onClick={openCreate} className="btn-primary flex items-center gap-2">
-            <Plus size={14} /> Guruh yaratish
-          </button>
+          <div className="flex items-center gap-2">
+            {allLevels.length > 0 && (
+              <select
+                value={levelFilter}
+                onChange={e => setLevelFilter(e.target.value)}
+                className="input-field text-xs py-1.5 w-36"
+              >
+                <option value="">Barcha darajalar</option>
+                {allLevels.map(lvl => (
+                  <option key={lvl.id || lvl.name} value={lvl.name}>{lvl.name}</option>
+                ))}
+              </select>
+            )}
+            <button onClick={openCreate} className="btn-primary flex items-center gap-2">
+              <Plus size={14} /> Guruh yaratish
+            </button>
+          </div>
         }
       />
 
       <div className="space-y-3">
-        {groups?.map((g, i) => (
+        {filteredGroups?.map((g, i) => (
           <motion.div key={g.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
             onClick={() => navigate(`/reception/groups/${g.id}`)}
             className="panel-card flex items-center gap-3 cursor-pointer hover:shadow-md transition-shadow">
@@ -455,7 +554,7 @@ export default function ReceptionGroups() {
             <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
           </motion.div>
         ))}
-        {groups?.length === 0 && (
+        {filteredGroups?.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <Users2 size={36} className="mx-auto mb-3 opacity-30" />
             <p>Hali guruh yaratilmagan.</p>
@@ -498,7 +597,14 @@ export default function ReceptionGroups() {
                     <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">O'qituvchi *</label>
                     <select value={form.teacherId} onChange={e => setForm(f => ({ ...f, teacherId: e.target.value }))} className="input-field text-sm py-1.5">
                       <option value="">Tanlang</option>
-                      {teachers?.map(t => <option key={t.id} value={t.id}>{t.name}{t.branch ? ` (${t.branch.name})` : ''}</option>)}
+                      {teachers?.map(t => {
+                        const isLevelMatch = selectedLevelTeachers.some(lt => lt.id === t.id);
+                        return (
+                          <option key={t.id} value={t.id}>
+                            {t.name}{isLevelMatch ? " ⭐ (Ushbu daraja o'qituvchisi)" : ''}{t.branch ? ` (${t.branch.name})` : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 </div>
@@ -621,9 +727,42 @@ export default function ReceptionGroups() {
                 {/* Row 5: Level & Total lessons */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">Daraja</label>
-                    <input value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
-                      placeholder="Masalan: Boshlang'ich" className="input-field text-sm py-1.5" />
+                    <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">Daraja / Bosqich</label>
+                    {!isCustomLevel ? (
+                      <select
+                        value={form.level || ''}
+                        onChange={e => handleLevelChange(e.target.value)}
+                        className="input-field text-sm py-1.5 font-medium"
+                      >
+                        <option value="">Darajani tanlang...</option>
+                        {allLevels.map(lvl => {
+                          const lvlTeachers = getTeachersForLevel(lvl.name);
+                          return (
+                            <option key={lvl.id || lvl.name} value={lvl.name}>
+                              {lvl.name} {lvl.defaultFee ? `· ${Number(lvl.defaultFee).toLocaleString()} so'm` : ''} {lvlTeachers.length > 0 ? `(${lvlTeachers.length} ta o'qituvchi)` : ''}
+                            </option>
+                          );
+                        })}
+                        <option value="__custom__">+ Boshqa maxsus daraja kiritish...</option>
+                      </select>
+                    ) : (
+                      <div className="relative">
+                        <input
+                          value={form.level}
+                          onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
+                          placeholder="Maxsus daraja nomini kiriting..."
+                          className="input-field text-sm py-1.5 pr-16"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => { setIsCustomLevel(false); setForm(f => ({ ...f, level: '' })); }}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-[var(--primary)] font-semibold"
+                        >
+                          Ro'yxatga
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">Jami darslar</label>
@@ -631,6 +770,41 @@ export default function ReceptionGroups() {
                       placeholder="Masalan: 48" inputMode="numeric" className="input-field text-sm py-1.5" />
                   </div>
                 </div>
+
+                {/* Tanlangan daraja o'qituvchilari bo'yicha tezkor tavsiya */}
+                {form.level && selectedLevelTeachers.length > 0 && (
+                  <div className="p-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/30 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-purple-700 dark:text-purple-300 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles size={13} className="text-purple-600 dark:text-purple-400" />
+                        "{form.level}" darajasida dars beruvchi o'qituvchilar ({selectedLevelTeachers.length} nafar):
+                      </span>
+                      <span className="text-[10px] text-purple-500 font-normal">
+                        Bosib tanlang
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {selectedLevelTeachers.map(lt => {
+                        const isCurrentTeacher = form.teacherId === lt.id;
+                        return (
+                          <button
+                            key={lt.id}
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, teacherId: lt.id }))}
+                            className={`px-2 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
+                              isCurrentTeacher
+                                ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-400/40'
+                                : 'bg-white dark:bg-gray-800 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-800/40 hover:bg-purple-100 dark:hover:bg-purple-900/40'
+                            }`}
+                          >
+                            <span>{lt.name}</span>
+                            {isCurrentTeacher && <Check size={12} className="stroke-[2.5]" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Footer */}
