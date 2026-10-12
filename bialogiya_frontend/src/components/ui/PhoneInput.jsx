@@ -13,9 +13,14 @@ export default function PhoneInput({
 }) {
   const inputRef = useRef(null);
 
+  // Safely extract string if value is passed as syntheticEvent or object
+  const normalizedValue = typeof value === 'object' && value !== null
+    ? (value.target?.value ?? value.value ?? '')
+    : value;
+
   // Always ensure +998 is present
-  const displayValue = value !== undefined && value !== null && value !== ''
-    ? (String(value).startsWith('+998') ? String(value) : formatUzPhone(value))
+  const displayValue = normalizedValue !== undefined && normalizedValue !== null && normalizedValue !== ''
+    ? (String(normalizedValue).startsWith('+998') ? String(normalizedValue) : formatUzPhone(normalizedValue))
     : '+998 ';
 
   const handleChange = (e) => {
@@ -35,6 +40,8 @@ export default function PhoneInput({
         value: formatted,
         name: e.currentTarget?.name || props.name || '',
       },
+      toString: () => formatted,
+      valueOf: () => formatted,
     };
 
     if (onChange) {

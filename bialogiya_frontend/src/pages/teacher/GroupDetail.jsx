@@ -333,14 +333,16 @@ export default function GroupDetail() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-center">
-          <button
-            onClick={() => setShowAddStudent(true)}
-            className="btn-primary flex items-center gap-2 py-2 px-4 text-xs font-semibold rounded-xl"
-          >
-            <Plus size={16} /> O'quvchi qo'shish
-          </button>
-        </div>
+        {user?.role !== 'teacher' && (
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            <button
+              onClick={() => setShowAddStudent(true)}
+              className="btn-primary flex items-center gap-2 py-2 px-4 text-xs font-semibold rounded-xl"
+            >
+              <Plus size={16} /> O'quvchi qo'shish
+            </button>
+          </div>
+        )}
       </header>
 
       {/* ── Monthly Payment Bar & Statistics ── */}
@@ -637,7 +639,11 @@ export default function GroupDetail() {
               style={{ color: 'var(--text-muted)' }}>
               <Users size={36} className="mx-auto mb-2 opacity-30" />
               <p className="text-sm font-medium">O'quvchilar topilmadi</p>
-              <p className="text-xs mt-1">Qidiruv parametrlarini o'zgartiring yoki yangi o'quvchi qo'shing</p>
+              <p className="text-xs mt-1">
+                {user?.role === 'teacher'
+                  ? "Qidiruv parametrlarini o'zgartiring"
+                  : "Qidiruv parametrlarini o'zgartiring yoki yangi o'quvchi qo'shing"}
+              </p>
             </div>
           )}
         </div>

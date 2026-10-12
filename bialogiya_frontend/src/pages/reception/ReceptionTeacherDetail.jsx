@@ -16,6 +16,8 @@ import { formatSum, formatMonth, PAYMENT_METHODS } from '../../utils/finance';
 import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
 import Loader from '../../components/ui/Loader';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { cleanPhone } from '../../utils/formatPhone';
 
 const TABS = [
   { key: 'finance', label: "Moliya & To'lovlar", icon: Wallet },
@@ -47,6 +49,18 @@ export default function ReceptionTeacherDetail() {
   // Modals
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+
+  // Edit Profile Form State
+  const [editProfileForm, setEditProfileForm] = useState({
+    name: '',
+    phone: '',
+    birthDate: '',
+    age: '',
+    gender: 'male',
+    studyLocation: '',
+    address: '',
+  });
 
   // Payout Form State
   const [payoutForm, setPayoutForm] = useState({
@@ -111,6 +125,52 @@ export default function ReceptionTeacherDetail() {
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Xato yuz berdi'),
   });
+
+  // Edit Teacher Profile Mutation
+  const editProfileMutation = useMutation({
+    mutationFn: (payload) => api.put(`/admin/teachers/${id}`, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['teacher-overview', id] });
+      qc.invalidateQueries({ queryKey: ['all-teachers'] });
+      toast.success("O'qituvchi ma'lumotlari muvaffaqiyatli saqlandi!");
+      setShowEditProfileModal(false);
+    },
+    onError: (e) => toast.error(e.response?.data?.message || "Ma'lumotlarni saqlab bo'lmadi"),
+  });
+
+  const handleOpenEditProfile = () => {
+    const t = data?.teacher || {};
+    let bDateStr = '';
+    if (t.birthDate) {
+      try {
+        bDateStr = new Date(t.birthDate).toISOString().split('T')[0];
+      } catch {}
+    }
+    setEditProfileForm({
+      name: t.name || '',
+      phone: t.phone || '+998 ',
+      birthDate: bDateStr,
+      age: t.age ? String(t.age) : '',
+      gender: t.gender || 'male',
+      studyLocation: t.studyLocation || '',
+      address: t.address || '',
+    });
+    setShowEditProfileModal(true);
+  };
+
+  const submitEditProfile = (e) => {
+    e.preventDefault();
+    if (!editProfileForm.name) return toast.error("Ism kiritilishi shart");
+    editProfileMutation.mutate({
+      name: editProfileForm.name,
+      phone: cleanPhone(editProfileForm.phone) || null,
+      birthDate: editProfileForm.birthDate || null,
+      age: editProfileForm.age ? Number(editProfileForm.age) : null,
+      gender: editProfileForm.gender || null,
+      studyLocation: editProfileForm.studyLocation?.trim() || null,
+      address: editProfileForm.address?.trim() || null,
+    });
+  };
 
   const copy = (text) => {
     if (!text) return;
@@ -193,6 +253,15 @@ export default function ReceptionTeacherDetail() {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={handleOpenEditProfile}
+            className="btn-ghost btn-sm flex items-center gap-1.5"
+            title="Profil ma'lumotlarini tahrirlash"
+          >
+            <Edit3 size={14} />
+            <span className="hidden sm:inline">Tahrirlash</span>
+          </button>
+          <button
+            type="button"
             onClick={handleOpenTerms}
             className="btn-ghost btn-sm flex items-center gap-1.5"
             title="Maosh shartlarini sozlash"
@@ -237,7 +306,7 @@ export default function ReceptionTeacherDetail() {
                 @{teacher.username}
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)] pt-1">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[var(--text-secondary)] pt-1">
                 {teacher.phone && (
                   <button
                     type="button"
@@ -249,6 +318,36 @@ export default function ReceptionTeacherDetail() {
                     <span>{teacher.phone}</span>
                     <Copy size={11} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
+                )}
+
+                {(teacher.age || teacher.birthDate) && (
+                  <div className="flex items-center gap-1">
+                    <span>🎂</span>
+                    <span>
+                      {teacher.age ? `${teacher.age} yosh` : ''}
+                      {teacher.birthDate ? ` (${formatDate(teacher.birthDate)})` : ''}
+                    </span>
+                  </div>
+                )}
+
+                {teacher.gender && (
+                  <div className="flex items-center gap-1">
+                    <span>{teacher.gender === 'female' ? '👩 Ayol' : '👨 Erkak'}</span>
+                  </div>
+                )}
+
+                {teacher.studyLocation && (
+                  <div className="flex items-center gap-1" title={teacher.studyLocation}>
+                    <span>🎓</span>
+                    <span>{teacher.studyLocation}</span>
+                  </div>
+                )}
+
+                {teacher.address && (
+                  <div className="flex items-center gap-1" title={teacher.address}>
+                    <span>📍</span>
+                    <span>{teacher.address}</span>
+                  </div>
                 )}
 
                 {teacher.branch && (
@@ -947,6 +1046,152 @@ export default function ReceptionTeacherDetail() {
                     className="btn-primary btn-sm"
                   >
                     {termsMutation.isPending ? 'Saqlanmoqda...' : 'Shartlarni saqlash'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 3: EDIT PROFILE */}
+      <AnimatePresence>
+        {showEditProfileModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="modal-backdrop"
+            onClick={(e) => e.target === e.currentTarget && setShowEditProfileModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 10, opacity: 0 }}
+              className="modal-panel max-w-lg p-5 sm:p-6 flex flex-col max-h-[90vh]"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center">
+                    <Edit3 size={17} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-[var(--text-primary)]">O'qituvchi ma'lumotlarini tahrirlash</h3>
+                    <p className="text-[11px] text-[var(--text-muted)]">Shaxsiy va mutaxassislik ma'lumotlari</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEditProfileModal(false)}
+                  className="btn-icon"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={submitEditProfile} className="space-y-4 pt-4 overflow-y-auto px-1 flex-1">
+                <div>
+                  <label className="form-label">To'liq ismi *</label>
+                  <input
+                    value={editProfileForm.name}
+                    onChange={(e) => setEditProfileForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Ism va familiya"
+                    className="input-field"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Telefon raqami</label>
+                  <PhoneInput
+                    value={editProfileForm.phone}
+                    onChange={(e) => setEditProfileForm((f) => ({ ...f, phone: e.target.value }))}
+                    className="input-field font-mono"
+                    placeholder="+998 90 123 45 67"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="form-label">Tug'ilgan kuni</label>
+                    <input
+                      type="date"
+                      value={editProfileForm.birthDate || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        let newAge = editProfileForm.age;
+                        if (val) {
+                          const d = new Date(val);
+                          if (!isNaN(d.getTime())) {
+                            const calc = Math.floor((new Date() - d) / (365.25 * 24 * 60 * 60 * 1000));
+                            if (calc > 0 && calc < 100) newAge = String(calc);
+                          }
+                        }
+                        setEditProfileForm((f) => ({ ...f, birthDate: val, age: newAge }));
+                      }}
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Yoshi</label>
+                    <input
+                      type="number"
+                      min="16"
+                      max="90"
+                      value={editProfileForm.age || ''}
+                      onChange={(e) => setEditProfileForm((f) => ({ ...f, age: e.target.value }))}
+                      placeholder="Masalan: 28"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Jinsi</label>
+                    <select
+                      value={editProfileForm.gender || 'male'}
+                      onChange={(e) => setEditProfileForm((f) => ({ ...f, gender: e.target.value }))}
+                      className="input-field"
+                    >
+                      <option value="male">Erkak</option>
+                      <option value="female">Ayol</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label">Ma'lumoti / OTM / Mutaxassisligi</label>
+                  <input
+                    value={editProfileForm.studyLocation || ''}
+                    onChange={(e) => setEditProfileForm((f) => ({ ...f, studyLocation: e.target.value }))}
+                    placeholder="Masalan: O'zMU Biologiya fakulteti"
+                    className="input-field"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Yashash manzili</label>
+                  <input
+                    value={editProfileForm.address || ''}
+                    onChange={(e) => setEditProfileForm((f) => ({ ...f, address: e.target.value }))}
+                    placeholder="Shahar, tuman, ko'cha"
+                    className="input-field"
+                  />
+                </div>
+
+                {/* Submit buttons */}
+                <div className="flex justify-end gap-2 pt-3 border-t border-[var(--border)]">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditProfileModal(false)}
+                    className="btn-ghost btn-sm"
+                  >
+                    Bekor qilish
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editProfileMutation.isPending || !editProfileForm.name}
+                    className="btn-primary btn-sm"
+                  >
+                    {editProfileMutation.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
                   </button>
                 </div>
               </form>

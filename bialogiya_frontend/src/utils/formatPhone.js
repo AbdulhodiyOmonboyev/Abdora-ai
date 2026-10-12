@@ -5,7 +5,10 @@
 export function formatUzPhone(input) {
   if (!input) return '+998 ';
   
-  let str = String(input);
+  const val = typeof input === 'object' && input !== null
+    ? (input.target?.value ?? input.value ?? '')
+    : input;
+  let str = String(val);
   let digits = str.replace(/\D/g, '');
 
   if (digits.startsWith('998')) {
@@ -36,7 +39,10 @@ export function formatUzPhone(input) {
  */
 export function cleanPhone(input) {
   if (!input) return '';
-  const digits = String(input).replace(/\D/g, '');
+  const val = typeof input === 'object' && input !== null
+    ? (input.target?.value ?? input.value ?? '')
+    : input;
+  const digits = String(val).replace(/\D/g, '');
   if (digits.length < 5 || digits === '998') return '';
-  return input.trim();
+  return String(val).trim();
 }

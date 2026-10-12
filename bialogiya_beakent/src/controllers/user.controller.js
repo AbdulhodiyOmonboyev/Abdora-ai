@@ -112,7 +112,7 @@ const createStudent = async (req, res, next) => {
 
 const createTeacher = async (req, res, next) => {
   try {
-    const { name, email, phone, language, password, salaryType, salaryShare, fixedSalary, hourlyRate } = req.body;
+    const { name, email, phone, language, password, salaryType, salaryShare, fixedSalary, hourlyRate, age, gender, birthDate, studyLocation, address } = req.body;
     if (!name) return error(res, 'Name required', 400);
 
     const effectiveSalaryType = ['percent', 'fixed', 'hourly'].includes(salaryType) ? salaryType : 'percent';
@@ -125,6 +125,17 @@ const createTeacher = async (req, res, next) => {
     const effectiveHourlyRate = effectiveSalaryType === 'hourly' && hourlyRate !== undefined && hourlyRate !== ''
       ? Math.max(0, Number(hourlyRate))
       : null;
+
+    let parsedBirthDate = null;
+    if (birthDate) {
+      const d = new Date(birthDate);
+      if (!isNaN(d.getTime())) parsedBirthDate = d;
+    }
+
+    let effectiveAge = age !== undefined && age !== '' ? Number(age) : null;
+    if (!effectiveAge && parsedBirthDate) {
+      effectiveAge = Math.floor((new Date() - parsedBirthDate) / (365.25 * 24 * 60 * 60 * 1000));
+    }
 
     const code = generatePassword(phone, password);
     let username = generateUsername(name, phone);
@@ -145,6 +156,11 @@ const createTeacher = async (req, res, next) => {
         role: 'teacher',
         language: language || 'uz',
         centerId,
+        age: effectiveAge,
+        gender: gender || null,
+        birthDate: parsedBirthDate,
+        studyLocation: studyLocation?.trim() || null,
+        address: address?.trim() || null,
         salaryType: effectiveSalaryType,
         salaryShare: effectiveSalaryShare,
         fixedSalary: effectiveFixedSalary,

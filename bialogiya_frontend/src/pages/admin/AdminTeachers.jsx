@@ -36,22 +36,29 @@ const HOURLY_PRESETS = [
   { rate: 150000, label: '150 000' },
 ];
 
+const EMPTY_TEACHER_FORM = {
+  name: '',
+  phone: '+998 ',
+  email: '',
+  birthDate: '',
+  age: '',
+  gender: 'male',
+  studyLocation: '',
+  address: '',
+  language: 'uz',
+  branchId: '',
+  salaryType: 'percent',
+  salaryShare: 50,
+  fixedSalary: '',
+  hourlyRate: '',
+};
+
 export default function AdminTeachers() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({
-    name: '',
-    phone: '+998 ',
-    email: '',
-    language: 'uz',
-    branchId: '',
-    salaryType: 'percent',
-    salaryShare: 50,
-    fixedSalary: '',
-    hourlyRate: '',
-  });
+  const [form, setForm] = useState(EMPTY_TEACHER_FORM);
   const [newCreds, setNewCreds] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [editingId, setEditingId] = useState(null);
@@ -74,21 +81,15 @@ export default function AdminTeachers() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (d) => api.post('/admin/teachers', d),
+    mutationFn: (d) => api.post('/admin/teachers', {
+      ...d,
+      phone: cleanPhone(d.phone) || null,
+      age: d.age ? Number(d.age) : undefined,
+    }),
     onSuccess: ({ data }) => {
       qc.invalidateQueries({ queryKey: ['all-teachers'] });
-      setNewCreds(data.data.credentials);
-      setForm({
-        name: '',
-        phone: '+998 ',
-        email: '',
-        language: 'uz',
-        branchId: '',
-        salaryType: 'percent',
-        salaryShare: 50,
-        fixedSalary: '',
-        hourlyRate: '',
-      });
+      setNewCreds(data.data?.credentials);
+      setForm(EMPTY_TEACHER_FORM);
       toast.success("O'qituvchi muvaffaqiyatli qo'shildi");
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Xato'),
@@ -124,10 +125,21 @@ export default function AdminTeachers() {
 
   const openEdit = (t) => {
     setEditingId(t.id);
+    let bDateStr = '';
+    if (t.birthDate) {
+      try {
+        bDateStr = new Date(t.birthDate).toISOString().split('T')[0];
+      } catch {}
+    }
     setEditForm({
       name: t.name,
       phone: t.phone || '+998 ',
       email: t.email || '',
+      birthDate: bDateStr,
+      age: t.age ? String(t.age) : '',
+      gender: t.gender || 'male',
+      studyLocation: t.studyLocation || '',
+      address: t.address || '',
       salaryType: t.salaryType || 'percent',
       salaryShare: t.salaryShare ?? 50,
       fixedSalary: t.fixedSalary || '',
@@ -237,6 +249,70 @@ export default function AdminTeachers() {
                             </div>
                           </div>
 
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                            <div>
+                              <label className="form-label">Tug'ilgan kuni</label>
+                              <input
+                                type="date"
+                                value={editForm.birthDate || ''}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  let newAge = editForm.age;
+                                  if (val) {
+                                    const d = new Date(val);
+                                    if (!isNaN(d.getTime())) {
+                                      const calc = Math.floor((new Date() - d) / (365.25 * 24 * 60 * 60 * 1000));
+                                      if (calc > 0 && calc < 100) newAge = String(calc);
+                                    }
+                                  }
+                                  setEditForm(f => ({ ...f, birthDate: val, age: newAge }));
+                                }}
+                                className="input-field"
+                              />
+                            </div>
+                            <div>
+                              <label className="form-label">Yoshi</label>
+                              <input
+                                type="number"
+                                min="16"
+                                max="90"
+                                value={editForm.age || ''}
+                                onChange={e => setEditForm(f => ({ ...f, age: e.target.value }))}
+                                placeholder="Masalan: 28"
+                                className="input-field"
+                              />
+                            </div>
+                            <div>
+                              <label className="form-label">Jinsi</label>
+                              <select
+                                value={editForm.gender || 'male'}
+                                onChange={e => setEditForm(f => ({ ...f, gender: e.target.value }))}
+                                className="input-field"
+                              >
+                                <option value="male">Erkak</option>
+                                <option value="female">Ayol</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="form-label">Ma'lumoti / OTM</label>
+                              <input
+                                value={editForm.studyLocation || ''}
+                                onChange={e => setEditForm(f => ({ ...f, studyLocation: e.target.value }))}
+                                placeholder="Masalan: O'zMU magistr"
+                                className="input-field"
+                              />
+                            </div>
+                            <div>
+                              <label className="form-label">Yashash manzili</label>
+                              <input
+                                value={editForm.address || ''}
+                                onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))}
+                                placeholder="Shahar, tuman"
+                                className="input-field"
+                              />
+                            </div>
+                          </div>
+
                           <div className="p-3 rounded-xl border border-[var(--border)] bg-[var(--card)] space-y-2.5">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
@@ -334,6 +410,11 @@ export default function AdminTeachers() {
                                 data: {
                                   ...editForm,
                                   phone: cleanPhone(editForm.phone),
+                                  age: editForm.age ? Number(editForm.age) : null,
+                                  gender: editForm.gender || null,
+                                  birthDate: editForm.birthDate || null,
+                                  studyLocation: editForm.studyLocation?.trim() || null,
+                                  address: editForm.address?.trim() || null,
                                   salaryShare: editForm.salaryType === 'percent' ? Number(editForm.salaryShare || 50) : undefined,
                                   fixedSalary: editForm.salaryType === 'fixed' && editForm.fixedSalary ? Number(editForm.fixedSalary) : null,
                                   hourlyRate: editForm.salaryType === 'hourly' && editForm.hourlyRate ? Number(editForm.hourlyRate) : null,
@@ -365,17 +446,33 @@ export default function AdminTeachers() {
                         className="flex items-center gap-3 text-left group cursor-pointer"
                         title="O'qituvchi profilini ochish"
                       >
-                        <div className="avatar avatar-md group-hover:scale-105 transition-transform">
+                        <div className="avatar avatar-md group-hover:scale-105 transition-transform flex-shrink-0">
                           {t.name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="font-semibold text-sm group-hover:text-[var(--primary)] transition-colors flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
-                            <span>{t.name}</span>
-                            <ArrowUpRight size={13} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)]" />
+                            <span className="truncate">{t.name}</span>
+                            <ArrowUpRight size={13} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)] flex-shrink-0" />
                           </div>
-                          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                            @{t.username}
+                          <div className="text-xs flex items-center flex-wrap gap-1.5 mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                            <span>@{t.username}</span>
+                            {t.age && (
+                              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-[var(--secondary-background)] border border-[var(--border)] text-[var(--text-secondary)]">
+                                {t.age} yosh
+                              </span>
+                            )}
+                            {t.gender && (
+                              <span className="text-[10px] font-medium text-[var(--text-secondary)]">
+                                {t.gender === 'female' ? '👩 Ayol' : '👨 Erkak'}
+                              </span>
+                            )}
                           </div>
+                          {t.studyLocation && (
+                            <div className="text-[11px] truncate max-w-[200px] text-[var(--text-muted)] mt-0.5 flex items-center gap-1" title={t.studyLocation}>
+                              <span>🎓</span>
+                              <span className="truncate">{t.studyLocation}</span>
+                            </div>
+                          )}
                         </div>
                       </button>
                     </td>
@@ -534,6 +631,46 @@ export default function AdminTeachers() {
                   </div>
                 </div>
 
+                {(selectedTeacher.age || selectedTeacher.birthDate || selectedTeacher.gender || selectedTeacher.studyLocation || selectedTeacher.address) && (
+                  <div className="p-3 rounded-xl space-y-2 border border-[var(--border)]" style={{ backgroundColor: 'var(--secondary-background)' }}>
+                    <div className="text-[11px] font-semibold flex items-center justify-between" style={{ color: 'var(--text-muted)' }}>
+                      <span>Shaxsiy ma'lumotlar</span>
+                      {selectedTeacher.gender && (
+                        <span className="text-[11px] font-medium text-[var(--text-primary)]">
+                          {selectedTeacher.gender === 'female' ? '👩 Ayol' : '👨 Erkak'}
+                        </span>
+                      )}
+                    </div>
+                    {(selectedTeacher.age || selectedTeacher.birthDate) && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[var(--text-muted)]">Yoshi / Tug'ilgan kuni:</span>
+                        <span className="font-semibold text-[var(--text-primary)]">
+                          {selectedTeacher.age ? `${selectedTeacher.age} yosh` : ''}
+                          {selectedTeacher.birthDate ? ` (${new Date(selectedTeacher.birthDate).toLocaleDateString()})` : ''}
+                        </span>
+                      </div>
+                    )}
+                    {selectedTeacher.studyLocation && (
+                      <div className="text-xs flex items-start gap-1.5 pt-0.5 border-t border-[var(--border)]">
+                        <span className="text-sm">🎓</span>
+                        <div>
+                          <div className="text-[10px] text-[var(--text-muted)]">Ma'lumoti / OTM</div>
+                          <div className="font-medium text-[var(--text-primary)]">{selectedTeacher.studyLocation}</div>
+                        </div>
+                      </div>
+                    )}
+                    {selectedTeacher.address && (
+                      <div className="text-xs flex items-start gap-1.5 pt-0.5 border-t border-[var(--border)]">
+                        <span className="text-sm">📍</span>
+                        <div>
+                          <div className="text-[10px] text-[var(--text-muted)]">Yashash manzili</div>
+                          <div className="font-medium text-[var(--text-primary)]">{selectedTeacher.address}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => {
@@ -612,7 +749,7 @@ export default function AdminTeachers() {
               initial={{ scale: 0.96, y: 10, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.96, y: 8, opacity: 0 }}
-              className="modal-panel max-w-lg max-h-[90vh] flex flex-col p-5"
+              className="modal-panel max-w-xl max-h-[90vh] flex flex-col p-5 sm:p-6"
             >
               <div className="modal-header flex-shrink-0">
                 <div>
@@ -625,7 +762,7 @@ export default function AdminTeachers() {
               </div>
 
               {newCreds ? (
-                <div className="space-y-4 overflow-y-auto pr-1">
+                <div className="space-y-4 overflow-y-auto px-1">
                   <div className="p-4 rounded-xl text-center" style={{ backgroundColor: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
                     <ShieldCheck size={36} className="mx-auto mb-2" style={{ color: 'var(--success)' }} />
                     <h3 className="font-bold text-base" style={{ color: 'var(--success)' }}>O'qituvchi qo'shildi!</h3>
@@ -664,17 +801,7 @@ export default function AdminTeachers() {
                     <button
                       onClick={() => {
                         setNewCreds(null);
-                        setForm({
-                          name: '',
-                          phone: '+998 ',
-                          email: '',
-                          language: 'uz',
-                          branchId: '',
-                          salaryType: 'percent',
-                          salaryShare: 50,
-                          fixedSalary: '',
-                          hourlyRate: '',
-                        });
+                        setForm(EMPTY_TEACHER_FORM);
                       }}
                       className="btn-ghost w-full justify-center"
                     >
@@ -692,7 +819,7 @@ export default function AdminTeachers() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4 overflow-y-auto pr-1 flex-1">
+                <div className="space-y-4 overflow-y-auto px-1 flex-1">
                   <div>
                     <label className="form-label">To'liq ismi *</label>
                     <input
@@ -725,8 +852,83 @@ export default function AdminTeachers() {
                     </div>
                   </div>
 
+                  {/* Shaxsiy va mutaxassislik ma'lumotlari */}
+                  <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--secondary-background)] space-y-3">
+                    <div className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                      <UserCheck size={14} style={{ color: 'var(--primary)' }} />
+                      Shaxsiy ma'lumotlar & Mutaxassislik
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="form-label">Tug'ilgan kuni</label>
+                        <input
+                          type="date"
+                          value={form.birthDate || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            let newAge = form.age;
+                            if (val) {
+                              const d = new Date(val);
+                              if (!isNaN(d.getTime())) {
+                                const calc = Math.floor((new Date() - d) / (365.25 * 24 * 60 * 60 * 1000));
+                                if (calc > 0 && calc < 100) newAge = String(calc);
+                              }
+                            }
+                            setForm(f => ({ ...f, birthDate: val, age: newAge }));
+                          }}
+                          className="input-field"
+                        />
+                      </div>
+                      <div>
+                        <label className="form-label">Yoshi</label>
+                        <input
+                          type="number"
+                          min="16"
+                          max="90"
+                          value={form.age || ''}
+                          onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
+                          placeholder="Masalan: 28"
+                          className="input-field"
+                        />
+                      </div>
+                      <div>
+                        <label className="form-label">Jinsi</label>
+                        <select
+                          value={form.gender || 'male'}
+                          onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
+                          className="input-field"
+                        >
+                          <option value="male">Erkak</option>
+                          <option value="female">Ayol</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="form-label">Ma'lumoti / OTM / Mutaxassisligi</label>
+                        <input
+                          value={form.studyLocation || ''}
+                          onChange={e => setForm(f => ({ ...f, studyLocation: e.target.value }))}
+                          placeholder="Masalan: O'zMU Biologiya fakulteti"
+                          className="input-field"
+                        />
+                      </div>
+                      <div>
+                        <label className="form-label">Yashash manzili</label>
+                        <input
+                          value={form.address || ''}
+                          onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                          placeholder="Shahar, tuman, ko'cha"
+                          className="input-field"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {branches?.length > 0 ? (
+                    {branches?.length > 0 && (
                       <div>
                         <label className="form-label">Markaz (Filial)</label>
                         <select
@@ -738,34 +940,19 @@ export default function AdminTeachers() {
                           {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
                       </div>
-                    ) : (
-                      <div>
-                        <label className="form-label">Til</label>
-                        <select
-                          value={form.language}
-                          onChange={e => setForm(f => ({ ...f, language: e.target.value }))}
-                          className="input-field"
-                        >
-                          <option value="uz">O'zbek</option>
-                          <option value="ru">Русский</option>
-                          <option value="en">English</option>
-                        </select>
-                      </div>
                     )}
-                    {branches?.length > 0 && (
-                      <div>
-                        <label className="form-label">Til</label>
-                        <select
-                          value={form.language}
-                          onChange={e => setForm(f => ({ ...f, language: e.target.value }))}
-                          className="input-field"
-                        >
-                          <option value="uz">O'zbek</option>
-                          <option value="ru">Русский</option>
-                          <option value="en">English</option>
-                        </select>
-                      </div>
-                    )}
+                    <div>
+                      <label className="form-label">Til</label>
+                      <select
+                        value={form.language}
+                        onChange={e => setForm(f => ({ ...f, language: e.target.value }))}
+                        className="input-field"
+                      >
+                        <option value="uz">O'zbek</option>
+                        <option value="ru">Русский</option>
+                        <option value="en">English</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Maosh shartlari bo'limi */}
@@ -918,6 +1105,11 @@ export default function AdminTeachers() {
                         createMutation.mutate({
                           ...form,
                           phone: cleanPhone(form.phone),
+                          age: form.age ? Number(form.age) : null,
+                          birthDate: form.birthDate || null,
+                          gender: form.gender || null,
+                          studyLocation: form.studyLocation?.trim() || null,
+                          address: form.address?.trim() || null,
                           salaryShare: form.salaryType === 'percent' ? Number(form.salaryShare || 50) : undefined,
                           fixedSalary: form.salaryType === 'fixed' && form.fixedSalary ? Number(form.fixedSalary) : null,
                           hourlyRate: form.salaryType === 'hourly' && form.hourlyRate ? Number(form.hourlyRate) : null,

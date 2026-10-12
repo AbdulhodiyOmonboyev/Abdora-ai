@@ -8,7 +8,7 @@ const { getOwnBranchIds } = require('../utils/branchScope');
 // They cannot create students, admins, or other reception accounts.
 const createTeacher = async (req, res, next) => {
   try {
-    const { name, email, phone, language, branchId, password, salaryType, salaryShare, fixedSalary, hourlyRate } = req.body;
+    const { name, email, phone, language, branchId, password, salaryType, salaryShare, fixedSalary, hourlyRate, age, gender, birthDate, studyLocation, address } = req.body;
     if (!name) return error(res, 'Name required', 400);
 
     const ownBranchIds = await getOwnBranchIds(req.user);
@@ -24,6 +24,17 @@ const createTeacher = async (req, res, next) => {
     const effectiveHourlyRate = effectiveSalaryType === 'hourly' && hourlyRate !== undefined && hourlyRate !== ''
       ? Math.max(0, Number(hourlyRate))
       : null;
+
+    let parsedBirthDate = null;
+    if (birthDate) {
+      const d = new Date(birthDate);
+      if (!isNaN(d.getTime())) parsedBirthDate = d;
+    }
+
+    let effectiveAge = age !== undefined && age !== '' ? Number(age) : null;
+    if (!effectiveAge && parsedBirthDate) {
+      effectiveAge = Math.floor((new Date() - parsedBirthDate) / (365.25 * 24 * 60 * 60 * 1000));
+    }
 
     const code = generatePassword(phone, password);
     let username = generateUsername(name, phone);
@@ -43,6 +54,12 @@ const createTeacher = async (req, res, next) => {
         role: 'teacher',
         language: language || 'uz',
         branchId: effectiveBranchId,
+        centerId: req.user.centerId || null,
+        age: effectiveAge,
+        gender: gender || null,
+        birthDate: parsedBirthDate,
+        studyLocation: studyLocation?.trim() || null,
+        address: address?.trim() || null,
         salaryType: effectiveSalaryType,
         salaryShare: effectiveSalaryShare,
         fixedSalary: effectiveFixedSalary,
@@ -55,6 +72,11 @@ const createTeacher = async (req, res, next) => {
         email: true,
         phone: true,
         role: true,
+        age: true,
+        gender: true,
+        birthDate: true,
+        studyLocation: true,
+        address: true,
         salaryType: true,
         salaryShare: true,
         fixedSalary: true,

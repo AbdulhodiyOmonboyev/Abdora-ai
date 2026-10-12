@@ -399,7 +399,7 @@ export default function AdminStudents() {
                       </label>
                       <PhoneInput
                         value={form.phone}
-                        onChange={v => setForm(f => ({ ...f, phone: v }))}
+                        onChange={e => setForm(f => ({ ...f, phone: e?.target?.value !== undefined ? e.target.value : String(e || '') }))}
                       />
                     </div>
 
@@ -409,7 +409,7 @@ export default function AdminStudents() {
                       </label>
                       <PhoneInput
                         value={form.parentPhone}
-                        onChange={v => setForm(f => ({ ...f, parentPhone: v }))}
+                        onChange={e => setForm(f => ({ ...f, parentPhone: e?.target?.value !== undefined ? e.target.value : String(e || '') }))}
                       />
                     </div>
                   </div>

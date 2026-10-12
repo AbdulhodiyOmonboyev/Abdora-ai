@@ -191,6 +191,7 @@ const getTeachers = async (req, res, next) => {
       where: { role: 'teacher', ...(!showInactive && { isActive: true }), ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}), ...branchFilter },
       select: {
         id: true, name: true, username: true, email: true, phone: true, branchId: true,
+        age: true, gender: true, birthDate: true, address: true, studyLocation: true, alternativeWorkplace: true,
         isActive: true, createdAt: true, lastLogin: true,
         salaryType: true, salaryShare: true, fixedSalary: true, hourlyRate: true,
         branch: { select: { id: true, name: true } },
@@ -225,7 +226,7 @@ const assertBranchAccess = async (branchId, user) => {
 
 const createTeacher = async (req, res, next) => {
   try {
-    let { name, email, phone, language, branchId, password, salaryType, salaryShare, fixedSalary, hourlyRate } = req.body;
+    let { name, email, phone, language, branchId, password, salaryType, salaryShare, fixedSalary, hourlyRate, age, gender, birthDate, studyLocation, address } = req.body;
     if (!name) return error(res, 'Name required', 400);
 
     const ownBranchIds = await getOwnBranchIds(req.user);
@@ -257,6 +258,17 @@ const createTeacher = async (req, res, next) => {
       ? Math.max(0, Number(hourlyRate))
       : null;
 
+    let parsedBirthDate = null;
+    if (birthDate) {
+      const d = new Date(birthDate);
+      if (!isNaN(d.getTime())) parsedBirthDate = d;
+    }
+
+    let effectiveAge = age !== undefined && age !== '' ? Number(age) : null;
+    if (!effectiveAge && parsedBirthDate) {
+      effectiveAge = Math.floor((new Date() - parsedBirthDate) / (365.25 * 24 * 60 * 60 * 1000));
+    }
+
     const code = generatePassword(phone, password);
     let username = generateUsername(name, phone);
 
@@ -276,6 +288,11 @@ const createTeacher = async (req, res, next) => {
         language: language || 'uz',
         branchId: branchId || null,
         centerId,
+        age: effectiveAge,
+        gender: gender || null,
+        birthDate: parsedBirthDate,
+        studyLocation: studyLocation?.trim() || null,
+        address: address?.trim() || null,
         salaryType: effectiveSalaryType,
         salaryShare: effectiveSalaryShare,
         fixedSalary: effectiveFixedSalary,
@@ -288,6 +305,11 @@ const createTeacher = async (req, res, next) => {
         email: true,
         phone: true,
         role: true,
+        age: true,
+        gender: true,
+        birthDate: true,
+        studyLocation: true,
+        address: true,
         salaryType: true,
         salaryShare: true,
         fixedSalary: true,
@@ -303,7 +325,7 @@ const createTeacher = async (req, res, next) => {
 
 const updateTeacher = async (req, res, next) => {
   try {
-    let { name, phone, email, branchId, salaryType, salaryShare, fixedSalary, hourlyRate } = req.body;
+    let { name, phone, email, branchId, salaryType, salaryShare, fixedSalary, hourlyRate, age, gender, birthDate, studyLocation, address } = req.body;
     const teacher = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!teacher || teacher.role !== 'teacher') return error(res, 'Teacher not found', 404);
 
@@ -320,11 +342,25 @@ const updateTeacher = async (req, res, next) => {
       if (branchErr) return error(res, branchErr, branchErr.startsWith('Forbidden') ? 403 : 404);
     }
 
+    let parsedBirthDate;
+    if (birthDate !== undefined) {
+      if (!birthDate) parsedBirthDate = null;
+      else {
+        const d = new Date(birthDate);
+        parsedBirthDate = !isNaN(d.getTime()) ? d : null;
+      }
+    }
+
     const updated = await prisma.user.update({
       where: { id: req.params.id },
       data: {
         ...(name && { name }), phone: phone ?? teacher.phone, ...(email !== undefined && { email }),
         ...(branchId !== undefined && { branchId: branchId || null }),
+        ...(age !== undefined ? { age: age !== '' && age !== null ? Number(age) : null } : {}),
+        ...(gender !== undefined ? { gender: gender || null } : {}),
+        ...(birthDate !== undefined ? { birthDate: parsedBirthDate } : {}),
+        ...(studyLocation !== undefined ? { studyLocation: studyLocation?.trim() || null } : {}),
+        ...(address !== undefined ? { address: address?.trim() || null } : {}),
         ...(salaryType && ['percent', 'fixed', 'hourly'].includes(salaryType) ? { salaryType } : {}),
         ...(salaryShare !== undefined && salaryShare !== '' ? { salaryShare: Math.max(1, Math.min(100, Number(salaryShare))) } : {}),
         ...(fixedSalary !== undefined ? { fixedSalary: fixedSalary ? Math.max(0, Number(fixedSalary)) : null } : {}),
@@ -332,6 +368,7 @@ const updateTeacher = async (req, res, next) => {
       },
       select: {
         id: true, name: true, username: true, email: true, phone: true, isActive: true,
+        age: true, gender: true, birthDate: true, studyLocation: true, address: true,
         salaryType: true, salaryShare: true, fixedSalary: true, hourlyRate: true,
         branch: { select: { id: true, name: true } },
       },
@@ -1184,6 +1221,11 @@ const getTeacherOverview = async (req, res, next) => {
         isActive: true,
         isFrozen: true,
         createdAt: true,
+        age: true,
+        gender: true,
+        birthDate: true,
+        studyLocation: true,
+        address: true,
         salaryType: true,
         salaryShare: true,
         fixedSalary: true,
