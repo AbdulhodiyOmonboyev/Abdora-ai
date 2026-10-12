@@ -8,7 +8,8 @@ import {
   BookMarked, Plus, X, Pencil, Trash2, Copy, Save, Check, KeyRound,
   Palette, Smartphone, Banknote, ChevronRight,
   Sparkles, ShoppingBag, Tag, Gift, Shirt, Package, Clock, CheckCircle2, Coins,
-  RefreshCw, AlertCircle, Layers, Bot, Key, Eye, EyeOff, Cpu
+  RefreshCw, AlertCircle, Layers, Bot, Key, Eye, EyeOff, Cpu,
+  Upload, Image as ImageIcon, Loader2
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -18,6 +19,7 @@ import PhoneInput from '../../components/ui/PhoneInput';
 import Modal from '../../components/ui/Modal';
 import { cleanPhone } from '../../utils/formatPhone';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
+import { resolveMediaUrl } from '../../utils/format';
 import ThemeBuilder from '../../components/ui/ThemeBuilder';
 
 const MANAGER_NAV_ITEMS = [
@@ -423,8 +425,12 @@ export default function ManagerSettings() {
     category: 'merch',
     stock: '',
     icon: 'Gift',
+    imageUrl: '',
     isActive: true,
   });
+  const [shopImageFile, setShopImageFile] = useState(null);
+  const [shopImagePreview, setShopImagePreview] = useState('');
+  const [isUploadingShopImage, setIsUploadingShopImage] = useState(false);
 
   const { data: shopItems = [], isLoading: isShopItemsLoading } = useQuery({
     queryKey: ['shop-items'],
@@ -675,8 +681,11 @@ export default function ManagerSettings() {
       category: 'merch',
       stock: '',
       icon: 'Gift',
+      imageUrl: '',
       isActive: true,
     });
+    setShopImageFile(null);
+    setShopImagePreview('');
     setShowShopModal(true);
   };
 
@@ -689,21 +698,46 @@ export default function ManagerSettings() {
       category: item.category || 'merch',
       stock: item.stock !== null && item.stock !== undefined ? item.stock : '',
       icon: item.icon || 'Gift',
+      imageUrl: item.imageUrl || '',
       isActive: item.isActive !== false,
     });
+    setShopImageFile(null);
+    setShopImagePreview(item.imageUrl || '');
     setShowShopModal(true);
   };
 
-  const handleShopSubmit = (e) => {
+  const handleShopSubmit = async (e) => {
     e.preventDefault();
     if (!shopForm.title.trim()) return toast.error("Mahsulot nomini kiriting");
     const coins = parseInt(shopForm.priceCoins, 10);
     if (isNaN(coins) || coins <= 0) return toast.error("Tanga narxi to'g'ri kiritilishi lozim");
 
+    let finalImageUrl = shopForm.imageUrl || '';
+
+    // If a new image file was selected, upload it first
+    if (shopImageFile) {
+      try {
+        setIsUploadingShopImage(true);
+        const fd = new FormData();
+        fd.append('image', shopImageFile);
+        const uploadRes = await api.post('/shop/upload-image', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        finalImageUrl = uploadRes.data?.data?.url || uploadRes.data?.data?.relativeUrl || finalImageUrl;
+      } catch (err) {
+        toast.error("Rasm yuklashda xatolik yuz berdi: " + (err.response?.data?.message || err.message));
+        setIsUploadingShopImage(false);
+        return;
+      } finally {
+        setIsUploadingShopImage(false);
+      }
+    }
+
     const payload = {
       ...shopForm,
       priceCoins: coins,
       stock: shopForm.stock !== '' && shopForm.stock !== null ? Math.max(0, parseInt(shopForm.stock, 10)) : null,
+      imageUrl: finalImageUrl,
     };
 
     if (editingShopItem) {
