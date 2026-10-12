@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const axios = require('axios');
 const { prisma } = require('./db');
 
 let cachedAgent = null;
@@ -17,7 +18,22 @@ const getEnvApiKey = () => {
 };
 
 // Default fallback text model if none configured in DB
-const DEFAULT_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || 'gemini-3.5-flash';
+const DEFAULT_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || 'gemini-2.5-flash';
+
+// Map UI aliases to real Google Gemini API identifiers
+const normalizeModelName = (modelName) => {
+  if (!modelName || typeof modelName !== 'string') return DEFAULT_TEXT_MODEL;
+  const trimmed = modelName.trim();
+  const lower = trimmed.toLowerCase();
+
+  if (lower === 'gemini-3.8-flash' || lower === 'gemini-3.5-flash') return 'gemini-2.5-flash';
+  if (lower === 'gemini-3.5-flash-lite') return 'gemini-2.0-flash';
+  if (lower === 'gemini-3.8-flash-tts' || lower === 'gemini-3.8-flash-lite-tts') return 'gemini-2.5-flash-preview-tts';
+  if (lower === 'gemini-2.5-flash-image') return 'imagen-3.0-generate-002';
+  if (lower === 'default') return 'gemini-2.5-flash';
+
+  return trimmed;
+};
 
 // Asynchronously load or refresh the agent/model/key from the AIAgent database table
 const loadKeyFromDb = async () => {
@@ -49,11 +65,13 @@ const loadKeyFromDb = async () => {
     }
 
     if (agent?.apiKey?.trim()) {
+      const extra = (agent.useCases && typeof agent.useCases === 'object') ? agent.useCases : {};
       cachedAgent = {
         id: agent.id,
         apiKey: sanitizeKey(agent.apiKey),
         model: (agent.model && agent.model !== 'default') ? agent.model.trim() : DEFAULT_TEXT_MODEL,
         provider: agent.provider || 'gemini',
+        baseUrl: extra.baseUrl || '',
       };
       lastCheckTime = Date.now();
       return cachedAgent;
@@ -103,11 +121,13 @@ const resolveAiConfig = async (centerId = null) => {
         const linkedAgent = await prisma.aIAgent.findUnique({
           where: { id: aiConfig.agentId },
         });
-        if (linkedAgent && linkedAgent.isActive && linkedAgent.apiKey) {
+        if (linkedAgent && linkedAgent.apiKey) {
+          const extra = (linkedAgent.useCases && typeof linkedAgent.useCases === 'object') ? linkedAgent.useCases : {};
           return {
             apiKey: sanitizeKey(linkedAgent.apiKey),
             model: (linkedAgent.model && linkedAgent.model !== 'default') ? linkedAgent.model.trim() : DEFAULT_TEXT_MODEL,
             provider: linkedAgent.provider || 'gemini',
+            baseUrl: extra.baseUrl || '',
             liveModel: aiConfig.liveModel || 'gemini-2.5-flash-native-audio-preview',
           };
         }
@@ -120,6 +140,7 @@ const resolveAiConfig = async (centerId = null) => {
           apiKey: sanitizeKey(aiConfig.apiKey) || globalKey,
           model: aiConfig.model || cachedAgent?.model || DEFAULT_TEXT_MODEL,
           provider: aiConfig.provider || 'gemini',
+          baseUrl: aiConfig.baseUrl || '',
           liveModel: aiConfig.liveModel || 'gemini-2.5-flash-native-audio-preview',
         };
       }
@@ -136,6 +157,7 @@ const resolveAiConfig = async (centerId = null) => {
     apiKey,
     model,
     provider: agent?.provider || 'gemini',
+    baseUrl: agent?.baseUrl || '',
     liveModel: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview',
   };
 };
@@ -147,6 +169,7 @@ const updateCachedApiKey = (newAgent) => {
       apiKey: sanitizeKey(newAgent.apiKey),
       model: newAgent.model || DEFAULT_TEXT_MODEL,
       provider: newAgent.provider || 'gemini',
+      baseUrl: newAgent.baseUrl || '',
     };
     lastCheckTime = Date.now();
   } else if (typeof newAgent === 'string') {
@@ -154,6 +177,7 @@ const updateCachedApiKey = (newAgent) => {
       apiKey: sanitizeKey(newAgent),
       model: cachedAgent?.model || DEFAULT_TEXT_MODEL,
       provider: cachedAgent?.provider || 'gemini',
+      baseUrl: '',
     };
     lastCheckTime = Date.now();
   } else {
@@ -162,7 +186,7 @@ const updateCachedApiKey = (newAgent) => {
   }
 };
 
-const STABLE_FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+const STABLE_FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
 const isTransientAiError = (err) => {
   const msg = String(err?.message || err || '');
@@ -184,9 +208,66 @@ const isTransientAiError = (err) => {
   );
 };
 
+const isFallbackableError = (err) => {
+  const msg = String(err?.message || err || '').toLowerCase();
+  const status = err?.status || err?.response?.status;
+  return (
+    isTransientAiError(err) ||
+    status === 404 ||
+    msg.includes('not found') ||
+    msg.includes('is not supported') ||
+    msg.includes('unsupported') ||
+    msg.includes('deprecated') ||
+    msg.includes('invalid model')
+  );
+};
+
+const createOpenAIModel = (apiKey, modelName, baseUrl, generationConfig) => {
+  const effectiveBaseUrl = (baseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  const effectiveModel = modelName || 'gpt-4o';
+  const isJsonMode = generationConfig?.responseMimeType === 'application/json';
+
+  return {
+    generateContent: async (promptArg) => {
+      let promptText = '';
+      if (typeof promptArg === 'string') {
+        promptText = promptArg;
+      } else if (Array.isArray(promptArg)) {
+        promptText = promptArg.map(p => typeof p === 'string' ? p : p?.text || '').join('\n');
+      } else if (promptArg?.text) {
+        promptText = promptArg.text;
+      }
+
+      const payload = {
+        model: effectiveModel,
+        messages: [
+          { role: 'user', content: promptText }
+        ],
+        ...(isJsonMode ? { response_format: { type: 'json_object' } } : {}),
+      };
+
+      const resp = await axios.post(`${effectiveBaseUrl}/chat/completions`, payload, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 90000,
+      });
+
+      const replyContent = resp.data?.choices?.[0]?.message?.content || '';
+      return {
+        response: {
+          text: () => replyContent,
+        },
+      };
+    },
+  };
+};
+
 const createResilientModel = (client, primaryModelName, generationConfig) => {
+  const normalizedPrimary = normalizeModelName(primaryModelName);
   const baseModel = client.getGenerativeModel({
-    model: primaryModelName,
+    model: normalizedPrimary,
     generationConfig,
   });
 
@@ -195,15 +276,15 @@ const createResilientModel = (client, primaryModelName, generationConfig) => {
       if (prop === 'generateContent') {
         return async (...args) => {
           const candidateModels = [
-            primaryModelName,
-            ...STABLE_FALLBACK_MODELS.filter(m => m !== primaryModelName),
+            normalizedPrimary,
+            ...STABLE_FALLBACK_MODELS.filter(m => m !== normalizedPrimary),
           ];
 
           let lastError = null;
 
           for (let i = 0; i < candidateModels.length; i++) {
             const currentModelName = candidateModels[i];
-            const activeModelInstance = (currentModelName === primaryModelName)
+            const activeModelInstance = (currentModelName === normalizedPrimary)
               ? target
               : client.getGenerativeModel({ model: currentModelName, generationConfig });
 
@@ -212,13 +293,15 @@ const createResilientModel = (client, primaryModelName, generationConfig) => {
                 return await activeModelInstance.generateContent(...args);
               } catch (err) {
                 lastError = err;
-                if (!isTransientAiError(err)) {
+                if (!isFallbackableError(err)) {
                   throw err;
                 }
 
                 console.warn(`[Gemini Resilient] Attempt ${attempt} on model '${currentModelName}' failed: ${err.message}`);
-                if (attempt < 2) {
-                  await new Promise(r => setTimeout(r, 1200 * attempt));
+                if (attempt < 2 && isTransientAiError(err)) {
+                  await new Promise(r => setTimeout(r, 1000 * attempt));
+                } else {
+                  break;
                 }
               }
             }
@@ -239,16 +322,23 @@ const createResilientModel = (client, primaryModelName, generationConfig) => {
 /**
  * getModel supports both:
  * 1) getModel(true/false) — backward compatible
- * 2) getModel({ jsonMode, centerId, model, apiKey }) — dynamic center-aware
+ * 2) getModel({ jsonMode, centerId, model, apiKey, provider, baseUrl }) — dynamic center-aware
  */
 const getModel = (options = false) => {
   const jsonMode = typeof options === 'boolean' ? options : !!options?.jsonMode;
   const key = options?.apiKey || getCleanApiKey();
   const activeModel = options?.model || cachedAgent?.model || DEFAULT_TEXT_MODEL;
-
-  const client = new GoogleGenerativeAI(key || 'unconfigured');
+  const provider = options?.provider || cachedAgent?.provider || 'gemini';
+  const baseUrl = options?.baseUrl || cachedAgent?.baseUrl || '';
   const generationConfig = jsonMode ? { responseMimeType: 'application/json' } : {};
-  return createResilientModel(client, activeModel, generationConfig);
+
+  if (provider === 'openai' || (key && key.startsWith('sk-'))) {
+    return createOpenAIModel(key, activeModel, baseUrl, generationConfig);
+  }
+
+  const normalizedModel = normalizeModelName(activeModel);
+  const client = new GoogleGenerativeAI(key || 'unconfigured');
+  return createResilientModel(client, normalizedModel, generationConfig);
 };
 
 /**
@@ -262,10 +352,17 @@ const getModelAsync = async (options = false) => {
   const config = await resolveAiConfig(centerId);
   const key = options?.apiKey || config.apiKey;
   const activeModel = options?.model || config.model || DEFAULT_TEXT_MODEL;
-
-  const client = new GoogleGenerativeAI(key || 'unconfigured');
+  const provider = options?.provider || config.provider || 'gemini';
+  const baseUrl = options?.baseUrl || config.baseUrl || '';
   const generationConfig = jsonMode ? { responseMimeType: 'application/json' } : {};
-  return createResilientModel(client, activeModel, generationConfig);
+
+  if (provider === 'openai' || (key && key.startsWith('sk-'))) {
+    return createOpenAIModel(key, activeModel, baseUrl, generationConfig);
+  }
+
+  const normalizedModel = normalizeModelName(activeModel);
+  const client = new GoogleGenerativeAI(key || 'unconfigured');
+  return createResilientModel(client, normalizedModel, generationConfig);
 };
 
 module.exports = {
@@ -277,5 +374,5 @@ module.exports = {
   getApiKeyAsync,
   updateCachedApiKey,
   loadKeyFromDb,
+  normalizeModelName,
 };
-

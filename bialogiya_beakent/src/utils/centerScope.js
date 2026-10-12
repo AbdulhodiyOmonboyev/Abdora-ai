@@ -1,9 +1,8 @@
 const { prisma } = require('../config/db');
 
 const getCenterId = (req) => {
-  if (req.user?.role === 'admin') return null;
-  if (!req.user?.centerId) throw new Error('Center context missing');
-  return req.user.centerId;
+  if (!req?.user || req.user.role === 'admin') return null;
+  return req.user.centerId || null;
 };
 
 const centerWhere = (req) => {

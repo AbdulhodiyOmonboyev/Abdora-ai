@@ -1,28 +1,45 @@
 export const formatDate = (date, locale = 'uz-UZ') => {
   if (!date) return '';
-  return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(date));
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
+  } catch {
+    return '';
+  }
 };
 
 export const formatRelativeTime = (date) => {
   if (!date) return '';
-  const now = new Date();
-  const d = new Date(date);
-  const diff = now - d;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return formatDate(date);
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    const now = new Date();
+    const diff = now - d;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return formatDate(date);
+  } catch {
+    return '';
+  }
 };
 
 export const formatDateTime = (date, locale = 'uz-UZ') => {
   if (!date) return '';
-  return new Intl.DateTimeFormat(locale, {
-    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-  }).format(new Date(date));
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat(locale, {
+      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+    }).format(d);
+  } catch {
+    return '';
+  }
 };
 
 // How far before/after a deadline something happened, e.g. "muddatdan 10 daqiqa

@@ -6,7 +6,11 @@ const { getCenterId } = require('../utils/centerScope');
 
 const findAccessibleLesson = (id, user) => prisma.lesson.findFirst({
   where: { id, ...(user.role !== 'admin' && user.centerId ? { OR: [{ centerId: user.centerId }, { centerId: null }] } : {}) },
-  select: { id: true, aiContent: true, aiEnabled: true, title: true, content: true, groupId: true, teacherId: true, centerId: true, attachments: true },
+  select: {
+    id: true, aiContent: true, aiEnabled: true, title: true, content: true,
+    groupId: true, teacherId: true, centerId: true, attachments: true,
+    group: { select: { centerId: true } },
+  },
 });
 
 const canAccessLesson = async (lesson, user) => {
@@ -74,9 +78,20 @@ const createLesson = async (req, res, next) => {
   try {
     const { title, content, groupId, subject, aiEnabled, language } = req.body;
     if (!title || !groupId) return error(res, 'Title and group required', 400);
-    const centerId = getCenterId(req) || req.body.centerId || null;
-    const group = await prisma.group.findFirst({ where: { id: groupId, ...(centerId ? { centerId } : {}) }, select: { id: true } });
+
+    let centerId = req.user?.centerId || req.body?.centerId || getCenterId(req) || null;
+    const group = await prisma.group.findFirst({
+      where: {
+        id: groupId,
+        ...(centerId && req.user?.role !== 'admin' ? { centerId } : {}),
+      },
+      select: { id: true, centerId: true },
+    });
     if (!group) return error(res, 'Group not found', 404);
+
+    if (!centerId && group.centerId) {
+      centerId = group.centerId;
+    }
 
     // Yuklangan fayllardan (PDF, DOCX, TXT, Rasm) matn ajratib olish
     let extractedResourceText = '';

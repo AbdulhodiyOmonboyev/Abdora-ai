@@ -9,10 +9,9 @@ import {
   ShoppingBag, ArrowRight, Bell, GraduationCap, CheckCircle2, FileText,
   Users, Award, Eye
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import api from '../../config/axios';
 import { useAuthStore } from '../../store/authStore';
-import { getLevelProgress, formatDate } from '../../utils/format';
+import { getLevelProgress } from '../../utils/format';
 
 const MOTIVATIONS = [
   "Har bir dars — kelajagingizga bitta qadam!",
@@ -58,24 +57,19 @@ export default function StudentDashboard() {
   });
 
   // Gamification stats
-  const safeCoins = user?.coins ?? 0;
-  const safeXp = user?.xp ?? 0;
-  const { level, progress, nextLevelXP } = getLevelProgress(safeXp);
-  const streak = user?.streak || 1;
+  const safeCoins = Number(user?.coins) || 0;
+  const safeXp = Number(user?.xp) || 0;
+  const { level = 1, progress = 0, nextLevelXP = 100 } = getLevelProgress(safeXp) || {};
+  const streak = (typeof user?.streak === 'number' ? user.streak : user?.streakCurrent) || 1;
   const motivation = MOTIVATIONS[new Date().getDay() % MOTIVATIONS.length];
 
-  const pendingHW = Array.isArray(homeworkData) ? homeworkData.filter(h => !h.submissions?.[0]).slice(0, 3) : [];
-  const upcomingTests = Array.isArray(testsData) ? testsData.slice(0, 3) : [];
-  const recentLessons = Array.isArray(lessonsData) ? lessonsData.slice(0, 4) : [];
-  const scoreHistory = Array.isArray(analytics?.scoreHistory) ? analytics.scoreHistory : [];
+  const pendingHW = Array.isArray(homeworkData) ? homeworkData.filter(h => h && typeof h === 'object' && !h.submissions?.[0]).slice(0, 3) : [];
+  const upcomingTests = Array.isArray(testsData) ? testsData.filter(t => t && typeof t === 'object').slice(0, 3) : [];
+  const recentLessons = Array.isArray(lessonsData) ? lessonsData.filter(l => l && typeof l === 'object').slice(0, 4) : [];
+  const safeShopItems = Array.isArray(shopItems) ? shopItems.filter(s => s && typeof s === 'object') : [];
 
-  const chartData = scoreHistory.map(r => ({
-    name: formatDate(r.date).split(' ').slice(0, 2).join(' '),
-    score: r.score,
-  })).slice(-7);
-
-  const displayName = user?.name || "O'quvchi";
-  const initial = displayName[0]?.toUpperCase() || 'A';
+  const displayName = (user?.name && typeof user.name === 'string' && user.name.trim()) ? user.name.trim() : "O'quvchi";
+  const initial = displayName.charAt(0).toUpperCase() || 'A';
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
@@ -118,7 +112,7 @@ export default function StudentDashboard() {
               <span>@{user?.username || 'student'}</span>
               <span>•</span>
               <span className="truncate text-gray-600 dark:text-gray-300 font-medium">
-                {user?.group?.name ? `Guruh: ${user.group.name}` : "Guruh biriktirilgan"}
+                {user?.group?.name ? `Guruh: ${user.group.name}` : (typeof user?.group === 'string' ? `Guruh: ${user.group}` : "Guruh biriktirilmagan")}
               </span>
               {user?.center?.name && (
                 <>
@@ -372,7 +366,7 @@ export default function StudentDashboard() {
       {/* ========================================================
           4. "DO'KON" — (Mobil ilovadagi kabi gorizontal mahsulotlar)
           ======================================================== */}
-      {shopItems.length > 0 && (
+      {safeShopItems.length > 0 && (
         <div className="rounded-2xl p-5 bg-white dark:bg-[#101827] border border-gray-200 dark:border-gray-800 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -386,7 +380,7 @@ export default function StudentDashboard() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
-            {shopItems.slice(0, 4).map((item) => (
+            {safeShopItems.slice(0, 4).map((item) => (
               <div
                 key={item.id}
                 onClick={() => navigate('/student/shop')}
@@ -395,19 +389,19 @@ export default function StudentDashboard() {
                 <div>
                   <div className="aspect-square rounded-lg bg-gray-200 dark:bg-gray-700/60 overflow-hidden mb-2.5 flex items-center justify-center">
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <img src={item.imageUrl} alt={item.name || item.title || "Mahsulot"} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                     ) : (
                       <ShoppingBag size={28} className="text-gray-400" />
                     )}
                   </div>
                   <div className="font-semibold text-xs text-gray-900 dark:text-white truncate">
-                    {item.name}
+                    {item.name || item.title || "Sovg'a"}
                   </div>
                 </div>
                 <div className="mt-2 flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
                   <div className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
                     <Coins size={13} />
-                    <span>{item.coinPrice || item.price || 0}</span>
+                    <span>{item.priceCoins || item.coinPrice || item.price || 0}</span>
                   </div>
                   <span className="text-[10px] text-primary font-semibold group-hover:underline">Olish</span>
                 </div>
@@ -454,7 +448,7 @@ export default function StudentDashboard() {
                   <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white group-hover:text-primary transition-colors line-clamp-1">
                     {lesson.title}
                   </h3>
-                  {lesson.content && (
+                  {lesson.content && typeof lesson.content === 'string' && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
                       {lesson.content.replace(/<[^>]*>/g, '')}
                     </p>
@@ -540,7 +534,7 @@ export default function StudentDashboard() {
                 <div key={test.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
                   <div className="min-w-0 pr-2">
                     <div className="font-semibold text-xs text-gray-900 dark:text-white truncate">{test.title}</div>
-                    <div className="text-[11px] text-gray-400">{test.questions?.length || 0} ta savol • {test.timeLimit || 20} daqiqa</div>
+                    <div className="text-[11px] text-gray-400">{test._count?.questions ?? test.questions?.length ?? 0} ta savol • {test.timeLimit || 20} daqiqa</div>
                   </div>
                   <Link
                     to={`/student/tests/${test.id}/run`}
