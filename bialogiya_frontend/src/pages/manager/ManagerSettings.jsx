@@ -8,7 +8,7 @@ import {
   BookMarked, Plus, X, Pencil, Trash2, Copy, Save, Check, KeyRound,
   Palette, Smartphone, Banknote, ChevronRight,
   Sparkles, ShoppingBag, Tag, Gift, Shirt, Package, Clock, CheckCircle2, Coins,
-  RefreshCw, AlertCircle
+  RefreshCw, AlertCircle, Layers
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -21,15 +21,25 @@ import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import ThemeBuilder from '../../components/ui/ThemeBuilder';
 
 const MANAGER_NAV_ITEMS = [
-  { id: 'reception_control', label: 'Qabulxona (Reception)',       icon: ShieldCheck },
-  { id: 'branch_info',       label: 'Filial ma\'lumotlari',        icon: Building2 },
-  { id: 'payments',          label: 'To\'lovlar & Qoidalar',       icon: CreditCard },
-  { id: 'lms_rules',         label: 'LMS & Baholash (Coin)',       icon: BookOpen },
-  { id: 'crm_leads',         label: 'CRM & Lidlar sozlamasi',      icon: Target },
-  { id: 'coin_shop',         label: 'Online Do\'kon (Coin Shop)',  icon: ShoppingBag },
-  { id: 'notifications',     label: 'Bildirishnomalar (SMS)',      icon: Bell },
-  { id: 'themes',            label: 'Mavzular & Ko\'rinish',       icon: Palette },
-  { id: 'personal',          label: 'Mening hisobim & Parol',      icon: User },
+  { id: 'reception_control', label: 'Qabulxona (Reception)',         icon: ShieldCheck },
+  { id: 'branch_info',       label: 'Filial ma\'lumotlari',          icon: Building2 },
+  { id: 'payments',          label: 'To\'lovlar & Qoidalar',         icon: CreditCard },
+  { id: 'lms_rules',         label: 'LMS & Baholash (Coin)',         icon: BookOpen },
+  { id: 'course_levels',     label: 'Kurs Darajalari (Mahsulotlar)',   icon: Layers },
+  { id: 'crm_leads',         label: 'CRM & Lidlar sozlamasi',        icon: Target },
+  { id: 'coin_shop',         label: 'Online Do\'kon (Coin Shop)',    icon: ShoppingBag },
+  { id: 'notifications',     label: 'Bildirishnomalar (SMS)',        icon: Bell },
+  { id: 'themes',            label: 'Mavzular & Ko\'rinish',         icon: Palette },
+  { id: 'personal',          label: 'Mening hisobim & Parol',        icon: User },
+];
+
+const DEFAULT_COURSE_LEVELS = [
+  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000, teacherIds: [] },
+  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000, teacherIds: [] },
+  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000, teacherIds: [] },
+  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000, teacherIds: [] },
+  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000, teacherIds: [] },
+  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000, teacherIds: [] },
 ];
 
 const DEFAULT_GRADE_SETTINGS = {
@@ -188,6 +198,7 @@ export default function ManagerSettings() {
       canManageStudents: true,
       canManageTeachers: true,
     },
+    courseLevels: DEFAULT_COURSE_LEVELS,
   });
 
   // Query settings
@@ -210,6 +221,95 @@ export default function ManagerSettings() {
     queryKey: ['manager-branches-list'],
     queryFn: () => api.get('/admin/branches').then(r => r.data?.data || r.data || []).catch(() => []),
   });
+
+  // Query teachers
+  const { data: teachers = [] } = useQuery({
+    queryKey: ['all-teachers'],
+    queryFn: () => api.get('/admin/teachers').then(r => r.data?.data || r.data || []).catch(() => []),
+  });
+
+  // Query groups
+  const { data: groups = [] } = useQuery({
+    queryKey: ['manager-groups', user?.centerId],
+    queryFn: () => api.get('/groups/all').then(r => r.data?.data || r.data || []).catch(() => []),
+  });
+
+  // Course Levels state & handlers
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [editingLevel, setEditingLevel] = useState(null);
+  const [levelForm, setLevelForm] = useState({
+    id: '',
+    name: '',
+    description: '',
+    defaultFee: 400000,
+    teacherIds: [],
+  });
+
+  const openCreateLevel = () => {
+    setEditingLevel(null);
+    setLevelForm({
+      id: `level_${Date.now()}`,
+      name: '',
+      description: '',
+      defaultFee: 450000,
+      teacherIds: [],
+    });
+    setShowLevelModal(true);
+  };
+
+  const openEditLevel = (lvl) => {
+    setEditingLevel(lvl);
+    setLevelForm({
+      id: lvl.id || `level_${Date.now()}`,
+      name: lvl.name || '',
+      description: lvl.description || '',
+      defaultFee: lvl.defaultFee || 400000,
+      teacherIds: Array.isArray(lvl.teacherIds) ? [...lvl.teacherIds] : [],
+    });
+    setShowLevelModal(true);
+  };
+
+  const handleSaveLevel = (e) => {
+    e.preventDefault();
+    if (!levelForm.name.trim()) return toast.error("Daraja nomini kiriting");
+    const currentList = Array.isArray(settings.courseLevels) && settings.courseLevels.length > 0
+      ? settings.courseLevels
+      : DEFAULT_COURSE_LEVELS;
+    let nextList;
+    if (editingLevel) {
+      nextList = currentList.map(l => (l.id === editingLevel.id || l.name === editingLevel.name) ? { ...levelForm, name: levelForm.name.trim() } : l);
+    } else {
+      nextList = [...currentList, { ...levelForm, name: levelForm.name.trim() }];
+    }
+    set('courseLevels', nextList);
+    api.put('/admin/settings', { courseLevels: nextList })
+      .then(() => {
+        qc.invalidateQueries({ queryKey: ['manager-settings'] });
+        qc.invalidateQueries({ queryKey: ['center-settings'] });
+        qc.invalidateQueries({ queryKey: ['admin-settings'] });
+        toast.success("Kurs darajasi saqlandi");
+      })
+      .catch(() => toast.error("Saqlashda xatolik yuz berdi"));
+    setShowLevelModal(false);
+    setEditingLevel(null);
+  };
+
+  const handleDeleteLevel = (lvl) => {
+    if (!window.confirm(`"${lvl.name}" darajasini o'chirishni tasdiqlaysizmi?`)) return;
+    const currentList = Array.isArray(settings.courseLevels) && settings.courseLevels.length > 0
+      ? settings.courseLevels
+      : DEFAULT_COURSE_LEVELS;
+    const nextList = currentList.filter(l => l.id !== lvl.id && l.name !== lvl.name);
+    set('courseLevels', nextList);
+    api.put('/admin/settings', { courseLevels: nextList })
+      .then(() => {
+        qc.invalidateQueries({ queryKey: ['manager-settings'] });
+        qc.invalidateQueries({ queryKey: ['center-settings'] });
+        qc.invalidateQueries({ queryKey: ['admin-settings'] });
+        toast.success("Daraja o'chirildi");
+      })
+      .catch(() => toast.error("O'chirishda xatolik yuz berdi"));
+  };
 
   // CRM Leads interactive local state
   const [newStageName, setNewStageName] = useState('');
@@ -330,6 +430,9 @@ export default function ManagerSettings() {
           ...prev.receptionPermissions,
           ...(serverSettings.receptionPermissions || {}),
         },
+        courseLevels: Array.isArray(serverSettings.courseLevels) && serverSettings.courseLevels.length > 0
+          ? serverSettings.courseLevels
+          : prev.courseLevels || DEFAULT_COURSE_LEVELS,
       }));
     }
   }, [serverSettings]);
@@ -1138,6 +1241,154 @@ export default function ManagerSettings() {
                         <strong>Eslatma:</strong> O'qituvchi o'z kabinetida faqat davomatni belgilaydi va 1 dan 10 gacha baho qo'yadi. Ushbu qoidalarni o'zgartirish huquqi <strong>faqat markaz menejeri</strong> uchun ochiq.
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: KURS DARAJALARI VA MAHSULOTLAR */}
+              {activeTab === 'course_levels' && (
+                <div className="space-y-5">
+                  {/* Header & Statistika */}
+                  <div className="panel-card space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--border)]">
+                      <div>
+                        <span className="panel-kicker text-indigo-600 dark:text-indigo-400">O'quv Mahsulotlari</span>
+                        <h2 className="panel-title mt-0.5 flex items-center gap-2">
+                          <Layers className="w-5 h-5 text-indigo-500" />
+                          <span>Markaz Kurs Darajalari va Mahsulotlari</span>
+                        </h2>
+                        <p className="panel-subtitle mt-1">
+                          Guruhlar ochishda ishlatiladigan bosqichlar, tavsiya etilgan oylik to'lovlar va har bir darajaga biriktirilgan o'qituvchilar
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={openCreateLevel}
+                        className="btn-primary text-xs px-4 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 self-start sm:self-auto shadow-sm"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Yangi daraja qo'shish</span>
+                      </button>
+                    </div>
+
+                    {/* Metric Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
+                          <Layers size={20} />
+                        </div>
+                        <div>
+                          <div className="text-xl font-extrabold text-[var(--text-primary)]">
+                            {(settings.courseLevels || DEFAULT_COURSE_LEVELS).length} ta
+                          </div>
+                          <div className="text-xs text-[var(--text-muted)]">Faol kurs darajalari</div>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+                          <Users size={20} />
+                        </div>
+                        <div>
+                          <div className="text-xl font-extrabold text-[var(--text-primary)]">
+                            {teachers.length} nafar
+                          </div>
+                          <div className="text-xs text-[var(--text-muted)]">Markaz o'qituvchilari</div>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                          <BookOpen size={20} />
+                        </div>
+                        <div>
+                          <div className="text-xl font-extrabold text-[var(--text-primary)]">
+                            {groups.length} ta
+                          </div>
+                          <div className="text-xs text-[var(--text-muted)]">Mavjud guruhlar</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Levels Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(settings.courseLevels || DEFAULT_COURSE_LEVELS).map((lvl) => {
+                      const assignedTeachers = teachers.filter(t => (lvl.teacherIds || []).includes(t.id));
+                      const activeGroupsCount = groups.filter(g => g.level?.toLowerCase() === lvl.name?.toLowerCase()).length;
+                      return (
+                        <div
+                          key={lvl.id || lvl.name}
+                          className="p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-indigo-400/40 transition-all space-y-3 relative group"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                                <Layers size={18} />
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="text-sm font-bold text-[var(--text-primary)] truncate">
+                                  {lvl.name}
+                                </h3>
+                                <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                  {lvl.defaultFee ? `${Number(lvl.defaultFee).toLocaleString()} so'm / oy` : "To'lov belgilanmagan"}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => openEditLevel(lvl)}
+                                className="btn-ghost p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                title="Tahrirlash"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteLevel(lvl)}
+                                className="btn-ghost p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                title="O'chirish"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {lvl.description && (
+                            <p className="text-xs text-[var(--text-secondary)] line-clamp-2">
+                              {lvl.description}
+                            </p>
+                          )}
+
+                          {/* Assigned teachers info */}
+                          <div className="pt-2 border-t border-[var(--border)] text-xs space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
+                              <span>Dars beruvchi o'qituvchilar:</span>
+                              <span className="font-semibold text-[var(--text-primary)]">{activeGroupsCount} ta guruh faol</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {assignedTeachers.length > 0 ? (
+                                assignedTeachers.map(t => (
+                                  <span
+                                    key={t.id}
+                                    className="px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold flex items-center gap-1"
+                                  >
+                                    <User size={10} />
+                                    {t.name}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-[11px] text-[var(--text-muted)] italic">
+                                  Barcha o'qituvchilar dars berishi mumkin
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -2059,6 +2310,110 @@ export default function ManagerSettings() {
                 onChange={(v) => setShopForm(f => ({ ...f, isActive: v }))}
               />
             </SettingRow>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── Kurs Darajasi Modal (Yaratish / Tahrirlash) ── */}
+      <Modal
+        isOpen={showLevelModal}
+        onClose={() => setShowLevelModal(false)}
+        title={editingLevel ? "Kurs darajasini tahrirlash" : "Yangi kurs darajasi qo'shish"}
+        subtitle="Guruh yaratishda tanlanadigan ta'lim bosqichi, to'lovi va unga biriktirilgan o'qituvchilar"
+      >
+        <form onSubmit={handleSaveLevel} className="space-y-4">
+          <div>
+            <label className="form-label">Daraja / Bosqich nomi *</label>
+            <input
+              type="text"
+              required
+              value={levelForm.name}
+              onChange={e => setLevelForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Masalan: Boshlang'ich (Beginner) yoki DTM tayyorlov"
+              className="input-field text-sm font-semibold"
+            />
+          </div>
+
+          <div>
+            <label className="form-label">Standart oylik to'lov (so'm)</label>
+            <input
+              type="number"
+              value={levelForm.defaultFee || ''}
+              onChange={e => setLevelForm(f => ({ ...f, defaultFee: Number(e.target.value) || 0 }))}
+              placeholder="450000"
+              className="input-field text-sm font-mono"
+            />
+            <p className="form-hint">Yangi guruh ochilganda ushbu narx avtomatik to'ldiriladi</p>
+          </div>
+
+          <div>
+            <label className="form-label">Tavsif (ixtiyoriy)</label>
+            <input
+              type="text"
+              value={levelForm.description}
+              onChange={e => setLevelForm(f => ({ ...f, description: e.target.value }))}
+              placeholder="Ushbu bosqichda o'quvchilar nimalarni o'rganadi..."
+              className="input-field text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="form-label">Ushbu daraja o'qituvchilari</label>
+            <p className="text-[11px] text-[var(--text-muted)] mb-2">
+              Qaysi o'qituvchilar ushbu darajada dars berishini belgilang (Guruh yaratishda tanlash oson bo'ladi):
+            </p>
+            {teachers.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+                {teachers.map(t => {
+                  const isAssigned = (levelForm.teacherIds || []).includes(t.id);
+                  return (
+                    <label
+                      key={t.id}
+                      className={`p-2 rounded-lg border flex items-center gap-2 cursor-pointer transition-all text-xs ${
+                        isAssigned
+                          ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 font-bold'
+                          : 'border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--card)]'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isAssigned}
+                        onChange={e => {
+                          const checked = e.target.checked;
+                          setLevelForm(f => ({
+                            ...f,
+                            teacherIds: checked
+                              ? [...(f.teacherIds || []), t.id]
+                              : (f.teacherIds || []).filter(id => id !== t.id)
+                          }));
+                        }}
+                        className="rounded text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="truncate">{t.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-xs text-[var(--text-muted)] italic">Hozircha markazda o'qituvchilar yo'q</div>
+            )}
+          </div>
+
+          <div className="pt-3 border-t border-[var(--border)] flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowLevelModal(false)}
+              className="btn-ghost px-4 py-2 text-xs font-semibold"
+            >
+              Bekor qilish
+            </button>
+            <button
+              type="submit"
+              className="btn-primary px-5 py-2 text-xs font-bold flex items-center gap-1.5"
+            >
+              <Save size={14} />
+              <span>Saqlash</span>
+            </button>
           </div>
         </form>
       </Modal>

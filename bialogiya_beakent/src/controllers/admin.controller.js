@@ -882,6 +882,15 @@ const DEFAULT_CENTER_LIMITS = {
   aiRequestsPerMonth: 1000,
 };
 
+const DEFAULT_COURSE_LEVELS = [
+  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000, subject: 'all', teacherIds: [] },
+  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000, subject: 'all', teacherIds: [] },
+  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000, subject: 'all', teacherIds: [] },
+  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000, subject: 'all', teacherIds: [] },
+  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000, subject: 'all', teacherIds: [] },
+  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000, subject: 'all', teacherIds: [] },
+];
+
 const resolveSettingsCenter = async (req) => {
   const targetId = req.query?.centerId || req.body?.centerId || req.headers?.['x-center-id'];
   if (targetId) {
@@ -953,6 +962,7 @@ const getSettings = async (req, res, next) => {
         features: DEFAULT_CENTER_FEATURES,
         roles: DEFAULT_CENTER_ROLES,
         limits: DEFAULT_CENTER_LIMITS,
+        courseLevels: DEFAULT_COURSE_LEVELS,
       });
     }
 
@@ -988,6 +998,9 @@ const getSettings = async (req, res, next) => {
       leadSources: rawSettings.leadSources || [
         'Instagram', 'Telegram', 'Facebook', 'TikTok', 'Tashqi banner', "Do'st tavsiyasi", 'Web sayt'
       ],
+      courseLevels: Array.isArray(rawSettings.courseLevels) && rawSettings.courseLevels.length > 0
+        ? rawSettings.courseLevels
+        : DEFAULT_COURSE_LEVELS,
     };
 
     const rolePrefsKey = role === 'reception' ? 'receptionPrefs'
@@ -1088,6 +1101,10 @@ const updateSettings = async (req, res, next) => {
             ...value,
           };
         }
+      } else if (key === 'courseLevels' && Array.isArray(value)) {
+        if (role === 'admin' || role === 'manager') {
+          sharedSettingsUpdate.courseLevels = value;
+        }
       } else if (sharedFieldMap[key] !== undefined) {
         if (key === 'centerName' && role !== 'admin') continue;
         updateData[sharedFieldMap[key]] = value;
@@ -1147,6 +1164,7 @@ const updateSettings = async (req, res, next) => {
       roles: mergedSettings.roles || DEFAULT_CENTER_ROLES,
       limits: mergedSettings.limits || DEFAULT_CENTER_LIMITS,
       receptionPermissions: mergedSettings.receptionPermissions || {},
+      courseLevels: mergedSettings.courseLevels || DEFAULT_COURSE_LEVELS,
       ...mergedSettings[rolePrefsKey],
     }, 'Sozlamalar muvaffaqiyatli saqlandi');
   } catch (err) { next(err); }
@@ -1183,20 +1201,38 @@ const getTeacherOverview = async (req, res, next) => {
       }
     }
 
-    const groups = await prisma.group.findMany({
+    const rawGroups = await prisma.group.findMany({
       where: { teacherId: teacher.id },
       select: {
         id: true,
         name: true,
         subject: true,
         monthlyFee: true,
-        lessonDays: true,
-        lessonTime: true,
-        room: { select: { id: true, name: true } },
+        weekDays: true,
+        startTime: true,
+        endTime: true,
+        room: true,
+        roomId: true,
+        roomRel: { select: { id: true, name: true } },
         branch: { select: { id: true, name: true } },
         _count: { select: { students: true, lessons: true } },
       },
       orderBy: { name: 'asc' },
+    });
+
+    const groups = rawGroups.map(g => {
+      let lessonTime = null;
+      if (g.startTime && g.endTime) {
+        lessonTime = `${g.startTime} - ${g.endTime}`;
+      } else if (g.startTime) {
+        lessonTime = g.startTime;
+      }
+      return {
+        ...g,
+        room: g.roomRel || (g.room ? { name: g.room } : null),
+        lessonTime,
+        lessonDays: g.weekDays,
+      };
     });
 
     const groupIds = groups.map(g => g.id);

@@ -162,6 +162,80 @@ const updateCachedApiKey = (newAgent) => {
   }
 };
 
+const STABLE_FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+
+const isTransientAiError = (err) => {
+  const msg = String(err?.message || err || '');
+  const status = err?.status || err?.response?.status;
+  return (
+    status === 503 ||
+    status === 429 ||
+    status === 500 ||
+    status === 504 ||
+    msg.includes('503') ||
+    msg.includes('Service Unavailable') ||
+    msg.includes('high demand') ||
+    msg.includes('ResourceExhausted') ||
+    msg.includes('429') ||
+    msg.includes('Too Many Requests') ||
+    msg.includes('504') ||
+    msg.includes('Gateway Timeout') ||
+    msg.includes('overloaded')
+  );
+};
+
+const createResilientModel = (client, primaryModelName, generationConfig) => {
+  const baseModel = client.getGenerativeModel({
+    model: primaryModelName,
+    generationConfig,
+  });
+
+  return new Proxy(baseModel, {
+    get(target, prop, receiver) {
+      if (prop === 'generateContent') {
+        return async (...args) => {
+          const candidateModels = [
+            primaryModelName,
+            ...STABLE_FALLBACK_MODELS.filter(m => m !== primaryModelName),
+          ];
+
+          let lastError = null;
+
+          for (let i = 0; i < candidateModels.length; i++) {
+            const currentModelName = candidateModels[i];
+            const activeModelInstance = (currentModelName === primaryModelName)
+              ? target
+              : client.getGenerativeModel({ model: currentModelName, generationConfig });
+
+            for (let attempt = 1; attempt <= 2; attempt++) {
+              try {
+                return await activeModelInstance.generateContent(...args);
+              } catch (err) {
+                lastError = err;
+                if (!isTransientAiError(err)) {
+                  throw err;
+                }
+
+                console.warn(`[Gemini Resilient] Attempt ${attempt} on model '${currentModelName}' failed: ${err.message}`);
+                if (attempt < 2) {
+                  await new Promise(r => setTimeout(r, 1200 * attempt));
+                }
+              }
+            }
+
+            console.warn(`[Gemini Resilient] Model '${currentModelName}' unavailable. Trying next fallback candidate...`);
+          }
+
+          throw lastError;
+        };
+      }
+
+      const val = Reflect.get(target, prop, receiver);
+      return typeof val === 'function' ? val.bind(target) : val;
+    },
+  });
+};
+
 /**
  * getModel supports both:
  * 1) getModel(true/false) — backward compatible
@@ -173,10 +247,8 @@ const getModel = (options = false) => {
   const activeModel = options?.model || cachedAgent?.model || DEFAULT_TEXT_MODEL;
 
   const client = new GoogleGenerativeAI(key || 'unconfigured');
-  return client.getGenerativeModel({
-    model: activeModel,
-    generationConfig: jsonMode ? { responseMimeType: 'application/json' } : {},
-  });
+  const generationConfig = jsonMode ? { responseMimeType: 'application/json' } : {};
+  return createResilientModel(client, activeModel, generationConfig);
 };
 
 /**
@@ -192,10 +264,8 @@ const getModelAsync = async (options = false) => {
   const activeModel = options?.model || config.model || DEFAULT_TEXT_MODEL;
 
   const client = new GoogleGenerativeAI(key || 'unconfigured');
-  return client.getGenerativeModel({
-    model: activeModel,
-    generationConfig: jsonMode ? { responseMimeType: 'application/json' } : {},
-  });
+  const generationConfig = jsonMode ? { responseMimeType: 'application/json' } : {};
+  return createResilientModel(client, activeModel, generationConfig);
 };
 
 module.exports = {

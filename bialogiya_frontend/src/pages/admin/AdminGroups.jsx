@@ -49,6 +49,15 @@ const SUBJECTS = [
   { key: 'other', label: 'Boshqa' },
 ];
 
+const DEFAULT_COURSE_LEVELS = [
+  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000 },
+  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000 },
+  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000 },
+  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000 },
+  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000 },
+  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000 },
+];
+
 const EMPTY_FORM = {
   name: '',
   subject: 'biology',
@@ -85,10 +94,12 @@ export default function AdminGroups() {
 
   const [search, setSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('');
+  const [levelFilter, setLevelFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [confirm, setConfirm] = useState(null);
+  const [isCustomLevel, setIsCustomLevel] = useState(false);
 
   // Queries
   const queryKey = user?.role === 'manager' ? ['manager-groups', user.centerId] : ['all-groups'];
@@ -115,6 +126,59 @@ export default function AdminGroups() {
       .then(r => r.data?.data || r.data || [])
       .catch(() => []),
   });
+
+  const { data: serverSettings } = useQuery({
+    queryKey: ['center-settings', user?.centerId],
+    queryFn: () => api.get('/admin/settings').then(r => r.data?.data || {}).catch(() => ({})),
+  });
+
+  const courseLevels = serverSettings?.courseLevels && serverSettings.courseLevels.length > 0
+    ? serverSettings.courseLevels
+    : DEFAULT_COURSE_LEVELS;
+
+  // Mavjud guruhlar va sozlamalardagi barcha darajalar jamlanmasi
+  const existingGroupLevels = Array.from(new Set(groups.map(g => g.level).filter(Boolean)));
+  const knownLevelNames = new Set(courseLevels.map(cl => cl.name));
+  const extraLevels = existingGroupLevels.filter(lvl => !knownLevelNames.has(lvl)).map(lvl => ({
+    id: `extra_${lvl}`,
+    name: lvl,
+    description: "Mavjud guruh darajasi",
+    defaultFee: null,
+  }));
+  const allLevels = [...courseLevels, ...extraLevels];
+
+  // Ushbu daraja bo'yicha mutaxassis yoki guruh o'tadigan o'qituvchilarni aniqlash
+  const getTeachersForLevel = (levelName) => {
+    if (!levelName) return [];
+    const lvlObj = courseLevels.find(cl => cl.name?.toLowerCase() === levelName?.toLowerCase());
+    const assignedIds = new Set(lvlObj?.teacherIds || []);
+    groups.forEach(g => {
+      if (g.level && g.level.toLowerCase() === levelName.toLowerCase()) {
+        const tid = g.teacher?.id || g.teacherId;
+        if (tid) assignedIds.add(tid);
+      }
+    });
+    return teachers.filter(t => assignedIds.has(t.id));
+  };
+
+  const selectedLevelTeachers = getTeachersForLevel(form.level);
+
+  const handleLevelChange = (selectedVal) => {
+    if (selectedVal === '__custom__') {
+      setIsCustomLevel(true);
+      setForm(f => ({ ...f, level: '' }));
+    } else {
+      setIsCustomLevel(false);
+      const matched = allLevels.find(l => l.name === selectedVal);
+      setForm(f => {
+        const updated = { ...f, level: selectedVal };
+        if ((!f.monthlyFee || f.monthlyFee === '0' || f.monthlyFee === '') && matched?.defaultFee) {
+          updated.monthlyFee = String(matched.defaultFee);
+        }
+        return updated;
+      });
+    }
+  };
 
   const toPayload = (d) => ({
     ...d,
@@ -161,11 +225,13 @@ export default function AdminGroups() {
   const closeModal = () => {
     setShowModal(false);
     setEditingGroup(null);
+    setIsCustomLevel(false);
     setForm(EMPTY_FORM);
   };
 
   const openCreate = () => {
     setEditingGroup(null);
+    setIsCustomLevel(false);
     setForm({
       ...EMPTY_FORM,
       branchId: branches?.[0]?.id || '',
@@ -177,6 +243,8 @@ export default function AdminGroups() {
   const openEdit = (e, g) => {
     e.stopPropagation();
     setEditingGroup(g);
+    const isKnownLevel = allLevels.some(l => l.name === g.level);
+    setIsCustomLevel(Boolean(g.level && !isKnownLevel));
     let parsedDays = ['mon', 'wed', 'fri'];
     if (g.weekDays) {
       try {
@@ -235,12 +303,14 @@ export default function AdminGroups() {
 
   const filteredGroups = Array.isArray(groups) ? groups.filter(g => {
     if (branchFilter && g.branch?.id !== branchFilter && g.branchId !== branchFilter) return false;
+    if (levelFilter && g.level !== levelFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
       g.name?.toLowerCase().includes(q) ||
       g.teacher?.name?.toLowerCase().includes(q) ||
-      g.room?.toLowerCase().includes(q)
+      g.room?.toLowerCase().includes(q) ||
+      g.level?.toLowerCase().includes(q)
     );
   }) : [];
 
@@ -266,25 +336,40 @@ export default function AdminGroups() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Guruh, o'qituvchi yoki xona bo'yicha qidirish..."
+            placeholder="Guruh, o'qituvchi, xona yoki daraja bo'yicha qidirish..."
           />
         </div>
 
-        {branches.length > 1 && (
-          <div className="flex items-center gap-2">
-            <Filter size={15} className="text-gray-400" />
+        <div className="flex items-center gap-2 flex-wrap">
+          {allLevels.length > 0 && (
             <select
-              value={branchFilter}
-              onChange={e => setBranchFilter(e.target.value)}
-              className="input-field text-xs py-2 w-48"
+              value={levelFilter}
+              onChange={e => setLevelFilter(e.target.value)}
+              className="input-field text-xs py-2 w-40"
             >
-              <option value="">Barcha filiallar</option>
-              {branches.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
+              <option value="">Barcha darajalar</option>
+              {allLevels.map(lvl => (
+                <option key={lvl.id || lvl.name} value={lvl.name}>{lvl.name}</option>
               ))}
             </select>
-          </div>
-        )}
+          )}
+
+          {branches.length > 1 && (
+            <div className="flex items-center gap-1.5">
+              <Filter size={14} className="text-gray-400" />
+              <select
+                value={branchFilter}
+                onChange={e => setBranchFilter(e.target.value)}
+                className="input-field text-xs py-2 w-44"
+              >
+                <option value="">Barcha filiallar</option>
+                {branches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -487,9 +572,14 @@ export default function AdminGroups() {
                       className="input-field text-sm"
                     >
                       <option value="">O'qituvchini tanlang</option>
-                      {teachers.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
+                      {teachers.map(t => {
+                        const isSpecialist = selectedLevelTeachers.some(lt => lt.id === t.id);
+                        return (
+                          <option key={t.id} value={t.id}>
+                            {t.name} {isSpecialist ? "⭐ (Ushbu daraja o'qituvchisi)" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
 
@@ -622,17 +712,98 @@ export default function AdminGroups() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
-                      Daraja / Bosqich
-                    </label>
-                    <input
-                      type="text"
-                      value={form.level}
-                      onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
-                      placeholder="Boshlang'ich"
-                      className="input-field text-sm"
-                    />
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
+                        Daraja / Bosqich
+                      </label>
+                      {user?.role === 'manager' && (
+                        <button
+                          type="button"
+                          onClick={() => navigate('/manager/settings?tab=course_levels')}
+                          className="text-[10px] text-primary hover:underline font-semibold"
+                        >
+                          Sozlamalardan
+                        </button>
+                      )}
+                    </div>
+
+                    {!isCustomLevel ? (
+                      <select
+                        value={form.level || ''}
+                        onChange={e => handleLevelChange(e.target.value)}
+                        className="input-field text-sm font-medium"
+                      >
+                        <option value="">Darajani tanlang...</option>
+                        {allLevels.map(lvl => {
+                          const lvlTeachers = getTeachersForLevel(lvl.name);
+                          return (
+                            <option key={lvl.id || lvl.name} value={lvl.name}>
+                              {lvl.name} {lvl.defaultFee ? `· ${Number(lvl.defaultFee).toLocaleString()} so'm` : ''} {lvlTeachers.length > 0 ? `(${lvlTeachers.length} ta o'qituvchi)` : ''}
+                            </option>
+                          );
+                        })}
+                        <option value="__custom__">+ Boshqa maxsus daraja kiritish...</option>
+                      </select>
+                    ) : (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={form.level}
+                          onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
+                          placeholder="Maxsus daraja nomini kiriting..."
+                          className="input-field text-sm pr-16"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomLevel(false);
+                            setForm(f => ({ ...f, level: '' }));
+                          }}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-primary font-semibold"
+                        >
+                          Ro'yxatga
+                        </button>
+                      </div>
+                    )}
                   </div>
+                </div>
+
+                {/* Tanlangan daraja o'qituvchilari bo'yicha tezkor tavsiya */}
+                {form.level && selectedLevelTeachers.length > 0 && (
+                  <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/30 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-purple-700 dark:text-purple-300 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles size={13} className="text-purple-600 dark:text-purple-400" />
+                        "{form.level}" darajasida dars beruvchi o'qituvchilar ({selectedLevelTeachers.length} nafar):
+                      </span>
+                      <span className="text-[10px] text-purple-500 font-normal">
+                        Bosib tanlang
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {selectedLevelTeachers.map(lt => {
+                        const isCurrentTeacher = form.teacherId === lt.id;
+                        return (
+                          <button
+                            key={lt.id}
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, teacherId: lt.id }))}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                              isCurrentTeacher
+                                ? 'bg-purple-600 text-white shadow-xs'
+                                : 'bg-white dark:bg-gray-800 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/40'
+                            }`}
+                          >
+                            <User size={12} />
+                            <span>{lt.name}</span>
+                            {isCurrentTeacher && <Check size={12} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 </div>
 
                 <div className="pt-4 flex items-center justify-end gap-2.5 border-t border-gray-100 dark:border-gray-800">

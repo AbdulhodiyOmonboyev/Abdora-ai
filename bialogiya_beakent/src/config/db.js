@@ -324,12 +324,14 @@ const runMigrations = async () => {
       "description" TEXT,
       "baseRole" TEXT NOT NULL DEFAULT 'reception',
       "permissions" JSONB NOT NULL DEFAULT '{}',
+      "isActive" BOOLEAN NOT NULL DEFAULT true,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "centerId" TEXT NOT NULL,
       CONSTRAINT "CustomRole_pkey" PRIMARY KEY ("id")
     )
   `);
+  await safeRun(`ALTER TABLE "CustomRole" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`);
   await safeRun(`CREATE INDEX IF NOT EXISTS "CustomRole_centerId_idx" ON "CustomRole"("centerId")`);
 
   // 18. Plan table
