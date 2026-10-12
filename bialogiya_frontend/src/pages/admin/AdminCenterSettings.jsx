@@ -7,7 +7,7 @@ import {
   DollarSign, Smartphone, BookOpen, Coins, ShieldCheck,
   CreditCard, Sparkles, CheckCircle2, AlertCircle, Loader2,
   FileText, Check, Settings2, Receipt, Users, HelpCircle,
-  Sliders, UserCog,
+  UserCog,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../config/axios";
@@ -104,7 +104,6 @@ const AI_MODEL_OPTIONS = [
 
 const TABS = [
   { id: "permissions", label: "Modullar va Ruxsatlar", icon: Settings2 },
-  { id: "limits",      label: "Kvotalar & Limitlar",    icon: Sliders },
   { id: "custom_roles",label: "Maxsus Rollar",         icon: UserCog },
   { id: "ai",          label: "AI Model Dvigateli",     icon: Cpu },
   { id: "reception",   label: "Qabulxona Huquqlari",    icon: ShieldCheck },
@@ -174,15 +173,6 @@ export default function AdminCenterSettings() {
     autoReceiptOnPayment: true,
   });
 
-  // Limits state
-  const [limits, setLimits] = useState({
-    maxBranches: 5,
-    maxStudents: 500,
-    maxGroups: 50,
-    maxTeachers: 30,
-    aiRequestsPerMonth: 1000,
-  });
-
   // Fetch Center Data
   const { data: center, isLoading } = useQuery({
     queryKey: ["admin-center", id],
@@ -202,15 +192,6 @@ export default function AdminCenterSettings() {
       const f = s.features || {};
       const ai = s.aiConfig || {};
       const rp = s.receptionPermissions || {};
-      const lim = s.limits || {};
-
-      setLimits({
-        maxBranches:        lim.maxBranches        ?? 5,
-        maxStudents:        lim.maxStudents        ?? 500,
-        maxGroups:          lim.maxGroups          ?? 50,
-        maxTeachers:        lim.maxTeachers        ?? 30,
-        aiRequestsPerMonth: lim.aiRequestsPerMonth ?? 1000,
-      });
 
       setFeatures({
         financeEnabled:     f.financeEnabled     !== false,
@@ -273,7 +254,6 @@ export default function AdminCenterSettings() {
         settings: {
           ...(center?.settings || {}),
           features,
-          limits,
           aiConfig,
           receptionPermissions,
           receiptHeader: receiptSettings.receiptHeader,
@@ -289,24 +269,6 @@ export default function AdminCenterSettings() {
     },
     onError: (e) => toast.error(e.response?.data?.message || "Xatolik yuz berdi"),
   });
-
-  const setLimitVal = (key, val) => {
-    const num = val === '' ? '' : Number(val);
-    setLimits(prev => ({ ...prev, [key]: num }));
-  };
-
-  const applyLimitPreset = (preset) => {
-    const presets = {
-      starter: { maxBranches: 1, maxStudents: 100, maxGroups: 10, maxTeachers: 5, aiRequestsPerMonth: 300 },
-      pro: { maxBranches: 3, maxStudents: 500, maxGroups: 40, maxTeachers: 20, aiRequestsPerMonth: 1500 },
-      enterprise: { maxBranches: 10, maxStudents: 2000, maxGroups: 150, maxTeachers: 80, aiRequestsPerMonth: 5000 },
-      unlimited: { maxBranches: 0, maxStudents: 0, maxGroups: 0, maxTeachers: 0, aiRequestsPerMonth: 0 },
-    };
-    if (presets[preset]) {
-      setLimits(presets[preset]);
-      toast.success(`${preset.toUpperCase()} limiti qo'llandi`);
-    }
-  };
 
   const toggleFeature = (key) => setFeatures(p => ({ ...p, [key]: !p[key] }));
   const toggleReception = (key) => setReceptionPermissions(p => ({ ...p, [key]: !p[key] }));
@@ -519,125 +481,7 @@ export default function AdminCenterSettings() {
           </motion.div>
         )}
 
-        {/* TAB 2: KVOTALAR VA LIMITLAR */}
-        {activeTab === "limits" && (
-          <motion.div
-            key="limits"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="panel-card space-y-6"
-          >
-            <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: "var(--border)" }}>
-              <div>
-                <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
-                  Markaz kvotalari va cheklovlari
-                </h2>
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  Ushbu markaz filiallari, o'quvchilar va guruhlar sig'imi hamda AI so'rovlar limitini belgilang. (0 kiritilsa cheksiz hisoblanadi)
-                </p>
-              </div>
-            </div>
-
-            {/* Presets */}
-            <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--secondary-background)]">
-              <div className="text-xs font-bold text-[var(--text-primary)] mb-2.5 flex items-center gap-2">
-                <Sliders size={14} className="text-[var(--primary)]" /> Tezkor tarif shablonlari:
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <button type="button" onClick={() => applyLimitPreset('starter')} className="btn-outline btn-xs justify-center py-2">
-                  Starter (1 filial, 100 talaba)
-                </button>
-                <button type="button" onClick={() => applyLimitPreset('pro')} className="btn-outline btn-xs justify-center py-2">
-                  Pro (3 filial, 500 talaba)
-                </button>
-                <button type="button" onClick={() => applyLimitPreset('enterprise')} className="btn-outline btn-xs justify-center py-2">
-                  Enterprise (10 filial)
-                </button>
-                <button type="button" onClick={() => applyLimitPreset('unlimited')} className="btn-primary btn-xs justify-center py-2">
-                  Cheksiz (Unlimited)
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
-                  Maksimal filiallar soni (0 = cheksiz)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={limits.maxBranches ?? ''}
-                  onChange={(e) => setLimitVal('maxBranches', e.target.value)}
-                  className="input-field font-mono"
-                  placeholder="Masalan: 5"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
-                  Maksimal o'quvchilar sig'imi (0 = cheksiz)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={limits.maxStudents ?? ''}
-                  onChange={(e) => setLimitVal('maxStudents', e.target.value)}
-                  className="input-field font-mono"
-                  placeholder="Masalan: 500"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
-                  Maksimal guruhlar soni (0 = cheksiz)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={limits.maxGroups ?? ''}
-                  onChange={(e) => setLimitVal('maxGroups', e.target.value)}
-                  className="input-field font-mono"
-                  placeholder="Masalan: 50"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
-                  Maksimal o'qituvchilar soni (0 = cheksiz)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={limits.maxTeachers ?? ''}
-                  onChange={(e) => setLimitVal('maxTeachers', e.target.value)}
-                  className="input-field font-mono"
-                  placeholder="Masalan: 30"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
-                  Oylik AI so'rovlar limiti (so'rov/oy, 0 = cheksiz)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={limits.aiRequestsPerMonth ?? ''}
-                  onChange={(e) => setLimitVal('aiRequestsPerMonth', e.target.value)}
-                  className="input-field font-mono"
-                  placeholder="Masalan: 1000"
-                />
-                <p className="text-[11px] text-[var(--text-muted)] mt-1">
-                  Ushbu markaz har oyda ishlata oladigan AI dars, test va ovozli suhbatlar kvotasi.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* TAB 3: MAXSUS ROLLAR (Aynan shu markazga bog'langan) */}
+        {/* TAB 2: MAXSUS ROLLAR (Aynan shu markazga bog'langan) */}
         {activeTab === "custom_roles" && (
           <motion.div
             key="custom_roles"

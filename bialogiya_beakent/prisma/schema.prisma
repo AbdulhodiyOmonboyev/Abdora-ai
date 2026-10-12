@@ -136,7 +136,7 @@ model User {
   customRole   CustomRole? @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 }
 
 model Group {
@@ -177,7 +177,7 @@ model Group {
   resources   Resource[]
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 }
 
 // A physical location/campus. Only reception accounts can create branches,
@@ -206,7 +206,7 @@ model Branch {
   payments Payment[]
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 }
 
 model Lesson {
@@ -221,17 +221,17 @@ model Lesson {
   updatedAt DateTime @updatedAt
 
   groupId   String
-  group     Group  @relation(fields: [groupId], references: [id])
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacherId String
-  teacher   User   @relation(fields: [teacherId], references: [id])
+  teacher   User   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   // AI output lives in aiContent only — `content` and `attachments` are the
   // teacher's own material and are never written by a generation job. When a
   // teacher turns aiEnabled off, no generation runs for this lesson at all.
   attachments Json    @default("[]")
 
-    centerId String?
-    center   Center? @relation(fields: [centerId], references: [id])
+  centerId String?
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
   aiContent   Json    @default("{\"status\":\"pending\"}")
   aiEnabled   Boolean @default(true)
 
@@ -270,15 +270,14 @@ model Homework {
   updatedAt   DateTime @updatedAt
 
   groupId   String
-  group     Group  @relation(fields: [groupId], references: [id])
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacherId String
-  teacher   User   @relation(fields: [teacherId], references: [id])
+  teacher   User   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   lessonId  String?
-  lesson    Lesson? @relation(fields: [lessonId], references: [id])
-
+  lesson    Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
   attachments Json         @default("[]")
   submissions Submission[]
 
@@ -302,12 +301,12 @@ model Submission {
   updatedAt   DateTime @updatedAt
 
   homeworkId String
-  homework   Homework @relation(fields: [homeworkId], references: [id])
+  homework   Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
   studentId  String
-  student    User     @relation(fields: [studentId], references: [id])
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   @@unique([homeworkId, studentId])
   @@index([centerId])
@@ -334,16 +333,16 @@ model Test {
   aiError  String?
 
   groupId   String
-  group     Group  @relation(fields: [groupId], references: [id])
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacherId String
-  teacher   User   @relation(fields: [teacherId], references: [id])
+  teacher   User   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   lessonId  String?
 
   questions Question[]
   results   Result[]
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   @@index([centerId])
 }
@@ -372,12 +371,12 @@ model Result {
   completedAt DateTime @default(now())
 
   testId    String
-  test      Test   @relation(fields: [testId], references: [id])
+  test      Test   @relation(fields: [testId], references: [id], onDelete: Cascade)
   studentId String
-  student   User   @relation(fields: [studentId], references: [id])
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   @@index([centerId])
 }
@@ -389,12 +388,12 @@ model Attendance {
   createdAt DateTime @default(now())
 
   groupId   String
-  group     Group  @relation(fields: [groupId], references: [id])
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacherId String
-  teacher   User   @relation(fields: [teacherId], references: [id])
+  teacher   User   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, date])
   @@index([centerId])
@@ -408,13 +407,13 @@ model Notification {
   link      String?
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
   isRead    Boolean   @default(false)
   readAt    DateTime?
   createdAt DateTime  @default(now())
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([centerId])
 }
@@ -428,12 +427,12 @@ model AIChat {
   updatedAt DateTime @updatedAt
 
   lessonId  String
-  lesson    Lesson @relation(fields: [lessonId], references: [id])
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   studentId String
-  student   User   @relation(fields: [studentId], references: [id])
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   @@unique([lessonId, studentId])
   @@index([centerId])
@@ -451,7 +450,7 @@ model UploadedFile {
   createdAt DateTime @default(now())
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   @@index([centerId])
 }
@@ -470,12 +469,12 @@ model Resource {
   createdAt   DateTime @default(now())
 
   groupId   String?
-  group     Group?  @relation(fields: [groupId], references: [id])
+  group     Group?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacherId String
-  teacher   User    @relation(fields: [teacherId], references: [id])
+  teacher   User    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   @@index([centerId])
 }
@@ -499,14 +498,14 @@ model Payment {
   updatedAt DateTime @default(now()) @updatedAt
 
   studentId String
-  student   User   @relation("StudentPayments", fields: [studentId], references: [id])
+  student   User   @relation("StudentPayments", fields: [studentId], references: [id], onDelete: Cascade)
   teacherId String
 
   branchId  String?
-  branch    Branch? @relation(fields: [branchId], references: [id])
+  branch    Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, month])
   @@index([month])
@@ -533,14 +532,14 @@ model Lead {
   updatedAt    DateTime  @updatedAt
 
   branchId  String?
-  branch    Branch? @relation(fields: [branchId], references: [id])
+  branch    Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
   managerId String?
   manager   User?   @relation("ManagerLeads", fields: [managerId], references: [id])
   // Set once the lead converts into a real student account.
   studentId String?
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   activities LeadActivity[]
 
@@ -562,14 +561,14 @@ model Expense {
   method   String   @default("cash") // cash | click | payme | bank | other
 
   branchId String?
-  branch   Branch? @relation(fields: [branchId], references: [id])
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   createdById String
-  createdBy   User   @relation("UserExpenses", fields: [createdById], references: [id])
+  createdBy   User   @relation("UserExpenses", fields: [createdById], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 
   centerId String?
-  center   Center? @relation(fields: [centerId], references: [id])
+  center   Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   @@index([date])
   @@index([category])
@@ -598,9 +597,9 @@ model Room {
   updatedAt DateTime @updatedAt
 
   branchId  String?
-  branch    Branch?  @relation(fields: [branchId], references: [id])
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
   centerId  String?
-  center    Center?  @relation(fields: [centerId], references: [id])
+  center    Center?  @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
   groups    Group[]
 }
@@ -630,7 +629,7 @@ model AIAgent {
   updatedAt DateTime @updatedAt
 
   centerId  String?
-  center    Center?  @relation(fields: [centerId], references: [id])
+  center    Center?  @relation(fields: [centerId], references: [id], onDelete: Cascade)
 }
 
 model Plan {

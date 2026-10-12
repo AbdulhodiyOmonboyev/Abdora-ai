@@ -36,11 +36,12 @@ const login = async (req, res, next) => {
       return error(res, "Bu account ma'lumotlari yo'q", 401);
     }
 
-    // Markazi nofaol yoki o'chirilgan foydalanuvchilar kirishini to'sish
+    // Markazi nofaol, o'chirilgan yoki umuman markazga ega bo'lmagan foydalanuvchilar kirishini to'sish
     if (user.role !== 'admin') {
+      const hasNoCenter = !user.center && !user.branch?.center;
       const isCenterInactive = (user.center && user.center.isActive === false) ||
                                (user.branch?.center && user.branch.center.isActive === false);
-      if (isCenterInactive) {
+      if (hasNoCenter || isCenterInactive) {
         return error(res, "Bu account ma'lumotlari yo'q", 401);
       }
     }

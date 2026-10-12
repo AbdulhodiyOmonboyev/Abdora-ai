@@ -28,9 +28,10 @@ const verifyToken = async (req, res, next) => {
     if (!user || !user.isActive) return error(res, "Bu account ma'lumotlari yo'q", 401);
 
     if (user.role !== 'admin') {
+      const hasNoCenter = !user.center && !user.branch?.center;
       const isCenterInactive = (user.center && user.center.isActive === false) ||
                                (user.branch?.center && user.branch.center.isActive === false);
-      if (isCenterInactive) {
+      if (hasNoCenter || isCenterInactive) {
         return error(res, "Bu account ma'lumotlari yo'q", 401);
       }
     }

@@ -31,7 +31,6 @@ const NAV_ITEMS = [
   // ── SaaS Sotuv & Konstruktor ──
   { id: 'plans',        label: 'Tariflar & Paketlar (SaaS)', icon: CreditCard,  badge: 'Asosiy',   group: 'SaaS Sotuv & Paketlar' },
   { id: 'features',     label: 'Markaz Modullari (Sotuv)',  icon: Sparkles,    badge: 'Ruxsat',   group: null },
-  { id: 'limits',       label: 'Kvotalar & Cheklovlar',     icon: Target,      badge: 'Limit',    group: null },
   { id: 'custom_roles', label: 'Maxsus Rollar',             icon: UserCog,     badge: 'Yangi',    group: null },
 
   // ── Sarf & Monitoring ──
@@ -312,7 +311,7 @@ export default function AdminSettings() {
 
   const [activeTab, setActiveTabState] = useState(() => {
     const initial = urlTab || localStorage.getItem('admin_settings_tab') || 'plans';
-    return initial === 'roles' ? 'plans' : initial;
+    return initial === 'roles' || initial === 'limits' ? 'plans' : initial;
   });
 
   const [selectedCenterId, setSelectedCenterId] = useState(urlCenterId || '');

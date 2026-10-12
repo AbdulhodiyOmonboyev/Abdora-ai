@@ -204,7 +204,7 @@ const deleteCenter = async (req, res, next) => {
     const existing = await prisma.center.findUnique({ where: { id } });
     if (!existing) return error(res, 'O\'quv markaz topilmadi', 404);
 
-    // Kaskadli to'liq o'chirish: filiallar, guruhlar, barcha foydalanuvchilar va bog'liq ma'lumotlar
+    // Kaskadli to'liq va xavfsiz o'chirish: leaf-first ketma-ketlikda
     await prisma.$transaction(async (tx) => {
       // 1. Markazning barcha filiallarini olish
       const branches = await tx.branch.findMany({ where: { centerId: id }, select: { id: true } });
@@ -212,76 +212,284 @@ const deleteCenter = async (req, res, next) => {
 
       // 2. Markaz va filiallar guruhlarini olish
       const groups = await tx.group.findMany({
-        where: { OR: [{ centerId: id }, { branchId: { in: bIds } }] },
+        where: { OR: [{ centerId: id }, ...(bIds.length ? [{ branchId: { in: bIds } }] : [])] },
         select: { id: true },
       });
       const gIds = groups.map((g) => g.id);
 
-      // 3. Markazga tegishli barcha foydalanuvchilar (menejerlar, o'qituvchilar, o'quvchilar, resepshn)
+      // 3. Markazga tegishli barcha foydalanuvchilar (Super Admindan tashqari)
       const users = await tx.user.findMany({
         where: {
+          role: { not: 'admin' },
           OR: [
             { centerId: id },
-            { branchId: { in: bIds } },
-            { groupId: { in: gIds } },
-            { taughtGroups: { some: { id: { in: gIds } } } },
+            ...(bIds.length ? [{ branchId: { in: bIds } }] : []),
+            ...(gIds.length ? [{ groupId: { in: gIds } }] : []),
+            ...(gIds.length ? [{ taughtGroups: { some: { id: { in: gIds } } } }] : []),
           ],
         },
         select: { id: true },
       });
       const uIds = users.map((u) => u.id);
 
-      // 4. Bolalar va faoliyat jadvallarini o'chirish
-      await tx.leadActivity.deleteMany({
-        where: { OR: [{ lead: { centerId: id } }, { userId: { in: uIds } }] },
+      // 4. Markazning barcha darslarini olish
+      const lessons = await tx.lesson.findMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(gIds.length ? [{ groupId: { in: gIds } }] : []),
+            ...(uIds.length ? [{ teacherId: { in: uIds } }] : []),
+          ],
+        },
+        select: { id: true },
       });
-      await tx.lead.deleteMany({
-        where: { OR: [{ centerId: id }, { branchId: { in: bIds } }, { managerId: { in: uIds } }] },
-      });
+      const lIds = lessons.map((l) => l.id);
 
-      await tx.submission.deleteMany({
-        where: { OR: [{ centerId: id }, { studentId: { in: uIds } }, { homework: { groupId: { in: gIds } } }] },
+      // 5. Markazning barcha uy vazifalarini olish
+      const homeworks = await tx.homework.findMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(gIds.length ? [{ groupId: { in: gIds } }] : []),
+            ...(uIds.length ? [{ teacherId: { in: uIds } }] : []),
+            ...(lIds.length ? [{ lessonId: { in: lIds } }] : []),
+          ],
+        },
+        select: { id: true },
       });
-      await tx.result.deleteMany({
-        where: { OR: [{ centerId: id }, { studentId: { in: uIds } }, { test: { groupId: { in: gIds } } }] },
-      });
-      await tx.attendance.deleteMany({
-        where: { OR: [{ centerId: id }, { groupId: { in: gIds } }, { teacherId: { in: uIds } }] },
-      });
-      await tx.homework.deleteMany({
-        where: { OR: [{ centerId: id }, { groupId: { in: gIds } }, { teacherId: { in: uIds } }] },
-      });
-      await tx.test.deleteMany({
-        where: { OR: [{ centerId: id }, { groupId: { in: gIds } }, { teacherId: { in: uIds } }] },
-      });
-      await tx.lesson.deleteMany({
-        where: { OR: [{ centerId: id }, { groupId: { in: gIds } }, { teacherId: { in: uIds } }] },
-      });
+      const hIds = homeworks.map((h) => h.id);
 
-      await tx.payment.deleteMany({
-        where: { OR: [{ centerId: id }, { branchId: { in: bIds } }, { studentId: { in: uIds } }] },
+      // 6. Markazning barcha testlarini olish
+      const tests = await tx.test.findMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(gIds.length ? [{ groupId: { in: gIds } }] : []),
+            ...(uIds.length ? [{ teacherId: { in: uIds } }] : []),
+          ],
+        },
+        select: { id: true },
       });
-      await tx.expense.deleteMany({
-        where: { OR: [{ centerId: id }, { branchId: { in: bIds } }, { createdById: { in: uIds } }] },
-      });
+      const tIds = tests.map((t) => t.id);
 
+      // 7. Markazning barcha lidlarini olish
+      const leads = await tx.lead.findMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(bIds.length ? [{ branchId: { in: bIds } }] : []),
+            ...(uIds.length ? [{ managerId: { in: uIds } }] : []),
+          ],
+        },
+        select: { id: true },
+      });
+      const leadIds = leads.map((l) => l.id);
+
+      // 8. Subscription
+      const sub = await tx.subscription.findUnique({
+        where: { centerId: id },
+        select: { id: true },
+      });
+      const subId = sub?.id;
+
+      // ───────────────────────────────────────────────────────────
+      // BOLALARNI O'CHIRISH (Qat'iy ravishda bog'liq jadvallardan oldin)
+      // ───────────────────────────────────────────────────────────
+
+      // 9. AIChat (Darslar va talabalar chatlari) — Lesson va User'dan OLDIN o'chirish!
       await tx.aIChat.deleteMany({
-        where: { OR: [{ centerId: id }, { studentId: { in: uIds } }] },
-      });
-      await tx.aIAgent.deleteMany({ where: { centerId: id } });
-      await tx.notification.deleteMany({
-        where: { OR: [{ centerId: id }, { userId: { in: uIds } }] },
-      });
-      await tx.resource.deleteMany({
-        where: { OR: [{ centerId: id }, { groupId: { in: gIds } }, { teacherId: { in: uIds } }] },
-      });
-      await tx.uploadedFile.deleteMany({ where: { centerId: id } });
-      await tx.room.deleteMany({
-        where: { OR: [{ centerId: id }, { branchId: { in: bIds } }] },
+        where: {
+          OR: [
+            { centerId: id },
+            ...(lIds.length ? [{ lessonId: { in: lIds } }] : []),
+            ...(uIds.length ? [{ studentId: { in: uIds } }] : []),
+          ],
+        },
       });
 
-      // 5. Foreign key zanjirlarini ajratish
+      // 10. LessonMedia (Dars media audio/slaydlari) — Lesson'dan OLDIN o'chirish
+      if (lIds.length > 0) {
+        await tx.lessonMedia.deleteMany({
+          where: { lessonId: { in: lIds } },
+        });
+      }
+
+      // 11. Submissions (Topshiriq javoblari) — Homework va User'dan OLDIN o'chirish
+      await tx.submission.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(hIds.length ? [{ homeworkId: { in: hIds } }] : []),
+            ...(uIds.length ? [{ studentId: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 12. Homework (Uy vazifalari) — Lesson va Group'dan OLDIN o'chirish
+      await tx.homework.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(hIds.length ? [{ id: { in: hIds } }] : []),
+            ...(gIds.length ? [{ groupId: { in: gIds } }] : []),
+            ...(uIds.length ? [{ teacherId: { in: uIds } }] : []),
+            ...(lIds.length ? [{ lessonId: { in: lIds } }] : []),
+          ],
+        },
+      });
+
+      // 13. Test Results — Test va User'dan OLDIN o'chirish
+      await tx.result.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(tIds.length ? [{ testId: { in: tIds } }] : []),
+            ...(uIds.length ? [{ studentId: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 14. Test Questions — Test'dan OLDIN o'chirish
+      if (tIds.length > 0) {
+        await tx.question.deleteMany({
+          where: { testId: { in: tIds } },
+        });
+      }
+
+      // 15. Tests — Group va User'dan OLDIN o'chirish
+      await tx.test.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(tIds.length ? [{ id: { in: tIds } }] : []),
+            ...(gIds.length ? [{ groupId: { in: gIds } }] : []),
+            ...(uIds.length ? [{ teacherId: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 16. Lessons — Endi Lesson ga bog'liq jadvallar (AIChat, LessonMedia, Homework) to'liq yo'q!
+      await tx.lesson.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(lIds.length ? [{ id: { in: lIds } }] : []),
+            ...(gIds.length ? [{ groupId: { in: gIds } }] : []),
+            ...(uIds.length ? [{ teacherId: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 17. LeadActivity — Lead va User'dan OLDIN o'chirish
+      await tx.leadActivity.deleteMany({
+        where: {
+          OR: [
+            ...(leadIds.length ? [{ leadId: { in: leadIds } }] : []),
+            ...(uIds.length ? [{ userId: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 18. Leads — Branch va User'dan OLDIN o'chirish
+      await tx.lead.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(leadIds.length ? [{ id: { in: leadIds } }] : []),
+            ...(bIds.length ? [{ branchId: { in: bIds } }] : []),
+            ...(uIds.length ? [{ managerId: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 19. Attendance
+      await tx.attendance.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(gIds.length ? [{ groupId: { in: gIds } }] : []),
+            ...(uIds.length ? [{ teacherId: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 20. Resource
+      await tx.resource.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(gIds.length ? [{ groupId: { in: gIds } }] : []),
+            ...(uIds.length ? [{ teacherId: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 21. Payment
+      await tx.payment.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(bIds.length ? [{ branchId: { in: bIds } }] : []),
+            ...(uIds.length ? [{ studentId: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 22. Expense
+      await tx.expense.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(bIds.length ? [{ branchId: { in: bIds } }] : []),
+            ...(uIds.length ? [{ createdById: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 23. Notification
+      await tx.notification.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(uIds.length ? [{ userId: { in: uIds } }] : []),
+          ],
+        },
+      });
+
+      // 24. UploadedFile & AIAgent
+      await tx.uploadedFile.deleteMany({ where: { centerId: id } });
+      await tx.aIAgent.deleteMany({ where: { centerId: id } });
+
+      // 25. Subscription, Invoices, AI Logs, SMS Logs
+      if (subId) {
+        await tx.invoice.deleteMany({ where: { subscriptionId: subId } });
+        await tx.aIUsageLog.deleteMany({
+          where: { OR: [{ centerId: id }, { subscriptionId: subId }] },
+        });
+        await tx.sMSLog.deleteMany({
+          where: { OR: [{ centerId: id }, { subscriptionId: subId }] },
+        });
+        await tx.subscription.delete({ where: { id: subId } });
+      } else {
+        await tx.aIUsageLog.deleteMany({ where: { centerId: id } });
+        await tx.sMSLog.deleteMany({ where: { centerId: id } });
+      }
+
+      // 26. CustomRole
+      await tx.customRole.deleteMany({ where: { centerId: id } });
+
+      // ───────────────────────────────────────────────────────────
+      // O'ZARO VA SIKLIK BOG'LANISHLARNI BO'SHATISH (Nullify cyclic FKs)
+      // ───────────────────────────────────────────────────────────
+
+      // 27. Foydalanuvchilarni tozalash va o'chirishga tayyorlash
       if (uIds.length > 0) {
+        // Agar boshqa biror user ushbu o'qituvchilarga teacherId orqali bog'langan bo'lsa, uzish
+        await tx.user.updateMany({
+          where: { teacherId: { in: uIds } },
+          data: { teacherId: null },
+        });
+
         await tx.user.updateMany({
           where: { id: { in: uIds } },
           data: {
@@ -289,15 +497,18 @@ const deleteCenter = async (req, res, next) => {
             groupId: null,
             branchId: null,
             centerId: null,
+            customRoleId: null,
             isActive: false,
             refreshTokenHash: null,
           },
         });
       }
+
+      // 28. Guruh va filial bog'lanishlarini bo'shatish
       if (gIds.length > 0) {
         await tx.group.updateMany({
           where: { id: { in: gIds } },
-          data: { branchId: null, centerId: null },
+          data: { roomId: null, branchId: null, centerId: null },
         });
       }
       if (bIds.length > 0) {
@@ -307,10 +518,32 @@ const deleteCenter = async (req, res, next) => {
         });
       }
 
-      // 6. Guruhlar, filiallar, foydalanuvchilar va markazni to'liq o'chirish
-      if (gIds.length > 0) await tx.group.deleteMany({ where: { id: { in: gIds } } });
-      if (bIds.length > 0) await tx.branch.deleteMany({ where: { id: { in: bIds } } });
-      if (uIds.length > 0) await tx.user.deleteMany({ where: { id: { in: uIds } } });
+      // 29. Xonalar (Room)
+      await tx.room.deleteMany({
+        where: {
+          OR: [
+            { centerId: id },
+            ...(bIds.length ? [{ branchId: { in: bIds } }] : []),
+          ],
+        },
+      });
+
+      // 30. Guruhlarni o'chirish
+      if (gIds.length > 0) {
+        await tx.group.deleteMany({ where: { id: { in: gIds } } });
+      }
+
+      // 31. Filiallarni o'chirish
+      if (bIds.length > 0) {
+        await tx.branch.deleteMany({ where: { id: { in: bIds } } });
+      }
+
+      // 32. Foydalanuvchilarni o'chirish
+      if (uIds.length > 0) {
+        await tx.user.deleteMany({ where: { id: { in: uIds } } });
+      }
+
+      // 33. Markazning o'zini o'chirish
       await tx.center.delete({ where: { id } });
     });
 
