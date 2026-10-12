@@ -141,6 +141,19 @@ const createShopItem = async (req, res, next) => {
     const settings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
     const items = Array.isArray(settings.shopItems) ? [...settings.shopItems] : [...DEFAULT_SHOP_ITEMS];
 
+    let finalImageUrl = (imageUrl || '').trim();
+    if (req.file) {
+      const row = await prisma.uploadedFile.create({
+        data: {
+          name: req.file.originalname || 'shop-item.jpg',
+          mimeType: req.file.mimetype || 'image/jpeg',
+          data: req.file.buffer,
+          centerId: center.id || null,
+        },
+      });
+      finalImageUrl = `/api/shop/image/${row.id}`;
+    }
+
     const newItem = {
       id: uuidv4(),
       title: title.trim(),
@@ -149,7 +162,7 @@ const createShopItem = async (req, res, next) => {
       category: category || 'merch',
       stock: stock !== undefined && stock !== '' && stock !== null ? Math.max(0, parseInt(stock, 10)) : null,
       icon: icon || 'Gift',
-      imageUrl: imageUrl?.trim() || '',
+      imageUrl: finalImageUrl,
       isActive: isActive !== false,
       createdAt: new Date().toISOString(),
     };
@@ -183,6 +196,19 @@ const updateShopItem = async (req, res, next) => {
     if (idx === -1) return error(res, "Mahsulot topilmadi", 404);
 
     const existing = items[idx];
+    let finalImageUrl = imageUrl !== undefined ? imageUrl?.trim() : existing.imageUrl;
+    if (req.file) {
+      const row = await prisma.uploadedFile.create({
+        data: {
+          name: req.file.originalname || 'shop-item.jpg',
+          mimeType: req.file.mimetype || 'image/jpeg',
+          data: req.file.buffer,
+          centerId: center.id || null,
+        },
+      });
+      finalImageUrl = `/api/shop/image/${row.id}`;
+    }
+
     const updated = {
       ...existing,
       title: title !== undefined ? title.trim() : existing.title,
@@ -191,7 +217,7 @@ const updateShopItem = async (req, res, next) => {
       category: category !== undefined ? category : existing.category,
       stock: stock !== undefined ? (stock === null || stock === '' ? null : Math.max(0, parseInt(stock, 10))) : existing.stock,
       icon: icon !== undefined ? icon : existing.icon,
-      imageUrl: imageUrl !== undefined ? imageUrl?.trim() : existing.imageUrl,
+      imageUrl: finalImageUrl,
       isActive: isActive !== undefined ? !!isActive : existing.isActive,
       updatedAt: new Date().toISOString(),
     };
@@ -385,6 +411,47 @@ const updateOrderStatus = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// POST /api/shop/upload-image (Manager & Admin only)
+const uploadShopImage = async (req, res, next) => {
+  try {
+    if (!req.file) return error(res, 'Rasm fayli tanlanmadi', 400);
+
+    const center = await resolveCenterForUser(req.user);
+
+    const row = await prisma.uploadedFile.create({
+      data: {
+        name: req.file.originalname || 'shop-item.jpg',
+        mimeType: req.file.mimetype || 'image/jpeg',
+        data: req.file.buffer,
+        centerId: center?.id || null,
+      },
+    });
+
+    const host = req.get('host');
+    const protocol = req.protocol;
+    const absoluteUrl = `${protocol}://${host}/api/shop/image/${row.id}`;
+    const relativeUrl = `/api/shop/image/${row.id}`;
+
+    return success(res, { id: row.id, url: absoluteUrl, relativeUrl }, "Rasm muvaffaqiyatli yuklandi");
+  } catch (err) { next(err); }
+};
+
+// GET /api/shop/image/:id (Public shop item image server)
+const getShopImage = async (req, res, next) => {
+  try {
+    const file = await prisma.uploadedFile.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!file) return res.status(404).send('Mahsulot rasmi topilmadi');
+    res.set({
+      'Content-Type': file.mimeType || 'image/jpeg',
+      'Content-Length': file.data.length,
+      'Cache-Control': 'public, max-age=86400',
+    });
+    return res.send(file.data);
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getShopItems,
   createShopItem,
@@ -393,4 +460,6 @@ module.exports = {
   purchaseShopItem,
   getShopOrders,
   updateOrderStatus,
+  uploadShopImage,
+  getShopImage,
 };

@@ -7,7 +7,7 @@ import {
   BookOpen, Snowflake, Phone, Plus, KeyRound, Copy, Check,
   Trash2, ExternalLink, Calendar, Clock, DoorOpen, Building2,
   TrendingUp, Wallet, Banknote, Smartphone, Search, RefreshCw,
-  UserCheck, AlertCircle, ShieldCheck
+  UserCheck, AlertCircle, ShieldCheck, CheckCircle2
 } from 'lucide-react';
 import api from '../../config/axios';
 import { getSubjectLabel } from '../../utils/subjects';
@@ -55,7 +55,13 @@ function parseMonth(str) {
 
 function parseWeekDays(raw) {
   if (Array.isArray(raw)) return raw;
-  try { return JSON.parse(raw || '[]'); } catch { return []; }
+  if (!raw) return [];
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : [String(parsed)];
+  } catch {
+    return typeof raw === 'string' ? raw.split(',').map(s => s.trim()) : [];
+  }
 }
 
 function formatSum(n) {
@@ -291,11 +297,11 @@ export default function GroupDetail() {
 
           {/* Badges bar */}
           <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-            {weekDays.length > 0 && (
+            {Array.isArray(weekDays) && weekDays.length > 0 && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg"
                 style={{ background: 'var(--secondary-background)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
                 <Calendar size={13} className="text-primary" />
-                {weekDays.map(d => DAYS.find(x => x.key === d)?.label).filter(Boolean).join(', ')}
+                {weekDays.map(d => DAYS.find(x => x.key === d)?.label || d).filter(Boolean).join(', ')}
               </span>
             )}
 
@@ -311,7 +317,7 @@ export default function GroupDetail() {
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg"
                 style={{ background: 'var(--secondary-background)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
                 <DoorOpen size={13} className="text-primary" />
-                {group.room}
+                {typeof group.room === 'object' ? (group.room?.name || '') : group.room}
               </span>
             )}
 
