@@ -4,16 +4,52 @@ const { success, error } = require('../utils/apiResponse');
 const { getCleanApiKey, getApiKeyAsync, resolveAiConfig } = require('../config/gemini');
 const { getSpeakingCoachInstructions } = require('../services/ai/prompts');
 
+// Normalize live model identifier to ensure compatibility with Gemini Live API
+const normalizeLiveModel = (model) => {
+  if (!model || typeof model !== 'string') return 'gemini-2.0-flash-exp';
+  const clean = model.trim().replace(/^models\//, '');
+  const lower = clean.toLowerCase();
+
+  // If a text-only generation model was passed, map to a live-capable model
+  if (
+    lower.startsWith('gemini-3.8-flash') ||
+    lower.startsWith('gemini-3.5-flash') ||
+    lower === 'gemini-2.5-flash' ||
+    lower === 'gemini-2.0-flash' ||
+    lower === 'gemini-1.5-flash' ||
+    lower === 'gemini-1.5-pro' ||
+    lower === 'default'
+  ) {
+    return 'gemini-2.0-flash-exp';
+  }
+
+  // Older / unversioned preview alias
+  if (lower === 'gemini-2.5-flash-native-audio-preview') {
+    return 'gemini-2.0-flash-exp';
+  }
+
+  return clean;
+};
+
 // Gemini Live model fallback
-const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview';
+const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-2.0-flash-exp';
 
 // POST /api/speaking/session
 const createSpeakingSession = async (req, res, next) => {
   try {
     const centerId = req.user?.centerId || null;
     const aiConfig = await resolveAiConfig(centerId);
-    const apiKey = aiConfig?.apiKey || (await getApiKeyAsync()) || getCleanApiKey();
-    const activeLiveModel = aiConfig?.liveModel || LIVE_MODEL;
+    let apiKey = aiConfig?.apiKey || (await getApiKeyAsync()) || getCleanApiKey();
+    const activeLiveModel = normalizeLiveModel(aiConfig?.liveModel || LIVE_MODEL);
+
+    if (apiKey && apiKey.startsWith('sk-')) {
+      const fallbackGeminiKey = (await getApiKeyAsync()) || getCleanApiKey();
+      if (fallbackGeminiKey && !fallbackGeminiKey.startsWith('sk-')) {
+        apiKey = fallbackGeminiKey;
+      } else {
+        return error(res, "Gapirish mashqi (Speaking) faqat Google Gemini Live API orqali ishlaydi. Iltimos, sozlamalarda Gemini API kalitini kiriting.", 400);
+      }
+    }
 
     if (!apiKey) {
       return error(res, 'AI API kaliti serverda sozlanmagan', 400);

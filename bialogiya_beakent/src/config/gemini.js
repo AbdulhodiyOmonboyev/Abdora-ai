@@ -128,7 +128,7 @@ const resolveAiConfig = async (centerId = null) => {
             model: normalizeModelName((linkedAgent.model && linkedAgent.model !== 'default') ? linkedAgent.model.trim() : DEFAULT_TEXT_MODEL),
             provider: linkedAgent.provider || 'gemini',
             baseUrl: extra.baseUrl || '',
-            liveModel: aiConfig.liveModel || 'gemini-2.5-flash-native-audio-preview',
+            liveModel: aiConfig.liveModel || 'gemini-2.0-flash-exp',
           };
         }
       }
@@ -141,7 +141,7 @@ const resolveAiConfig = async (centerId = null) => {
           model: normalizeModelName(aiConfig.model || cachedAgent?.model || DEFAULT_TEXT_MODEL),
           provider: aiConfig.provider || 'gemini',
           baseUrl: aiConfig.baseUrl || '',
-          liveModel: aiConfig.liveModel || 'gemini-2.5-flash-native-audio-preview',
+          liveModel: aiConfig.liveModel || 'gemini-2.0-flash-exp',
         };
       }
     } catch (e) {
@@ -158,7 +158,7 @@ const resolveAiConfig = async (centerId = null) => {
     model,
     provider: agent?.provider || 'gemini',
     baseUrl: agent?.baseUrl || '',
-    liveModel: process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash-native-audio-preview',
+    liveModel: process.env.GEMINI_LIVE_MODEL || 'gemini-2.0-flash-exp',
   };
 };
 

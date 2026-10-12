@@ -123,6 +123,9 @@ export default function SpeakingPractice({ lessonId, topic }) {
           setAiSpeaking(true);
           playChunk(part.inlineData.data);
         }
+        if (part.text) {
+          pendingTranscriptRef.current.assistant += part.text;
+        }
       }
     }
 
@@ -178,10 +181,12 @@ export default function SpeakingPractice({ lessonId, topic }) {
       const pcm16 = floatTo16BitPCM(input);
       ws.send(JSON.stringify({
         realtimeInput: {
-          audio: {
-            data: int16ToBase64(pcm16),
-            mimeType: `audio/pcm;rate=${MIC_SAMPLE_RATE}`,
-          },
+          mediaChunks: [
+            {
+              data: int16ToBase64(pcm16),
+              mimeType: `audio/pcm;rate=${MIC_SAMPLE_RATE}`,
+            },
+          ],
         },
       }));
     };
@@ -204,24 +209,34 @@ export default function SpeakingPractice({ lessonId, topic }) {
       if (!token) throw new Error('Server token qaytarmadi');
       if (!model) throw new Error('Server model nomini qaytarmadi');
 
-      // Build WebSocket URL:
+      // Build WebSocket URL using v1beta endpoint:
       // - isApiKey=true  → plain API Studio key → ?key=TOKEN
-      // - isApiKey=false → ephemeral token      → ?key=TOKEN (Gemini uses same param)
-      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${token}`;
+      // - isApiKey=false → ephemeral token      → ?key=TOKEN
+      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${token}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
+      const normalizedModel = (model && model.startsWith('models/')) ? model : `models/${model}`;
+
       ws.onopen = () => {
-        // Build setup payload
+        // Build setup payload conforming strictly to Gemini Live proto:
+        // - generationConfig has responseModalities and speechConfig
+        // - inputAudioTranscription and outputAudioTranscription are at setup root level
         const setupPayload = {
           setup: {
-            model: `models/${model}`,
+            model: normalizedModel,
             generationConfig: {
               responseModalities: ['AUDIO'],
-              // Transcription fields must be INSIDE generationConfig
-              inputAudioTranscription: {},
-              outputAudioTranscription: {},
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: {
+                    voiceName: 'Puck',
+                  },
+                },
+              },
             },
+            inputAudioTranscription: {},
+            outputAudioTranscription: {},
           },
         };
 
@@ -262,7 +277,7 @@ export default function SpeakingPractice({ lessonId, topic }) {
 
       ws.onerror = (ev) => {
         console.error('WebSocket error:', ev);
-        const msg = "Gemini Live ulanishida xatolik. Internet yoki API kalitni tekshiring.";
+        const msg = "Gemini Live ulanishida xatolik yuz berdi.";
         toast.error(msg);
         setErrorMsg(msg);
         cleanup();
@@ -276,8 +291,21 @@ export default function SpeakingPractice({ lessonId, topic }) {
           setStatusSafe(STATUS.IDLE);
           setAiSpeaking(false);
           if (ev.code !== 1000 && ev.code !== 1005) {
-            // Abnormal close (not user-initiated)
-            toast.error(`Suhbat to'xtatildi (kod: ${ev.code})`);
+            console.error('WebSocket closed abnormally:', ev.code, ev.reason);
+            let userMsg = `Suhbat to'xtatildi (kod: ${ev.code})`;
+            if (ev.reason) {
+              if (ev.reason.includes('API key not valid') || ev.reason.includes('API_KEY_INVALID')) {
+                userMsg = "AI API kaliti yaroqsiz yoki ruxsat yo'q. Markaz sozlamalarida tekshiring.";
+              } else if (ev.reason.includes('ResourceExhausted') || ev.reason.includes('quota')) {
+                userMsg = "AI API kvotasi tugagan. Birozdan so'ng qayta urinib ko'ring.";
+              } else if (ev.reason.includes('Cannot find field') || ev.reason.includes('Unknown name')) {
+                userMsg = `Server format xatoligi: ${ev.reason}`;
+              } else {
+                userMsg = `Suhbat to'xtatildi: ${ev.reason}`;
+              }
+            }
+            toast.error(userMsg);
+            setErrorMsg(userMsg);
           }
         }
       };
