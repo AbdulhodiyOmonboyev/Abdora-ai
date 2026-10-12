@@ -91,3 +91,13 @@ export const getScoreBg = (score) => {
   if (score >= 50) return 'bg-yellow-50 text-yellow-700';
   return 'bg-red-50 text-red-700';
 };
+
+export const resolveMediaUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '');
+  return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+

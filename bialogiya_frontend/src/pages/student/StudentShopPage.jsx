@@ -12,7 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { formatDateTime } from '../../utils/format';
+import { formatDateTime, resolveMediaUrl } from '../../utils/format';
 
 const ICON_MAP = {
   Shirt,
@@ -50,7 +50,8 @@ const CATEGORY_DEFAULT_IMAGES = {
 };
 
 const getItemImage = (item) => {
-  return item?.imageUrl || ITEM_DEFAULT_IMAGES[item?.id] || CATEGORY_DEFAULT_IMAGES[item?.category] || null;
+  const raw = item?.imageUrl || ITEM_DEFAULT_IMAGES[item?.id] || CATEGORY_DEFAULT_IMAGES[item?.category] || null;
+  return raw ? resolveMediaUrl(raw) : null;
 };
 
 export default function StudentShopPage() {
