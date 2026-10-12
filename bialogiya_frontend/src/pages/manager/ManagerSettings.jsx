@@ -8,7 +8,7 @@ import {
   BookMarked, Plus, X, Pencil, Trash2, Copy, Save, Check, KeyRound,
   Palette, Smartphone, Banknote, ChevronRight,
   Sparkles, ShoppingBag, Tag, Gift, Shirt, Package, Clock, CheckCircle2, Coins,
-  RefreshCw, AlertCircle, Layers
+  RefreshCw, AlertCircle, Layers, Bot, Key, Eye, EyeOff, Cpu
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -26,11 +26,30 @@ const MANAGER_NAV_ITEMS = [
   { id: 'payments',          label: 'To\'lovlar & Qoidalar',         icon: CreditCard },
   { id: 'lms_rules',         label: 'LMS & Baholash (Coin)',         icon: BookOpen },
   { id: 'course_levels',     label: 'Kurs Darajalari (Mahsulotlar)',   icon: Layers },
+  { id: 'ai_agent',          label: 'AI Sozlamalari & Model',        icon: Bot },
   { id: 'crm_leads',         label: 'CRM & Lidlar sozlamasi',        icon: Target },
   { id: 'coin_shop',         label: 'Online Do\'kon (Coin Shop)',    icon: ShoppingBag },
   { id: 'notifications',     label: 'Bildirishnomalar (SMS)',        icon: Bell },
   { id: 'themes',            label: 'Mavzular & Ko\'rinish',         icon: Palette },
   { id: 'personal',          label: 'Mening hisobim & Parol',        icon: User },
+];
+
+const AI_MODEL_OPTIONS = [
+  { group: "Google Gemini (Tavsiya)", options: [
+    { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Tezkor va standart tavsiya)", badge: "Tavsiya" },
+    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Chuqur fikrlash va katta kontekst)" },
+    { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash (Tez va yengil)" },
+  ]},
+  { group: "OpenAI", options: [
+    { value: "gpt-4o", label: "GPT-4o (Omni — Asosiy model)", badge: "Tavsiya" },
+    { value: "gpt-4o-mini", label: "GPT-4o Mini (Tezkor va tejamkor)" },
+    { value: "o3-mini", label: "o3-mini (Murakkab fikrlash)" },
+  ]},
+  { group: "Anthropic Claude", options: [
+    { value: "claude-3-7-sonnet", label: "Claude 3.7 Sonnet (Eng so'nggi flagman)", badge: "Yangi" },
+    { value: "claude-3-5-sonnet", label: "Claude 3.5 Sonnet (A'lo darajada matn va kod)" },
+    { value: "claude-3-5-haiku", label: "Claude 3.5 Haiku (Tezkor)" },
+  ]},
 ];
 
 const DEFAULT_COURSE_LEVELS = [
@@ -199,6 +218,14 @@ export default function ManagerSettings() {
       canManageTeachers: true,
     },
     courseLevels: DEFAULT_COURSE_LEVELS,
+    aiConfig: {
+      provider: 'gemini',
+      model: 'gemini-2.5-flash',
+      liveModel: 'gemini-2.5-flash-native-audio-preview',
+      agentId: '',
+      apiKey: '',
+      customPrompt: '',
+    },
   });
 
   // Query settings
@@ -309,6 +336,75 @@ export default function ManagerSettings() {
         toast.success("Daraja o'chirildi");
       })
       .catch(() => toast.error("O'chirishda xatolik yuz berdi"));
+  };
+
+  // AI Agents state & queries
+  const { data: aiAgents = [], refetch: refetchAiAgents } = useQuery({
+    queryKey: ['ai-agents'],
+    queryFn: () => api.get('/admin/ai-agents').then(r => r.data?.data || []).catch(() => []),
+  });
+  const [showAiApiKey, setShowAiApiKey] = useState(false);
+  const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
+  const [newAgentForm, setNewAgentForm] = useState({
+    name: '',
+    provider: 'gemini',
+    apiKey: '',
+    model: 'gemini-2.5-flash',
+  });
+
+  const createAgentMutation = useMutation({
+    mutationFn: (data) => api.post('/admin/ai-agents', data),
+    onSuccess: (res) => {
+      const newAgent = res.data?.data;
+      toast.success("Yangi AI Agent yaratildi va biriktirildi!");
+      qc.invalidateQueries({ queryKey: ['ai-agents'] });
+      if (newAgent?.id) {
+        const nextAiConfig = {
+          ...(settings.aiConfig || {}),
+          agentId: newAgent.id,
+          provider: newAgent.provider || 'gemini',
+          model: newAgent.model || 'gemini-2.5-flash',
+          apiKey: newAgent.apiKey || '',
+        };
+        set('aiConfig', nextAiConfig);
+        api.put('/admin/settings', { aiConfig: nextAiConfig })
+          .then(() => {
+            qc.invalidateQueries({ queryKey: ['manager-settings'] });
+            qc.invalidateQueries({ queryKey: ['center-settings'] });
+          })
+          .catch(() => {});
+      }
+      setShowCreateAgentModal(false);
+      setNewAgentForm({ name: '', provider: 'gemini', apiKey: '', model: 'gemini-2.5-flash' });
+    },
+    onError: (e) => toast.error(e.response?.data?.message || "Agent yaratishda xatolik yuz berdi"),
+  });
+
+  const handleSelectAgent = (agentId) => {
+    const selected = aiAgents.find(a => a.id === agentId);
+    let nextAiConfig;
+    if (selected) {
+      nextAiConfig = {
+        ...(settings.aiConfig || {}),
+        agentId,
+        provider: selected.provider || 'gemini',
+        model: selected.model || settings.aiConfig?.model || 'gemini-2.5-flash',
+        apiKey: selected.apiKey || settings.aiConfig?.apiKey || '',
+      };
+    } else {
+      nextAiConfig = {
+        ...(settings.aiConfig || {}),
+        agentId: '',
+      };
+    }
+    set('aiConfig', nextAiConfig);
+    api.put('/admin/settings', { aiConfig: nextAiConfig })
+      .then(() => {
+        qc.invalidateQueries({ queryKey: ['manager-settings'] });
+        qc.invalidateQueries({ queryKey: ['center-settings'] });
+        toast.success(agentId ? "AI Agent markazga biriktirildi!" : "Shaxsiy sozlamalarga o'tildi");
+      })
+      .catch(() => toast.error("Sozlamani saqlashda xatolik yuz berdi"));
   };
 
   // CRM Leads interactive local state
@@ -433,6 +529,10 @@ export default function ManagerSettings() {
         courseLevels: Array.isArray(serverSettings.courseLevels) && serverSettings.courseLevels.length > 0
           ? serverSettings.courseLevels
           : prev.courseLevels || DEFAULT_COURSE_LEVELS,
+        aiConfig: {
+          ...prev.aiConfig,
+          ...(serverSettings.aiConfig || {}),
+        },
       }));
     }
   }, [serverSettings]);
@@ -1389,6 +1489,244 @@ export default function ManagerSettings() {
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: AI SOZLAMALARI VA MODEL */}
+              {activeTab === 'ai_agent' && (
+                <div className="space-y-5">
+                  <div className="panel-card space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--border)]">
+                      <div>
+                        <span className="panel-kicker text-purple-600 dark:text-purple-400">Sun'iy Intellekt Dvigateli</span>
+                        <h2 className="panel-title mt-0.5 flex items-center gap-2">
+                          <Bot className="w-5 h-5 text-purple-500" />
+                          <span>AI Sozlamalari & Model</span>
+                        </h2>
+                        <p className="panel-subtitle mt-1">
+                          Markazingiz darslari, topshiriqlari va testlari uchun AI modeli hamda shaxsiy API kalitini boshqaring
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowCreateAgentModal(true)}
+                        className="btn-primary text-xs px-4 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 self-start sm:self-auto shadow-sm"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Yangi AI Agent qo'shish</span>
+                      </button>
+                    </div>
+
+                    {/* Markaz doirasi haqida eslatma */}
+                    <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+                        <Sparkles size={18} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-[var(--text-primary)]">
+                          {settings.centerName || "Markaz"} uchun maxsus AI sozlamasi
+                        </div>
+                        <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                          Ushbu markaz umumiy tizim modelidan emas, siz tanlagan shaxsiy AI Agenti yoki kiritgan API kalitingizdan mustaqil foydalanadi.
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Master Switch: AI ni yoqish / o'chirish */}
+                    <div className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+                      <div>
+                        <div className="text-xs font-semibold text-[var(--text-primary)]">
+                          AI funksiyalarini markaz uchun faollashtirish
+                        </div>
+                        <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                          Yoqilgan bo'lsa, o'qituvchilar dars va test yaratishda AI yordamchisidan foydalana oladilar
+                        </div>
+                      </div>
+                      <ToggleSwitch
+                        checked={settings.features?.aiEnabled !== false}
+                        onChange={() => {
+                          const next = settings.features?.aiEnabled === false;
+                          const updated = { ...(settings.features || {}), aiEnabled: next };
+                          set('features', updated);
+                          api.put('/admin/settings', { features: updated })
+                            .then(() => toast.success(next ? "AI tizimi yoqildi" : "AI tizimi o'chirildi"))
+                            .catch(() => {});
+                        }}
+                      />
+                    </div>
+
+                    {/* 1. Tizimdagi AI Agentni biriktirish */}
+                    <div className="space-y-1.5 pt-1">
+                      <label className="text-xs font-semibold text-[var(--text-primary)] block">
+                        Tizim AI Agenti bilan bog'lash (Tavsiya)
+                      </label>
+                      <select
+                        className="input-field text-sm"
+                        value={settings.aiConfig?.agentId || ""}
+                        onChange={e => handleSelectAgent(e.target.value)}
+                      >
+                        <option value="">Shaxsiy model tanlash (quyidagi ro'yxatdan)</option>
+                        {aiAgents.map(a => (
+                          <option key={a.id} value={a.id}>
+                            {a.name} ({a.provider?.toUpperCase()} — {a.model || "Standart"})
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[11px] text-[var(--text-muted)]">
+                        Agar agent tanlansa, o'sha agentning API kaliti va modeli ushbu markazga avtomatik tatbiq qilinadi va boshqa ortiqcha qatorlar yashiriladi.
+                      </p>
+                    </div>
+
+                    {/* Agar AI Agent tanlangan bo'lsa, qolgan qatorlar yashiriladi va faol agent kartochkasi ko'rsatiladi */}
+                    {(() => {
+                      const selectedAgent = aiAgents.find(a => a.id === settings.aiConfig?.agentId);
+                      if (settings.aiConfig?.agentId && selectedAgent) {
+                        return (
+                          <motion.div
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-4 sm:p-5 rounded-2xl border transition-all"
+                            style={{
+                              background: "rgba(16, 185, 129, 0.04)",
+                              borderColor: "rgba(16, 185, 129, 0.3)",
+                            }}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                                  style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981" }}
+                                >
+                                  <Bot size={24} />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">
+                                      {selectedAgent.name}
+                                    </h3>
+                                    <span className="badge text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold">
+                                      AI Agent Faol
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    Markaz barcha AI vazifalari uchun aynan shu shaxsiy agent kaliti va modelidan foydalanadi
+                                  </p>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleSelectAgent("")}
+                                className="btn-outline text-xs px-3 py-1.5 rounded-xl self-start sm:self-center"
+                                title="Agentni uzish va qo'lda kiritish"
+                              >
+                                Qo'lda sozlashga o'tish
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs pt-3 border-t border-[var(--border)]">
+                              <div className="p-3 rounded-xl bg-white dark:bg-gray-800/80 border border-[var(--border)]">
+                                <span className="text-gray-400 block text-[11px] mb-0.5">AI Provayder</span>
+                                <span className="font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wide">
+                                  {selectedAgent.provider || "GEMINI"}
+                                </span>
+                              </div>
+
+                              <div className="p-3 rounded-xl bg-white dark:bg-gray-800/80 border border-[var(--border)]">
+                                <span className="text-gray-400 block text-[11px] mb-0.5">Model</span>
+                                <span className="font-bold text-primary font-mono truncate block">
+                                  {selectedAgent.model || "Standart model"}
+                                </span>
+                              </div>
+
+                              <div className="p-3 rounded-xl bg-white dark:bg-gray-800/80 border border-[var(--border)]">
+                                <span className="text-gray-400 block text-[11px] mb-0.5">API Kalit Holati</span>
+                                <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                  <ShieldCheck size={14} /> Agent kaliti ishlatiladi
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="mt-3.5 p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                              <CheckCircle2 size={15} className="flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+                              <span>
+                                Qo'lda API kalit va model kiritish shart emas — barcha darslar, savol-javoblar va testlar aynan ushbu shaxsiy AI agentingiz orqali amalga oshiriladi.
+                              </span>
+                            </div>
+                          </motion.div>
+                        );
+                      }
+
+                      return (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="space-y-4 pt-1"
+                        >
+                          {/* 2. Aniq AI Modelni tanlash (Dropdown select) */}
+                          <div>
+                            <label className="text-xs font-semibold mb-1 block text-[var(--text-primary)]">
+                              Ishlatiladigan AI Model (Select) *
+                            </label>
+                            <select
+                              className="input-field text-sm font-semibold cursor-pointer"
+                              value={settings.aiConfig?.model || "gemini-2.5-flash"}
+                              onChange={e => set('aiConfig', { ...(settings.aiConfig || {}), model: e.target.value })}
+                            >
+                              {AI_MODEL_OPTIONS.map(group => (
+                                <optgroup key={group.group} label={group.group}>
+                                  {group.options.map(opt => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label} {opt.badge ? `[${opt.badge}]` : ""}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              ))}
+                              <option value="custom">Boshqa maxsus model kiritish...</option>
+                            </select>
+
+                            {settings.aiConfig?.model === "custom" && (
+                              <input
+                                className="input-field text-sm mt-2 font-mono"
+                                placeholder="Model identifikatorini kiriting (masalan: gemini-2.5-flash)"
+                                onChange={e => set('aiConfig', { ...(settings.aiConfig || {}), model: e.target.value })}
+                              />
+                            )}
+                            <div className="text-[11px] mt-1.5 flex items-center gap-1.5 text-[var(--text-muted)]">
+                              <CheckCircle2 size={13} className="text-emerald-500" />
+                              Tanlangan model barcha dars va test generatsiyalari uchun ishlatiladi.
+                            </div>
+                          </div>
+
+                          {/* 3. API Kalit kiritish */}
+                          <div>
+                            <label className="text-xs font-semibold mb-1 block text-[var(--text-primary)]">
+                              Markazning Shaxsiy API Kaliti (ixtiyoriy)
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showAiApiKey ? "text" : "password"}
+                                className="input-field text-sm font-mono pr-10"
+                                placeholder="AIzaSy... yoki sk-..."
+                                value={settings.aiConfig?.apiKey || ""}
+                                onChange={e => set('aiConfig', { ...(settings.aiConfig || {}), apiKey: e.target.value })}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowAiApiKey(p => !p)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                              >
+                                {showAiApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                              </button>
+                            </div>
+                            <p className="text-[11px] mt-1 text-[var(--text-muted)]">
+                              Agar bo'sh qoldirilsa, serverdagi faol AI Agent kaliti avtomatik ishlatiladi.
+                            </p>
+                          </div>
+                        </motion.div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
@@ -2413,6 +2751,123 @@ export default function ManagerSettings() {
             >
               <Save size={14} />
               <span>Saqlash</span>
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── Yangi AI Agent Modal ── */}
+      <Modal
+        isOpen={showCreateAgentModal}
+        onClose={() => setShowCreateAgentModal(false)}
+        title="Yangi AI Agent yaratish"
+        subtitle="Markazingiz uchun shaxsiy AI agenti va API kalitini kiritish"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!newAgentForm.name.trim()) return toast.error("Agent nomini kiriting");
+            if (!newAgentForm.apiKey.trim()) return toast.error("API kalitni kiriting");
+            createAgentMutation.mutate({
+              name: newAgentForm.name.trim(),
+              provider: newAgentForm.provider,
+              apiKey: newAgentForm.apiKey.trim(),
+              model: newAgentForm.model,
+              enabledModels: [newAgentForm.model],
+              isActive: true,
+            });
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="form-label">Agent nomi *</label>
+            <input
+              type="text"
+              required
+              value={newAgentForm.name}
+              onChange={(e) => setNewAgentForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Masalan: Bizning Markaz AI Agenti"
+              className="input-field text-sm"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="form-label">AI Provayder *</label>
+              <select
+                value={newAgentForm.provider}
+                onChange={(e) => setNewAgentForm(f => ({
+                  ...f,
+                  provider: e.target.value,
+                  model: e.target.value === 'openai' ? 'gpt-4o' : 'gemini-2.5-flash',
+                }))}
+                className="input-field text-sm"
+              >
+                <option value="gemini">Google Gemini</option>
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic Claude</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="form-label">Asosiy Model *</label>
+              <select
+                value={newAgentForm.model}
+                onChange={(e) => setNewAgentForm(f => ({ ...f, model: e.target.value }))}
+                className="input-field text-sm font-mono"
+              >
+                {newAgentForm.provider === 'openai' ? (
+                  <>
+                    <option value="gpt-4o">gpt-4o (Omni)</option>
+                    <option value="gpt-4o-mini">gpt-4o-mini</option>
+                    <option value="o3-mini">o3-mini</option>
+                  </>
+                ) : newAgentForm.provider === 'anthropic' ? (
+                  <>
+                    <option value="claude-3-7-sonnet">claude-3-7-sonnet</option>
+                    <option value="claude-3-5-sonnet">claude-3-5-sonnet</option>
+                    <option value="claude-3-5-haiku">claude-3-5-haiku</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="gemini-2.5-flash">gemini-2.5-flash (Standart)</option>
+                    <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                    <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                  </>
+                )}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label">API Kalit (API Key) *</label>
+            <input
+              type="password"
+              required
+              value={newAgentForm.apiKey}
+              onChange={(e) => setNewAgentForm(f => ({ ...f, apiKey: e.target.value }))}
+              placeholder={newAgentForm.provider === 'openai' ? "sk-..." : "AIzaSy..."}
+              className="input-field text-sm font-mono"
+            />
+            <p className="text-[11px] text-[var(--text-muted)] mt-1">
+              Kalit xavfsiz saqlanadi va faqat markazingiz so'rovlariga xizmat qiladi.
+            </p>
+          </div>
+
+          <div className="pt-3 border-t border-[var(--border)] flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowCreateAgentModal(false)}
+              className="btn-ghost px-4 py-2 text-xs font-semibold"
+            >
+              Bekor qilish
+            </button>
+            <button
+              type="submit"
+              disabled={createAgentMutation.isPending}
+              className="btn-primary px-5 py-2 text-xs font-bold flex items-center gap-1.5"
+            >
+              {createAgentMutation.isPending ? "Yaratilmoqda..." : "Yaratish & Biriktirish"}
             </button>
           </div>
         </form>

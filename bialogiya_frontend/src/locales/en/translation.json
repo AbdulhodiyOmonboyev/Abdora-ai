@@ -166,5 +166,9 @@
   "all_branches": "All Branches",
   "full_name": "Full Name",
   "phone_number": "Phone Number",
-  "language": "Language"
+  "language": "Language",
+  "section_learning": "Learning",
+  "section_results": "Results & Attendance",
+  "section_gamification": "Rewards & Activity",
+  "section_system": "System"
 }

@@ -878,6 +878,33 @@ export default function LessonDetail() {
             </div>
           </motion.div>
         )}
+
+        {isError && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            className="p-4 rounded-2xl bg-red-500/10 border border-red-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={18} />
+              </div>
+              <div>
+                <div className="font-semibold text-red-700 dark:text-red-300">
+                  AI materiallarini yaratishda xatolik yuz berdi
+                </div>
+                <div className="text-[11px] text-red-600/80 dark:text-red-300/80 mt-0.5">
+                  {ai?.errorMessage || "AI xizmati bilan ulanishda xatolik bo'ldi. Qayta urinib ko'ring yoki sozlamalarda AI agentni tekshiring."}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => regenerateMutation.mutate()}
+              disabled={regenerateMutation.isPending}
+              className="btn-primary text-xs py-2 px-3.5 flex items-center gap-1.5 flex-shrink-0 self-start sm:self-center"
+            >
+              <RefreshCw size={14} className={regenerateMutation.isPending ? 'animate-spin' : ''} />
+              <span>Qayta yaratish</span>
+            </button>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Mobile Horizontal Tabs Pill Strip */}

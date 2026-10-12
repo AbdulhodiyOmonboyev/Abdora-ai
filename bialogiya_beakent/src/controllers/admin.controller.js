@@ -1038,6 +1038,14 @@ const getSettings = async (req, res, next) => {
       courseLevels: Array.isArray(rawSettings.courseLevels) && rawSettings.courseLevels.length > 0
         ? rawSettings.courseLevels
         : DEFAULT_COURSE_LEVELS,
+      aiConfig: rawSettings.aiConfig || {
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        liveModel: 'gemini-2.5-flash-native-audio-preview',
+        agentId: '',
+        apiKey: '',
+        customPrompt: '',
+      },
     };
 
     const rolePrefsKey = role === 'reception' ? 'receptionPrefs'
@@ -1142,6 +1150,13 @@ const updateSettings = async (req, res, next) => {
         if (role === 'admin' || role === 'manager') {
           sharedSettingsUpdate.courseLevels = value;
         }
+      } else if (key === 'aiConfig' && typeof value === 'object') {
+        if (role === 'admin' || role === 'manager') {
+          sharedSettingsUpdate.aiConfig = {
+            ...(currentSettings.aiConfig || {}),
+            ...value,
+          };
+        }
       } else if (sharedFieldMap[key] !== undefined) {
         if (key === 'centerName' && role !== 'admin') continue;
         updateData[sharedFieldMap[key]] = value;
@@ -1202,6 +1217,7 @@ const updateSettings = async (req, res, next) => {
       limits: mergedSettings.limits || DEFAULT_CENTER_LIMITS,
       receptionPermissions: mergedSettings.receptionPermissions || {},
       courseLevels: mergedSettings.courseLevels || DEFAULT_COURSE_LEVELS,
+      aiConfig: mergedSettings.aiConfig || {},
       ...mergedSettings[rolePrefsKey],
     }, 'Sozlamalar muvaffaqiyatli saqlandi');
   } catch (err) { next(err); }

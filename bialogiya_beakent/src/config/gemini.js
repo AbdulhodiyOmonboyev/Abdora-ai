@@ -125,7 +125,7 @@ const resolveAiConfig = async (centerId = null) => {
           const extra = (linkedAgent.useCases && typeof linkedAgent.useCases === 'object') ? linkedAgent.useCases : {};
           return {
             apiKey: sanitizeKey(linkedAgent.apiKey),
-            model: (linkedAgent.model && linkedAgent.model !== 'default') ? linkedAgent.model.trim() : DEFAULT_TEXT_MODEL,
+            model: normalizeModelName((linkedAgent.model && linkedAgent.model !== 'default') ? linkedAgent.model.trim() : DEFAULT_TEXT_MODEL),
             provider: linkedAgent.provider || 'gemini',
             baseUrl: extra.baseUrl || '',
             liveModel: aiConfig.liveModel || 'gemini-2.5-flash-native-audio-preview',
@@ -138,7 +138,7 @@ const resolveAiConfig = async (centerId = null) => {
         const globalKey = await getApiKeyAsync();
         return {
           apiKey: sanitizeKey(aiConfig.apiKey) || globalKey,
-          model: aiConfig.model || cachedAgent?.model || DEFAULT_TEXT_MODEL,
+          model: normalizeModelName(aiConfig.model || cachedAgent?.model || DEFAULT_TEXT_MODEL),
           provider: aiConfig.provider || 'gemini',
           baseUrl: aiConfig.baseUrl || '',
           liveModel: aiConfig.liveModel || 'gemini-2.5-flash-native-audio-preview',
@@ -152,7 +152,7 @@ const resolveAiConfig = async (centerId = null) => {
   // Fallback to active AIAgent or env
   const agent = cachedAgent || (await loadKeyFromDb());
   const apiKey = agent?.apiKey || getEnvApiKey();
-  const model = agent?.model || DEFAULT_TEXT_MODEL;
+  const model = normalizeModelName(agent?.model || DEFAULT_TEXT_MODEL);
   return {
     apiKey,
     model,
@@ -336,8 +336,12 @@ const getModel = (options = false) => {
     return createOpenAIModel(key, activeModel, baseUrl, generationConfig);
   }
 
+  if (!key || key === 'unconfigured') {
+    throw new Error("AI API kaliti sozlanmagan. Iltimos, Sozlamalar bo'limida AI Agent yoki API kalitni tekshiring.");
+  }
+
   const normalizedModel = normalizeModelName(activeModel);
-  const client = new GoogleGenerativeAI(key || 'unconfigured');
+  const client = new GoogleGenerativeAI(key);
   return createResilientModel(client, normalizedModel, generationConfig);
 };
 
@@ -356,12 +360,16 @@ const getModelAsync = async (options = false) => {
   const baseUrl = options?.baseUrl || config.baseUrl || '';
   const generationConfig = jsonMode ? { responseMimeType: 'application/json' } : {};
 
+  if (!key || key === 'unconfigured') {
+    throw new Error("AI API kaliti sozlanmagan. Iltimos, Sozlamalar bo'limida AI Agent yoki API kalitni tekshiring.");
+  }
+
   if (provider === 'openai' || (key && key.startsWith('sk-'))) {
     return createOpenAIModel(key, activeModel, baseUrl, generationConfig);
   }
 
   const normalizedModel = normalizeModelName(activeModel);
-  const client = new GoogleGenerativeAI(key || 'unconfigured');
+  const client = new GoogleGenerativeAI(key);
   return createResilientModel(client, normalizedModel, generationConfig);
 };
 

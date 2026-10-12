@@ -22,7 +22,9 @@ const formatAgent = (agent) => {
 
 const getAIAgents = async (req, res, next) => {
   try {
-    const centerScope = req.user.role !== 'admin' && req.user.centerId ? { centerId: req.user.centerId } : {};
+    const centerScope = req.user.role !== 'admin' && req.user.centerId
+      ? { OR: [{ centerId: req.user.centerId }, { centerId: null }] }
+      : {};
     const agents = await prisma.aIAgent.findMany({
       where: centerScope,
       orderBy: { createdAt: 'desc' },

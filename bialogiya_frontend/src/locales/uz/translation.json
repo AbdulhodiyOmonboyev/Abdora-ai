@@ -167,5 +167,9 @@
   "all_branches": "Barcha filiallar",
   "full_name": "To'liq ismi",
   "phone_number": "Telefon raqami",
-  "language": "Til"
+  "language": "Til",
+  "section_learning": "O'quv jarayoni",
+  "section_results": "Natijalar & Davomat",
+  "section_gamification": "Faollik & Mukofotlar",
+  "section_system": "Tizim"
 }

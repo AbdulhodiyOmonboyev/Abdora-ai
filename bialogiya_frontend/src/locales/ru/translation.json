@@ -166,5 +166,9 @@
   "all_branches": "Все филиалы",
   "full_name": "Полное имя",
   "phone_number": "Номер телефона",
-  "language": "Язык"
+  "language": "Язык",
+  "section_learning": "Обучение",
+  "section_results": "Результаты и посещаемость",
+  "section_gamification": "Награды и рейтинг",
+  "section_system": "Система"
 }
