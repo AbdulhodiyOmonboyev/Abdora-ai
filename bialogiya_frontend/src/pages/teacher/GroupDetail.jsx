@@ -128,21 +128,26 @@ export default function GroupDetail() {
   };
 
   const recordPaymentMutation = useMutation({
-    mutationFn: (d) => api.post('/payments', {
-      studentId: d.studentId,
-      month,
-      amount: Number(d.amount),
-      method: d.method,
-      note: d.note,
-      isPaid: Number(d.amount) >= monthlyFee,
-    }),
+    mutationFn: (d) => {
+      if (user?.role === 'teacher') {
+        throw new Error("O'qituvchi to'lov qabul qila olmaydi");
+      }
+      return api.post('/payments', {
+        studentId: d.studentId,
+        month,
+        amount: Number(d.amount),
+        method: d.method,
+        note: d.note,
+        isPaid: Number(d.amount) >= monthlyFee,
+      });
+    },
     onSuccess: () => {
       invalidateAll();
       setShowPaymentModal(false);
       toast.success("To'lov muvaffaqiyatli qabul qilindi");
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "To'lovni saqlashda xatolik");
+      toast.error(err.response?.data?.message || err.message || "To'lovni saqlashda xatolik");
     },
   });
 
@@ -193,6 +198,7 @@ export default function GroupDetail() {
   });
 
   const openPaymentForStudent = (s) => {
+    if (user?.role === 'teacher') return;
     const p = paymentMap[s.id];
     const remaining = p?.debt !== undefined ? p.debt : (monthlyFee || 0);
     setPaymentForm({
@@ -584,14 +590,16 @@ export default function GroupDetail() {
 
                 {/* Right: Actions */}
                 <div className="flex flex-wrap items-center gap-1.5 self-end md:self-center">
-                  <button
-                    onClick={() => openPaymentForStudent(s)}
-                    className="btn-primary btn-sm flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg"
-                    title="To'lov qabul qilish"
-                  >
-                    <Wallet size={13} />
-                    <span>To'lov olish</span>
-                  </button>
+                  {user?.role !== 'teacher' && (
+                    <button
+                      onClick={() => openPaymentForStudent(s)}
+                      className="btn-primary btn-sm flex items-center gap-1.5 text-xs py-1.5 px-3 rounded-lg"
+                      title="To'lov qabul qilish"
+                    >
+                      <Wallet size={13} />
+                      <span>To'lov olish</span>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => navigate(`/users/${s.id}`)}
@@ -656,103 +664,105 @@ export default function GroupDetail() {
       </section>
 
       {/* ── Quick Payment Modal ── */}
-      <Modal
-        open={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        title="To'lov qabul qilish"
-        subtitle={`${paymentForm.studentName} — ${parseMonth(month)} oyi uchun to'lov`}
-        size="sm"
-        footer={
-          <>
-            <button onClick={() => setShowPaymentModal(false)} className="btn-ghost">
-              Bekor
-            </button>
-            <button
-              onClick={() => recordPaymentMutation.mutate(paymentForm)}
-              disabled={recordPaymentMutation.isPending || !paymentForm.amount || Number(paymentForm.amount) <= 0}
-              className="btn-primary"
-            >
-              {recordPaymentMutation.isPending ? (
-                <>
-                  <RefreshCw size={14} className="animate-spin" /> Saqlanmoqda...
-                </>
-              ) : (
-                <>
-                  <Check size={14} /> To'lovni saqlash
-                </>
-              )}
-            </button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="form-label">To'lov summasi (so'm) *</label>
-            <input
-              type="number"
-              min={0}
-              value={paymentForm.amount}
-              onChange={e => setPaymentForm(f => ({ ...f, amount: e.target.value }))}
-              className="input-field"
-              placeholder="Masalan: 500000"
-            />
-            {monthlyFee > 0 && (
-              <div className="flex items-center justify-between text-[11px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                <span>Oylik to'lov: {formatSum(monthlyFee)}</span>
-                <button
-                  type="button"
-                  onClick={() => setPaymentForm(f => ({ ...f, amount: monthlyFee }))}
-                  className="text-primary hover:underline font-medium"
-                >
-                  To'liq to'lovni belgilash
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="form-label">To'lov usuli</label>
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-              {PAYMENT_METHODS.map(m => {
-                const Icon = m.icon;
-                const isSelected = paymentForm.method === m.key;
-                return (
+      {user?.role !== 'teacher' && (
+        <Modal
+          open={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          title="To'lov qabul qilish"
+          subtitle={`${paymentForm.studentName} — ${parseMonth(month)} oyi uchun to'lov`}
+          size="sm"
+          footer={
+            <>
+              <button onClick={() => setShowPaymentModal(false)} className="btn-ghost">
+                Bekor
+              </button>
+              <button
+                onClick={() => recordPaymentMutation.mutate(paymentForm)}
+                disabled={recordPaymentMutation.isPending || !paymentForm.amount || Number(paymentForm.amount) <= 0}
+                className="btn-primary"
+              >
+                {recordPaymentMutation.isPending ? (
+                  <>
+                    <RefreshCw size={14} className="animate-spin" /> Saqlanmoqda...
+                  </>
+                ) : (
+                  <>
+                    <Check size={14} /> To'lovni saqlash
+                  </>
+                )}
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="form-label">To'lov summasi (so'm) *</label>
+              <input
+                type="number"
+                min={0}
+                value={paymentForm.amount}
+                onChange={e => setPaymentForm(f => ({ ...f, amount: e.target.value }))}
+                className="input-field"
+                placeholder="Masalan: 500000"
+              />
+              {monthlyFee > 0 && (
+                <div className="flex items-center justify-between text-[11px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                  <span>Oylik to'lov: {formatSum(monthlyFee)}</span>
                   <button
-                    key={m.key}
                     type="button"
-                    onClick={() => setPaymentForm(f => ({ ...f, method: m.key }))}
-                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs font-medium transition-all ${
-                      isSelected
-                        ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)]'
-                        : 'border-[var(--border)] text-[var(--text-secondary)]'
-                    }`}
+                    onClick={() => setPaymentForm(f => ({ ...f, amount: monthlyFee }))}
+                    className="text-primary hover:underline font-medium"
                   >
-                    <Icon size={18} style={{ color: isSelected ? 'var(--primary)' : m.color }} />
-                    <span>{m.label}</span>
+                    To'liq to'lovni belgilash
                   </button>
-                );
-              })}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="form-label">To'lov usuli</label>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {PAYMENT_METHODS.map(m => {
+                  const Icon = m.icon;
+                  const isSelected = paymentForm.method === m.key;
+                  return (
+                    <button
+                      key={m.key}
+                      type="button"
+                      onClick={() => setPaymentForm(f => ({ ...f, method: m.key }))}
+                      className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                        isSelected
+                          ? 'border-[var(--primary)] bg-[var(--primary-50)] text-[var(--primary)]'
+                          : 'border-[var(--border)] text-[var(--text-secondary)]'
+                      }`}
+                    >
+                      <Icon size={18} style={{ color: isSelected ? 'var(--primary)' : m.color }} />
+                      <span>{m.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="form-label">Izoh (ixtiyoriy)</label>
+              <input
+                type="text"
+                value={paymentForm.note}
+                onChange={e => setPaymentForm(f => ({ ...f, note: e.target.value }))}
+                className="input-field"
+                placeholder="To'lov izohi..."
+              />
+            </div>
+
+            <div className="p-3 rounded-xl text-xs flex items-center gap-2"
+              style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+              <Wallet size={14} className="text-primary flex-shrink-0" />
+              <span>To'lov avtomatik tarzda kassa va moliya bo'limiga kirim qilinadi.</span>
             </div>
           </div>
-
-          <div>
-            <label className="form-label">Izoh (ixtiyoriy)</label>
-            <input
-              type="text"
-              value={paymentForm.note}
-              onChange={e => setPaymentForm(f => ({ ...f, note: e.target.value }))}
-              className="input-field"
-              placeholder="To'lov izohi..."
-            />
-          </div>
-
-          <div className="p-3 rounded-xl text-xs flex items-center gap-2"
-            style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-            <Wallet size={14} className="text-primary flex-shrink-0" />
-            <span>To'lov avtomatik tarzda kassa va moliya bo'limiga kirim qilinadi.</span>
-          </div>
-        </div>
-      </Modal>
+        </Modal>
+      )}
 
       {/* ── Add Student Modal ── */}
       <Modal

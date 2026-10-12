@@ -7,6 +7,7 @@ const { createLesson, getLessons, getLessonById, updateLesson, deleteLesson, rem
 const {
   chatMessage, getChatHistory, clearChatHistory, generateQuizForLesson,
   getStoryAudio, getVoiceAudio, generateExplainerVideo, getExplainerVideo, getExplainerSlideAudio, getExplainerSlideImage,
+  getExplanationImage, getMindmapImage,
 } = require('../controllers/ai.controller');
 
 router.get('/', verifyToken, getLessons);
@@ -31,5 +32,9 @@ router.post('/:id/ai/explainer-video', verifyToken, generateExplainerVideo);
 router.get('/:id/ai/explainer-video', verifyToken, getExplainerVideo);
 router.get('/:id/ai/explainer-video/audio/:slideIndex', verifyToken, getExplainerSlideAudio);
 router.get('/:id/ai/explainer-video/image/:slideIndex', verifyToken, getExplainerSlideImage);
+
+// Banana AI illustration & mindmap diagrams
+router.get('/:id/ai/explanation-image', verifyToken, getExplanationImage);
+router.get('/:id/ai/mindmap-image', verifyToken, getMindmapImage);
 
 module.exports = router;

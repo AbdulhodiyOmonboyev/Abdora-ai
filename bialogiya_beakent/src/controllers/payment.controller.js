@@ -77,6 +77,10 @@ const getGroupPayments = async (req, res, next) => {
 // POST /payments — upsert payment for student+month
 const markPayment = async (req, res, next) => {
   try {
+    if (req.user.role === 'teacher') {
+      return error(res, "O'qituvchi to'lov qabul qila olmaydi. To'lov faqat ma'muriyat yoki qabulxona tomonidan qabul qilinadi.", 403);
+    }
+
     const { studentId, month, amount, expectedAmount, method, note, isPaid } = req.body;
     if (!studentId || !month) return error(res, 'studentId and month required', 400);
 
@@ -210,6 +214,10 @@ const getDebtors = async (req, res, next) => {
 // DELETE /payments/:studentId/:month — remove payment record
 const removePayment = async (req, res, next) => {
   try {
+    if (req.user.role === 'teacher') {
+      return error(res, "O'qituvchi to'lovni o'chira olmaydi.", 403);
+    }
+
     const { studentId, month } = req.params;
     const student = await prisma.user.findFirst({ where: { id: studentId, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { role: true, teacherId: true, group: { select: { branchId: true } } } });
     if (!student || student.role !== 'student') return error(res, 'Student not found', 404);

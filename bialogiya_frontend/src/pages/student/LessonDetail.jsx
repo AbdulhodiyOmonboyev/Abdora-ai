@@ -17,6 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import StoryAudioPlayer from '../../components/ai/StoryAudioPlayer';
 import ExplainerVideoPlayer from '../../components/ai/ExplainerVideoPlayer';
 import SpeakingPractice from '../../components/ai/SpeakingPractice';
+import BananaAiIllustrationCard from '../../components/ai/BananaAiIllustrationCard';
 
 
 const TABS = [
@@ -1026,8 +1027,8 @@ export default function LessonDetail() {
             </div>
           )}
           {activeTab === 'explain' && (
-            <div>
-              <div className="flex items-center justify-between mb-4">
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold gradient-text">Oddiy tushuntirish</h2>
                 {isTeacher && editingField !== 'simpleExplanation' && (
                   <button onClick={() => handleStartEditText('simpleExplanation', ai?.simpleExplanation)}
@@ -1036,6 +1037,16 @@ export default function LessonDetail() {
                   </button>
                 )}
               </div>
+
+              {/* Banana AI Visual Illustration Card */}
+              <BananaAiIllustrationCard
+                lessonId={id}
+                kind="explanation"
+                title={lesson?.title}
+                subtitle="Banana AI tomonidan mavzu bo'yicha chizilgan illyustratsiya"
+                isTeacher={isTeacher}
+              />
+
               {editingField === 'simpleExplanation' ? (
                 <div className="space-y-3">
                   <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={7} className="input-field text-sm" />
@@ -1168,7 +1179,31 @@ export default function LessonDetail() {
               )}
             </div>
           )}
-          {activeTab === 'mindmap' && <MindMap data={ai?.mindMapData} />}
+          {activeTab === 'mindmap' && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold gradient-text">Aql xaritasi</h2>
+                  <p className="text-xs text-gray-500">Banana AI konsept xaritasi va interaktiv bilim daraxti</p>
+                </div>
+              </div>
+
+              {/* Banana AI Mind Map Poster / Illustration */}
+              <BananaAiIllustrationCard
+                lessonId={id}
+                kind="mindmap"
+                title={lesson?.title}
+                subtitle="Banana AI yordamida mavzu xaritasi va konseptual bog'lanishlar"
+                isTeacher={isTeacher}
+              />
+
+              {/* Interactive SVG Node Diagram */}
+              <div className="rounded-2xl border border-[var(--border)] p-4 bg-[var(--card)]">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Interaktiv Tugunlar</h3>
+                <MindMap data={ai?.mindMapData} />
+              </div>
+            </div>
+          )}
           {activeTab === 'voice' && <VoiceSection lessonId={id} title={lesson?.title} />}
           {activeTab === 'video' && <ExplainerVideoPlayer lessonId={id} />}
           {activeTab === 'speaking' && <SpeakingPractice lessonId={id} topic={lesson?.title} />}

@@ -148,7 +148,12 @@ export default function UserDetail() {
   });
 
   const recordPaymentMutation = useMutation({
-    mutationFn: (data) => api.post('/payments', data),
+    mutationFn: (data) => {
+      if (currentUser?.role === 'teacher') {
+        throw new Error("O'qituvchi to'lov qabul qila olmaydi");
+      }
+      return api.post('/payments', data);
+    },
     onSuccess: () => {
       qc.invalidateQueries(['student-history', id]);
       toast.success("To'lov muvaffaqiyatli saqlandi");
@@ -161,7 +166,7 @@ export default function UserDetail() {
       });
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || "To'lovni saqlab bo'lmadi");
+      toast.error(err.response?.data?.message || err.message || "To'lovni saqlab bo'lmadi");
     },
   });
 
@@ -201,6 +206,7 @@ export default function UserDetail() {
   };
 
   const openPaymentModal = (fee) => {
+    if (currentUser?.role === 'teacher') return;
     setPaymentForm({
       month: new Date().toISOString().slice(0, 7),
       amount: fee ? String(fee) : '',
@@ -283,23 +289,23 @@ export default function UserDetail() {
 
         {/* Quick Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {isStudent && (
-            <>
-              <button
-                onClick={() => openPaymentModal(summary.monthlyFee)}
-                className="btn-primary text-sm flex items-center gap-1.5 py-2 px-3.5 shadow-sm"
-              >
-                <CreditCard size={15} /> To'lov qilish
-              </button>
+          {isStudent && currentUser?.role !== 'teacher' && (
+            <button
+              onClick={() => openPaymentModal(summary.monthlyFee)}
+              className="btn-primary text-sm flex items-center gap-1.5 py-2 px-3.5 shadow-sm"
+            >
+              <CreditCard size={15} /> To'lov qilish
+            </button>
+          )}
 
-              <button
-                onClick={() => setShowCoinModal(true)}
-                className="btn-ghost text-sm flex items-center gap-1.5 py-2 px-3 border border-[var(--border)]"
-                title="Tanga / XP berish"
-              >
-                <Sparkles size={15} className="text-amber-500" /> Tanga berish
-              </button>
-            </>
+          {isStudent && (
+            <button
+              onClick={() => setShowCoinModal(true)}
+              className="btn-ghost text-sm flex items-center gap-1.5 py-2 px-3 border border-[var(--border)]"
+              title="Tanga / XP berish"
+            >
+              <Sparkles size={15} className="text-amber-500" /> Tanga berish
+            </button>
           )}
 
           {canManage && (
@@ -733,12 +739,14 @@ export default function UserDetail() {
               <div className="panel-card space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
                   <h3 className="text-sm font-bold text-[var(--text-primary)]">To'lovlar tarixi</h3>
-                  <button
-                    onClick={() => openPaymentModal(summary.monthlyFee)}
-                    className="btn-primary text-xs flex items-center gap-1.5 py-1.5 px-3"
-                  >
-                    <Plus size={13} /> To'lov kiritish
-                  </button>
+                  {currentUser?.role !== 'teacher' && (
+                    <button
+                      onClick={() => openPaymentModal(summary.monthlyFee)}
+                      className="btn-primary text-xs flex items-center gap-1.5 py-1.5 px-3"
+                    >
+                      <Plus size={13} /> To'lov kiritish
+                    </button>
+                  )}
                 </div>
 
                 {payments.length > 0 ? (
@@ -1305,7 +1313,7 @@ export default function UserDetail() {
 
       {/* MODAL 3: QUICK PAYMENT */}
       <AnimatePresence>
-        {showPaymentModal && (
+        {showPaymentModal && currentUser?.role !== 'teacher' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
