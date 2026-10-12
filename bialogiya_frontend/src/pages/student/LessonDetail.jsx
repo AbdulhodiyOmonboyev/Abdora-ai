@@ -587,6 +587,7 @@ function VoiceSection({ lessonId, title }) {
 function AIChatSection({ lessonId, i18nLanguage }) {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const qc = useQueryClient();
   const studentAiPrefs = user?.permissions?.aiPreferences || {};
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -609,13 +610,36 @@ function AIChatSection({ lessonId, i18nLanguage }) {
       setMessages(prev => [...prev, { role: 'user', content: message, timestamp: new Date() }]);
       setInput('');
     },
-    onSuccess: ({ data }) => {
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply, timestamp: new Date() }]);
+    onSuccess: (res) => {
+      const payload = res?.data?.data || res?.data || {};
+      const reply =
+        payload?.reply ||
+        payload?.content ||
+        payload?.message ||
+        (typeof payload === 'string' ? payload : '');
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: reply, timestamp: new Date() }
+      ]);
+      qc.invalidateQueries({ queryKey: ['ai-chat-history', lessonId] });
     },
-    onError: () => toast.error('AI xizmati hozircha band. Qayta urinib ko\'ring.'),
+    onError: (err) => {
+      const serverMsg = err?.response?.data?.message;
+      toast.error(serverMsg || 'AI xizmati hozircha band. Qayta urinib ko\'ring.');
+    },
   });
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  const clearChatMutation = useMutation({
+    mutationFn: () => api.delete(`/lessons/${lessonId}/ai-chat`),
+    onSuccess: () => {
+      setMessages([]);
+      qc.invalidateQueries({ queryKey: ['ai-chat-history', lessonId] });
+      toast.success("Suhbat tarixi tozalandi");
+    },
+    onError: () => toast.error("Tozalashda xatolik yuz berdi"),
+  });
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, sendMsg.isPending]);
 
   return (
     <div className="flex flex-col h-[500px]">
@@ -636,15 +660,31 @@ function AIChatSection({ lessonId, i18nLanguage }) {
       )}
 
       {/* Controls */}
-      <div className="flex gap-2 mb-3 flex-wrap">
-        <select value={style} onChange={e => setStyle(e.target.value)} className="input-field text-xs py-1.5 flex-1 min-w-[140px]">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <select value={style} onChange={e => setStyle(e.target.value)} className="input-field text-xs py-1.5 flex-1 min-w-[130px]">
           {CHAT_STYLES.map(s => <option key={s.id} value={s.id}>{t(`explain_${s.id === 'normal' ? 'normal' : s.id === 'like_im_10' ? 'kid' : s.id === 'emoji' ? 'emoji' : s.id === 'step_by_step' ? 'steps' : 'examples'}`)}</option>)}
         </select>
-        <select value={lang} onChange={e => setLang(e.target.value)} className="input-field text-xs py-1.5 flex-1 min-w-[100px]">
+        <select value={lang} onChange={e => setLang(e.target.value)} className="input-field text-xs py-1.5 flex-1 min-w-[90px]">
           <option value="uz">O'zbek</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
+        {messages.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm("Haqiqatan ham ushbu dars bo'yicha chat tarixini tozalashni xohlaysizmi?")) {
+                clearChatMutation.mutate();
+              }
+            }}
+            disabled={clearChatMutation.isPending}
+            className="btn-ghost btn-sm text-xs py-1.5 px-2.5 text-gray-500 hover:text-red-500 border border-[var(--border)] rounded-xl flex items-center gap-1.5 whitespace-nowrap transition-colors"
+            title="Chat tarixini tozalash"
+          >
+            <Trash2 size={13} />
+            <span className="hidden sm:inline">Tozalash</span>
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -655,29 +695,49 @@ function AIChatSection({ lessonId, i18nLanguage }) {
             <p className="text-sm">Ushbu dars haqida Abdora AI'dan istalgan narsani so'rang</p>
           </div>
         )}
-        {messages.map((m, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {m.role === 'assistant' && (
-              <div className="w-7 h-7 gradient-bg rounded-full flex items-center justify-center text-white text-xs mr-2 flex-shrink-0 mt-0.5">N</div>
-            )}
-            <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
-              m.role === 'user'
-                ? 'gradient-bg text-white rounded-br-sm'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white rounded-bl-sm'
-            }`}>
-              {m.content}
-            </div>
-          </motion.div>
-        ))}
+        {messages.map((m, i) => {
+          const content = m.content || m.text || m.reply || m.message || '';
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              {m.role === 'assistant' && (
+                <div className="w-7 h-7 gradient-bg rounded-full flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0 mt-0.5 shadow-xs">
+                  A
+                </div>
+              )}
+              <div
+                className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                  m.role === 'user'
+                    ? 'gradient-bg text-white rounded-br-sm shadow-xs'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-sm border border-gray-200 dark:border-gray-700/60 shadow-xs'
+                }`}
+              >
+                {content || (
+                  <span className="italic opacity-60">
+                    {m.role === 'assistant' ? "Javob yuklanmadi yoki bo'sh keldi" : "Xabar bo'sh"}
+                  </span>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
         {sendMsg.isPending && (
-          <div className="flex gap-2">
-            <div className="w-7 h-7 gradient-bg rounded-full flex items-center justify-center text-white text-xs">N</div>
-            <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3">
+          <div className="flex gap-2 items-center">
+            <div className="w-7 h-7 gradient-bg rounded-full flex items-center justify-center text-white text-xs font-bold shadow-xs">A</div>
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-2.5 flex items-center gap-2 border border-gray-200 dark:border-gray-700/60 text-xs text-gray-500 font-medium">
+              <span>Abdora AI javob yozmoqda</span>
               <div className="flex gap-1">
                 {[0, 1, 2].map(i => (
-                  <motion.div key={i} animate={{ y: [0, -4, 0] }} transition={{ duration: 0.5, delay: i * 0.15, repeat: Infinity }}
-                    className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                  <motion.div
+                    key={i}
+                    animate={{ y: [0, -3, 0] }}
+                    transition={{ duration: 0.5, delay: i * 0.15, repeat: Infinity }}
+                    className="w-1.5 h-1.5 bg-primary rounded-full"
+                  />
                 ))}
               </div>
             </div>

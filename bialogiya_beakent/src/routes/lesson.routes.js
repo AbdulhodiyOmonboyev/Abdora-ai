@@ -5,7 +5,7 @@ const upload = require('../middleware/upload.middleware');
 const { pdfUpload } = require('../middleware/upload.middleware');
 const { createLesson, getLessons, getLessonById, updateLesson, deleteLesson, removeAttachment, regenerateAI, getAIContent, generateTestFromPDF, updateAIContent } = require('../controllers/lesson.controller');
 const {
-  chatMessage, getChatHistory, generateQuizForLesson,
+  chatMessage, getChatHistory, clearChatHistory, generateQuizForLesson,
   getStoryAudio, getVoiceAudio, generateExplainerVideo, getExplainerVideo, getExplainerSlideAudio, getExplainerSlideImage,
 } = require('../controllers/ai.controller');
 
@@ -21,6 +21,7 @@ router.post('/:id/regenerate-ai', verifyToken, requireRole('teacher', 'admin', '
 router.post('/generate-test-from-pdf', verifyToken, requireRole('teacher', 'admin', 'manager'), pdfUpload.single('pdf'), generateTestFromPDF);
 router.post('/:lessonId/ai-chat', verifyToken, chatMessage);
 router.get('/:lessonId/ai-chat/history', verifyToken, getChatHistory);
+router.delete('/:lessonId/ai-chat', verifyToken, clearChatHistory);
 router.get('/:lessonId/quiz/generate', verifyToken, generateQuizForLesson);
 
 // Story narration (audio) and concept/grammar explainer video (slides + audio)

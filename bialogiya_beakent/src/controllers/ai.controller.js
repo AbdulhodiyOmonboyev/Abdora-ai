@@ -1,6 +1,6 @@
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
-const { chatWithAI } = require('../services/ai/chatAI.service');
+const { chatWithAI, generateFallbackChatReply } = require('../services/ai/chatAI.service');
 const { generateQuiz } = require('../services/ai/lessonAI.service');
 const { synthesizeSpeech, MIME_TYPE: TTS_MIME_TYPE } = require('../services/ai/geminiTts.service');
 const { synthesizeWithClonedVoice } = require('../services/ai/voiceClone.service');
@@ -290,7 +290,11 @@ const chatMessage = async (req, res, next) => {
       aiReply = await chatWithAI(lesson, messages, message, effectiveStyle, effectiveLang, aiPreferences);
     } catch (chatErr) {
       console.warn('chatWithAI error, using fallback:', chatErr.message);
-      aiReply = `Assalomu alaykum! "${lesson.title}" mavzusi bo'yicha savolingiz qabul qilindi. Mavzu yuzasidan qo'shimcha savollaringiz bo'lsa, marhamat so'rashingiz mumkin.`;
+      aiReply = generateFallbackChatReply(lesson, message, effectiveLang);
+    }
+
+    if (!aiReply || typeof aiReply !== 'string' || !aiReply.trim()) {
+      aiReply = generateFallbackChatReply(lesson, message, effectiveLang);
     }
     messages.push({ role: 'assistant', content: aiReply, timestamp: new Date() });
 
@@ -317,11 +321,26 @@ const chatMessage = async (req, res, next) => {
       tokensOut
     }).catch(() => {});
 
-    return success(res, { reply: aiReply, chatId: chat?.id || 'temp' });
+    return success(res, {
+      reply: aiReply,
+      content: aiReply,
+      message: aiReply,
+      chatId: chat?.id || 'temp'
+    });
   } catch (err) {
     console.error('chatMessage error:', err.message);
     return error(res, 'Xabar yuborishda xatolik yuz berdi: ' + err.message, 500);
   }
+};
+
+const clearChatHistory = async (req, res, next) => {
+  try {
+    const { lessonId } = req.params;
+    await prisma.aIChat.deleteMany({
+      where: { lessonId, studentId: req.user.userId },
+    });
+    return success(res, null, 'Chat tarixi tozalandi');
+  } catch (err) { next(err); }
 };
 
 const getChatHistory = async (req, res, next) => {
@@ -367,6 +386,6 @@ const markNotifRead = async (req, res, next) => {
 };
 
 module.exports = {
-  chatMessage, getChatHistory, generateQuizForLesson, getNotifications, markNotifRead,
+  chatMessage, getChatHistory, clearChatHistory, generateQuizForLesson, getNotifications, markNotifRead,
   getStoryAudio, getVoiceAudio, generateExplainerVideo, getExplainerVideo, getExplainerSlideAudio, getExplainerSlideImage,
 };
