@@ -48,6 +48,7 @@
   --text-primary: #111827;
   --text-secondary: #667085;
   --text-muted: #98A2B3;
+  --heading-color: #111827;
 
   /* Borders & Dividers */
   --border: #E5E7EB;
@@ -143,9 +144,10 @@
   --button-hover: #FF8133;
   --button-text: #FFFFFF;
 
-  --text-primary: #F8FAFC;
+  --text-primary: #FFFFFF;
   --text-secondary: #94A3B8;
   --text-muted: #64748B;
+  --heading-color: #FFFFFF;
 
   --border: #223047;
   --divider: #1E2D42;
@@ -242,8 +244,50 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', 'DM Sans', sans-serif;
     letter-spacing: -0.01em;
-    color: var(--text-primary);
+    color: var(--heading-color, var(--text-primary));
     line-height: 1.2;
+  }
+
+  .dark h1:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]):not(.home-cta h2),
+  .dark h2:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]):not(.home-cta h2),
+  .dark h3:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  .dark h4:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  .dark h5:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  .dark h6:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  [data-theme="dark"] h1:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]):not(.home-cta h2),
+  [data-theme="dark"] h2:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]):not(.home-cta h2),
+  [data-theme="dark"] h3:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  [data-theme="dark"] h4:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  [data-theme="dark"] h5:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  [data-theme="dark"] h6:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  [data-theme="amoled"] h1:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]):not(.home-cta h2),
+  [data-theme="amoled"] h2:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]):not(.home-cta h2),
+  [data-theme="amoled"] h3:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  [data-theme="amoled"] h4:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  [data-theme="amoled"] h5:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  [data-theme="amoled"] h6:not(.gradient-text):not([class*="gradient"]):not([class*="text-primary"]):not([class*="text-amber"]):not([class*="text-emerald"]):not([class*="text-red"]):not([class*="text-blue"]):not([class*="text-yellow"]),
+  .dark .panel-title,
+  .dark .modal-title,
+  .dark .page-header-title,
+  .dark .card-title,
+  .dark .section-title,
+  .dark .dashboard-header h1,
+  .dark .dashboard-header-plain h1,
+  [data-theme="dark"] .panel-title,
+  [data-theme="dark"] .modal-title,
+  [data-theme="dark"] .page-header-title,
+  [data-theme="dark"] .card-title,
+  [data-theme="dark"] .section-title,
+  [data-theme="dark"] .dashboard-header h1,
+  [data-theme="dark"] .dashboard-header-plain h1,
+  [data-theme="amoled"] .panel-title,
+  [data-theme="amoled"] .modal-title,
+  [data-theme="amoled"] .page-header-title,
+  [data-theme="amoled"] .card-title,
+  [data-theme="amoled"] .section-title,
+  [data-theme="amoled"] .dashboard-header h1,
+  [data-theme="amoled"] .dashboard-header-plain h1 {
+    color: #fff !important;
   }
 
   #root {

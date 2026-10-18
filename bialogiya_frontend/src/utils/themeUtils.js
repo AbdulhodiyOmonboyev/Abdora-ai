@@ -244,6 +244,7 @@ export const buildThemeVars = (values = {}) => {
     'button-hover': normalized.buttonHover,
     'button-text': normalized.buttonText,
     'text-primary': normalized.textPrimary,
+    'heading-color': isDarkColor(normalized.background) ? '#FFFFFF' : (normalized.headingColor || normalized.textPrimary),
     'text-secondary': normalized.textSecondary,
     'text-muted': normalized.textMuted,
     border: normalized.borderColor,
@@ -262,12 +263,14 @@ export const buildThemeVars = (values = {}) => {
 };
 
 export const applyThemeVars = (values = {}, mode = 'light') => {
+  const isDark = mode === 'dark' || mode === 'amoled' || isDarkColor(values.background || '#FFFFFF');
   const themeVars = buildThemeVars(values);
   const root = document.documentElement;
   Object.entries(themeVars).forEach(([key, value]) => {
     root.style.setProperty(`--${key}`, value);
   });
-  root.classList.toggle('dark', mode === 'dark');
+  root.style.setProperty('--heading-color', isDark ? '#FFFFFF' : (themeVars['text-primary'] || '#111827'));
+  root.classList.toggle('dark', isDark);
   root.dataset.theme = mode;
 };
 
@@ -327,7 +330,7 @@ export const themePresets = [
       buttonColor: '#FF6A00',
       buttonHover: '#FF8133',
       buttonText: '#FFFFFF',
-      textPrimary: '#F8FAFC',
+      textPrimary: '#FFFFFF',
       textSecondary: '#94A3B8',
       textMuted: '#64748B',
       borderColor: '#223047',
@@ -358,7 +361,7 @@ export const themePresets = [
       buttonColor: '#5B8DEF',
       buttonHover: '#3B82F6',
       buttonText: '#FFFFFF',
-      textPrimary: '#F8FAFC',
+      textPrimary: '#FFFFFF',
       textSecondary: '#CBD5E1',
       textMuted: '#94A3B8',
       borderColor: '#242424',
@@ -575,7 +578,7 @@ export const themePresets = [
       buttonColor: '#7C3AED',
       buttonHover: '#6D28D9',
       buttonText: '#F8FAFC',
-      textPrimary: '#E2E8F0',
+      textPrimary: '#FFFFFF',
       textSecondary: '#A5B4FC',
       textMuted: '#94A3B8',
       borderColor: '#1F2937',
@@ -668,7 +671,7 @@ export const themePresets = [
       buttonColor: '#5865F2',
       buttonHover: '#4B61E1',
       buttonText: '#FFFFFF',
-      textPrimary: '#E6EDF3',
+      textPrimary: '#FFFFFF',
       textSecondary: '#A5B4FC',
       textMuted: '#94A3B8',
       borderColor: '#1F2937',
@@ -730,7 +733,7 @@ export const themePresets = [
       buttonColor: '#81A1C1',
       buttonHover: '#5E81AC',
       buttonText: '#ECEFF4',
-      textPrimary: '#ECEFF4',
+      textPrimary: '#FFFFFF',
       textSecondary: '#D8DEE9',
       textMuted: '#A3BE8C',
       borderColor: '#4C566A',
@@ -761,7 +764,7 @@ export const themePresets = [
       buttonColor: '#8B5CF6',
       buttonHover: '#7C3AED',
       buttonText: '#F8FAFC',
-      textPrimary: '#F8FAFC',
+      textPrimary: '#FFFFFF',
       textSecondary: '#CBD5E1',
       textMuted: '#94A3B8',
       borderColor: '#2E2F49',
