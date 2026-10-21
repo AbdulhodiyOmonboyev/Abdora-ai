@@ -101,10 +101,18 @@ app.get('/api/health', (req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`\n[Server] Abdora AI Server running on http://localhost:${PORT}`);
   console.log(`[Server] Environment: ${process.env.NODE_ENV}`);
   console.log(`[Server] OpenAI Model: ${process.env.OPENAI_MODEL || 'gpt-4o'}\n`);
+
+  // Ensure default center and admin account exist
+  try {
+    const { seed } = require('./src/utils/seed');
+    await seed();
+  } catch (err) {
+    console.error('[Seed Error]:', err.message);
+  }
 
   // Anti-sleep funksiyasi: Har 2 minutda server o'ziga o'zi so'rov yuborib turadi
   antiSleepService.start({ port: PORT });
