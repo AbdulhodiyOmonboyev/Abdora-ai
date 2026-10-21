@@ -794,11 +794,25 @@ const getStudents = async (req, res, next) => {
 
 const getGroups = async (req, res, next) => {
   try {
-    const ownBranchIds = await getOwnBranchIds(req.user);
+    let where = { isActive: true };
+    if (req.user.role !== 'admin' && req.user.centerId) {
+      where.centerId = req.user.centerId;
+    }
+    if (req.query.branchId) {
+      where.branchId = req.query.branchId;
+    } else if (req.user.role === 'reception') {
+      const ownBranchIds = await getOwnBranchIds(req.user);
+      if (ownBranchIds && ownBranchIds.length > 0) {
+        where.OR = [
+          { branchId: { in: ownBranchIds } },
+          { branchId: null },
+          { branch: { receptionId: req.user.userId } },
+        ];
+      }
+    }
+
     const groups = await prisma.group.findMany({
-      where: ownBranchIds
-        ? { centerId: req.user.centerId, branchId: { in: ownBranchIds } }
-        : {},
+      where,
       include: { teacher: { select: { id: true, name: true } }, _count: { select: { students: true, lessons: true } } },
       orderBy: { createdAt: 'desc' },
     });

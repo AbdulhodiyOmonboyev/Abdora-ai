@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Phone, User, Tag, MapPin, Calendar, Clock, Snowflake,
   Archive, UserPlus, MessageSquare, ChevronDown, RefreshCw,
-  Edit3, Check, X, Trash2, Plus, UserCheck, TrendingUp,
+  Edit3, Check, Copy, X, Trash2, Plus, UserCheck, TrendingUp,
   Camera, Send, Users, Globe, Pin, FileText, CheckCircle2,
 } from 'lucide-react';
 import api from '../../config/axios';
@@ -54,6 +54,16 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
   const [activityForm, setActivityForm] = useState({ type: 'call', content: '', scheduledAt: '' });
   const [convertOpen, setConvertOpen] = useState(false);
   const [convertForm, setConvertForm] = useState({ groupId: '', startDate: '' });
+  const [convertedResult, setConvertedResult] = useState(null);
+  const [copiedField, setCopiedField] = useState(null);
+
+  const copyText = (txt, field) => {
+    if (!txt) return;
+    navigator.clipboard.writeText(String(txt));
+    setCopiedField(field);
+    toast.success('Nusxa olindi!');
+    setTimeout(() => setCopiedField(null), 2000);
+  };
   const [showStatus, setShowStatus] = useState(false);
 
   const { data: lead, isLoading } = useQuery({
@@ -68,7 +78,7 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
     enabled: !!leadId && open && tab === 'activities',
   });
 
-  const { data: groups = [] } = useQuery({
+  const { data: groups = [], isLoading: groupsLoading, refetch: refetchGroups } = useQuery({
     queryKey: ['groups-list'],
     queryFn: async () => {
       try {
@@ -76,11 +86,15 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
         const list = res.data?.data || res.data || [];
         if (Array.isArray(list) && list.length > 0) return list;
       } catch (_) {}
-      const fallback = await api.get('/groups');
-      const list = fallback.data?.data || fallback.data || [];
-      return Array.isArray(list) ? list : [];
+      try {
+        const fallback = await api.get('/groups');
+        const list = fallback.data?.data || fallback.data || [];
+        if (Array.isArray(list) && list.length > 0) return list;
+      } catch (_) {}
+      return [];
     },
-    enabled: convertOpen,
+    enabled: !!open || convertOpen,
+    staleTime: 30000,
   });
 
   const invalidate = () => {
@@ -111,7 +125,8 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
       invalidate();
       toast.success("Talabaga aylantirildi!");
       setConvertOpen(false);
-      onConverted?.(res.data?.data);
+      const data = res.data?.data || {};
+      setConvertedResult(data);
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Xato'),
   });
@@ -146,7 +161,13 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
         footer={
           lead?.status !== 'enrolled' ? (
             <button
-              onClick={() => setConvertOpen(true)}
+              onClick={() => {
+                setConvertForm({
+                  groupId: groups.length === 1 ? (groups[0].id || groups[0]._id) : '',
+                  startDate: new Date().toISOString().split('T')[0],
+                });
+                setConvertOpen(true);
+              }}
               className="btn-primary w-full justify-center"
             >
               <UserPlus size={15} />
@@ -448,17 +469,56 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
           </div>
 
           <div>
-            <label className="form-label">Guruhni tanlang *</label>
-            <select value={convertForm.groupId}
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="form-label mb-0">Guruhni tanlang *</label>
+              {groupsLoading && (
+                <span className="text-xs text-muted flex items-center gap-1 font-normal">
+                  <RefreshCw size={11} className="animate-spin" /> Guruhlar yuklanmoqda...
+                </span>
+              )}
+            </div>
+            <select
+              value={convertForm.groupId}
               onChange={e => setConvertForm(f => ({ ...f, groupId: e.target.value }))}
-              className="input-field">
-              <option value="">— Guruh tanlang —</option>
+              className="input-field"
+              disabled={groupsLoading}
+            >
+              {groupsLoading ? (
+                <option value="">Guruhlar yuklanmoqda...</option>
+              ) : groups.length === 0 ? (
+                <option value="">— Guruhlar topilmadi —</option>
+              ) : (
+                <option value="">— Guruh tanlang (${groups.length} ta mavjud) —</option>
+              )}
               {groups.map(g => (
-                <option key={g.id} value={g.id}>
-                  {g.name} {g.teacher?.name ? `(${g.teacher.name})` : ''} {g.monthlyFee ? `— ${g.monthlyFee.toLocaleString()} so'm` : ''}
+                <option key={g.id || g._id} value={g.id || g._id}>
+                  {g.name}
+                  {g.teacher?.name ? ` • O'qituvchi: ${g.teacher.name}` : ''}
+                  {g.branch?.name ? ` • ${g.branch.name}` : ''}
+                  {g.monthlyFee ? ` • ${Number(g.monthlyFee).toLocaleString()} so'm` : ''}
                 </option>
               ))}
             </select>
+            {groups.length === 0 && !groupsLoading && (
+              <div
+                className="mt-2 p-3 rounded-xl text-xs space-y-1.5"
+                style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+              >
+                <div className="font-semibold text-rose-500 flex items-center gap-1.5">
+                  <X size={14} /> Markazda faol guruhlar topilmadi!
+                </div>
+                <p style={{ color: 'var(--text-secondary)' }}>
+                  Lidni talabaga aylantirish uchun avval faol guruh yaratishingiz kerak.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => refetchGroups()}
+                  className="text-primary hover:underline flex items-center gap-1 font-medium mt-1 cursor-pointer"
+                >
+                  <RefreshCw size={11} /> Qayta tekshirish
+                </button>
+              </div>
+            )}
           </div>
 
           <div>
@@ -473,6 +533,73 @@ export default function LeadDetail({ leadId, open, onClose, onConverted }) {
             <div className="flex items-center gap-2"><CheckCircle2 size={13} className="text-green-600 flex-shrink-0" /> <span>Talaba avtomatik login va parol oladi</span></div>
             <div className="flex items-center gap-2"><CheckCircle2 size={13} className="text-green-600 flex-shrink-0" /> <span>Lid statusi "O'qishga kirdi" ga o'tadi</span></div>
             <div className="flex items-center gap-2"><CheckCircle2 size={13} className="text-green-600 flex-shrink-0" /> <span>Talaba tanlangan guruhga qo'shiladi</span></div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Converted Student Credentials Modal ── */}
+      <Modal
+        open={!!convertedResult}
+        onClose={() => {
+          const res = convertedResult;
+          setConvertedResult(null);
+          onConverted?.(res);
+        }}
+        title="Talaba muvaffaqiyatli ro'yxatdan o'tkazildi!"
+        subtitle="O'quvchining tizimga kirish login va paroli"
+        size="sm"
+        footer={
+          <button
+            onClick={() => {
+              const res = convertedResult;
+              setConvertedResult(null);
+              onConverted?.(res);
+            }}
+            className="btn-primary w-full"
+          >
+            Tushunarli
+          </button>
+        }
+      >
+        <div className="space-y-3 py-1">
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300">
+            Talaba yaratildi va tanlangan guruhga biriktirildi. Ushbu ma'lumotlarni o'quvchiga taqdim eting:
+          </div>
+
+          <div className="space-y-2">
+            <div className="p-3 rounded-xl flex items-center justify-between" style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)' }}>
+              <div>
+                <div className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>Login (Username)</div>
+                <div className="font-mono font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                  {convertedResult?.credentials?.username || '—'}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyText(convertedResult?.credentials?.username, 'username')}
+                className="btn-secondary text-xs px-2.5 py-1.5 flex items-center gap-1"
+              >
+                {copiedField === 'username' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                {copiedField === 'username' ? 'Nusxalandi' : 'Nusxa'}
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl flex items-center justify-between" style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)' }}>
+              <div>
+                <div className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>Parol</div>
+                <div className="font-mono font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                  {convertedResult?.credentials?.password || '—'}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyText(convertedResult?.credentials?.password, 'password')}
+                className="btn-secondary text-xs px-2.5 py-1.5 flex items-center gap-1"
+              >
+                {copiedField === 'password' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                {copiedField === 'password' ? 'Nusxalandi' : 'Nusxa'}
+              </button>
+            </div>
           </div>
         </div>
       </Modal>

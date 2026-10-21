@@ -16,10 +16,7 @@ const assertGroupAccess = async (groupId, user) => {
     return null;
   }
   if (user.role === 'manager' && group.centerId === user.centerId) {
-    const ownBranchIds = await getOwnBranchIds(user);
-    if (!group.branchId || ownBranchIds?.includes(group.branchId) || ownBranchIds.length === 0) {
-      return null;
-    }
+    return null;
   }
   if (!group.branchId) return { message: "Ruxsat yo'q", status: 403 };
   const ownBranchIds = await getOwnBranchIds(user);
@@ -136,21 +133,39 @@ const getMyGroups = async (req, res, next) => {
 
 const getAllGroups = async (req, res, next) => {
   try {
-    let where = {};
-    if (req.user.role === 'teacher') where = { teacherId: req.user.userId };
-    else if (req.user.role === 'reception') where = { branch: { receptionId: req.user.userId } };
-    if (req.user.role !== 'admin') {
-      where = { ...where, centerId: req.user.centerId };
-      if (req.user.role === 'manager') {
-        const ownBranchIds = await getOwnBranchIds(req.user);
-        if (ownBranchIds && ownBranchIds.length > 0) {
-          where.branchId = { in: ownBranchIds };
-        }
+    let where = { isActive: true };
+
+    if (req.user.role === 'teacher') {
+      where.teacherId = req.user.userId;
+    } else if (req.user.role === 'reception') {
+      const ownBranchIds = await getOwnBranchIds(req.user);
+      if (ownBranchIds && ownBranchIds.length > 0) {
+        where.OR = [
+          { branchId: { in: ownBranchIds } },
+          { branchId: null },
+          { branch: { receptionId: req.user.userId } },
+        ];
       }
     }
+
+    if (req.user.role !== 'admin') {
+      if (req.user.centerId) {
+        where.centerId = req.user.centerId;
+      }
+      if (req.query.branchId) {
+        where.branchId = req.query.branchId;
+      }
+    }
+
     const groups = await prisma.group.findMany({
-      where: { ...where, isActive: true },
-      include: { teacher: { select: { id: true, name: true } }, branch: { select: { id: true, name: true } }, students: { select: { id: true, name: true } } },
+      where,
+      include: {
+        teacher: { select: { id: true, name: true, phone: true } },
+        branch: { select: { id: true, name: true } },
+        students: { select: { id: true, name: true } },
+        _count: { select: { students: true } },
+      },
+      orderBy: { name: 'asc' },
     });
     return success(res, groups);
   } catch (err) { next(err); }

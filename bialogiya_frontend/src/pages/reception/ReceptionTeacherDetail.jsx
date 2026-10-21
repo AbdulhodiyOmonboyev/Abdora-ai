@@ -84,6 +84,13 @@ export default function ReceptionTeacherDetail() {
     queryFn: () => api.get(`/admin/teachers/${id}/overview`).then(r => r.data?.data || {}),
   });
 
+  const { data: branches = [] } = useQuery({
+    queryKey: ['branches-list'],
+    queryFn: () => api.get(user?.role === 'reception' ? '/reception/branches' : '/admin/branches')
+      .then(r => r.data?.data || r.data || [])
+      .catch(() => []),
+  });
+
   // Payout Mutation
   const payoutMutation = useMutation({
     mutationFn: (payload) => api.post(`/admin/teachers/${id}/payout`, payload),
@@ -149,6 +156,7 @@ export default function ReceptionTeacherDetail() {
     setEditProfileForm({
       name: t.name || '',
       phone: t.phone || '+998 ',
+      branchId: t.branchId || t.branch?.id || '',
       birthDate: bDateStr,
       age: t.age ? String(t.age) : '',
       gender: t.gender || 'male',
@@ -164,6 +172,7 @@ export default function ReceptionTeacherDetail() {
     editProfileMutation.mutate({
       name: editProfileForm.name,
       phone: cleanPhone(editProfileForm.phone) || null,
+      branchId: editProfileForm.branchId || null,
       birthDate: editProfileForm.birthDate || null,
       age: editProfileForm.age ? Number(editProfileForm.age) : null,
       gender: editProfileForm.gender || null,
@@ -1110,6 +1119,22 @@ export default function ReceptionTeacherDetail() {
                     placeholder="+998 90 123 45 67"
                   />
                 </div>
+
+                {branches?.length > 0 && (
+                  <div>
+                    <label className="form-label">Markaz (Filial)</label>
+                    <select
+                      value={editProfileForm.branchId || ''}
+                      onChange={(e) => setEditProfileForm((f) => ({ ...f, branchId: e.target.value }))}
+                      className="input-field"
+                    >
+                      <option value="">Filial tanlanmagan</option>
+                      {branches.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>

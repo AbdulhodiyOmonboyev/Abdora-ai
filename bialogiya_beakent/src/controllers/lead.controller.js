@@ -203,9 +203,15 @@ const convertLead = async (req, res, next) => {
     }
 
     // Generate credentials
-    const username = generateUsername(lead.name, lead.phone);
+    let username = generateUsername(lead.name, lead.phone);
     const rawPass = generatePassword(lead.phone);
     const passwordHash = await bcrypt.hash(rawPass, 10);
+
+    // Prevent unique constraint collision on username
+    const existingUser = await prisma.user.findUnique({ where: { username } });
+    if (existingUser) {
+      username = `${username}_${Math.floor(100 + Math.random() * 900)}`;
+    }
 
     // Create student user
     const student = await prisma.user.create({
@@ -217,7 +223,7 @@ const convertLead = async (req, res, next) => {
         role: 'student',
         groupId: groupId || null,
         branchId: lead.branchId || group?.branchId || null,
-        centerId: lead.centerId || null,
+        centerId: lead.centerId || req.user.centerId || group?.centerId || null,
         studyLocation: lead.interestedIn || null,
         createdAt: startDate ? new Date(startDate) : new Date(),
       },

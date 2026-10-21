@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Copy, X, UserCheck, Pencil, Trash2, Save, Users, GraduationCap, Phone, BookOpen, ShieldCheck, Eye, ArrowUpRight, Wallet } from 'lucide-react';
+import { Plus, Copy, X, UserCheck, Pencil, Trash2, Save, Users, GraduationCap, Phone, BookOpen, ShieldCheck, Eye, ArrowUpRight, Wallet, Building2 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -59,7 +59,7 @@ export default function AdminTeachers() {
   const location = useLocation();
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(EMPTY_TEACHER_FORM);
-  const [newCreds, setNewCreds] = useState(null);
+  const [createdResult, setCreatedResult] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -88,8 +88,8 @@ export default function AdminTeachers() {
     }),
     onSuccess: ({ data }) => {
       qc.invalidateQueries({ queryKey: ['all-teachers'] });
-      setNewCreds(data.data?.credentials);
-      setForm(EMPTY_TEACHER_FORM);
+      setCreatedResult(data.data);
+
       toast.success("O'qituvchi muvaffaqiyatli qo'shildi");
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Xato'),
@@ -140,6 +140,7 @@ export default function AdminTeachers() {
       gender: t.gender || 'male',
       studyLocation: t.studyLocation || '',
       address: t.address || '',
+      branchId: t.branchId || t.branch?.id || '',
       salaryType: t.salaryType || 'percent',
       salaryShare: t.salaryShare ?? 50,
       fixedSalary: t.fixedSalary || '',
@@ -171,7 +172,14 @@ export default function AdminTeachers() {
         title="O'qituvchilar"
         subtitle="Markaz o'qituvchilari, ularning guruhlari va dars faoliyati"
         actions={
-          <button onClick={() => setShowCreate(true)} className="btn-primary">
+          <button onClick={() => {
+            setCreatedResult(null);
+            setForm({
+              ...EMPTY_TEACHER_FORM,
+              branchId: branches?.length > 0 ? branches[0].id : '',
+            });
+            setShowCreate(true);
+          }} className="btn-primary">
             <Plus size={16} /> O'qituvchi qo'shish
           </button>
         }
@@ -196,6 +204,7 @@ export default function AdminTeachers() {
             <thead>
               <tr>
                 <th>O'qituvchi</th>
+                <th>Filial</th>
                 <th>Telefon</th>
                 <th>Guruhlar</th>
                 <th>O'quvchilar</th>
@@ -210,7 +219,7 @@ export default function AdminTeachers() {
                 if (isEditing) {
                   return (
                     <tr key={t.id} style={{ backgroundColor: 'var(--secondary-background)' }}>
-                      <td colSpan={7} className="p-4">
+                      <td colSpan={8} className="p-4">
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
                             <span className="font-semibold text-sm" style={{ color: 'var(--primary)' }}>Tahrirlash: {t.name}</span>
@@ -218,7 +227,7 @@ export default function AdminTeachers() {
                               <X size={15} />
                             </button>
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                             <div>
                               <label className="form-label">Ismi *</label>
                               <input
@@ -236,6 +245,19 @@ export default function AdminTeachers() {
                                 className="input-field font-mono"
                                 placeholder="+998 90 123 45 67"
                               />
+                            </div>
+                            <div>
+                              <label className="form-label">Filial</label>
+                              <select
+                                value={editForm.branchId || ''}
+                                onChange={e => setEditForm(f => ({ ...f, branchId: e.target.value }))}
+                                className="input-field"
+                              >
+                                <option value="">Filial tanlanmagan</option>
+                                {branches.map(b => (
+                                  <option key={b.id} value={b.id}>{b.name}</option>
+                                ))}
+                              </select>
                             </div>
                             <div>
                               <label className="form-label">Email</label>
@@ -410,6 +432,7 @@ export default function AdminTeachers() {
                                 data: {
                                   ...editForm,
                                   phone: cleanPhone(editForm.phone),
+                                  branchId: editForm.branchId || null,
                                   age: editForm.age ? Number(editForm.age) : null,
                                   gender: editForm.gender || null,
                                   birthDate: editForm.birthDate || null,
@@ -475,6 +498,16 @@ export default function AdminTeachers() {
                           )}
                         </div>
                       </button>
+                    </td>
+                    <td>
+                      {t.branch?.name ? (
+                        <span className="badge badge-gray text-xs font-semibold flex items-center gap-1 w-fit" title={`Filial: ${t.branch.name}`}>
+                          <Building2 size={11} className="text-[var(--primary)] flex-shrink-0" />
+                          <span className="truncate max-w-[130px]">{t.branch.name}</span>
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[var(--text-muted)]">—</span>
+                      )}
                     </td>
                     <td>
                       <span className="text-sm font-mono" style={{ color: 'var(--text-secondary)' }}>
@@ -550,7 +583,14 @@ export default function AdminTeachers() {
           title={search ? "O'qituvchi topilmadi" : "Hozircha o'qituvchilar yo'q"}
           description={search ? `"${search}" bo'yicha hech qanday o'qituvchi mavjud emas` : "Tizimga yangi o'qituvchi qo'shing"}
           action={!search && (
-            <button onClick={() => setShowCreate(true)} className="btn-primary btn-sm">
+            <button onClick={() => {
+              setCreatedResult(null);
+              setForm({
+                ...EMPTY_TEACHER_FORM,
+                branchId: branches?.length > 0 ? branches[0].id : '',
+              });
+              setShowCreate(true);
+            }} className="btn-primary btn-sm">
               <Plus size={14} /> O'qituvchi qo'shish
             </button>
           )}
@@ -600,6 +640,17 @@ export default function AdminTeachers() {
               </div>
 
               <div className="space-y-3 mb-4">
+                {selectedTeacher.branch?.name && (
+                  <div className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: 'var(--secondary-background)' }}>
+                    <div className="flex items-center gap-2.5">
+                      <Building2 size={15} style={{ color: 'var(--primary)' }} />
+                      <div>
+                        <div className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Filial</div>
+                        <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{selectedTeacher.branch.name}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: 'var(--secondary-background)' }}>
                   <div className="flex items-center gap-2.5">
                     <Phone size={15} style={{ color: 'var(--primary)' }} />
@@ -743,7 +794,7 @@ export default function AdminTeachers() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="modal-backdrop"
-            onClick={e => e.target === e.currentTarget && setShowCreate(false)}
+            onClick={e => { if (e.target === e.currentTarget) { setShowCreate(false); setCreatedResult(null); setForm(EMPTY_TEACHER_FORM); } }}
           >
             <motion.div
               initial={{ scale: 0.96, y: 10, opacity: 0 }}
@@ -756,12 +807,12 @@ export default function AdminTeachers() {
                   <h2 className="modal-title">O'qituvchi qo'shish</h2>
                   <p className="modal-subtitle">Yangi o'qituvchi hisobi va maosh shartlarini belgilash</p>
                 </div>
-                <button onClick={() => { setShowCreate(false); setNewCreds(null); }} className="btn-icon flex-shrink-0">
+                <button onClick={() => { setShowCreate(false); setCreatedResult(null); setForm(EMPTY_TEACHER_FORM); }} className="btn-icon flex-shrink-0">
                   <X size={18} />
                 </button>
               </div>
 
-              {newCreds ? (
+              {createdResult ? (
                 <div className="space-y-4 overflow-y-auto px-1">
                   <div className="p-4 rounded-xl text-center" style={{ backgroundColor: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
                     <ShieldCheck size={36} className="mx-auto mb-2" style={{ color: 'var(--success)' }} />
@@ -771,16 +822,21 @@ export default function AdminTeachers() {
 
                   <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: 'var(--secondary-background)', border: '1px solid var(--border)' }}>
                     {[
-                      ['Login', newCreds.username],
-                      ['Parol', newCreds.password],
-                      ['Filial', branches?.find(b => b.id === form.branchId)?.name || 'Standart filial'],
+                      ['Login', createdResult?.credentials?.username || '—'],
+                      ['Parol', createdResult?.credentials?.password || '—'],
+                      [
+                        'Filial',
+                        createdResult?.user?.branch?.name ||
+                        branches?.find(b => b.id === (createdResult?.user?.branchId || form.branchId))?.name ||
+                        'Standart filial'
+                      ],
                       [
                         'Maosh sharti',
-                        form.salaryType === 'fixed'
-                          ? `${Number(form.fixedSalary || 0).toLocaleString()} so'm/oy`
-                          : form.salaryType === 'hourly'
-                          ? `${Number(form.hourlyRate || 0).toLocaleString()} so'm/soat`
-                          : `${form.salaryShare || 50}% ulush (to'lovlardan)`,
+                        (createdResult?.user?.salaryType || form.salaryType) === 'fixed'
+                          ? `${Number(createdResult?.user?.fixedSalary ?? form.fixedSalary ?? 0).toLocaleString()} so'm/oy`
+                          : (createdResult?.user?.salaryType || form.salaryType) === 'hourly'
+                          ? `${Number(createdResult?.user?.hourlyRate ?? form.hourlyRate ?? 0).toLocaleString()} so'm/soat`
+                          : `${createdResult?.user?.salaryShare ?? form.salaryShare ?? 50}% ulush (to'lovlardan)`,
                       ],
                     ].map(([label, val]) => (
                       <div key={label} className="flex items-center justify-between">
@@ -800,8 +856,11 @@ export default function AdminTeachers() {
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
                       onClick={() => {
-                        setNewCreds(null);
-                        setForm(EMPTY_TEACHER_FORM);
+                        setCreatedResult(null);
+                        setForm({
+                          ...EMPTY_TEACHER_FORM,
+                          branchId: branches?.length > 0 ? branches[0].id : '',
+                        });
                       }}
                       className="btn-ghost w-full justify-center"
                     >
@@ -809,7 +868,8 @@ export default function AdminTeachers() {
                     </button>
                     <button
                       onClick={() => {
-                        setNewCreds(null);
+                        setCreatedResult(null);
+                        setForm(EMPTY_TEACHER_FORM);
                         setShowCreate(false);
                       }}
                       className="btn-primary w-full justify-center"
@@ -932,11 +992,11 @@ export default function AdminTeachers() {
                       <div>
                         <label className="form-label">Markaz (Filial)</label>
                         <select
-                          value={form.branchId || ''}
+                          value={form.branchId || (branches.length === 1 ? branches[0].id : '')}
                           onChange={e => setForm(f => ({ ...f, branchId: e.target.value }))}
                           className="input-field"
                         >
-                          <option value="">Standart filial</option>
+                          {branches.length > 1 && <option value="">Filialni tanlang...</option>}
                           {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
                       </div>
