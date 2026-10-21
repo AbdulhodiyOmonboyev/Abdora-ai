@@ -18,6 +18,7 @@ import StoryAudioPlayer from '../../components/ai/StoryAudioPlayer';
 import ExplainerVideoPlayer from '../../components/ai/ExplainerVideoPlayer';
 import SpeakingPractice from '../../components/ai/SpeakingPractice';
 import BananaAiIllustrationCard from '../../components/ai/BananaAiIllustrationCard';
+import TushunBuddySection from '../../components/ai/TushunBuddySection';
 
 
 const TABS = [
@@ -592,7 +593,7 @@ function AIChatSection({ lessonId, i18nLanguage }) {
   const studentAiPrefs = user?.permissions?.aiPreferences || {};
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [style, setStyle] = useState(studentAiPrefs.style || 'normal');
+  const [style, setStyle] = useState(studentAiPrefs.style || 'tushun_friend');
   const [lang, setLang] = useState(studentAiPrefs.language || i18nLanguage || 'uz');
   const bottomRef = useRef(null);
 
@@ -663,7 +664,7 @@ function AIChatSection({ lessonId, i18nLanguage }) {
       {/* Controls */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <select value={style} onChange={e => setStyle(e.target.value)} className="input-field text-xs py-1.5 flex-1 min-w-[130px]">
-          {CHAT_STYLES.map(s => <option key={s.id} value={s.id}>{t(`explain_${s.id === 'normal' ? 'normal' : s.id === 'like_im_10' ? 'kid' : s.id === 'emoji' ? 'emoji' : s.id === 'step_by_step' ? 'steps' : 'examples'}`)}</option>)}
+          {CHAT_STYLES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
         </select>
         <select value={lang} onChange={e => setLang(e.target.value)} className="input-field text-xs py-1.5 flex-1 min-w-[90px]">
           <option value="uz">O'zbek</option>
@@ -1025,6 +1026,9 @@ export default function LessonDetail() {
                 </div>
               )}
             </div>
+          )}
+          {activeTab === 'tushun' && (
+            <TushunBuddySection lesson={lesson} ai={ai} isTeacher={isTeacher} />
           )}
           {activeTab === 'explain' && (
             <div className="space-y-5">

@@ -378,19 +378,19 @@ export default function SpeakingPractice({ lessonId, topic }) {
         className="font-bold text-lg mb-1"
         style={{ color: 'var(--text-primary)' }}
       >
-        Gapirish mashqi
+        Jonli So'zlashuv Do'sti
       </h3>
       <p
         className="text-sm text-center mb-1 max-w-sm"
         style={{ color: 'var(--text-secondary)' }}
       >
-        {topic ? `Mavzu: "${topic}"` : 'AI murabbiy bilan real vaqtda gaplashing'}
+        {topic ? `Mavzu: "${topic}"` : 'Abdora bilan jonli va samimiy suhbat'}
       </p>
       <p
         className="text-xs text-center mb-6 max-w-sm"
         style={{ color: 'var(--text-muted)' }}
       >
-        AI grammatika, talaffuz va nutq xatolaringizni darhol tuzatadi.
+        Xato qilishdan aslo qo'rqmang! Abdora sizni qo'llab-quvvatlaydi va to'g'ri shaklini do'stona ko'rsatadi.
       </p>
 
       {/* Status badge */}

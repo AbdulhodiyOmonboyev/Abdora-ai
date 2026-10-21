@@ -240,7 +240,7 @@ const deleteHomework = async (req, res, next) => {
 
 const generateHomeworkAI = async (req, res, next) => {
   try {
-    const { topic, lessonId, taskCount, difficulty, language } = req.body;
+    const { topic, lessonId, taskCount, difficulty, language, homeworkFormat } = req.body;
     let effectiveTopic = topic;
     let lessonContent = '';
 
@@ -267,12 +267,15 @@ const generateHomeworkAI = async (req, res, next) => {
       lessonContent,
       parseInt(taskCount, 10) || 3,
       difficulty || 'medium',
-      language || 'uz'
+      language || 'uz',
+      homeworkFormat || 'standard'
     );
 
     const model = getModel(true);
     const result = await model.generateContent(prompt);
-    const parsed = JSON.parse(result.response.text());
+    let cleaned = (result?.response?.text ? result.response.text() : '').trim();
+    cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+    const parsed = JSON.parse(cleaned);
 
     return success(res, parsed, 'AI vazifa taklifini muvaffaqiyatli shakllantirdi');
   } catch (err) {

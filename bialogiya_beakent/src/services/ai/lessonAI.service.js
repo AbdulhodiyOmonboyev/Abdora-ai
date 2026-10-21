@@ -53,6 +53,7 @@ const generateLessonAI = async (lessonId, title, content, language = 'uz') => {
           flashcards: parsed.flashcards || [],
           mindMapData: parsed.mindMapData || { nodes: [], edges: [] },
           quizQuestions: parsed.quizQuestions || [],
+          tushunPedagogy: parsed.tushunPedagogy || null,
           generatedAt: new Date().toISOString(),
         },
       },

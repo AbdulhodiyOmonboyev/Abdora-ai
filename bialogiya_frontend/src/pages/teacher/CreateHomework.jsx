@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Upload, Send, Sparkles, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Upload, Send, Sparkles, X, Loader2, CheckCircle2, Heart, Mic, RefreshCw, Layers } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 
@@ -12,6 +12,7 @@ function AiHomeworkModal({ groups = [], currentGroupId, onApply, onClose }) {
   const [customTopic, setCustomTopic] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
   const [taskCount, setTaskCount] = useState(3);
+  const [homeworkFormat, setHomeworkFormat] = useState('tushun_missions'); // 'tushun_missions' | 'standard'
   const [generatedData, setGeneratedData] = useState(null);
 
   const { data: lessons, isLoading: lessonsLoading } = useQuery({
@@ -24,7 +25,11 @@ function AiHomeworkModal({ groups = [], currentGroupId, onApply, onClose }) {
     mutationFn: (payload) => api.post('/homework/generate-ai', payload).then(r => r.data.data),
     onSuccess: (data) => {
       setGeneratedData(data);
-      toast.success('AI vazifa va namunaviy javoblarni tayyorladi!');
+      toast.success(
+        data?.format === 'tushun_missions'
+          ? 'AI bolalar uchun 3 ta qiziqarli missiyani tayyorladi!'
+          : 'AI vazifa va namunaviy javoblarni tayyorladi!'
+      );
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Xatolik yuz berdi'),
   });
@@ -38,19 +43,35 @@ function AiHomeworkModal({ groups = [], currentGroupId, onApply, onClose }) {
       lessonId: selectedLessonId || undefined,
       difficulty,
       taskCount,
+      homeworkFormat,
     });
   };
 
   const handleApply = () => {
     if (!generatedData) return;
     let fullDescription = (generatedData.description || '').trim();
-    if (Array.isArray(generatedData.tasks) && generatedData.tasks.length > 0) {
+
+    if (generatedData.format === 'tushun_missions' && Array.isArray(generatedData.missions)) {
+      fullDescription += '\n\n🎯 TUSHUN MISSIYALARI (Bolalar va Ota-onalar uchun):\n' + generatedData.missions.map(m => (
+        `\n${m.badge || `${m.number}-missiya`}: ${m.title} (${m.points} ball)\n` +
+        `• Ko'rsatma: ${m.instructions}\n` +
+        (m.sampleAnswer ? `• Kutiladigan natija: ${m.sampleAnswer}\n` : '') +
+        (m.criteria ? `• Baholash mezoni: ${m.criteria}` : '')
+      )).join('\n');
+
+      if (generatedData.parentEncouragementTip) {
+        fullDescription += `\n\n👨‍👩‍👧 Ota-onalar uchun eslatma: ${generatedData.parentEncouragementTip}`;
+      }
+      if (generatedData.gradingRubric) {
+        fullDescription += `\n\n⭐ Baholash qoidasi: ${generatedData.gradingRubric}`;
+      }
+    } else if (Array.isArray(generatedData.tasks) && generatedData.tasks.length > 0) {
       fullDescription += '\n\nTopshiriqlar ro\'yxati:\n' + generatedData.tasks.map(t => (
         `${t.number}. [${t.type === 'theory' ? 'Nazariya' : t.type === 'analysis' ? 'Tahlil' : 'Amaliyot'}] ${t.question} (${t.points} ball)\n- Baholash mezoni: ${t.criteria || 'To\'liq va asosli javob'}`
       )).join('\n\n');
-    }
-    if (generatedData.gradingRubric) {
-      fullDescription += '\n\nUmumiy baholash mezoni: ' + generatedData.gradingRubric;
+      if (generatedData.gradingRubric) {
+        fullDescription += '\n\nUmumiy baholash mezoni: ' + generatedData.gradingRubric;
+      }
     }
 
     onApply({
@@ -73,13 +94,55 @@ function AiHomeworkModal({ groups = [], currentGroupId, onApply, onClose }) {
             </div>
             <div>
               <h2 className="font-bold text-base text-gray-800 dark:text-white">AI yordamida uy vazifasi tuzish</h2>
-              <p className="text-xs text-gray-400">Mavzu bo'yicha topshiriqlar va to'g'ri javoblar etalonini oling</p>
+              <p className="text-xs text-gray-400">TUSHUN pedagogikasi yoki standart formatda vazifa shakllantiring</p>
             </div>
           </div>
           <button onClick={onClose} className="btn-ghost p-1.5 rounded-xl text-gray-400"><X size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
+          {/* Format Selector Pill */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Vazifa formati</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setHomeworkFormat('tushun_missions')}
+                className={`p-2.5 rounded-2xl text-xs font-medium border text-left flex items-start gap-2.5 transition-all ${
+                  homeworkFormat === 'tushun_missions'
+                    ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                    : 'border-[var(--border)] bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 hover:border-primary/40'
+                }`}
+              >
+                <div className="w-6 h-6 rounded-lg bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Heart size={13} />
+                </div>
+                <div>
+                  <div className="font-bold">TUSHUN Missiyalari (Tavsiya)</div>
+                  <div className="text-[11px] text-gray-400 line-clamp-1">Teskari dars, audio-lab, erkin kvest</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHomeworkFormat('standard')}
+                className={`p-2.5 rounded-2xl text-xs font-medium border text-left flex items-start gap-2.5 transition-all ${
+                  homeworkFormat === 'standard'
+                    ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                    : 'border-[var(--border)] bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 hover:border-primary/40'
+                }`}
+              >
+                <div className="w-6 h-6 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Layers size={13} />
+                </div>
+                <div>
+                  <div className="font-bold">Standart Akademik</div>
+                  <div className="text-[11px] text-gray-400 line-clamp-1">Nazariy va amaliy savollar</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Guruh</label>
@@ -117,9 +180,9 @@ function AiHomeworkModal({ groups = [], currentGroupId, onApply, onClose }) {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Topshiriqlar soni</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Topshiriqlar / Missiyalar</label>
               <select value={taskCount} onChange={e => setTaskCount(+e.target.value)} className="input-field text-xs py-1.5">
-                <option value={3}>3 ta topshiriq</option>
+                <option value={3}>3 ta asosiy topshiriq</option>
                 <option value={4}>4 ta topshiriq</option>
                 <option value={5}>5 ta topshiriq</option>
               </select>
@@ -134,7 +197,7 @@ function AiHomeworkModal({ groups = [], currentGroupId, onApply, onClose }) {
             {generateMutation.isPending ? (
               <><Loader2 size={14} className="animate-spin" /> AI vazifa tayyorlamoqda...</>
             ) : (
-              <><Sparkles size={14} /> Vazifani shakllantirish</>
+              <><Sparkles size={14} /> {homeworkFormat === 'tushun_missions' ? "TUSHUN Missiyalarini shakllantirish" : "Vazifani shakllantirish"}</>
             )}
           </button>
 
@@ -145,37 +208,63 @@ function AiHomeworkModal({ groups = [], currentGroupId, onApply, onClose }) {
                 <span className="font-bold text-sm text-primary flex items-center gap-1.5">
                   <CheckCircle2 size={16} /> AI taklif qilgan vazifa: {generatedData.title}
                 </span>
-                <span className="badge text-[11px] bg-primary/20 text-primary">Maksimal: {generatedData.maxScore} ball</span>
+                <span className="badge text-[11px] bg-primary/20 text-primary font-bold">Maksimal: {generatedData.maxScore} ball</span>
               </div>
 
-              <div className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap bg-white dark:bg-gray-800 p-3 rounded-xl border border-primary/20">
+              <div className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap bg-white dark:bg-gray-800 p-3 rounded-xl border border-primary/20 leading-relaxed">
                 {generatedData.description}
               </div>
 
-              {/* Tasks and Model Answers for Teacher Checking */}
-              <div className="space-y-2 pt-1">
-                <div className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                  O'qituvchi tekshiruvi uchun namunaviy to'g'ri javoblar:
-                </div>
-                {generatedData.tasks?.map((t, i) => (
-                  <div key={i} className="p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-[var(--border)] text-xs space-y-1">
-                    <div className="font-semibold text-gray-800 dark:text-gray-100 flex items-center justify-between">
-                      <span>{t.number}. {t.question}</span>
-                      <span className="text-primary font-bold">{t.points} ball</span>
-                    </div>
-                    {t.sampleAnswer && (
-                      <div className="text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-2 rounded-lg">
-                        <span className="font-semibold">Namunaviy to'g'ri javob: </span>{t.sampleAnswer}
-                      </div>
-                    )}
-                    {t.criteria && (
-                      <div className="text-gray-500 dark:text-gray-400">
-                        <span className="font-semibold">Mezon: </span>{t.criteria}
-                      </div>
-                    )}
+              {/* TUSHUN Missions Preview */}
+              {generatedData.format === 'tushun_missions' && Array.isArray(generatedData.missions) && (
+                <div className="space-y-2.5 pt-1">
+                  <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1">
+                    <Sparkles size={13} className="text-primary" /> Bolalar uchun 3 ta kreativ missiya:
                   </div>
-                ))}
-              </div>
+                  {generatedData.missions.map((m, i) => (
+                    <div key={i} className="p-3 rounded-xl bg-white dark:bg-gray-800 border border-[var(--border)] text-xs space-y-1.5 shadow-sm">
+                      <div className="font-bold text-gray-800 dark:text-gray-100 flex items-center justify-between">
+                        <span className="text-primary font-semibold">{m.badge || `${m.number}-missiya`}: {m.title}</span>
+                        <span className="badge text-[11px] bg-primary/10 text-primary font-bold">{m.points} ball</span>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-300 leading-normal">{m.instructions}</p>
+                      {m.sampleAnswer && (
+                        <div className="text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-2 rounded-lg text-[11px]">
+                          <span className="font-semibold">Kutiladigan natija: </span>{m.sampleAnswer}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {generatedData.parentEncouragementTip && (
+                    <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-200">
+                      <span className="font-bold">👨‍👩‍👧 Ota-onalar uchun eslatma: </span>{generatedData.parentEncouragementTip}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Standard Tasks Preview */}
+              {generatedData.format !== 'tushun_missions' && Array.isArray(generatedData.tasks) && (
+                <div className="space-y-2 pt-1">
+                  <div className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                    O'qituvchi tekshiruvi uchun namunaviy to'g'ri javoblar:
+                  </div>
+                  {generatedData.tasks.map((t, i) => (
+                    <div key={i} className="p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-[var(--border)] text-xs space-y-1">
+                      <div className="font-semibold text-gray-800 dark:text-gray-100 flex items-center justify-between">
+                        <span>{t.number}. {t.question}</span>
+                        <span className="text-primary font-bold">{t.points} ball</span>
+                      </div>
+                      {t.sampleAnswer && (
+                        <div className="text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 p-2 rounded-lg">
+                          <span className="font-semibold">Namunaviy to'g'ri javob: </span>{t.sampleAnswer}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
         </div>
@@ -233,7 +322,7 @@ export default function CreateHomework() {
           <button onClick={() => navigate(-1)} className="btn-ghost p-2 rounded-xl"><ArrowLeft size={18} /></button>
           <div>
             <h1 className="text-xl font-bold text-gray-800 dark:text-white">Uy vazifasi yaratish</h1>
-            <p className="text-xs text-gray-400">Guruh uchun topshiriq tayinlang yoki AI orqali shakllantiring</p>
+            <p className="text-xs text-gray-400">Guruh uchun topshiriq tayinlang yoki TUSHUN missiyasi bilan shakllantiring</p>
           </div>
         </div>
         <button
@@ -272,9 +361,9 @@ export default function CreateHomework() {
             <button
               type="button"
               onClick={() => setShowAiModal(true)}
-              className="text-xs text-primary hover:underline flex items-center gap-1"
+              className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
             >
-              <Sparkles size={12} /> AI taklifi olish
+              <Sparkles size={12} /> AI taklifi olish (TUSHUN Missiyalari)
             </button>
           </div>
           <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -306,4 +395,3 @@ export default function CreateHomework() {
     </div>
   );
 }
-
