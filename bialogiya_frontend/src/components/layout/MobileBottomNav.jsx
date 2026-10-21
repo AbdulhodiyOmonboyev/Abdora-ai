@@ -27,7 +27,7 @@ const PRIMARY_LINKS = {
   ],
   admin: [
     { to: '/admin/dashboard', icon: LayoutDashboard, key: 'dashboard' },
-    { to: '/admin/centers', icon: Building2, key: 'centers', label: "O'quv Markazlar" },
+    { to: '/admin/centers', icon: Building2, key: 'centers', label: 'Markazlar' },
     { to: '/admin/applications', icon: Inbox, key: 'applications', label: 'Arizalar' },
   ],
   manager: [
@@ -69,7 +69,7 @@ export default function MobileBottomNav({ onMoreClick }) {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 flex items-stretch justify-around border-t"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 flex items-stretch justify-around border-t shadow-lg backdrop-blur-md"
       style={{
         backgroundColor: 'var(--card)',
         borderColor: 'var(--border)',
@@ -87,7 +87,7 @@ export default function MobileBottomNav({ onMoreClick }) {
           style={({ isActive }) => ({ color: isActive ? 'var(--primary)' : 'var(--text-muted)' })}
         >
           <Icon size={20} />
-          <span className="truncate max-w-[64px]">{label || t(key)}</span>
+          <span className="truncate max-w-[70px] text-center">{label || t(key)}</span>
         </NavLink>
       ))}
       <button

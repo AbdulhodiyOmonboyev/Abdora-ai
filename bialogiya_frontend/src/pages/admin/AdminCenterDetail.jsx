@@ -119,42 +119,42 @@ export default function AdminCenterDetail() {
   const aiModelName = center.settings?.aiConfig?.model || "Standart";
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 space-y-6 max-w-6xl mx-auto" style={{ background: "var(--background)" }}>
+    <div className="w-full p-3.5 sm:p-6 pb-24 md:pb-8 space-y-6 max-w-6xl mx-auto" style={{ background: "var(--background)" }}>
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b"
         style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Link
             to="/admin/centers"
-            className="p-2.5 rounded-xl border transition-colors hover:bg-[var(--secondary-background)]"
+            className="p-2.5 rounded-xl border transition-colors hover:bg-[var(--secondary-background)] flex-shrink-0"
             style={{ borderColor: "var(--border)" }}
           >
             <ArrowLeft size={18} style={{ color: "var(--text-secondary)" }} />
           </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold truncate" style={{ color: "var(--text-primary)" }}>
                 {center.name}
               </h1>
               <StatusBadge status={center.isActive ? "faol" : "nofaol"} />
             </div>
-            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+            <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>
               ID: {center.id} • {new Date(center.createdAt).toLocaleDateString("uz-UZ")} da ro'yxatdan o'tgan
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
           {/* Main Action: Go to Settings Page */}
           <Link
             to={`/admin/centers/${id}/settings`}
-            className="btn-primary flex items-center gap-2 px-5 py-2 font-bold shadow-sm"
+            className="btn-primary flex items-center justify-center gap-2 px-4 py-2 font-bold shadow-sm w-full sm:w-auto text-sm"
           >
             <Settings2 size={16} /> Markaz sozlamalari
           </Link>
 
           {!isEditing ? (
-            <>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => {
                   setEditForm({
@@ -167,23 +167,23 @@ export default function AdminCenterDetail() {
                   });
                   setIsEditing(true);
                 }}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-[var(--secondary-background)]"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-[var(--secondary-background)]"
                 style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
               >
                 <Pencil size={15} /> Tahrirlash
               </button>
               <button
                 onClick={handleDelete}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-red-600 border border-red-200 transition-all hover:bg-red-50"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-red-600 border border-red-200 transition-all hover:bg-red-50"
               >
                 <Trash2 size={15} /> O'chirish
               </button>
-            </>
+            </div>
           ) : (
-            <>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 rounded-xl text-sm font-medium border"
+                className="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-sm font-medium border text-center"
                 style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
               >
                 Bekor qilish
@@ -191,12 +191,12 @@ export default function AdminCenterDetail() {
               <button
                 onClick={handleSaveInfo}
                 disabled={updateMutation.isPending}
-                className="btn-primary"
+                className="btn-primary flex-1 sm:flex-initial justify-center"
               >
                 {updateMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
                 Saqlash
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -223,26 +223,26 @@ export default function AdminCenterDetail() {
 
       {/* ── Center Settings Banner Callout ─────────────────── */}
       <div
-        className="p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs"
+        className="p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs"
         style={{
           background: "linear-gradient(135deg, rgba(240, 100, 19, 0.06) 0%, rgba(99, 102, 241, 0.06) 100%)",
           borderColor: "var(--border)",
         }}
       >
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+        <div className="flex items-start gap-3.5">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
             style={{ background: "var(--primary-50)", color: "var(--primary)" }}>
-            <Settings2 size={24} />
+            <Settings2 size={22} />
           </div>
-          <div>
-            <div className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-              Markaz sozlamalari va imkoniyatlari
+          <div className="min-w-0 flex-1">
+            <div className="text-base font-bold flex flex-wrap items-center gap-2" style={{ color: "var(--text-primary)" }}>
+              <span>Markaz sozlamalari va imkoniyatlari</span>
               <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                 style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--primary)" }}>
                 Model: {aiModelName}
               </span>
             </div>
-            <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
               Markaz modullarini cheklash (Moliya, CRM, LMS, Tangalar), AI model dvigateli va qabulxona ruxsatlarini alohida sozlamalar sahifasida boshqaring.
             </p>
           </div>
@@ -250,7 +250,7 @@ export default function AdminCenterDetail() {
 
         <Link
           to={`/admin/centers/${id}/settings`}
-          className="btn-primary flex items-center justify-center gap-2 px-5 py-2.5 font-bold flex-shrink-0 text-sm whitespace-nowrap"
+          className="btn-primary flex items-center justify-center gap-2 px-5 py-2.5 font-bold flex-shrink-0 text-sm w-full sm:w-auto"
         >
           <Settings2 size={16} /> Sozlamalar sahifasiga o'tish <ChevronRight size={15} />
         </Link>
