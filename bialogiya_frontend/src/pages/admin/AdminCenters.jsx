@@ -441,16 +441,19 @@ export default function AdminCenters() {
           <Loader2 size={28} className="animate-spin" style={{ color: "var(--primary)" }} />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <Building2 size={48} className="mx-auto mb-4 opacity-20" style={{ color: "var(--text-muted)" }} />
-          <div className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
-            {search ? "Qidiruvga mos markaz topilmadi" : "Hali birorta markaz qo'shilmagan"}
+        <div className="text-center py-20 px-4">
+          <Building2 size={52} className="mx-auto mb-4 opacity-25" style={{ color: "var(--primary)" }} />
+          <div className="text-base font-bold mb-1" style={{ color: "var(--text-primary)" }}>
+            {search ? "Qidiruvga mos markaz topilmadi" : "Hozircha mijoz o'quv markazlari yo'q"}
           </div>
+          <p className="text-xs max-w-md mx-auto mb-5 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            {search ? "Qidiruv parametrlarini o'zgartirib ko'ring" : "Siz Abdora AI platformasi egasisiz. O'quv markazlariga ushbu tizimni sotish, ularga alohida tarif va boshqaruvchi (manager) hisobini biriktirish uchun quyidagi tugmani bosing."}
+          </p>
           {!search && (
             <button onClick={() => setModalOpen(true)}
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-lg hover:opacity-95 transition-all"
               style={{ background: "var(--primary)" }}>
-              <Plus size={14} /> Birinchi markazni yarating
+              <Plus size={16} /> Birinchi mijoz markazni ulash
             </button>
           )}
         </div>

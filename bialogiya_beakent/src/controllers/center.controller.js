@@ -543,6 +543,12 @@ const deleteCenter = async (req, res, next) => {
         await tx.user.deleteMany({ where: { id: { in: uIds } } });
       }
 
+      // 32.5. Super adminlarni markazdan uzish (hech qachon o'chmasligi uchun)
+      await tx.user.updateMany({
+        where: { centerId: id, role: 'admin' },
+        data: { centerId: null },
+      });
+
       // 33. Markazning o'zini o'chirish
       await tx.center.delete({ where: { id } });
     });

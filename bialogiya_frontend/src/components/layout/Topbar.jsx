@@ -59,6 +59,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
   const [showHeaderResults, setShowHeaderResults] = useState(false);
 
   const isManagement = ['admin', 'manager', 'reception'].includes(user?.role);
+  const isBranchRole = ['manager', 'reception'].includes(user?.role);
 
   const closeAll = () => {
     setShowNotifs(false);
@@ -314,8 +315,8 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
           </div>
         </div>
 
-        {/* Branch Filter / Switcher */}
-        {isManagement && (
+        {/* Branch Filter / Switcher (Only for Center Managers and Reception) */}
+        {isBranchRole && (
           <div ref={branchRef} className="relative flex-shrink-0">
             <button
               type="button"

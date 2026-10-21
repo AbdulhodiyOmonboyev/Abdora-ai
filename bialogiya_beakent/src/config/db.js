@@ -152,13 +152,8 @@ const runMigrations = async () => {
     await safeRun(`CREATE INDEX IF NOT EXISTS "${table}_centerId_idx" ON "${table}" ("centerId")`);
   }
 
-  // 8. Legacy center seeding and mapping
-  await safeRun(`
-    INSERT INTO "Center" ("id", "name", "settings")
-    SELECT 'legacy-center', 'Legacy Center', '{}'::jsonb
-    WHERE NOT EXISTS (SELECT 1 FROM "Center")
-  `);
-  await safeRun(`UPDATE "User" SET "centerId" = 'legacy-center' WHERE "centerId" IS NULL`);
+  // 8. Super Admin platform-wide ownership (centerId must be NULL for super admin)
+  await safeRun(`UPDATE "User" SET "centerId" = NULL WHERE "role" = 'admin'`);
   await safeRun(`UPDATE "Branch" SET "centerId" = COALESCE((SELECT "centerId" FROM "User" WHERE "User"."id" = "Branch"."receptionId" OR "User"."id" = "Branch"."managerId" LIMIT 1), 'legacy-center') WHERE "centerId" IS NULL`);
   await safeRun(`UPDATE "Group" SET "centerId" = COALESCE((SELECT "centerId" FROM "User" WHERE "User"."id" = "Group"."teacherId"), (SELECT "centerId" FROM "Branch" WHERE "Branch"."id" = "Group"."branchId"), 'legacy-center') WHERE "centerId" IS NULL`);
   await safeRun(`UPDATE "Lesson" SET "centerId" = (SELECT "centerId" FROM "Group" WHERE "Group"."id" = "Lesson"."groupId") WHERE "centerId" IS NULL`);

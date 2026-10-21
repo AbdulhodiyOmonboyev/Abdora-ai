@@ -45,12 +45,6 @@ const login = async (req, res, next) => {
       });
 
       if (!user) {
-        let center = await prisma.center.findFirst({ where: { isActive: true } });
-        if (!center) {
-          center = await prisma.center.create({
-            data: { id: 'default-center', name: 'Abdora AI Center' },
-          });
-        }
         const defaultHash = await bcrypt.hash('admin123', 12);
         user = await prisma.user.create({
           data: {
@@ -59,7 +53,7 @@ const login = async (req, res, next) => {
             email: 'admin@abdora.uz',
             passwordHash: defaultHash,
             role: 'admin',
-            centerId: center.id,
+            centerId: null,
             isActive: true,
           },
           include: {
