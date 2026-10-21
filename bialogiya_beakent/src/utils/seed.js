@@ -2,14 +2,18 @@ require('dotenv').config({ path: require('path').join(__dirname, '../../.env') }
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
-const prisma = new PrismaClient();
+let prismaInstance;
+try {
+  prismaInstance = require('../config/db').prisma;
+} catch {
+  const { PrismaClient } = require('@prisma/client');
+  prismaInstance = new PrismaClient();
+}
 
-// Creates ONLY the admin account. No demo teacher/student/group/lesson -
-// admin creates real teacher accounts from the Admin panel, teachers/
-// reception create real student/group data from there. Change the
-// password immediately after first login.
-async function seed() {
-  console.log('[Seed] Seeding database...');
+// Creates/verifies the Super Admin account (admin / admin123).
+async function seed(customPrisma) {
+  const prisma = customPrisma || prismaInstance;
+  console.log('[Seed] Verifying super admin and default center...');
 
   const center = await prisma.center.upsert({
     where: { id: 'default-center' },
@@ -17,21 +21,36 @@ async function seed() {
     create: { id: 'default-center', name: 'Abdora AI Center' },
   });
 
-  const adminExists = await prisma.user.findUnique({ where: { username: 'admin' } });
+  const adminHash = await bcrypt.hash('admin123', 12);
+  const adminExists = await prisma.user.findFirst({
+    where: { OR: [{ username: 'admin' }, { role: 'admin' }] },
+  });
+
   if (adminExists) {
-    console.log('[Seed] Admin account already exists (username: admin). Nothing to do.');
+    if (!adminExists.isActive || adminExists.role !== 'admin') {
+      await prisma.user.update({
+        where: { id: adminExists.id },
+        data: { role: 'admin', isActive: true },
+      });
+    }
+    console.log('[Seed] Admin account verified (username:', adminExists.username, ')');
     return;
   }
 
-  const adminHash = await bcrypt.hash('admin123', 12);
-
   await prisma.user.create({
-    data: { name: 'Super Admin', username: 'admin', email: 'admin@abdora.uz', passwordHash: adminHash, role: 'admin', centerId: center.id },
+    data: {
+      name: 'Super Admin',
+      username: 'admin',
+      email: 'admin@abdora.uz',
+      passwordHash: adminHash,
+      role: 'admin',
+      centerId: center.id,
+      isActive: true,
+    },
   });
 
   console.log('\n[Seed] Seed completed!');
-  console.log('   Admin: admin / admin123');
-  console.log('   [Notice] Change this password after first login.\n');
+  console.log('   Admin: admin / admin123\n');
 }
 
 if (require.main === module) {

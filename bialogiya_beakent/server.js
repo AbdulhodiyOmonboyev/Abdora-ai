@@ -18,7 +18,13 @@ const app = express();
 const { startSubscriptionCron } = require('./src/utils/cronJobs');
 const { ensureDefaultPlans } = require('./src/controllers/plan.controller');
 
-connectDB().then(() => {
+connectDB().then(async () => {
+  try {
+    const { seed } = require('./src/utils/seed');
+    await seed();
+  } catch (err) {
+    console.error('[Seed Error]:', err.message);
+  }
   loadKeyFromDb().catch(() => {});
   cleanupOrphanedRecords().catch(() => {});
   ensureDefaultPlans().catch(() => {});
