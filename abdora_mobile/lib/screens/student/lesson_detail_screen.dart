@@ -8,6 +8,8 @@ import '../../models/lesson_model.dart';
 import '../../models/student_models.dart';
 import '../../providers/student_provider.dart';
 import '../../widgets/glass_card.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/endpoints.dart';
 import 'games/interactive_game_screen.dart';
 
 class LessonDetailScreen extends StatefulWidget {
@@ -38,6 +40,8 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   // AI Chat holati
   final TextEditingController _chatController = TextEditingController();
   final List<Map<String, String>> _chatMessages = [];
+  bool _isAiTyping = false;
+  bool _chatHistoryLoaded = false;
 
   // 10 ta zamonaviy o'rganish turi
   final List<Map<String, dynamic>> _learningMethods = const [
@@ -126,14 +130,62 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     }
   }
 
-  void _sendChatMessage([String? predefinedText]) {
+  Future<void> _loadChatHistory() async {
+    if (_chatHistoryLoaded) return;
+    _chatHistoryLoaded = true;
+    try {
+      final res = await ApiClient().dio.get(Endpoints.lessonAiChatHistory(widget.lesson.id));
+      if (res.statusCode == 200 && res.data != null) {
+        final data = res.data['data'] ?? res.data;
+        final rawMessages = data['messages'] as List? ?? [];
+        if (rawMessages.isNotEmpty && mounted) {
+          setState(() {
+            _chatMessages.clear();
+            for (final m in rawMessages) {
+              final role = m['role'] == 'user' ? 'user' : 'ai';
+              final txt = m['content'] ?? m['text'] ?? '';
+              if (txt.toString().isNotEmpty) {
+                _chatMessages.add({'role': role, 'text': txt.toString()});
+              }
+            }
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _sendChatMessage([String? predefinedText]) async {
     final text = predefinedText ?? _chatController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isAiTyping) return;
 
     setState(() {
       _chatMessages.add({'role': 'user', 'text': text});
       if (predefinedText == null) _chatController.clear();
+      _isAiTyping = true;
+    });
 
+    try {
+      final res = await ApiClient().dio.post(
+        Endpoints.lessonAiChat(widget.lesson.id),
+        data: {'message': text},
+      );
+      if (res.statusCode == 200 && res.data != null) {
+        final data = res.data['data'] ?? res.data;
+        final reply = data['reply'] ?? data['content'] ?? data['message'];
+        if (reply != null && reply.toString().trim().isNotEmpty) {
+          if (mounted) {
+            setState(() {
+              _chatMessages.add({'role': 'ai', 'text': reply.toString().trim()});
+              _isAiTyping = false;
+            });
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Fallback javob (oflayn yoki tarmoq xatoligida)
+    if (mounted) {
       String aiAnswer;
       final lower = text.toLowerCase();
       if (lower.contains('farq') || lower.contains('asosiy')) {
@@ -141,11 +193,14 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       } else if (lower.contains('xato') || lower.contains('ehtiyot')) {
         aiAnswer = 'Ko\'p uchraydigan asosiy xato: Belgilarning o\'xshashligiga aldanib, ularning kontekstdagi vazifasini unutib qo\'yishdir. Doimo gapdagi ma\'no mantiqiga e\'tibor qarating.';
       } else {
-        aiAnswer = '"${widget.lesson.title}" bo\'yicha savolingiz tushunarli. AI tahlili: Mavzuni yaxshiroq tushunish uchun Flashcardlar va amaliy Quiz savollaridan foydalanishingizni tavsiya qilaman.';
+        aiAnswer = '"${widget.lesson.title}" bo\'yicha savolingiz tushunarli. Mavzuni yaxshiroq tushunish uchun Flashcardlar va amaliy Quiz savollaridan foydalanishingizni tavsiya qilaman.';
       }
 
-      _chatMessages.add({'role': 'ai', 'text': aiAnswer});
-    });
+      setState(() {
+        _chatMessages.add({'role': 'ai', 'text': aiAnswer});
+        _isAiTyping = false;
+      });
+    }
   }
 
   @override
@@ -900,6 +955,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
 
   // 8. AI TYUTOR SUHBAT
   Widget _buildAiChatView() {
+    _loadChatHistory();
     return Column(
       children: [
         // Tezkor savol chiplari
@@ -957,9 +1013,38 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
               : ListView.separated(
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.all(16),
-                  itemCount: _chatMessages.length,
+                  itemCount: _chatMessages.length + (_isAiTyping ? 1 : 0),
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
+                    if (index == _chatMessages.length && _isAiTyping) {
+                      return Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceCol(context),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.borderCol(context)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.of(context)),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                "AI javob tayyorlamoqda...",
+                                style: TextStyle(color: AppColors.textM(context), fontSize: 12, fontStyle: FontStyle.italic),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
                     final msg = _chatMessages[index];
                     final isUser = msg['role'] == 'user';
 

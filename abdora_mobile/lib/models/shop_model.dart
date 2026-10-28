@@ -4,6 +4,7 @@ class ShopItemModel {
   final String description;
   final int priceCoins;
   final String? icon;
+  final String? imageUrl;
   final String category;
   final int stock;
 
@@ -13,6 +14,7 @@ class ShopItemModel {
     required this.description,
     required this.priceCoins,
     this.icon,
+    this.imageUrl,
     this.category = 'other',
     this.stock = 99,
   });
@@ -31,6 +33,7 @@ class ShopItemModel {
       description: (json['description'] ?? '').toString(),
       priceCoins: parseInt(json['priceCoins'], 0),
       icon: json['icon']?.toString(),
+      imageUrl: json['imageUrl']?.toString() ?? json['image']?.toString(),
       category: (json['category'] ?? 'other').toString(),
       stock: parseInt(json['stock'], 99),
     );

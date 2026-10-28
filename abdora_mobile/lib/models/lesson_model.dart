@@ -4,6 +4,9 @@ class LessonModel {
   final String? content;
   final String? videoUrl;
   final String? audioUrl;
+  final String? subject;
+  final String? groupName;
+  final String? teacherName;
   final int orderIndex;
   final DateTime? createdAt;
 
@@ -13,6 +16,9 @@ class LessonModel {
     this.content,
     this.videoUrl,
     this.audioUrl,
+    this.subject,
+    this.groupName,
+    this.teacherName,
     this.orderIndex = 0,
     this.createdAt,
   });
@@ -31,7 +37,10 @@ class LessonModel {
       content: json['content']?.toString(),
       videoUrl: json['videoUrl']?.toString(),
       audioUrl: json['audioUrl']?.toString(),
-      orderIndex: parseInt(json['orderIndex'], 0),
+      subject: json['subject']?.toString(),
+      groupName: json['group'] is Map ? json['group']['name']?.toString() : json['groupName']?.toString(),
+      teacherName: json['teacher'] is Map ? json['teacher']['name']?.toString() : json['teacherName']?.toString(),
+      orderIndex: parseInt(json['orderIndex'] ?? json['order'], 0),
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
     );
   }

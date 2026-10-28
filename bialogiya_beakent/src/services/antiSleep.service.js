@@ -38,7 +38,7 @@ class AntiSleepService {
       process.env.RENDER_EXTERNAL_URL ||
       process.env.BACKEND_URL ||
       process.env.APP_URL ||
-      (process.env.NODE_ENV === 'production' ? 'https://abdora-ai-backend.onrender.com' : null);
+      (process.env.NODE_ENV === 'production' ? 'https://abdora-ai-backend-k3lk.onrender.com' : null);
 
     if (externalUrl && typeof externalUrl === 'string') {
       const cleanExternal = externalUrl.trim().replace(/\/$/, '');
