@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { FileText, Check } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../config/axios';
+import StudentAcademicTabs from '../../components/student/StudentAcademicTabs';
 
 const TYPE_LABELS = {
   topic: 'Mavzuli test',
@@ -33,7 +34,8 @@ export default function StudentTests() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto space-y-6">
+      <StudentAcademicTabs active="tests" />
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Testlar</h1>
       <div className="space-y-3">
         {tests?.map((test, i) => {

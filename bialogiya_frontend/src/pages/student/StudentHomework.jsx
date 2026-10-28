@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ClipboardList, CheckCircle, AlertCircle, Clock, Sparkles, Heart } from 'lucide-react';
 import api from '../../config/axios';
 import { formatDate } from '../../utils/format';
+import StudentAcademicTabs from '../../components/student/StudentAcademicTabs';
 
 export default function StudentHomework() {
   const { data: homework = [], isLoading } = useQuery({
@@ -64,6 +65,7 @@ export default function StudentHomework() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      <StudentAcademicTabs active="homework" />
       {/* Encouraging Header */}
       <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-primary/10 via-amber-500/10 to-orange-500/10 border border-primary/20 flex items-center justify-between gap-4">
         <div>
