@@ -8,7 +8,7 @@ import {
   Coins, Smartphone, Target, ShoppingBag, Sparkles,
   Banknote, Wallet, CheckCircle2, FileEdit,
   ShieldCheck, Lock, Unlock, PieChart, GraduationCap, BookMarked, Calendar,
-  Plus, Trash2, Pencil, UserCog, Copy, Sliders, Layers, UserCheck, CheckSquare, Key, Settings2,
+  Plus, Trash2, Pencil, UserCog, Copy, Sliders, Layers, UserCheck, CheckSquare, Key, Settings2, Mic,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -280,6 +280,8 @@ const DEFAULT_SETTINGS = {
   // AI
   aiModel: 'gemini-3.8-flash',
   aiLiveModel: 'gemini-2.5-flash-native-audio-preview',
+  elevenlabsApiKey: '',
+  elevenlabsModel: 'eleven_multilingual_v2',
 
   // Notifications
   notifyOnPayment: true,
@@ -1017,7 +1019,50 @@ export default function AdminSettings() {
                     </div>
                   </div>
 
-                  {/* 2. SMS Provayder */}
+                  {/* 2. ElevenLabs AI Voice Cloning Config */}
+                  <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                          <Mic size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-[var(--text-primary)]">ElevenLabs (Ovoz Klonlash & TTS)</h4>
+                          <p className="text-[11px] text-[var(--text-secondary)]">Ustoz ovoz namunasi yuklanganda AI aynan o'sha ovozda dars gapirishi uchun</p>
+                        </div>
+                      </div>
+                      <span className="badge text-[10px] py-0.5 px-2 bg-blue-500/10 text-blue-600">Voice Clone</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormGroup label="ElevenLabs API Kaliti" hint="ElevenLabs profil sozlamalaridan olingan xi-api-key">
+                        <div className="relative">
+                          <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                          <input
+                            value={settings.elevenlabsApiKey || ''}
+                            onChange={e => set('elevenlabsApiKey', e.target.value)}
+                            className="input-field pl-9 font-mono"
+                            type="password"
+                            placeholder="sk_••••••••••••••••••••••••"
+                          />
+                        </div>
+                      </FormGroup>
+
+                      <FormGroup label="ElevenLabs Modeli" hint="O'zbek tili uchun eleven_multilingual_v2 tavsiya etiladi">
+                        <select
+                          value={settings.elevenlabsModel || 'eleven_multilingual_v2'}
+                          onChange={e => set('elevenlabsModel', e.target.value)}
+                          className="input-field"
+                        >
+                          <option value="eleven_multilingual_v2">Eleven Multilingual v2 (O'zbek tili & Yuqori sifat)</option>
+                          <option value="eleven_turbo_v2_5">Eleven Turbo v2.5 (Tezkor)</option>
+                          <option value="eleven_flash_v2_5">Eleven Flash v2.5 (Ultra tez)</option>
+                        </select>
+                      </FormGroup>
+                    </div>
+                  </div>
+
+                  {/* 3. SMS Provayder */}
                   <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] space-y-4">
                     <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
                       <div className="flex items-center gap-2.5">

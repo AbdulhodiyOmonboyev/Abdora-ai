@@ -55,14 +55,34 @@ const resourceUpload = multer({
 });
 
 // Memory storage for voice-clone sample uploads (short audio recordings)
-const audioMimes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/ogg'];
+const audioMimes = [
+  'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/wave',
+  'audio/webm', 'audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/ogg',
+  'audio/aac', 'audio/x-aac', 'audio/flac', 'audio/x-flac', 'video/webm'
+];
 const voiceSampleUpload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
-    if (audioMimes.includes(file.mimetype)) cb(null, true);
-    else cb(new Error(`Qo'llab-quvvatlanmaydigan audio turi: ${file.mimetype}`), false);
+    const rawMime = (file.mimetype || '').toLowerCase();
+    const cleanMime = rawMime.split(';')[0].trim();
+    const ext = (file.originalname || '').split('.').pop().toLowerCase();
+    const allowedExts = ['mp3', 'wav', 'm4a', 'webm', 'ogg', 'aac', 'flac', 'mp4'];
+
+    if (
+      cleanMime.startsWith('audio/') ||
+      audioMimes.includes(cleanMime) ||
+      rawMime.includes('webm') ||
+      rawMime.includes('ogg') ||
+      allowedExts.includes(ext)
+    ) {
+      cb(null, true);
+    } else {
+      const err = new Error(`Qo'llab-quvvatlanmaydigan audio turi: ${file.mimetype || ext}. MP3, WAV, M4A yoki WEBM formatidagi audio yuklang.`);
+      err.statusCode = 400;
+      cb(err, false);
+    }
   },
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB is plenty for a 1-3 min sample
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB
 });
 
 module.exports = upload;

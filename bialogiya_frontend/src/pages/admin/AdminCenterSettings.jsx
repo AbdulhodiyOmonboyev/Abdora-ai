@@ -210,6 +210,7 @@ export default function AdminCenterSettings() {
         liveModel:    ai.liveModel    || "gemini-2.5-flash-native-audio-preview",
         agentId:      ai.agentId      || "",
         apiKey:       ai.apiKey       || "",
+        elevenlabsApiKey: ai.elevenlabsApiKey || s.elevenlabsApiKey || "",
         customPrompt: ai.customPrompt || "",
       });
 
@@ -689,7 +690,27 @@ export default function AdminCenterSettings() {
                       </p>
                     </div>
 
-                    {/* 5. Markaz uchun Maxsus AI Prompt */}
+                    {/* 5. Markaz uchun ElevenLabs API Kaliti (Ovoz klonlash) */}
+                    <div>
+                      <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
+                        ElevenLabs API Kaliti (Ovoz Klonlash)
+                      </label>
+                      <div className="relative">
+                        <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+                        <input
+                          type="password"
+                          className="input-field pl-9 font-mono text-xs"
+                          placeholder="Ustozlar ovozini klonlash uchun ElevenLabs xi-api-key"
+                          value={aiConfig.elevenlabsApiKey || ""}
+                          onChange={e => setAiConfig(p => ({ ...p, elevenlabsApiKey: e.target.value }))}
+                        />
+                      </div>
+                      <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+                        Markaz o'qituvchilari o'z ovozida dars o'tishi uchun ElevenLabs API kaliti. Bo'sh qolsa platforma kalitidan foydalaniladi.
+                      </p>
+                    </div>
+
+                    {/* 6. Markaz uchun Maxsus AI Prompt */}
                     <div>
                       <label className="text-xs font-semibold mb-1 block" style={{ color: "var(--text-primary)" }}>
                         Markazga xos AI ko'rsatmasi (System Prompt)

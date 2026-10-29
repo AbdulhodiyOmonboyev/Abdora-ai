@@ -505,15 +505,17 @@ function VoiceSection({ lessonId, title }) {
     };
   }, []);
 
-  const speak = async () => {
-    if (audioRef.current && objectUrlRef.current) {
+  const speak = async (forceRegenerate = false) => {
+    if (!forceRegenerate && audioRef.current && objectUrlRef.current) {
       audioRef.current.play();
       setStatus('playing');
       return;
     }
     setStatus('loading');
     try {
-      const res = await api.get(`/lessons/${lessonId}/ai/voice-audio`, { responseType: 'blob' });
+      const urlParam = forceRegenerate ? '?regenerate=true' : '';
+      const res = await api.get(`/lessons/${lessonId}/ai/voice-audio${urlParam}`, { responseType: 'blob' });
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
       const url = URL.createObjectURL(res.data);
       objectUrlRef.current = url;
       const audio = new Audio(url);
@@ -562,10 +564,20 @@ function VoiceSection({ lessonId, title }) {
 
       <div className="flex items-center justify-center gap-3">
         {!playing ? (
-          <button onClick={speak} disabled={loading} className="btn-primary flex items-center gap-2 disabled:opacity-60">
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-            {loading ? 'Yuklanmoqda...' : 'Tinglashni boshlash'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => speak(false)} disabled={loading} className="btn-primary flex items-center gap-2 disabled:opacity-60">
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+              {loading ? 'Yuklanmoqda...' : 'Tinglashni boshlash'}
+            </button>
+            <button
+              onClick={() => speak(true)}
+              disabled={loading}
+              className="btn-ghost p-2 text-gray-400 hover:text-primary rounded-xl"
+              title="Ovozni yangilab qayta eshitish"
+            >
+              <RefreshCw size={15} />
+            </button>
+          </div>
         ) : (
           <button onClick={stop} className="btn-outline flex items-center gap-2">
             <Square size={16} /> To'xtatish

@@ -21,8 +21,12 @@ const errorHandler = (err, req, res, next) => {
     return res.status(400).json({ success: false, message: "ID formati noto'g'ri" });
   }
 
-  if (err.message && err.message.includes("Fayl turiga ruxsat berilmagan")) {
+  if (err.message && (err.message.includes("Fayl turiga ruxsat berilmagan") || err.message.includes("Qo'llab-quvvatlanmaydigan audio turi"))) {
     return res.status(400).json({ success: false, message: err.message });
+  }
+
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ success: false, message: "Fayl hajmi ruxsat etilgan limitdan katta" });
   }
 
   res.status(err.statusCode || 500).json({

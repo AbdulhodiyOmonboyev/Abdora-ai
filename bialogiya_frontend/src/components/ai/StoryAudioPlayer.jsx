@@ -25,15 +25,17 @@ export default function StoryAudioPlayer({ lessonId }) {
     };
   }, []);
 
-  const loadAndPlay = async () => {
-    if (audioRef.current && objectUrlRef.current) {
+  const loadAndPlay = async (forceRegenerate = false) => {
+    if (!forceRegenerate && audioRef.current && objectUrlRef.current) {
       audioRef.current.play();
       setStatus('playing');
       return;
     }
     setStatus('loading');
     try {
-      const res = await api.get(`/lessons/${lessonId}/ai/story-audio`, { responseType: 'blob' });
+      const urlParam = forceRegenerate ? '?regenerate=true' : '';
+      const res = await api.get(`/lessons/${lessonId}/ai/story-audio${urlParam}`, { responseType: 'blob' });
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
       const url = URL.createObjectURL(res.data);
       objectUrlRef.current = url;
       const audio = new Audio(url);
