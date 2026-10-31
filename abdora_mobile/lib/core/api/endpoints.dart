@@ -2,7 +2,7 @@ class Endpoints {
   // Jonli server manzili (Render)
   static const String baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'https://abdora-ai-backend-k3lk.onrender.com/api',
+    defaultValue: 'https://abdora-ai-backend-iey6.onrender.com/api',
   );
 
   // Autentifikatsiya va Profil
