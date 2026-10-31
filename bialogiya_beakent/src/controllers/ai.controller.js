@@ -402,8 +402,6 @@ const getExplainerSlideAudio = async (req, res, next) => {
     return streamAudioBuffer(res, saved.data, saved.mimeType);
   } catch (err) { next(err); }
 };
-  } catch (err) { next(err); }
-};
 
 // GET /api/lessons/:id/ai/explainer-video/image/:slideIndex - lazy per-slide
 // illustration, generated once and cached in LessonMedia after that.

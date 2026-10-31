@@ -53,12 +53,12 @@ async function seed(customPrisma) {
         ],
       },
       include: {
-        _count: { select: { branches: true, students: true } }
+        _count: { select: { branches: true, users: true } }
       }
     });
 
     for (const dc of dummyCenters) {
-      if (dc._count.branches === 0 && dc._count.students === 0) {
+      if (dc._count.branches === 0 && dc._count.users === 0) {
         await prisma.user.updateMany({
           where: { centerId: dc.id, role: 'admin' },
           data: { centerId: null }
@@ -76,7 +76,7 @@ async function seed(customPrisma) {
 }
 
 if (require.main === module) {
-  seed().catch(e => { console.error(e); process.exit(1); }).finally(() => prisma.$disconnect());
+  seed().catch(e => { console.error(e); process.exit(1); }).finally(() => prismaInstance.$disconnect());
 }
 
 module.exports = { seed };
