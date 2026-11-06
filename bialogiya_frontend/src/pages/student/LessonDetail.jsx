@@ -27,14 +27,14 @@ const TABS = [
   { id: 'tricks', icon: Lightbulb, key: 'memory_tricks', label: 'Mnemotika' },
   { id: 'story', icon: FileText, key: 'story_mode', label: 'Hikoya' },
   { id: 'examples', icon: Repeat, key: 'real_examples', label: 'Hayotiy misollar' },
-  { id: 'quiz', icon: Check, key: 'ai_quiz', label: 'AI Test' },
-  { id: 'flashcards', icon: Repeat, key: 'flashcards', label: 'Fleshkartalar' },
-  { id: 'summary', icon: FileText, key: 'summary', label: 'Xulosa' },
+  { id: 'flashcards', icon: Layers, key: 'flashcards', label: 'Fleshkartalar' },
   { id: 'mindmap', icon: Map, key: 'mind_map', label: 'Aql xaritasi' },
   { id: 'voice', icon: Volume2, key: 'voice_teacher', label: 'Ovozli dars' },
   { id: 'video', icon: Clapperboard, key: 'explainer_video', label: 'Video dars' },
   { id: 'speaking', icon: Mic, key: 'speaking_practice', label: 'So\'zlashuv' },
   { id: 'chat', icon: MessageSquare, key: 'ai_chat', label: 'AI Chat' },
+  { id: 'summary', icon: FileText, key: 'summary', label: 'Xulosa' },
+  { id: 'quiz', icon: Award, key: 'ai_quiz', label: 'Yakuniy Test (5 ta)' },
 ];
 
 const CHAT_STYLES = [

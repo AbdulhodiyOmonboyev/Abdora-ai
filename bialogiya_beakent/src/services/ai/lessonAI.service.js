@@ -73,7 +73,7 @@ const generateLessonAI = async (lessonId, title, content, language = 'uz') => {
 };
 
 const generateQuiz = async (title, content, difficulty = 'medium', centerId = null) => {
-  const prompt = `Generate 10 multiple-choice quiz questions about "${title}" based on: "${content.slice(0, 1000)}".
+  const prompt = `Generate 5 multiple-choice quiz questions about "${title}" based on: "${content.slice(0, 1000)}".
 Difficulty: ${difficulty}.
 Return valid JSON: {"questions":[{"text":"...","options":[{"text":"...","isCorrect":false},{"text":"...","isCorrect":true}],"explanation":"...","difficulty":"${difficulty}","points":1}]}
 Each question must have exactly 4 options with exactly one isCorrect:true.`;

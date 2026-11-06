@@ -76,12 +76,6 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       'color': Color(0xFF4F46E5), // Indigo
     },
     {
-      'title': 'AI Viktorina (Quiz)',
-      'subtitle': 'Tezkor sinov va bilimlarni mustahkamlash',
-      'icon': Icons.quiz_rounded,
-      'color': Color(0xFFEA580C), // To'q sariq
-    },
-    {
       'title': 'Aql Xaritasi (Mind Map)',
       'subtitle': 'Ierarxik tuzilma va mantiqiy bog\'liqliklar',
       'icon': Icons.hub_rounded,
@@ -92,6 +86,12 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       'subtitle': 'Mavzu bo\'yicha cheksiz savol-javob',
       'icon': Icons.smart_toy_rounded,
       'color': Color(0xFFDB2777), // Pushti
+    },
+    {
+      'title': 'Yakuniy 5 talik Test',
+      'subtitle': 'Darsni to\'liq o\'rganib chiqqach, bilimlarni sinash',
+      'icon': Icons.emoji_events_rounded,
+      'color': Color(0xFFEA580C), // To\'q sariq
     },
     {
       'title': 'Mavzu O\'yini (Interaktiv)',
@@ -502,11 +502,11 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       case 4:
         return _buildFlashcardsView();
       case 5:
-        return _buildQuizView();
-      case 6:
         return _buildMindMapView();
-      case 7:
+      case 6:
         return _buildAiChatView();
+      case 7:
+        return _buildQuizView();
       default:
         return _buildSimpleExplanationView();
     }

@@ -25,9 +25,9 @@ If "Lesson Content" contains text extracted from uploaded PDF textbooks, Word fi
 
 Generate comprehensive educational materials in JSON format with these exact keys:
 {
-  "simpleExplanation": "Very simple explanation using easy words, suitable for a 10-13 year old student. Explain like a caring friend, not a dry textbook. Plain text, no markdown.",
+  "simpleExplanation": "Lively, engaging, and bite-sized explanation tailored for 8-16 year old students. Strictly avoid boring walls of dry academic text! Break it into short, exciting chunks with relatable analogies (games, superheroes, animals, everyday life) and intriguing 'Did you know?' facts so young learners stay excited. Plain text, no markdown.",
   "mnemonics": "Memory tricks and memorable analogies to help remember this topic. Use relatable metaphors like DNA=Recipe Book, RNA=Messenger, etc. Plain text, no markdown.",
-  "storyMode": "Convert this lesson into an engaging short story where the concepts come alive as characters and adventures. Plain text, no markdown.",
+  "storyMode": "Convert this lesson into an exciting, thrilling mini-story or quest where the scientific concepts become lively characters and adventures (e.g. Captain Cell, Molecule Quest). Make it fun and captivating for 8-16 year old students. Plain text, no markdown.",
   "realLifeExamples": [
     {"category": "Kundalik hayotda", "example": "one clear real-life example sentence or two, plain text, no markdown"},
     {"category": "Tabiatda yoki atrof-muhitda", "example": "one clear real-life example sentence or two, plain text, no markdown"},
