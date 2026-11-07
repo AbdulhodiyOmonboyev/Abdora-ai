@@ -19,6 +19,8 @@ import ExplainerVideoPlayer from '../../components/ai/ExplainerVideoPlayer';
 import SpeakingPractice from '../../components/ai/SpeakingPractice';
 import BananaAiIllustrationCard from '../../components/ai/BananaAiIllustrationCard';
 import TushunBuddySection from '../../components/ai/TushunBuddySection';
+import ReverseTeachModal from '../../components/hero/ReverseTeachModal';
+import HeroAvatar2D from '../../components/hero/HeroAvatar2D';
 
 
 const TABS = [
@@ -92,6 +94,8 @@ function FlashcardDeck({ cards }) {
           <ChevronRight size={20} />
         </button>
       </div>
+
+
     </div>
   );
 }
@@ -786,8 +790,18 @@ export default function LessonDetail() {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
   const { user } = useAuthStore();
+  const isStudent = user?.role === 'student';
   const [activeTab, setActiveTab] = useState('overview');
+  const [reverseTeachOpen, setReverseTeachOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  const { data: heroData } = useQuery({
+    queryKey: ['myHero'],
+    queryFn: () => api.get('/student/hero/me').then(r => r.data.data),
+    enabled: isStudent,
+  });
+  const hero = heroData?.hero || user?.heroConfig;
+  const isFeynmanAllowed = heroData?.isFeynmanAllowed !== false;
 
   const { data: lesson, isLoading } = useQuery({
     queryKey: ['lesson', id],
@@ -1193,6 +1207,42 @@ export default function LessonDetail() {
               ) : (
                 <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ai?.summary}</div>
               )}
+
+              {/* Feynman Reverse-Teaching Card */}
+              {isStudent && isFeynmanAllowed && hero?.isSetupCompleted && (
+                <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-cyan-500/10 border border-primary/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-primary/40 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <HeroAvatar2D
+                        height={hero.customAppearance?.height || 170}
+                        weight={hero.customAppearance?.weight || 65}
+                        skinTone={hero.customAppearance?.skinTone || '#ffd1b3'}
+                        hairStyle={hero.customAppearance?.hairStyle || 'short'}
+                        hairColor={hero.customAppearance?.hairColor || '#1e293b'}
+                        raceCategory={hero.category}
+                        raceId={hero.race}
+                        dreamJob={hero.dreamJob}
+                        size={50}
+                        showPedestal={false}
+                      />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-[var(--text-primary)]">
+                        {hero.name} sen bilan darsni muhokama qilmoqchi! 🎓
+                      </div>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Feynman texnikasi: Ushbu mavzuni o'z do'stingga sodda tilda tushuntirib ber va +50 XP yutib ol!
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setReverseTeachOpen(true)}
+                    className="btn-primary py-2.5 px-4 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 flex-shrink-0 shadow-md"
+                  >
+                    <Sparkles size={14} /> Avatarga O'rgatish
+                  </button>
+                </div>
+              )}
             </div>
           )}
           {activeTab === 'mindmap' && (
@@ -1226,6 +1276,21 @@ export default function LessonDetail() {
           {activeTab === 'chat' && <AIChatSection lessonId={id} i18nLanguage={i18n.language} />}
           </motion.div>
         </AnimatePresence>
+
+        {/* Reverse Teach Modal (Feynman Technique) */}
+        {isStudent && isFeynmanAllowed && (
+          <ReverseTeachModal
+            isOpen={reverseTeachOpen}
+            onClose={() => setReverseTeachOpen(false)}
+            lessonId={id}
+            lessonTitle={lesson?.title}
+            hero={hero}
+            onCompleted={() => {
+              queryClient.invalidateQueries(['myHero']);
+              setActiveTab('quiz');
+            }}
+          />
+        )}
 
         {/* Section navigator — vertical stepper through the same tabs (desktop only) */}
         <div className="hidden lg:block panel-card">
