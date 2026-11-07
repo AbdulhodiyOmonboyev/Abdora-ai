@@ -63,19 +63,6 @@ const PERMISSION_GROUPS = [
     ],
   },
   {
-    title: "Feynman Metodikasi va 2D Qahramon",
-    description: "O'quvchilarga o'z 2D qahramonini yaratish, darsni tushuntirish va AI baholash tizimi",
-    icon: Sparkles,
-    color: "#ec4899",
-    permissions: [
-      {
-        key: "feynmanHeroEnabled",
-        label: "Feynman Metodikasi & 2D Qahramon (Hero Companion)",
-        hint: "O'quvchilarga 2D qahramon yaratish, bo'y-basti va gavdasini sozlash, kasbiy xonalar va darsni avatarga o'rgatish (Feynman texnikasi) imkoniyati",
-      },
-    ],
-  },
-  {
     title: "Sun'iy intellekt (AI) modullari",
     description: "Markazda qaysi AI funksiyalari ishlashi mumkinligini aniq belgilash",
     icon: Bot,
@@ -145,7 +132,6 @@ export default function AdminCenterSettings() {
     certificatesEnabled: true,
     coinsEnabled: true,
     shopEnabled: true,
-    feynmanHeroEnabled: true,
     aiEnabled: true,
     aiLessonGenEnabled: true,
     aiChatEnabled: true,
@@ -216,7 +202,6 @@ export default function AdminCenterSettings() {
         aiTestGenEnabled:   f.aiTestGenEnabled   !== false,
         aiTtsEnabled:       f.aiTtsEnabled       !== false,
         aiImageEnabled:     f.aiImageEnabled     !== false,
-        feynmanHeroEnabled: f.feynmanHeroEnabled !== false,
       });
 
       setAiConfig({
