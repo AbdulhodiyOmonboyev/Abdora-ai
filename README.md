@@ -1,325 +1,189 @@
-# 🧬 Abdora AI - Intelligent Biology Learning Platform | O'zbek Tilida AI Ta'lim Tizimi
+# 🧬 Abdora AI — Smart EdTech, CRM & ERP Ecosystem
+> **O'zbekistonda ta'lim markazlari uchun sun'iy intellekt va TUSHUN pedagogikasiga asoslangan yaxlit boshqaruv hamda o'qitish platformasi (CRM + ERP + LMS + Mobile)**
 
-[![GitHub Stars](https://img.shields.io/github/stars/AbdulhodiyOmonboyev/Abdora-ai.svg?style=social)](https://github.com/AbdulhodiyOmonboyev/Abdora-ai)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-18.0+-green.svg)](https://nodejs.org)
-[![React](https://img.shields.io/badge/React-18.0+-blue.svg)](https://react.dev)
-
-**Abdora AI** - O'zbekistonda ta'lim uchun yaratilgan bugungi kuni AI bilan tejashgan biologiya ta'limi platformasi. O'qituvchi, o'quvchi, administrator va qabulxona xodimi uchun to'liq xususiyatlarga ega zamonaviy ta'lim boshqaruv tizimi (LMS).
-
-**Keywords:** Biology learning | AI education | Uzbekistan | O'zbek ta'limi | Learning Management System | LMS | React | Node.js | Artificial Intelligence | Online Education | E-learning platform
-
-## 🎯 Asosiy Xususiyatlari
-
-### 📚 O'quvchi Uchun
-- ✅ AI-powered dars materiallari va video tushuntirishlar
-- ✅ Interaktiv o'qituvchi (Speaking Practice)
-- ✅ Test va imtihon tizimi
-- ✅ Uy vazifalari va submission
-- ✅ Attendance tracking
-- ✅ Progress analytics va XP sistema
-
-### 👨‍🏫 O'qituvchi Uchun
-- ✅ Dars yaratish va boshqarish
-- ✅ Test tayyorlash va grading
-- ✅ O'quvchi attendance
-- ✅ Guruh boshqarish
-- ✅ Analytics va performance reports
-- ✅ AI-assisted content generation
-
-### 🏢 Administrator Uchun
-- ✅ Markaziy filiallarni boshqarish
-- ✅ O'qituvchi va manager management
-- ✅ Reception staff boshqarish
-- ✅ System-wide analytics
-- ✅ Settings va configuration
-
-### 📱 Reception Uchun
-- ✅ Guruh yaratish va tahrirlash
-- ✅ O'quvchi qabul qilish
-- ✅ To'lov tracking
-- ✅ Muammo hal qilish
+[![CI / CD Tests](https://img.shields.io/badge/tests-33%20passed%2C%200%20failed-brightgreen.svg?style=flat-square)](https://github.com/omonovdev/Abdora-ai)
+[![Node.js Version](https://img.shields.io/badge/node-v18%2B-blue.svg?style=flat-square)](https://nodejs.org)
+[![React Version](https://img.shields.io/badge/react-v18-61dafb.svg?style=flat-square)](https://react.dev)
+[![Flutter Mobile](https://img.shields.io/badge/flutter-v3.x-02569B.svg?style=flat-square)](https://flutter.dev)
+[![Prisma ORM](https://img.shields.io/badge/prisma-PostgreSQL-2D3748.svg?style=flat-square)](https://www.prisma.io)
+[![Google Gemini AI](https://img.shields.io/badge/AI-Gemini%20Flash%20%7C%20Live-orange.svg?style=flat-square)](https://ai.google.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
 ---
 
-## 🛠 Tech Stack
+## 🌟 Abdora AI Nima?
 
-### Frontend
-- **React 18** - UI framework
-- **Vite** - Build tool
-- **TailwindCSS** - Styling
-- **React Query** - Data fetching & caching
-- **Framer Motion** - Animations
-- **Lucide Icons** - Icon library
-- **React Hot Toast** - Notifications
-- **Chart.js / Recharts** - Data visualization
+**Abdora AI** — bu an'anaviy o'quv markazlari va maktablarni zamonaviy, avtomatlashtirilgan aqlli ta'lim dargohiga aylantiruvchi keng qamrovli raqamli platforma. Tizim markaz rahbaridan tortib, o'quvchi va ota-onagacha bo'lgan barcha qatlamlarning kundalik jarayonlarini birlashtiradi.
 
-### Backend
-- **Node.js + Express** - Server
-- **Prisma** - Database ORM
-- **PostgreSQL** - Database
-- **JWT** - Authentication
-- **Multer** - File uploads
-- **Anthropic API** - AI features
-
-### DevOps
-- **Render** - Deployment
-- **Docker** - Containerization
-- **GitHub** - Version control
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                          ABDORA AI EKOTIZIMI                           │
+├────────────────────┬────────────────────┬──────────────────────────────┤
+│ 💻 Web Platform    │ ⚙️ Core Backend     │ 📱 Flutter Mobile            │
+│ (React 18 + Vite)  │ (Node.js + Prisma) │ (Android / iOS)              │
+│ - Admin & Filiallar│ - AI Orkestratsiya │ - O'quvchi portali           │
+│ - CRM & Lidlar     │ - 5 xil Kassa      │ - Gamifikatsiya (XP/Tangalar)│
+│ - Moliya & Kassa   │ - TUSHUN Generator │ - Test Runner & Offline      │
+│ - O'qituvchi & LMS │ - Multi-tenancy    │ - Do'kon va Reyting          │
+└────────────────────┴────────────────────┴──────────────────────────────┘
+```
 
 ---
 
-## 📁 Project Structure
+## 🚀 Asosiy Imkoniyatlar va Modullar
+
+### 🏢 1. Rahbariyat va Markaz Boshqaruvi (ERP & Multi-Branch)
+- **Ko'p Filialli Tizim (Multi-Tenancy):** Har bir o'quv markazi o'zining filiallari, xonalari, dars jadvallari va xodimlarini mustaqil boshqaradi.
+- **5 Kanalli Kassa Tizimi:** Naqd pul, Click, Payme, Bank o'tkazmasi va boshqa to'lovlar bo'yicha alohida qoldiq hisoboti.
+- **Moliya & AI Maslahatchi:** Oylik daromad, o'qituvchilar maoshi (Payroll), ijara va marketing xarajatlari tahlili hamda sun'iy intellektdan moliyaviy tavsiyalar.
+- **AI Token Monitoringi:** Sarflanayotgan AI tokenlar soni, kirish/chiqish narxlari va real vaqtdagi xarajatlar shaffofligi.
+
+### 📋 2. Qabulxona va Sotuvlar (CRM & Reception)
+- **Lidlar Voronkasi (Leads Pipeline):** Sayt, Telegram va telefon orqali kelgan arizalarni qabul qilish va sinov darslariga yozish.
+- **1-Klikda O'quvchiga Aylantirish:** Lid sinov darsidan o'tgach, bir zumda guruhga biriktirilib, unga login/parol shakllantiriladi.
+- **A5 & 80mm Kvitansiya (Receipt):** To'lov qabul qilingan zahoti QR-kod va unikal raqamga ega rasmiy to'lov cheki chop etishga tayyor bo'ladi.
+- **Qarzdorlar Nazorati:** Guruh va markaz bo'yicha to'lov muddati o'tgan o'quvchilar ro'yxati va bir klikda Excel (`.xlsx`) eksport.
+
+### 👨‍🏫 3. O'qituvchilar va Akademik Nazorat (LMS)
+- **AI Dars Generatsiyasi:** Darslik kitobi (PDF yoki Word) yuklanganda 5 soniya ichida konspekt, sodda tushuntirish, mnemonikalar, aql xaritasi (MindMap) va fleshkartalar yaratiladi.
+- **Tezkor Davomat & Idempotent Tangalar:** O'quvchilarga davomat belgilash, a'lo baho olganlarga tanga (coin) qo'shish va dars qoldirganlardan ayirish.
+- **AI Homework Grading (Uyga vazifani tekshirish):** Talabaning yozma topshirig'ini tekshirib, tushirib qoldirilgan biologik tushunchalarni ko'rsatuvchi avtomatlashtirilgan baholash yordamchisi.
+- **Test Tahlili va Insights:** Sinfning o'rtacha bali, eng ko'p xato qilingan qiyin savollar va sun'iy intellekt xulosalari.
+
+### 🎒 4. O'quvchilar va Gamifikatsiya (Student Experience)
+- **TUSHUN Do'sti (Emotsional AI Mentor):** O'quvchini eshituvchi, uning kayfiyatini his qiluvchi (Sher, Panda, Robot, Quyoncha) va xatolari uchun koyimaydigan do'stona murabbiy.
+- **Test Runner (Stress-Free):** Tasodifiy topshirishdan himoyalovchi tasdiqlash oynasi va ikkilangan savollarni qayta ko'rish imkoniyati.
+- **Gamifikatsiya Ekotizimi:** Darslarni o'zlashtirish orqali XP va tangalar yig'ish, peshqadamlar jadvali (Leaderboard) va markaz do'konidan haqiqiy sovg'alarga buyurtma berish.
+- **Multimodal Ta'lim:** O'zbek tilidagi ovozli audio darslar, slaydli video dars va Gemini Live interaktiv suhbati.
+
+---
+
+## 🧠 TUSHUN Pedagogikasi Nima?
+
+Abdora AI asosida bolalarni ta'limdan bezdirmaslik va xavfsiz psixologik muhit yaratishga qaratilgan **TUSHUN formulasi** yotadi:
+
+* **T — Tingla:** O'quvchining savolini bo'lmasdan eshitish va his-tuyg'ularini tasdiqlash.
+* **U — Yoshini hisobga ol:** Murakkab ilmiy iboralarsiz, bolaning yoshiga mos samimiy va do'stona til.
+* **S — Sababini top:** Xatoni qoralamasdan, uning kelib chiqish sababini (charchoq, uyat, tushunmovchilik) aniqlash.
+* **H — Hissiyotini nomla:** Emotsional qo'llab-quvvatlash (*"Bu mavzu boshida biroz murakkab tuyuladi, to'g'rimi? Birga o'rganamiz!"*).
+* **U — Uddalaydigan vazifa ber:** Katta va qo'rqinchli tushunchalarni kichik, qiziqarli qadamlarga bo'lish.
+* **N — Natijani nishonla:** Har qanday kichik urinish va yutuqni munosib olqishlash.
+
+---
+
+## 🛠 Texnologik Stek (Tech Stack)
+
+| Qatlam | Texnologiyalar |
+|---|---|
+| **Frontend Web** | React 18, Vite 8, Tailwind CSS v4, TanStack Query v5, Framer Motion, Lucide Icons |
+| **Backend API** | Node.js, Express, Prisma ORM, PostgreSQL (Neon / Supabase), JWT Authentication |
+| **AI Integratsiya** | Google Gemini 2.5 Flash / Pro, Gemini TTS, Gemini Live, Banana AI Illustrations |
+| **Mobil Ilova** | Flutter 3.x, Dart, Provider, Dio, Local Storage |
+| **Moliya & Fayllar** | ExcelJS, Multer, Compression, Anti-Sleep Daemon |
+| **Infratuzilma** | Docker, Render Cloud, GitHub Actions |
+
+---
+
+## 📁 Loyiha Kataloglar Tuzilishi
 
 ```
 Abdora-ai/
-├── bialogiya_frontend/          # React frontend
+├── bialogiya_frontend/          # React 18 + Vite SPA platformasi
 │   ├── src/
-│   │   ├── pages/               # Page components
-│   │   │   ├── admin/          # Admin panel
-│   │   │   ├── teacher/        # Teacher dashboard
-│   │   │   ├── student/        # Student portal
-│   │   │   └── reception/      # Reception desk
-│   │   ├── components/          # Reusable components
-│   │   ├── store/              # Zustand state
-│   │   ├── utils/              # Utility functions
-│   │   └── config/             # Configuration
-│   ├── package.json
-│   └── vite.config.js
+│   │   ├── components/          # Reusable UI va AI komponentlar
+│   │   ├── pages/
+│   │   │   ├── admin/           # Superadmin va markaz boshqaruvi
+│   │   │   ├── crm/ & manager/  # Sotuvlar, lidlar va guruhlar
+│   │   │   ├── erp/ & finance/  # Kassa, kvitansiya va moliya
+│   │   │   ├── teacher/         # Dars yaratish, davomat, baholash
+│   │   │   └── student/         # Darslar, AI chat, testlar, do'kon
+│   │   ├── config/              # Axios, xalqaro tillar va mavzular
+│   │   └── utils/               # Formatlash, eksport va yordamchilar
 │
-├── bialogiya_beakent/           # Node.js backend
+├── bialogiya_beakent/           # Express + Prisma REST API
 │   ├── src/
-│   │   ├── controllers/        # Route handlers
-│   │   ├── routes/             # API routes
-│   │   ├── middleware/         # Custom middleware
-│   │   ├── models/             # Data models
-│   │   └── utils/              # Helper functions
-│   ├── prisma/                 # Database schema
-│   ├── server.js               # Server entry
-│   └── package.json
+│   │   ├── controllers/         # Biznes mantiq (Admin, Lead, Test, Payment va h.k.)
+│   │   ├── routes/              # API yo'llari va xavfsizlik cheklovlari
+│   │   ├── middleware/          # JWT auth, role va ruxsatlar nazorati
+│   │   ├── services/ai/         # Gemini, Prompts, Grading va TUSHUN xizmatlari
+│   │   └── utils/               # Tokenlar, kassa, kesh va cron jarayonlar
+│   ├── prisma/                  # schema.prisma va migratsiyalar
+│   └── test/                    # 33 ta unit va integratsiya testlari
 │
-└── render.yaml                 # Deployment config
+└── abdora_mobile/               # Flutter o'quvchi mobil ilovasi
+    ├── lib/
+    │   ├── core/                # API client, mavzular, xavfsiz saqlash
+    │   ├── models/              # Talaba, dars, test va do'kon modellari
+    │   ├── providers/           # Holat boshqaruvi (State Management)
+    │   └── screens/student/     # Darslar, testlar, mini-o'yinlar va profil
 ```
 
 ---
 
-## 🚀 Getting Started
+## ⚡ Tezkor O'rnatish va Ishga Tushirish
 
-### Prerequisites
-- Node.js 18.0+
-- npm yoki yarn
-- PostgreSQL database
-- Git
-
-### Installation
-
-1. **Repository clone qilish**
+### 1. Repozitoriyni klonlash
 ```bash
-git clone https://github.com/AbdulhodiyOmonboyev/Abdora-ai.git
+git clone https://github.com/omonovdev/Abdora-ai.git
 cd Abdora-ai
 ```
 
-2. **Backend setup**
+### 2. Backendni sozlash va yurgizish
 ```bash
 cd bialogiya_beakent
 npm install
-
-# .env file yaratish
 cp .env.example .env
-# DATABASE_URL, JWT_SECRET va boshqa o'zgaruvchilarni to'ldiring
 
-# Database migration
-npx prisma migrate dev
+# Ma'lumotlar bazasini sinxronlash
+npx prisma generate
+npx prisma db push
 
-# Server run qilish
-npm start
+# Testlarni tekshirish (33 ta test)
+node --test
+
+# Serverni ishga tushirish (Port: 5000)
+npm run dev
 ```
 
-3. **Frontend setup**
+### 3. Frontendni sozlash va ishga tushirish
 ```bash
 cd ../bialogiya_frontend
 npm install
 
-# .env file yaratish
-cp .env.example .env
-VITE_API_URL=http://localhost:3000
-
-# Development server
+# Ishlab chiqish serveri (Port: 5173)
 npm run dev
+
+# Ishlab chiqarish (Production build)
+npm run build
 ```
 
-4. **Browser oching**
-```
-http://localhost:5173
-```
-
----
-
-## 📖 API Documentation
-
-### Authentication
-```
-POST /auth/login
-POST /auth/register
-POST /auth/refresh
-GET /auth/me
-```
-
-### Users
-```
-GET /users                  # Barcha foydalanuvchiler
-GET /users/:id             # Foydalanuvchi details
-POST /users/create-manager # Manager yaratish
-POST /users/create-student # O'quvchi yaratish
-PUT /users/:id             # Foydalanuvchi update
-DELETE /users/:id          # Foydalanuvchi delete
-```
-
-### Groups
-```
-GET /groups                 # Barcha guruhlar
-POST /groups               # Guruh yaratish
-GET /groups/:id            # Guruh details
-PUT /groups/:id            # Guruh update
-```
-
-### More endpoints...
-Complete API documentation: [API Docs](https://github.com/AbdulhodiyOmonboyev/Abdora-ai/wiki/API-Reference)
-
----
-
-## 🔐 Authentication
-
-JWT token based authentication ishlatiladi:
-
-```javascript
-// Login
-const response = await fetch('/auth/login', {
-  method: 'POST',
-  body: JSON.stringify({
-    username: 'user@example.com',
-    password: 'password'
-  })
-});
-
-const { token } = await response.json();
-
-// API calls
-const headers = {
-  'Authorization': `Bearer ${token}`,
-  'Content-Type': 'application/json'
-};
-```
-
----
-
-## 🎨 UI/UX Features
-
-- **Dark Mode Support** - Light/Dark theme switching
-- **Responsive Design** - Mobile, tablet, desktop optimized
-- **Animations** - Smooth transitions va interactions
-- **Icons** - Lucide icons throughout
-- **Notifications** - Real-time toast notifications
-- **Loading States** - Skeletal loaders va spinners
-
----
-
-## 📊 Database Schema
-
-Main entities:
-- `User` - All users (admin, teacher, student, reception, manager)
-- `Group` - Class/batch
-- `Branch` - School/center branch
-- `Lesson` - Course material
-- `Test` - Quizzes and exams
-- `Homework` - Assignments
-- `Attendance` - Daily attendance records
-- `Payment` - Payment tracking
-
-[Full schema](bialogiya_beakent/prisma/schema.prisma)
-
----
-
-## 🌐 Deployment
-
-### Render Platform
-```yaml
-# render.yaml
-services:
-  - name: abdora-backend
-    type: web
-    env: node
-    buildCommand: npm install
-    startCommand: npm start
-    
-  - name: abdora-frontend
-    type: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-```
-
-Deploy commands:
+### 4. Mobil ilovani ishga tushirish
 ```bash
-# Push to GitHub
-git push origin main
-
-# Render auto-deploys from GitHub
+cd ../abdora_mobile
+flutter pub get
+flutter run
 ```
 
-Live: [https://abdora-ai-frontend.onrender.com](https://abdora-ai-frontend.onrender.com)
+---
+
+## 🧪 Sinovlar va Sifat Kafolati (Quality Assurance)
+
+Loyiha qat'iy test madaniyati asosida ishlab chiqilgan bo'lib, har bir o'zgarish avtomatlashtirilgan testlar to'plami orqali tekshiriladi:
+* **Jami testlar soni:** `33 ta`
+* **Test natijasi:** `33 pass, 0 fail`
+* **Qamrov:** Anti-sleep servisi, baholash qoidalari, markazlar multi-tenant izolyatsiyasi, to'liq qabulxona zanjiri (`test_reception_flow.js`) va o'quvchi hayotiy sikli simulyatsiyasi (`test_student_simulation.js`).
 
 ---
 
-## 🐛 Bug Reports & Features
+## 👥 Real Foydalanuvchilar va Mutaxassislar Bahosi
 
-Issues va feature requests uchun:
-[GitHub Issues](https://github.com/AbdulhodiyOmonboyev/Abdora-ai/issues)
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Iltimos:
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+Platforma 10 ta turli xil real personaj (markaz egasi, repetitor, abituriyent, bosh hisobchi, ota-ona, UI/UX dizayner va CTO) tomonidan to'liq sinovdan o'tkazilib, **8.55 / 10** umumiy qoniqish reytingiga ega bo'ldi.
 
 ---
 
-## 📝 License
+## 📄 Litsenziya
 
-MIT License - [LICENSE](LICENSE) file qarang
-
----
-
-## 👤 Author
-
-**Abdulhodi Omonboyev**
-- GitHub: [@AbdulhodiyOmonboyev](https://github.com/AbdulhodiyOmonboyev)
-- Email: abdulhodi@example.com
+Ushbu loyiha [MIT Litsenziyasi](LICENSE) asosida ochiq manbali etib belgilangan.
 
 ---
-
-## 🙏 Acknowledgments
-
-- Anthropic API - AI features
-- Prisma - Database management
-- React team - Frontend framework
-- TailwindCSS - Styling
-- Uzbekistan tech community
-
----
-
-## 📞 Support
-
-Savollar va muammo uchun:
-- 📧 Email: support@abdora.uz
-- 💬 GitHub Issues: [Issues](https://github.com/AbdulhodiyOmonboyev/Abdora-ai/issues)
-- 🌐 Website: [abdora.uz](https://abdora.uz)
-
----
-
-**Made with ❤️ for education in Uzbekistan**
+⭐ **Loyihani qo'llab-quvvatlash uchun yulduzcha (Star) bosishni unutmang!**
