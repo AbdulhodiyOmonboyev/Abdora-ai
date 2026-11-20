@@ -1,24 +1,7 @@
 const { getModel, getModelAsync } = require('../../config/gemini');
 const { prisma } = require('../../config/db');
 const { LESSON_SYSTEM_PROMPT, getLessonGenerationPrompt } = require('./prompts');
-const { sanitizeAiContent } = require('../../utils/sanitizeAiText');
-
-const safeJsonParse = (text) => {
-  if (!text) return {};
-  let cleaned = String(text).trim();
-  // Strip markdown code fences if present (e.g. ```json ... ```)
-  cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch (err) {
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
-    }
-    throw err;
-  }
-};
+const { sanitizeAiContent, safeJsonParse } = require('../../utils/sanitizeAiText');
 
 const generateLessonAI = async (lessonId, title, content, language = 'uz') => {
   await prisma.lesson.update({ where: { id: lessonId }, data: { aiContent: { status: 'generating' } } });
@@ -37,8 +20,8 @@ const generateLessonAI = async (lessonId, title, content, language = 'uz') => {
     const model = await getModelAsync({ jsonMode: true, centerId });
     const prompt = `${LESSON_SYSTEM_PROMPT}\n\n${getLessonGenerationPrompt(title, content || title, language)}`;
     const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const parsed = sanitizeAiContent(safeJsonParse(text));
+    const text = result?.response?.text ? result.response.text() : String(result || '');
+    const parsed = sanitizeAiContent(safeJsonParse(text, {})) || {};
 
     await prisma.lesson.update({
       where: { id: lessonId },
@@ -81,7 +64,8 @@ Each question must have exactly 4 options with exactly one isCorrect:true.`;
   try {
     const model = await getModelAsync({ jsonMode: true, centerId });
     const result = await model.generateContent(prompt);
-    const parsed = safeJsonParse(result.response.text());
+    const rawText = result?.response?.text ? result.response.text() : String(result || '');
+    const parsed = safeJsonParse(rawText, {}) || {};
     return parsed.questions || [];
   } catch (err) {
     console.error('Quiz generation error:', err.message);
@@ -121,7 +105,8 @@ Each question must have exactly 4 options with exactly one isCorrect:true. Provi
 
   const model = await getModelAsync({ jsonMode: true, centerId });
   const result = await model.generateContent(prompt);
-  const parsed = safeJsonParse(result.response.text());
+  const rawText = result?.response?.text ? result.response.text() : String(result || '');
+  const parsed = safeJsonParse(rawText, null);
   return parsed;
 };
 

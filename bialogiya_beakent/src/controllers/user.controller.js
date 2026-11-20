@@ -1,4 +1,4 @@
-const bcrypt = require('bcryptjs');
+﻿const bcrypt = require('bcryptjs');
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
 const { generateUsername, generatePassword } = require('../utils/generateCredentials');
@@ -1370,6 +1370,57 @@ const applyReferralCode = async (req, res, next) => {
   }
 };
 
+
+const scanAvatarFace = async (req, res, next) => {
+  try {
+    if (!req.file) return error(res, 'Rasm fayli yuklanmadi', 400);
+
+    // Resolve API key using the project's existing gemini config helpers
+    let apiKey = '';
+    try {
+      const geminiConfig = require('../config/gemini');
+      apiKey = await geminiConfig.getApiKeyAsync();
+    } catch (_) {
+      apiKey = process.env.GIMINI_AI_API_KEY ||
+        process.env.GEMINI_API_KEY ||
+        process.env.GEMINI_AI_API_KEY ||
+        process.env.GOOGLE_API_KEY || '';
+    }
+
+    if (!apiKey) {
+      return res.json({ success: false, faceFound: false, message: 'AI kalit topilmadi' });
+    }
+
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    const PROMPT = 'You help build a cartoon avatar. Look at this selfie and describe ONLY visible appearance traits needed to style a cartoon avatar. Do not identify the person and do not guess name, age, ethnicity or gender. If several faces are visible use the most prominent one. If no clear human face is visible reply {"faceFound":false}. Otherwise reply with JSON only, no other text: {"faceFound":true,"skin":"#rrggbb","hair":"#rrggbb","eyes":"#rrggbb","lips":"#rrggbb","hairStyle":"long|pig|pony|bob|spiky|neat","glasses":true or false,"hat":"none|cap","facialHair":"none|mustache|beard","faceShape":"round|oval|long","eyeSize":"small|normal|large","eyeShape":"round|almond","brows":"thin|normal|thick"}. skin=avg cheek/forehead colour. hair=main colour. eyes=iris. lips=natural. hairStyle: long=loose, pig=two tails, pony=one tail, bob=chin length, spiky=short messy, neat=short tidy.';
+
+    const imagePart = {
+      inlineData: {
+        data: req.file.buffer.toString('base64'),
+        mimeType: req.file.mimetype,
+      },
+    };
+
+    const result = await model.generateContent([PROMPT, imagePart]);
+    const text = result.response.text().trim();
+
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return res.json({ success: false, faceFound: false, message: 'AI javob tahlil qilinmadi' });
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return res.json({ success: true, ...parsed });
+  } catch (err) {
+    console.error('Avatar scan error:', err.message);
+    return res.json({ success: false, faceFound: false, message: 'AI skanerlash xatoligi' });
+  }
+};
+
 module.exports = {
   createStudent,
   createTeacher,
@@ -1397,4 +1448,5 @@ module.exports = {
   getAvatar,
   getReferralStats,
   applyReferralCode,
+  scanAvatarFace,
 };

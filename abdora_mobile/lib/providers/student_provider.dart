@@ -107,10 +107,10 @@ class StudentProvider extends ChangeNotifier {
   }
 
   // Testni topshirish
-  Future<Map<String, dynamic>?> submitTest(String testId, Map<String, int> answers, int timeTaken) async {
+  Future<Map<String, dynamic>?> submitTest(String testId, Map<dynamic, dynamic> answers, int timeTaken) async {
     try {
       final formattedAnswers = answers.entries.map((e) => {
-        'questionId': e.key,
+        'questionId': e.key.toString(),
         'answer': e.value,
       }).toList();
 

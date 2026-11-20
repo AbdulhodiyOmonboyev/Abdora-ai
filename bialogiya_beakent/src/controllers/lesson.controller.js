@@ -244,11 +244,60 @@ const getLessonById = async (req, res, next) => {
     if (!lesson) return error(res, 'Lesson not found', 404);
 
     if (req.user.role === 'student') {
-      await prisma.lesson.update({ where: { id: lesson.id }, data: { views: { increment: 1 } } });
-      // Award XP for viewing
+      await prisma.lesson.update({ where: { id: lesson.id }, data: { views: { increment: 1 } } }).catch(() => {});
+
+      // O'quvchi ushbu dars uchun bir kunda faqat bir marta XP olishi kerak (sahifa yangilanganda cheksiz XP/tanga olishini cheklash)
       try {
-        const { awardXP } = require('../services/gamification.service');
-        await awardXP(req.user.userId, 5, 'lesson_view');
+        const student = await prisma.user.findUnique({
+          where: { id: req.user.userId },
+          select: { achievements: true },
+        });
+
+        let achievementsObj = {};
+        if (student?.achievements) {
+          if (typeof student.achievements === 'object' && !Array.isArray(student.achievements)) {
+            achievementsObj = { ...student.achievements };
+          } else if (Array.isArray(student.achievements)) {
+            achievementsObj = { badges: student.achievements };
+          } else if (typeof student.achievements === 'string') {
+            try {
+              const parsed = JSON.parse(student.achievements);
+              achievementsObj = typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : { badges: Array.isArray(parsed) ? parsed : [] };
+            } catch (_) {}
+          }
+        }
+
+        const viewedLessons = achievementsObj.viewedLessons && typeof achievementsObj.viewedLessons === 'object'
+          ? { ...achievementsObj.viewedLessons }
+          : {};
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const lastViewDate = viewedLessons[lesson.id];
+
+        if (lastViewDate !== todayStr) {
+          viewedLessons[lesson.id] = todayStr;
+
+          // Prune very old entries to prevent infinite growth
+          const keys = Object.keys(viewedLessons);
+          if (keys.length > 100) {
+            const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+            for (const k of keys) {
+              if (viewedLessons[k] < sixtyDaysAgo) {
+                delete viewedLessons[k];
+              }
+            }
+          }
+
+          achievementsObj.viewedLessons = viewedLessons;
+
+          await prisma.user.update({
+            where: { id: req.user.userId },
+            data: { achievements: achievementsObj },
+          });
+
+          const { awardXP } = require('../services/gamification.service');
+          await awardXP(req.user.userId, 5, 'lesson_view');
+        }
       } catch (_) {}
     }
 

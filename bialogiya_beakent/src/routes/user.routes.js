@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const { fileUpload } = require('../middleware/upload.middleware');
@@ -7,11 +7,12 @@ const {
   updateUser, updateProfile, deleteUser, resetStudentPassword, freezeStudent, changePassword,
   getStudentHistory, addStudentNote, deleteStudentNote, awardStudentCoins, testAIPersonalization,
   updateLanguage, uploadAvatar, getAvatar,
-  getReferralStats, applyReferralCode,
+  getReferralStats, applyReferralCode, scanAvatarFace,
 } = require('../controllers/user.controller');
 
 router.get('/avatar/:id', getAvatar);
 router.post('/avatar', verifyToken, fileUpload.single('avatar'), uploadAvatar);
+router.post('/scan-avatar-face', verifyToken, fileUpload.single('image'), scanAvatarFace);
 router.get('/', verifyToken, requireRole('admin', 'reception', 'manager'), getAllUsers);
 router.get('/my-students', verifyToken, requireRole('teacher'), getStudentsByTeacher);
 // Creating/editing/deleting student accounts is reception's (and admin/manager's)

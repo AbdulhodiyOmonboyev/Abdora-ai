@@ -222,6 +222,7 @@ const convertLead = async (req, res, next) => {
         phone: lead.phone,
         role: 'student',
         groupId: groupId || null,
+        teacherId: group?.teacherId || null,
         branchId: lead.branchId || group?.branchId || null,
         centerId: lead.centerId || req.user.centerId || group?.centerId || null,
         studyLocation: lead.interestedIn || null,

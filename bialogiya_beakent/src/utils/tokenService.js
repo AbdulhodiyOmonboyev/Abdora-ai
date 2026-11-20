@@ -1,15 +1,18 @@
 const jwt = require('jsonwebtoken');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'abdora_default_jwt_secret_key_2025';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'abdora_default_refresh_secret_key_2025';
+
 const generateTokens = (userId, role, centerId = null) => {
   const accessToken = jwt.sign(
     { userId, role, centerId },
-    process.env.JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' }
   );
 
   const refreshToken = jwt.sign(
     { userId, role, centerId },
-    process.env.JWT_REFRESH_SECRET,
+    JWT_REFRESH_SECRET,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES || '7d' }
   );
 
@@ -17,11 +20,11 @@ const generateTokens = (userId, role, centerId = null) => {
 };
 
 const verifyAccessToken = (token) => {
-  return jwt.verify(token, process.env.JWT_SECRET);
+  return jwt.verify(token, JWT_SECRET);
 };
 
 const verifyRefreshToken = (token) => {
-  return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+  return jwt.verify(token, JWT_REFRESH_SECRET);
 };
 
 module.exports = { generateTokens, verifyAccessToken, verifyRefreshToken };

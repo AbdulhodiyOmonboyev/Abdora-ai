@@ -86,16 +86,35 @@ const recordGameActivity = async (req, res, next) => {
       createdAt: new Date().toISOString()
     };
 
-    let existingAchievements = [];
-    try {
-      existingAchievements = Array.isArray(student.achievements)
-        ? student.achievements
-        : JSON.parse(student.achievements || '[]');
-    } catch (_) {
-      existingAchievements = [];
+    let achievementsData;
+    let rawAch = student.achievements;
+    if (typeof rawAch === 'string') {
+      try {
+        rawAch = JSON.parse(rawAch);
+      } catch (_) {
+        rawAch = null;
+      }
     }
 
-    const updatedAchievements = [newActivity, ...existingAchievements].slice(0, 50);
+    if (rawAch && typeof rawAch === 'object' && !Array.isArray(rawAch)) {
+      // Obyekt bo'lsa (ichida notes, badges, coinTransactions, referrals va h.k.), uni massiv bilan almashtirmaslik!
+      const existingGameActs = Array.isArray(rawAch.gameActivities) ? rawAch.gameActivities : [];
+      achievementsData = {
+        ...rawAch,
+        gameActivities: [newActivity, ...existingGameActs].slice(0, 50),
+      };
+    } else if (Array.isArray(rawAch)) {
+      // Mavjud tuzilma massiv bo'lsa
+      achievementsData = [newActivity, ...rawAch].slice(0, 50);
+    } else {
+      // Yangi obyekt strukturasi
+      achievementsData = {
+        badges: [],
+        notes: [],
+        coinTransactions: [],
+        gameActivities: [newActivity],
+      };
+    }
 
     const xpGained = Math.max(10, Math.round(Number(score) / 2));
     const coinsGained = 15;
@@ -103,7 +122,7 @@ const recordGameActivity = async (req, res, next) => {
     await prisma.user.update({
       where: { id: studentId },
       data: {
-        achievements: updatedAchievements,
+        achievements: achievementsData,
         xp: { increment: xpGained },
         coins: { increment: coinsGained }
       }
@@ -183,7 +202,15 @@ const getTeacherGameActivities = async (req, res, next) => {
     allStudents.forEach(st => {
       let acts = [];
       try {
-        acts = Array.isArray(st.achievements) ? st.achievements : JSON.parse(st.achievements || '[]');
+        let ach = st.achievements;
+        if (typeof ach === 'string') {
+          try { ach = JSON.parse(ach); } catch (_) {}
+        }
+        if (Array.isArray(ach)) {
+          acts = ach;
+        } else if (ach && typeof ach === 'object') {
+          acts = Array.isArray(ach.gameActivities) ? ach.gameActivities : [];
+        }
       } catch (_) {}
       acts.forEach(a => {
         if (a && a.topicTitle) {

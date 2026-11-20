@@ -19,6 +19,7 @@ const XP_REWARDS = {
 const COIN_REWARDS = {
   lesson_view: 2,
   homework_submit: 5,
+  test_complete: 10,
   test_passed: 10,
   quiz_perfect: 15,
   daily_streak: 3,
@@ -72,4 +73,4 @@ const awardXP = async (userId, xpAmount, action = '') => {
   return { xpGained: xpAmount + bonusXP, coinsGained: coinAmount, newXP, newLevel };
 };
 
-module.exports = { awardXP, calculateLevel, XP_REWARDS };
+module.exports = { awardXP, calculateLevel, XP_REWARDS, COIN_REWARDS };

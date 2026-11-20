@@ -47,7 +47,7 @@
   /* Typography */
   --text-primary: #111827;
   --text-secondary: #667085;
-  --text-muted: #98A2B3;
+  --text-muted: #64748B;
   --heading-color: #111827;
 
   /* Borders & Dividers */
@@ -142,7 +142,7 @@
 
   --button: #FF6A00;
   --button-hover: #FF8133;
-  --button-text: #FFFFFF;
+  --button-text: #0F172A;
 
   --text-primary: #FFFFFF;
   --text-secondary: #94A3B8;
@@ -552,6 +552,13 @@
   }
   .input-error:focus {
     box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+  }
+
+  /* Prevent automatic iOS Safari zoom when focusing inputs on mobile */
+  @media (max-width: 768px) {
+    .input, .input-field, input, select, textarea {
+      font-size: 16px !important;
+    }
   }
 
   /* Search input variant */
@@ -1675,4 +1682,17 @@
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* =============================================================
+   PRINT STYLES
+   ============================================================= */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
 }

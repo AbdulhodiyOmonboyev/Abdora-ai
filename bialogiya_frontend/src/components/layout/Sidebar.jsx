@@ -6,7 +6,7 @@ import {
   Users, FolderOpen, Calendar, Trophy, Star, Settings,
   GraduationCap, BookMarked, UserCheck, Upload, Mic, Wallet, UserCog, Inbox, Building2,
   PieChart, Receipt, UserPlus, LogOut, Bot, ChevronLeft, ShoppingBag,
-  Flame, Coins, Award, Sparkles, TrendingUp,
+  Flame, Coins, Award, Sparkles, TrendingUp, Gamepad2,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +41,7 @@ export const studentSections = [
     title: 'Faollik & Mukofotlar',
     key: 'section_gamification',
     items: [
+      { to: '/student/avatar', icon: Gamepad2, key: 'avatar', label: '3D Avatar' },
       { to: '/student/shop', icon: ShoppingBag, key: 'shop', label: "Sovg'alar do'koni", badgeKey: 'shop' },
       { to: '/student/leaderboard', icon: Trophy, key: 'leaderboard', label: 'Reyting' },
       { to: '/student/achievements', icon: Sparkles, key: 'achievements', label: 'Yutuqlar' },
@@ -69,6 +70,7 @@ const teacherLinks = [
   { to: '/teacher/resources', icon: Upload, key: 'resources' },
   { to: '/teacher/voice', icon: Mic, key: 'voice' },
   { to: '/teacher/analytics', icon: BarChart2, key: 'analytics' },
+  { to: '/avatar', icon: Gamepad2, key: 'avatar', label: '3D Avatar' },
 ];
 
 const adminLinks = [
@@ -77,6 +79,7 @@ const adminLinks = [
   { to: '/admin/applications', icon: Inbox,           key: 'applications' },
   { to: '/admin/ai-agents',    icon: Bot,             key: 'aiAgents' },
   { to: '/admin/settings',     icon: Settings,        key: 'settings' },
+  { to: '/avatar',             icon: Gamepad2,        key: 'avatar', label: '3D Avatar' },
 ];
 
 const managerLinks = [
@@ -214,7 +217,7 @@ export default function Sidebar({ isOpen, onClose }) {
         }}
         className={cn(
           'flex-shrink-0 flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out',
-          'fixed inset-y-0 left-0 z-40',
+          'fixed inset-y-0 left-0 z-50 md:z-40',
           'md:relative',
           isOpen
             ? 'w-[280px] md:w-[var(--sidebar-width,256px)] translate-x-0 border-r opacity-100 shadow-2xl md:shadow-none'

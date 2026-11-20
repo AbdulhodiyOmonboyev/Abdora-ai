@@ -10,7 +10,7 @@ import { SUBJECTS, SUBJECT_LABELS } from '../../utils/subjects';
 export default function CreateLesson() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ title: '', content: '', subject: 'other', groupId: '', order: 0 });
+  const [form, setForm] = useState({ title: '', content: '', subject: 'other', groupId: '', order: 0, language: 'uz' });
   const [files, setFiles] = useState([]);
   const [aiEnabled, setAiEnabled] = useState(true);
 
@@ -30,8 +30,9 @@ export default function CreateLesson() {
           subject: lesson.subject || 'biology',
           groupId: lesson.groupId || '',
           order: lesson.order || 0,
+          language: lesson.language || 'uz',
         };
-        return (prev.title === next.title && prev.content === next.content && prev.subject === next.subject && prev.groupId === next.groupId && prev.order === next.order) ? prev : next;
+        return (prev.title === next.title && prev.content === next.content && prev.subject === next.subject && prev.groupId === next.groupId && prev.order === next.order && prev.language === next.language) ? prev : next;
       });
       setAiEnabled(lesson.aiEnabled !== false);
     }
@@ -67,6 +68,7 @@ export default function CreateLesson() {
     fd.append('subject', form.subject);
     fd.append('order', form.order);
     fd.append('groupId', form.groupId);
+    fd.append('language', form.language || 'uz');
     fd.append('aiEnabled', String(aiEnabled));
     files.forEach(f => fd.append('files', f));
 
@@ -112,7 +114,7 @@ export default function CreateLesson() {
           <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
             placeholder="Masalan: Fotosintez jarayoni, Hujayra tuzilishi..." className="input-field" />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5">Fan *</label>
             <select value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} className="input-field">
@@ -126,6 +128,14 @@ export default function CreateLesson() {
             <select value={form.groupId} onChange={e => setForm(f => ({ ...f, groupId: e.target.value }))} className="input-field">
               <option value="">Guruhni tanlang</option>
               {groups?.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Dars tili *</label>
+            <select value={form.language || 'uz'} onChange={e => setForm(f => ({ ...f, language: e.target.value }))} className="input-field">
+              <option value="uz">O'zbek tili</option>
+              <option value="ru">Русский язык</option>
+              <option value="en">English</option>
             </select>
           </div>
         </div>

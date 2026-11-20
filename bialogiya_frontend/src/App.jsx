@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ui/ErrorBoundary';
 
 // Shared
 import ProfilePage from './pages/shared/ProfilePage';
+import AvatarPage from './pages/shared/AvatarPage';
 import AdminManagers from './pages/admin/AdminManagers';
 import AdminManagerDetail from './pages/admin/AdminManagerDetail';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -194,6 +195,7 @@ export default function App() {
           <Route path="progress" element={<StudentProgress />} />
           <Route path="certificates" element={<CertificatePage />} />
           <Route path="shop" element={<StudentShopPage />} />
+          <Route path="avatar" element={<AvatarPage />} />
           <Route path="settings" element={<StudentSettings />} />
         </Route>
 
@@ -225,6 +227,9 @@ export default function App() {
         {/* Shared - any authenticated role */}
         <Route path="/profile" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route index element={<ProfilePage />} />
+        </Route>
+        <Route path="/avatar" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route index element={<AvatarPage />} />
         </Route>
         <Route path="/users" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path=":id" element={<UserDetail />} />

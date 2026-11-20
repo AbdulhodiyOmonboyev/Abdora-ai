@@ -5,6 +5,7 @@ import {
   Bell, Sun, Moon, LogOut, Globe, ChevronDown, Menu,
   KeyRound, User, Eye, EyeOff, Search, X, Check,
   BookOpen, FileEdit, Trophy, Snowflake, Building2, Users2,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -665,9 +666,17 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
               className="flex items-center gap-2 btn-ghost py-1.5 px-2 rounded-xl transition-colors hover:bg-[var(--secondary-background)]"
               aria-expanded={showProfile}
             >
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs bg-[var(--primary)] text-white shadow-xs flex-shrink-0">
-                {initials}
-              </div>
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user?.name || "Avatar"}
+                  className="w-8 h-8 rounded-xl object-cover shadow-xs flex-shrink-0 border border-[var(--border)]"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs bg-[var(--primary)] text-white shadow-xs flex-shrink-0">
+                  {initials}
+                </div>
+              )}
               <div className="hidden sm:flex flex-col items-start min-w-0">
                 <span className="text-xs font-semibold truncate max-w-[110px] leading-tight text-[var(--text-primary)]">
                   {user?.name}
@@ -714,6 +723,13 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
                   >
                     <User size={14} style={{ color: 'var(--primary)' }} />
                     Mening profilim
+                  </button>
+                  <button
+                    onClick={() => { setShowProfile(false); navigate('/avatar'); }}
+                    className="dropdown-item"
+                  >
+                    <Sparkles size={14} style={{ color: 'var(--primary)' }} />
+                    3D Avatar boʻlimi
                   </button>
                   <button
                     onClick={() => { setShowProfile(false); setShowChangePw(true); }}

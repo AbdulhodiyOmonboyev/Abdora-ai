@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { User, Phone, Globe, KeyRound, Save, Flame, Trophy, Users, BookOpen, Building2 } from 'lucide-react';
@@ -12,16 +13,20 @@ import ThemeBuilder from '../../components/ui/ThemeBuilder';
 import PhoneInput from '../../components/ui/PhoneInput';
 import { cleanPhone } from '../../utils/formatPhone';
 import { setLanguage } from '../../config/i18n';
+import AvatarCreator from '../../components/ui/AvatarCreator';
 
 const roleLabel = (role) => ({
   student: "O'quvchi", teacher: "O'qituvchi", reception: 'Qabulxona', manager: 'Manager', admin: 'Admin',
 }[role] || role);
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { user, updateUser } = useAuthStore();
   const [form, setForm] = useState({ name: '', phone: '+998 ', language: 'uz', studyLocation: '', residence: '', alternativeWorkplace: '', birthDate: '' });
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -60,19 +65,85 @@ export default function ProfilePage() {
     pwMutation.mutate({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
   };
 
+  const handleAvatarSave = async (dataUrl, config) => {
+    setAvatarUploading(true);
+    try {
+      // Convert dataUrl to blob
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const formData = new FormData();
+      formData.append('avatar', blob, 'avatar.png');
+
+      const { data } = await api.post('/users/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      updateUser(data.data);
+      toast.success('3D Avatar saqlandi! 🎉');
+    } catch (err) {
+      toast.error("Avatar saqlanmadi. Keyinroq urinib ko'ring.");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   const { level, progress } = getLevelProgress(me?.xp || 0);
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 px-4 sm:px-6 lg:px-8">
       {/* Header card */}
       <div className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white font-bold text-2xl flex-shrink-0 shadow-glow">
-          {me?.name?.charAt(0) || <User size={24} />}
+        <div className="relative flex-shrink-0">
+          {me?.avatar ? (
+            <img
+              src={me.avatar}
+              alt={me?.name}
+              className="w-16 h-16 rounded-full object-cover shadow-glow border-2 border-[var(--primary)]"
+            />
+          ) : (
+            <div className="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-glow">
+              {me?.name?.charAt(0) || <User size={24} />}
+            </div>
+          )}
+          <button
+            onClick={() => setAvatarOpen(true)}
+            disabled={avatarUploading}
+            className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shadow-md hover:bg-[var(--primary-dark)] transition-colors text-xs"
+            title="3D Avatar yaratish"
+          >
+            {avatarUploading ? '⟳' : '✏️'}
+          </button>
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-bold text-lg text-gray-800 dark:text-white truncate">{me?.name}</div>
           <div className="text-sm text-gray-400">@{me?.username}</div>
           <span className="badge text-xs bg-primary/10 text-primary mt-1">{t(me?.role) || roleLabel(me?.role)}</span>
+        </div>
+      </div>
+
+      {/* 3D Avatar Card */}
+      <div className="card flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="text-3xl flex-shrink-0">🎮</div>
+          <div className="min-w-0">
+            <div className="font-semibold text-sm text-gray-800 dark:text-white">3D Avatar boʻlimi</div>
+            <div className="text-xs text-gray-400 mt-0.5">Oʻzingizga oʻxshash 3D qahramon yarating yoki sunʼiy intellekt orqali selfi moslang</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => navigate('/avatar')}
+            className="btn-secondary text-xs sm:text-sm px-3.5 py-2 rounded-xl flex items-center gap-1.5"
+          >
+            <span>Boʻlimga oʻtish</span>
+            <span>➔</span>
+          </button>
+          <button
+            onClick={() => setAvatarOpen(true)}
+            disabled={avatarUploading}
+            className="btn-primary text-xs sm:text-sm px-3.5 py-2 rounded-xl disabled:opacity-50"
+          >
+            {avatarUploading ? 'Saqlanmoqda...' : me?.avatar ? 'Tezkor tahrirlash' : 'Yaratish'}
+          </button>
         </div>
       </div>
 
@@ -183,6 +254,13 @@ export default function ProfilePage() {
       </div>
 
       <ThemeBuilder />
+
+      {/* 3D Avatar Creator */}
+      <AvatarCreator
+        isOpen={avatarOpen}
+        onClose={() => setAvatarOpen(false)}
+        onSave={handleAvatarSave}
+      />
     </div>
   );
 }

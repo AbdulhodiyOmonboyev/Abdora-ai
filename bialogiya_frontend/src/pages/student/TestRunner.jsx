@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, ChevronLeft, ChevronRight, Send } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Send, AlertTriangle } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 
@@ -13,24 +13,12 @@ export default function TestRunner() {
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(null);
   const [startTime] = useState(Date.now());
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const { data: test, isLoading } = useQuery({
     queryKey: ['test', id],
     queryFn: () => api.get(`/tests/${id}`).then(r => r.data.data),
   });
-
-  useEffect(() => {
-    if (test?.timeLimit) {
-      setTimeLeft(test.timeLimit * 60);
-    }
-  }, [test]);
-
-  useEffect(() => {
-    if (timeLeft === null) return;
-    if (timeLeft <= 0) { handleSubmit(); return; }
-    const t = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-    return () => clearInterval(t);
-  }, [timeLeft]);
 
   const submitMutation = useMutation({
     mutationFn: (data) => api.post(`/tests/${id}/submit`, data),
@@ -64,6 +52,7 @@ export default function TestRunner() {
   useEffect(() => {
     if (timeLeft === null) return;
     if (timeLeft <= 0) {
+      setShowConfirm(false);
       handleSubmit();
       return;
     }
@@ -191,7 +180,7 @@ export default function TestRunner() {
           </button>
         ) : (
           <button
-            onClick={handleSubmit}
+            onClick={() => setShowConfirm(true)}
             disabled={submitMutation.isPending}
             className="btn-primary flex items-center gap-2"
           >
@@ -199,6 +188,81 @@ export default function TestRunner() {
           </button>
         )}
       </div>
+
+      {/* Tasdiqlash oynasi (Confirmation modal) */}
+      <AnimatePresence>
+        {showConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            onClick={() => setShowConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                  <Send size={22} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 dark:text-white text-base">
+                    Testni yakunlaysizmi?
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Barcha javoblarni tekshirdingizmi? Testni yakunlaysizmi?
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-3.5 space-y-2 text-xs">
+                <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                  <span>Jami savollar:</span>
+                  <span className="font-semibold text-gray-800 dark:text-white">{questions.length} ta</span>
+                </div>
+                <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                  <span>Belgilangan javoblar:</span>
+                  <span className="font-semibold text-green-600 dark:text-green-400">{answered} ta</span>
+                </div>
+                {questions.length - answered > 0 && (
+                  <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 font-medium pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span className="flex items-center gap-1.5">
+                      <AlertTriangle size={14} /> Belgilanmagan:
+                    </span>
+                    <span>{questions.length - answered} ta</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(false)}
+                  className="btn-ghost flex-1 py-2.5 text-xs sm:text-sm"
+                >
+                  Yo'q, tekshirish
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowConfirm(false);
+                    handleSubmit();
+                  }}
+                  disabled={submitMutation.isPending}
+                  className="btn-primary flex-1 py-2.5 text-xs sm:text-sm flex items-center justify-center gap-2"
+                >
+                  <Send size={14} /> {submitMutation.isPending ? 'Yuborilmoqda...' : 'Ha, yakunlash'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

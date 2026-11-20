@@ -74,6 +74,61 @@ const getGroupPayments = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// GET /payments/:id — get payment details by ID (for receipt, etc.)
+const getPaymentById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!id) return error(res, 'Payment ID required', 400);
+
+    const payment = await prisma.payment.findUnique({
+      where: { id },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            centerId: true,
+            group: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!payment) return error(res, "To'lov topilmadi", 404);
+
+    // Ruxsat tekshiruvi: student faqat o'z to'lovini, xodim esa o'z markazi to'lovini ko'ra olsin.
+    const userId = req.user.userId || req.user.id;
+    if (req.user.role === 'student') {
+      if (payment.studentId !== userId) {
+        return error(res, "Forbidden: Siz faqat o'zingizning to'lovlaringizni ko'ra olasiz", 403);
+      }
+    } else if (req.user.role !== 'admin') {
+      const paymentCenterId = payment.centerId || payment.student?.centerId;
+      if (paymentCenterId && req.user.centerId && paymentCenterId !== req.user.centerId) {
+        return error(res, "Forbidden: Begona markaz to'lovini ko'rishga ruxsat yo'q", 403);
+      }
+    }
+
+    const receiptNumber = payment.id.slice(-6).toUpperCase();
+    const group = payment.student?.group || null;
+    const student = payment.student ? {
+      id: payment.student.id,
+      name: payment.student.name,
+      phone: payment.student.phone,
+    } : null;
+
+    return success(res, {
+      ...payment,
+      student,
+      group,
+      receiptNumber,
+    });
+  } catch (err) { next(err); }
+};
+
 // POST /payments — upsert payment for student+month
 const markPayment = async (req, res, next) => {
   try {
@@ -81,7 +136,7 @@ const markPayment = async (req, res, next) => {
       return error(res, "O'qituvchi to'lov qabul qila olmaydi. To'lov faqat ma'muriyat yoki qabulxona tomonidan qabul qilinadi.", 403);
     }
 
-    const { studentId, month, amount, expectedAmount, method, note, isPaid } = req.body;
+    const { studentId, month, amount, expectedAmount, method, note, isPaid, paidAt: incomingPaidAt } = req.body;
     if (!studentId || !month) return error(res, 'studentId and month required', 400);
 
     const student = await prisma.user.findUnique({
@@ -93,7 +148,7 @@ const markPayment = async (req, res, next) => {
         teacherId: true,
         centerId: true,
         branchId: true,
-        group: { select: { monthlyFee: true, branchId: true, centerId: true } },
+        group: { select: { monthlyFee: true, branchId: true, centerId: true, teacherId: true } },
       },
     });
     if (!student || student.role !== 'student' || !student.isActive) return error(res, 'Student not found or inactive', 404);
@@ -130,6 +185,21 @@ const markPayment = async (req, res, next) => {
     const resolvedCenterId = req.user.centerId || student.centerId || student.group?.centerId || null;
     const resolvedBranchId = student.group?.branchId || student.branchId || req.user.branchId || null;
 
+    // Avvalgi to'lov mavjud bo'lsa va yangi sana ko'rsatilmagan bo'lsa, mavjud existingPayment.paidAt ni saqlab qolish
+    const existingPayment = await prisma.payment.findUnique({
+      where: { studentId_month: { studentId, month } },
+    });
+
+    let resolvedPaidAt;
+    if (incomingPaidAt) {
+      const parsedDate = new Date(incomingPaidAt);
+      resolvedPaidAt = !isNaN(parsedDate.getTime()) ? parsedDate : (existingPayment?.paidAt || new Date());
+    } else if (existingPayment?.paidAt) {
+      resolvedPaidAt = existingPayment.paidAt;
+    } else {
+      resolvedPaidAt = new Date();
+    }
+
     const data = {
       status,
       isPaid: status === 'paid',
@@ -139,12 +209,14 @@ const markPayment = async (req, res, next) => {
       note: note?.trim() || null,
       branchId: resolvedBranchId,
       centerId: resolvedCenterId,
-      paidAt: new Date(),
+      paidAt: resolvedPaidAt,
     };
+
+    const effectiveTeacherId = student.teacherId || student.group?.teacherId || (req.user.role === 'teacher' ? req.user.userId : null) || req.user.userId;
 
     const payment = await prisma.payment.upsert({
       where: { studentId_month: { studentId, month } },
-      create: { studentId, month, teacherId: req.user.userId, ...data },
+      create: { studentId, month, teacherId: effectiveTeacherId, ...data },
       update: data,
     });
 
@@ -156,11 +228,20 @@ const markPayment = async (req, res, next) => {
 const getDebtors = async (req, res, next) => {
   try {
     const month = req.query.month || new Date().toISOString().slice(0, 7);
-    const branchScope = req.user.role === 'reception'
-      ? { branch: { receptionId: req.user.userId } }
-      : req.user.role === 'manager'
-        ? { branch: { managerId: req.user.userId } }
-        : {};
+    const ownBranchIds = await getOwnBranchIds(req.user);
+    let branchScope = {};
+    if (req.user.role !== 'admin') {
+      if (ownBranchIds && ownBranchIds.length > 0) {
+        branchScope = { branchId: { in: ownBranchIds } };
+      } else {
+        const centerBranchCount = req.user.centerId
+          ? await prisma.branch.count({ where: { centerId: req.user.centerId, isActive: true } })
+          : 0;
+        if (centerBranchCount > 0) {
+          branchScope = { branchId: { in: [] } };
+        }
+      }
+    }
 
     const students = await prisma.user.findMany({
       where: {
@@ -302,4 +383,4 @@ const exportGroupPayments = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getGroupPayments, markPayment, removePayment, getDebtors, exportGroupPayments };
+module.exports = { getGroupPayments, getPaymentById, markPayment, removePayment, getDebtors, exportGroupPayments };

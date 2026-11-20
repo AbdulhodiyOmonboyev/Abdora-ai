@@ -9,7 +9,8 @@ import {
   MessageSquare, Users, ArrowLeft, RefreshCw, ChevronLeft, ChevronRight,
   Send, Loader2, Play, Pause, Square, Check, X, Download, Clapperboard, Mic,
   Sparkles, HelpCircle, Layers, Award, CheckCircle, Clock, Flame,
-  ArrowRight, Trophy, ThumbsUp, AlertTriangle, CheckCircle2, AlertCircle, ShieldCheck, Pencil, Trash2, Plus
+  ArrowRight, Trophy, ThumbsUp, AlertTriangle, CheckCircle2, AlertCircle, ShieldCheck, Pencil, Trash2, Plus,
+  Heart
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -23,6 +24,7 @@ import TushunBuddySection from '../../components/ai/TushunBuddySection';
 
 const TABS = [
   { id: 'overview', icon: BookOpen, key: 'overview', label: 'Umumiy' },
+  { id: 'tushun', icon: Heart, key: 'tushun_buddy', label: "TUSHUN Do'sti" },
   { id: 'explain', icon: Brain, key: 'ai_explanation', label: 'AI Tushuntirish' },
   { id: 'tricks', icon: Lightbulb, key: 'memory_tricks', label: 'Mnemotika' },
   { id: 'story', icon: FileText, key: 'story_mode', label: 'Hikoya' },

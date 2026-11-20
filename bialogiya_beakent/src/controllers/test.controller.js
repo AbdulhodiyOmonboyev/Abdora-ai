@@ -84,7 +84,23 @@ const getTestById = async (req, res, next) => {
     if (req.user.role === 'student') {
       // Shuffle and hide correct answers
       const q = await prisma.question.findMany({ where: { testId: test.id }, select: { id: true, text: true, type: true, options: true, points: true } });
-      return success(res, { ...test, questions: q });
+      const safeQuestions = q.map(item => {
+        let opts = item.options;
+        if (typeof opts === 'string') {
+          try { opts = JSON.parse(opts); } catch (_) {}
+        }
+        if (Array.isArray(opts)) {
+          opts = opts.map(opt => {
+            if (opt && typeof opt === 'object') {
+              const { isCorrect, ...rest } = opt;
+              return rest;
+            }
+            return opt;
+          });
+        }
+        return { ...item, options: opts };
+      });
+      return success(res, { ...test, questions: safeQuestions });
     }
     return success(res, test);
   } catch (err) { next(err); }
@@ -105,23 +121,57 @@ const submitTest = async (req, res, next) => {
       if (!q) return a;
       const opts = Array.isArray(q.options) ? q.options : [];
       const correct = opts.find(o => o.isCorrect);
-      const isCorrect = correct && a.answer === correct.text;
+      const isCorrect = Boolean(correct && (a.answer === correct.text || String(a.answer) === String(opts.indexOf(correct))));
       if (isCorrect) score += q.points;
-      return { ...a, isCorrect, correctAnswer: correct?.text };
+      let answerText = a.answer;
+      if (typeof a.answer === 'number' && opts[a.answer]) {
+        answerText = opts[a.answer].text;
+      } else if (typeof a.answer === 'string' && /^\d+$/.test(a.answer) && opts[parseInt(a.answer, 10)] && !opts.some(o => o.text === a.answer)) {
+        answerText = opts[parseInt(a.answer, 10)].text;
+      }
+      return { ...a, answer: answerText, isCorrect, correctAnswer: correct?.text };
     });
 
     const totalPoints = test.totalPoints || test.questions.reduce((s, q) => s + q.points, 0) || 1;
     const percentage = Math.round((score / totalPoints) * 100);
     const passed = percentage >= test.passingScore;
 
+    // Cheksiz XP yig'ish (farming exploit) ni oldini olish:
+    // Yangi natija saqlanishidan oldin talaba bu testni ilgari topshirganligi va o'tganligini tekshiramiz
+    const previousPassed = await prisma.result.findFirst({
+      where: {
+        testId: test.id,
+        studentId: req.user.userId,
+        passed: true,
+      },
+    });
+
+    const previousAttempt = previousPassed || await prisma.result.findFirst({
+      where: {
+        testId: test.id,
+        studentId: req.user.userId,
+      },
+    });
+
     const result = await prisma.result.create({
       data: { testId: test.id, studentId: req.user.userId, centerId: test.centerId, answers: gradedAnswers, score, percentage, passed, timeTaken: timeTaken || 0 },
     });
 
-    // Award XP
+    // Award XP and coins (exploit prevention):
+    // Testdan o'tsa va ilgari bu testdan o'tmagan bo'lsa -> 50 XP va tanga ('test_passed')
+    // Agar ilgari o'tgan bo'lsa -> qayta XP/tanga berilmaydi
+    // Agar yiqilsa va ilgari umuman topshirmagan bo'lsa -> 20 XP ('test_failed')
     try {
       const { awardXP } = require('../services/gamification.service');
-      await awardXP(req.user.userId, passed ? 50 : 20, 'test_complete');
+      if (passed) {
+        if (!previousPassed) {
+          await awardXP(req.user.userId, 50, 'test_passed');
+        }
+      } else {
+        if (!previousAttempt) {
+          await awardXP(req.user.userId, 20, 'test_failed');
+        }
+      }
     } catch (_) {}
 
     // Async AI analysis
@@ -186,7 +236,7 @@ const getMyResults = async (req, res, next) => {
 // an AI read of what the group misunderstood. Teacher/admin only.
 const getTestAnalysis = async (req, res, next) => {
   try {
-    const test = await prisma.test.findUnique({
+    const test = await prisma.test.findFirst({
       where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
       include: { questions: true, group: { select: { id: true, name: true } } },
     });

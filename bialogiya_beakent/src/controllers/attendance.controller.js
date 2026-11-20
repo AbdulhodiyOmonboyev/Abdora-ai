@@ -63,6 +63,55 @@ const markAttendance = async (req, res, next) => {
 
     const gradeSettings = await getCenterGradeSettings(group?.centerId || req.user.centerId);
 
+    const dateObj = new Date(date);
+    dateObj.setUTCHours(0, 0, 0, 0);
+
+    const existingAttendance = await prisma.attendance.findUnique({
+      where: { groupId_date: { groupId, date: dateObj } },
+    });
+
+    const existingRecordsMap = new Map();
+    if (existingAttendance && Array.isArray(existingAttendance.records)) {
+      for (const rec of existingAttendance.records) {
+        if (rec && rec.studentId) {
+          existingRecordsMap.set(rec.studentId, rec);
+        }
+      }
+    }
+
+    const calculateDelta = (status, grade, settings) => {
+      let delta = 0;
+      let reason = '';
+
+      if (status === 'absent') {
+        if (settings.coinDeductionEnabled && settings.deductCoinsOnAbsent > 0) {
+          delta = -Math.abs(settings.deductCoinsOnAbsent);
+          reason = `Davomat: Darsda qatnashmadi (-${Math.abs(delta)} tanga)`;
+        }
+      } else if (grade !== null && grade !== undefined) {
+        if (settings.coinsPerGrade && settings.coinsPerGrade[grade] !== undefined) {
+          const configuredDelta = settings.coinsPerGrade[grade];
+          if (configuredDelta < 0) {
+            delta = settings.coinDeductionEnabled ? configuredDelta : 0;
+          } else {
+            delta = configuredDelta;
+          }
+        } else if (grade >= settings.highGradeThreshold) {
+          delta = Math.abs(settings.awardCoinsOnHighGrade);
+        } else if (grade <= settings.lowGradeThreshold) {
+          delta = settings.coinDeductionEnabled ? -Math.abs(settings.deductCoinsOnLowGrade) : 0;
+        }
+
+        if (delta > 0) {
+          reason = `Darsdagi a'lo baho (${grade}/10): +${delta} tanga`;
+        } else if (delta < 0) {
+          reason = `Darsdagi past baho (${grade}/10): ${delta} tanga`;
+        }
+      }
+
+      return { delta, reason };
+    };
+
     const cleanedRecords = [];
     const coinUpdates = [];
 
@@ -87,34 +136,42 @@ const markAttendance = async (req, res, next) => {
         note,
       });
 
-      // Tangalarni hisoblash (Sozlamalar asosida ayirish yoki qo'shish)
+      const existingRecord = existingRecordsMap.get(r.studentId);
       let coinDelta = 0;
       let reason = '';
 
-      if (status === 'absent') {
-        if (gradeSettings.coinDeductionEnabled && gradeSettings.deductCoinsOnAbsent > 0) {
-          coinDelta = -Math.abs(gradeSettings.deductCoinsOnAbsent);
-          reason = `Davomat: Darsda qatnashmadi (-${Math.abs(coinDelta)} tanga)`;
-        }
-      } else if (grade !== null) {
-        if (gradeSettings.coinsPerGrade && gradeSettings.coinsPerGrade[grade] !== undefined) {
-          const configuredDelta = gradeSettings.coinsPerGrade[grade];
-          if (configuredDelta < 0) {
-            coinDelta = gradeSettings.coinDeductionEnabled ? configuredDelta : 0;
-          } else {
-            coinDelta = configuredDelta;
-          }
-        } else if (grade >= gradeSettings.highGradeThreshold) {
-          coinDelta = Math.abs(gradeSettings.awardCoinsOnHighGrade);
-        } else if (grade <= gradeSettings.lowGradeThreshold) {
-          coinDelta = gradeSettings.coinDeductionEnabled ? -Math.abs(gradeSettings.deductCoinsOnLowGrade) : 0;
-        }
+      if (existingRecord) {
+        const statusChanged = existingRecord.status !== status;
+        const oldGrade = existingRecord.grade !== undefined && existingRecord.grade !== null && existingRecord.grade !== ''
+          ? parseInt(existingRecord.grade, 10)
+          : null;
+        const parsedOldGrade = isNaN(oldGrade) ? null : oldGrade;
+        const gradeChanged = parsedOldGrade !== grade;
 
-        if (coinDelta > 0) {
-          reason = `Darsdagi a'lo baho (${grade}/10): +${coinDelta} tanga`;
-        } else if (coinDelta < 0) {
-          reason = `Darsdagi past baho (${grade}/10): ${coinDelta} tanga`;
+        if (!statusChanged && !gradeChanged) {
+          // Status va baho o'zgarmagan bo'lsa tangalarga teginmaslik
+          coinDelta = 0;
+        } else {
+          // Faqat o'zgargandagina farqni hisoblash
+          const oldCalc = calculateDelta(existingRecord.status, parsedOldGrade, gradeSettings);
+          const newCalc = calculateDelta(status, grade, gradeSettings);
+          coinDelta = newCalc.delta - oldCalc.delta;
+
+          if (coinDelta > 0) {
+            reason = statusChanged
+              ? `Davomat yangilandi (${status}): +${coinDelta} tanga`
+              : `Baho yangilandi (${grade}/10): +${coinDelta} tanga`;
+          } else if (coinDelta < 0) {
+            reason = statusChanged
+              ? `Davomat yangilandi (${status}): ${coinDelta} tanga`
+              : `Baho yangilandi (${grade}/10): ${coinDelta} tanga`;
+          }
         }
+      } else {
+        // Yangi davomat yozuvi
+        const newCalc = calculateDelta(status, grade, gradeSettings);
+        coinDelta = newCalc.delta;
+        reason = newCalc.reason;
       }
 
       if (coinDelta !== 0) {
@@ -127,9 +184,6 @@ const markAttendance = async (req, res, next) => {
         });
       }
     }
-
-    const dateObj = new Date(date);
-    dateObj.setUTCHours(0, 0, 0, 0);
 
     const att = await prisma.attendance.upsert({
       where: { groupId_date: { groupId, date: dateObj } },
@@ -189,9 +243,11 @@ const markAttendance = async (req, res, next) => {
       } catch (_) {}
     }
 
-    // Baholangan, lekin tanga o'zgarmagan o'quvchilarga ham bildirishnoma
+    // Baholangan, lekin tanga o'zgarmagan o'quvchilarga ham bildirishnoma (faqat yangi yoki bahosi o'zgargan bo'lsa)
     for (const r of cleanedRecords) {
-      if (r.grade !== null && !coinUpdates.some(u => u.studentId === r.studentId)) {
+      const existingRec = existingRecordsMap.get(r.studentId);
+      const isNewOrChanged = !existingRec || (existingRec.grade ?? null) !== (r.grade ?? null);
+      if (r.grade !== null && isNewOrChanged && !coinUpdates.some(u => u.studentId === r.studentId)) {
         await prisma.notification.create({
           data: {
             userId: r.studentId,
@@ -204,8 +260,11 @@ const markAttendance = async (req, res, next) => {
       }
     }
 
-    // Darsda qatnashmagan (absent) o'quvchilar ota-onasiga SMS xabar jo'natish
-    const absentRecords = cleanedRecords.filter(r => r.status === 'absent');
+    // Darsda qatnashmagan (absent) o'quvchilar ota-onasiga SMS xabar jo'natish (faqat yangi absent bo'lsa)
+    const absentRecords = cleanedRecords.filter(r => {
+      const ex = existingRecordsMap.get(r.studentId);
+      return r.status === 'absent' && (!ex || ex.status !== 'absent');
+    });
     if (absentRecords.length > 0 && group?.centerId) {
       const absentStudentIds = absentRecords.map(r => r.studentId);
       prisma.user.findMany({

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Users, Download, Loader2, X, Snowflake, ChevronRight } from 'lucide-react';
+import { Wallet, Users, Download, Loader2, X, Snowflake, ChevronRight, Printer, Receipt } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
@@ -27,6 +28,7 @@ export default function ReceptionPayments() {
   const [groupId, setGroupId] = useState('');
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [editing, setEditing] = useState(null);
+  const [lastSavedPayment, setLastSavedPayment] = useState(null);
 
   const { data: groups = [] } = useQuery({
     queryKey: ['reception-groups'],
@@ -51,12 +53,29 @@ export default function ReceptionPayments() {
   const totals = paymentsQuery.data?.totals || { expected: 0, collected: 0, debt: 0 };
 
   const paymentMutation = useMutation({
-    mutationFn: (payload) => api.post('/payments', { ...payload, month }),
-    onSuccess: () => {
+    mutationFn: (payload) => api.post('/payments', { ...payload, month }).then(r => r.data?.data || r.data),
+    onSuccess: (payment) => {
       qc.invalidateQueries({ queryKey: ['reception-payments', groupId, month] });
       qc.invalidateQueries({ queryKey: ['finance-summary'] });
-      toast.success('To\'lov saqlandi');
       setEditing(null);
+      if (payment?.id) {
+        setLastSavedPayment(payment);
+        toast((t) => (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium">To'lov saqlandi!</span>
+            <Link
+              to={`/erp/receipt/${payment.id}`}
+              onClick={() => toast.dismiss(t.id)}
+              className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
+            >
+              <Printer size={13} />
+              Kvitansiya
+            </Link>
+          </div>
+        ), { duration: 6000 });
+      } else {
+        toast.success("To'lov saqlandi");
+      }
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Saqlab bo\'lmadi'),
   });
@@ -118,6 +137,37 @@ export default function ReceptionPayments() {
             className="input-field focus-visible:ring-2 focus-visible:ring-primary/40" />
         </div>
       </div>
+
+      {lastSavedPayment?.id && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-950/40 dark:text-emerald-100">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+              <Receipt size={16} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">To'lov muvaffaqiyatli saqlandi!</p>
+              <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80">Kvitansiyani ko'rish yoki chop etish mumkin</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to={`/erp/receipt/${lastSavedPayment.id}`}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500"
+            >
+              <Printer size={14} />
+              Kvitansiyani ko'rish / chop etish
+            </Link>
+            <button
+              type="button"
+              onClick={() => setLastSavedPayment(null)}
+              aria-label="Yopish"
+              className="rounded-lg p-1.5 text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {paymentsQuery.isError && <ErrorState error={paymentsQuery.error} onRetry={paymentsQuery.refetch} />}
 
@@ -194,6 +244,18 @@ export default function ReceptionPayments() {
                 )}
               </div>
 
+              {s.payment?.id && (
+                <Link
+                  to={`/erp/receipt/${s.payment.id}`}
+                  title="Kvitansiyani ko'rish / chop etish"
+                  aria-label={`${s.name} kvitansiyasini ko'rish`}
+                  className="flex flex-shrink-0 items-center gap-1 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-xs hover:border-primary hover:text-primary transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-primary dark:hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <Printer size={13} />
+                  <span className="hidden sm:inline">Kvitansiya</span>
+                </Link>
+              )}
+
               <button type="button" onClick={() => setEditing(s)}
                 aria-label={`${s.name} — to'lovni tahrirlash`}
                 className={`flex flex-shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${style.cls}`}>
@@ -227,10 +289,22 @@ export default function ReceptionPayments() {
               className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900">
               <div className="mb-1 flex items-center justify-between">
                 <h2 id="payment-modal-title" className="text-lg font-bold text-gray-800 dark:text-white">{editing.name}</h2>
-                <button type="button" onClick={() => setEditing(null)} aria-label="Yopish"
-                  className="btn-ghost rounded-lg p-1.5 focus-visible:ring-2 focus-visible:ring-primary/40">
-                  <X size={16} />
-                </button>
+                <div className="flex items-center gap-1">
+                  {editing.payment?.id && (
+                    <Link
+                      to={`/erp/receipt/${editing.payment.id}`}
+                      className="btn-ghost flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-primary hover:bg-primary/10"
+                      title="Kvitansiyani ko'rish"
+                    >
+                      <Printer size={14} />
+                      <span className="hidden sm:inline">Kvitansiya</span>
+                    </Link>
+                  )}
+                  <button type="button" onClick={() => setEditing(null)} aria-label="Yopish"
+                    className="btn-ghost rounded-lg p-1.5 focus-visible:ring-2 focus-visible:ring-primary/40">
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
               <p className="mb-4 text-sm text-gray-500">{monthLabel(month)} uchun to'lov</p>
 

@@ -18,8 +18,18 @@ export default function GradeSubmissions() {
 
   const gradeMutation = useMutation({
     mutationFn: ({ subId, score, comment }) => api.put(`/homework/submissions/${subId}/grade`, { score, feedback: comment }),
-    onSuccess: () => { qc.invalidateQueries(['submissions', id]); toast.success('Grade saved!'); },
-    onError: (e) => toast.error(e.response?.data?.message || 'Error'),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries(['submissions', id]);
+      if (variables?.subId) {
+        setGrades(g => {
+          const next = { ...g };
+          delete next[variables.subId];
+          return next;
+        });
+      }
+      toast.success('Baholandi va saqlandi!');
+    },
+    onError: (e) => toast.error(e.response?.data?.message || 'Xatolik yuz berdi'),
   });
 
   return (
@@ -42,6 +52,8 @@ export default function GradeSubmissions() {
         {submissions?.map((sub, i) => {
           const submittedAt = sub.submittedAt || sub.createdAt;
           const offset = formatDeadlineOffset(submittedAt, sub.homework?.dueDate || hw?.dueDate);
+          const isReviewed = sub.status === 'graded' || sub.status === 'teacher_reviewed';
+          const isEditing = !!grades[sub.id]?.editing;
           return (
           <motion.div key={sub.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             className="card">
@@ -103,13 +115,14 @@ export default function GradeSubmissions() {
                       {sub.aiGrade.score} / {hw?.maxScore}
                     </span>
                   </div>
-                  {sub.status !== 'teacher_reviewed' && (
+                  {(!isReviewed || isEditing) && (
                     <button
                       type="button"
                       onClick={() => {
                         setGrades(g => ({
                           ...g,
                           [sub.id]: {
+                            ...g[sub.id],
                             score: sub.aiGrade.score,
                             comment: sub.aiGrade.feedback || ''
                           }
@@ -154,38 +167,52 @@ export default function GradeSubmissions() {
               </div>
             )}
 
-            {sub.status !== 'teacher_reviewed' ? (
+            {(!isReviewed || isEditing) ? (
               <div className="flex flex-col sm:flex-row gap-2.5 mt-1">
                 <div className="w-full sm:w-32">
                   <input type="number" min={0} max={hw?.maxScore || 100}
                     placeholder={`Ball (max ${hw?.maxScore})`}
-                    value={grades[sub.id]?.score ?? (sub.aiGrade?.score || '')}
+                    value={grades[sub.id]?.score ?? (sub.teacherGrade?.score ?? sub.finalScore ?? sub.aiGrade?.score ?? '')}
                     onChange={e => setGrades(g => ({ ...g, [sub.id]: { ...g[sub.id], score: +e.target.value } }))}
                     className="input-field text-sm" />
                 </div>
                 <div className="flex-1">
                   <input placeholder="O'qituvchi izohi (ixtiyoriy)"
-                    value={grades[sub.id]?.comment ?? (grades[sub.id]?.comment === undefined && sub.aiGrade?.feedback ? sub.aiGrade.feedback : '')}
+                    value={grades[sub.id]?.comment ?? (sub.teacherGrade?.feedback ?? (grades[sub.id]?.comment === undefined && sub.aiGrade?.feedback ? sub.aiGrade.feedback : ''))}
                     onChange={e => setGrades(g => ({ ...g, [sub.id]: { ...g[sub.id], comment: e.target.value } }))}
                     className="input-field text-sm" />
                 </div>
-                <button
-                  disabled={gradeMutation.isPending}
-                  onClick={() => gradeMutation.mutate({
-                    subId: sub.id,
-                    score: grades[sub.id]?.score ?? sub.aiGrade?.score ?? 0,
-                    comment: grades[sub.id]?.comment ?? sub.aiGrade?.feedback ?? ''
-                  })}
-                  className="btn-primary px-4 py-2 flex items-center justify-center gap-1.5 whitespace-nowrap text-sm">
-                  <CheckCircle size={15} /> Tasdiqlash va Saqlash
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    disabled={gradeMutation.isPending}
+                    onClick={() => gradeMutation.mutate({
+                      subId: sub.id,
+                      score: grades[sub.id]?.score ?? sub.teacherGrade?.score ?? sub.finalScore ?? sub.aiGrade?.score ?? 0,
+                      comment: grades[sub.id]?.comment ?? sub.teacherGrade?.feedback ?? sub.aiGrade?.feedback ?? ''
+                    })}
+                    className="btn-primary px-4 py-2 flex items-center justify-center gap-1.5 whitespace-nowrap text-sm">
+                    <CheckCircle size={15} /> Tasdiqlash va Saqlash
+                  </button>
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => setGrades(g => {
+                        const next = { ...g };
+                        delete next[sub.id];
+                        return next;
+                      })}
+                      className="btn-ghost px-3 py-2 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                      Bekor qilish
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center justify-between p-2.5 bg-green-50/60 dark:bg-green-950/20 border border-green-200/60 dark:border-green-800/40 rounded-xl text-xs">
                 <div className="flex items-center gap-2 text-green-700 dark:text-green-300 font-medium">
                   <CheckCircle size={15} className="text-green-600 flex-shrink-0" />
                   <div>
-                    <span>O'qituvchi tomonidan tasdiqlangan: <strong>{sub.teacherGrade?.score}/{hw?.maxScore}</strong></span>
+                    <span>Baholangan (O'qituvchi tomonidan tasdiqlangan): <strong>{sub.teacherGrade?.score ?? sub.finalScore}/{hw?.maxScore}</strong></span>
                     {sub.teacherGrade?.feedback && (
                       <p className="text-gray-600 dark:text-gray-400 font-normal mt-0.5">{sub.teacherGrade.feedback}</p>
                     )}
@@ -194,7 +221,7 @@ export default function GradeSubmissions() {
                 <button
                   onClick={() => setGrades(g => ({
                     ...g,
-                    [sub.id]: { score: sub.teacherGrade?.score, comment: sub.teacherGrade?.feedback || '' }
+                    [sub.id]: { score: sub.teacherGrade?.score ?? sub.finalScore, comment: sub.teacherGrade?.feedback || '', editing: true }
                   }))}
                   className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 underline ml-2 whitespace-nowrap"
                 >

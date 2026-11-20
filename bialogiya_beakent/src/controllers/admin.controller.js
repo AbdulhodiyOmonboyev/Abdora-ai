@@ -943,41 +943,81 @@ const DEFAULT_COURSE_LEVELS = [
 ];
 
 const resolveSettingsCenter = async (req) => {
-  const targetId = req.query?.centerId || req.body?.centerId || req.headers?.['x-center-id'];
+  const role = req.user?.role;
+  const isRestrictedStaff = role === 'manager' || role === 'reception';
+  const userCenterId = req.user?.centerId;
+
+  let targetId = req.query?.centerId || req.body?.centerId || req.headers?.['x-center-id'];
+
+  // Agar manager yoki reception bo'lsa va so'rovda begona centerId kelgan bo'lsa,
+  // ruxsat berilmasin (req.user.centerId ga qat'iy majburlansin), multi-tenant xavfsizlik teshigi yopilsin.
+  if (isRestrictedStaff && userCenterId) {
+    targetId = userCenterId;
+  } else if (!targetId && userCenterId) {
+    targetId = userCenterId;
+  }
+
   if (targetId) {
+    if (isRestrictedStaff && userCenterId && targetId !== userCenterId) {
+      return null;
+    }
     const center = await prisma.center.findUnique({ where: { id: targetId } });
-    if (center) return center;
+    if (center) {
+      if (isRestrictedStaff && userCenterId && center.id !== userCenterId) {
+        return null;
+      }
+      return center;
+    }
+    // Agar restricted staff uchun o'zining userCenterId si bo'yicha markaz topilmasa,
+    // begona markazlarga kirishga ruxsat berilmaydi
+    if (isRestrictedStaff) {
+      return null;
+    }
   }
 
   const userId = req.user?.userId || req.user?.id;
   if (userId) {
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, username: true, centerId: true, role: true, branchId: true }
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        centerId: true,
+        role: true,
+        branchId: true,
+        branch: { select: { centerId: true } }
+      }
     });
 
-    if (dbUser?.centerId) {
-      const center = await prisma.center.findUnique({ where: { id: dbUser.centerId } });
-      if (center) return center;
-    }
+    let resolvedCenterId = dbUser?.centerId;
 
-    if (['reception', 'teacher', 'student', 'manager'].includes(dbUser?.role)) {
-      if (dbUser?.branchId) {
-        const branch = await prisma.branch.findUnique({ where: { id: dbUser.branchId }, select: { centerId: true } });
-        if (branch?.centerId) {
-          const center = await prisma.center.findUnique({ where: { id: branch.centerId } });
-          if (center) return center;
+    if (!resolvedCenterId && ['reception', 'teacher', 'student', 'manager'].includes(dbUser?.role)) {
+      if (dbUser?.branch?.centerId) {
+        resolvedCenterId = dbUser.branch.centerId;
+      } else {
+        const recBranch = await prisma.branch.findFirst({
+          where: { OR: [{ receptionId: userId }, { managerId: userId }] },
+          select: { centerId: true }
+        });
+        if (recBranch?.centerId) {
+          resolvedCenterId = recBranch.centerId;
         }
       }
-      const recBranch = await prisma.branch.findFirst({
-        where: { OR: [{ receptionId: userId }, { managerId: userId }] },
-        select: { centerId: true }
-      });
-      if (recBranch?.centerId) {
-        const center = await prisma.center.findUnique({ where: { id: recBranch.centerId } });
-        if (center) return center;
-      }
     }
+
+    if (resolvedCenterId && resolvedCenterId !== targetId) {
+      if (isRestrictedStaff && userCenterId && resolvedCenterId !== userCenterId) {
+        return null;
+      }
+      const center = await prisma.center.findUnique({ where: { id: resolvedCenterId } });
+      if (center) return center;
+    }
+  }
+
+  // Manager yoki reception begona yoki ixtiyoriy markaz ma'lumotlarini ola olmaydi
+  if (isRestrictedStaff) {
+    return null;
   }
 
   const center = await prisma.center.findFirst({
@@ -1094,13 +1134,25 @@ const getSettings = async (req, res, next) => {
 
 const updateSettings = async (req, res, next) => {
   try {
+    const role = req.user?.role || 'admin';
+    const isRestrictedStaff = role === 'manager' || role === 'reception';
+    const userCenterId = req.user?.centerId;
+    const requestedCenterId = req.query?.centerId || req.body?.centerId || req.headers?.['x-center-id'];
+
+    // Agar manager yoki reception bo'lsa va so'rovda begona centerId kelgan bo'lsa, ruxsat berilmaydi
+    if (isRestrictedStaff && requestedCenterId && userCenterId && requestedCenterId !== userCenterId) {
+      return error(res, "Forbidden: Begona markaz sozlamalarini o'zgartirishga ruxsat yo'q", 403);
+    }
+
     const center = await resolveSettingsCenter(req);
     if (!center) {
       return error(res, "Sozlamalarni saqlash uchun kamida bitta faol markaz tanlanishi lozim", 400);
     }
+    if (isRestrictedStaff && userCenterId && center.id !== userCenterId) {
+      return error(res, "Forbidden: Begona markaz sozlamalarini o'zgartirishga ruxsat yo'q", 403);
+    }
     const newSettings = req.body || {};
     const currentSettings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
-    const role = req.user?.role || 'admin';
 
     const rolePrefsKey = role === 'reception' ? 'receptionPrefs'
                        : role === 'manager'   ? 'managerPrefs'
@@ -1572,6 +1624,11 @@ const createBranch = async (req, res, next) => {
       latitude: Number.isFinite(Number(latitude)) ? Number(latitude) : null,
       longitude: Number.isFinite(Number(longitude)) ? Number(longitude) : null,
     };
+
+    const effectiveCenterId = req.body.centerId || req.user.centerId || null;
+    if (effectiveCenterId) {
+      branchData.centerId = effectiveCenterId;
+    }
 
     if (req.user.role === 'manager') {
       branchData.managerId = req.user.userId;

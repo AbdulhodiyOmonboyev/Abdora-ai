@@ -146,7 +146,13 @@ const submitHomework = async (req, res, next) => {
       setImmediate(async () => {
         try {
           const { gradeHomework } = require('../services/ai/gradingAI.service');
-          const aiGrade = await gradeHomework(hw.title, hw.description || '', answerText || '', hw.maxScore || 100);
+          const aiGrade = await gradeHomework(
+            hw.title,
+            hw.description || '',
+            answerText || '',
+            hw.maxScore || 100,
+            hw.lesson?.centerId || req.user.centerId || null
+          );
           await prisma.submission.update({ where: { id: submission.id }, data: { aiGrade, status: 'ai_graded' } });
         } catch (_) {}
       });
