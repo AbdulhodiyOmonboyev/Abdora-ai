@@ -56,6 +56,7 @@ export const useThemeStore = create(
           };
         });
       },
+      toggleTheme: () => get().toggle(),
       applyTheme: (id) => {
         set((state) => {
           const nextTheme = getThemeById(state, id);
@@ -67,6 +68,7 @@ export const useThemeStore = create(
           };
         });
       },
+      toggleTheme: () => get().toggle(),
       createCustomTheme: (name, values, mode = 'light') => {
         const id = `custom-${Date.now()}`;
         const theme = {

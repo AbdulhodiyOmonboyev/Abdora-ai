@@ -24,7 +24,7 @@ export function Root() {
 
   useEffect(() => {
     init();
-  }, [init, theme]);
+  }, [init]);
 
   useEffect(() => {
     // Dynamic favicon refresher - forces browser tab (Chromium / Yandex / Edge) to reload fox icon

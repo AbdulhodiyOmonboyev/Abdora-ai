@@ -19,9 +19,10 @@ export default function PublicLayout({ children }) {
   useEffect(() => {
     let ticking = false;
     const handleScroll = () => {
+      const top = window.pageYOffset || document.documentElement.scrollTop || window.scrollY || 0;
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          setScrolled(window.scrollY > 20);
+          setScrolled(top > 40);
           ticking = false;
         });
         ticking = true;
