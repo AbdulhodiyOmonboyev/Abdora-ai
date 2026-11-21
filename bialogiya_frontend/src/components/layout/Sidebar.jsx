@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/axios';
+import { LogoIcon } from '../ui/Logo';
 import { cn } from '../../utils/cn';
 import { getLevelProgress } from '../../utils/format';
 
@@ -228,15 +229,13 @@ export default function Sidebar({ isOpen, onClose }) {
         <div style={{ borderColor: 'var(--border)' }} className="px-4 py-3.5 border-b flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
             {/* Logo mark */}
-            <div className="w-8 h-8 gradient-bg rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-              <span className="text-white font-bold text-sm font-['Space_Grotesk']">A</span>
-            </div>
+            <LogoIcon size={42} className="flex-shrink-0" />
             <div className="min-w-0 flex-1">
               <div
                 style={{ color: 'var(--text-primary)', fontFamily: "'Space Grotesk', sans-serif" }}
                 className="font-bold text-sm leading-tight truncate"
               >
-                Abdora AI
+                Abdora
               </div>
               <span
                 className={cn('badge badge-dot text-[10px] mt-0.5 whitespace-nowrap', ROLE_COLORS[user?.role] || 'badge-gray')}

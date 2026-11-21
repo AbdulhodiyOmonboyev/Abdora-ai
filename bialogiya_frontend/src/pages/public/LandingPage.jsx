@@ -1,23 +1,24 @@
-import { ArrowRight, BarChart3, BookOpen, Brain, FileText, GraduationCap, MessageCircle, PlayCircle, Sparkles, Trophy, Users, Zap } from 'lucide-react';
+import { ArrowRight, BarChart3, BookOpen, FileText, GraduationCap, MessageCircle, PlayCircle, Trophy, Users, Zap, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { LogoIcon } from '../../components/ui/Logo';
 import './public.css';
 import './home.css';
 
 const stats = [
   ['10K+', 'Foydalanuvchilar', Users],
-  ['50K+', 'Yaratilgan darslar', BookOpen],
+  ['50K+', 'O‘zlashtirilgan darslar', BookOpen],
   ['98%', 'Qoniqish darajasi', Trophy],
-  ['24/7', 'Yordam xizmati', Zap],
+  ['24/7', 'Qo‘llab-quvvatlash', Zap],
 ];
 
 const features = [
-  [Brain, 'AI dars generatori', 'Mavzuga mos darslarni avtomatik yarating.'],
-  [FileText, 'Hujjatlar yuklash', 'PDF, Word va boshqa hujjatlarni tahlil qiling.'],
-  [PlayCircle, 'Video darslar', 'Tushunarli video darslar va misollar.'],
-  [MessageCircle, 'Jonli savol-javob', 'Savollaringizga tez va aniq javob oling.'],
-  [Trophy, 'Test va baholash', 'Bilimingizni tekshirib, natijani ko‘ring.'],
-  [BarChart3, 'Statistika va progress', 'O‘qish jarayoningizni kuzatib boring.'],
+  [BookOpen, 'Interaktiv darslar', 'Mavzular bo‘yicha tushunarli darslar va amaliy misollar.'],
+  [FileText, 'Hujjatlar va konspektlar', 'PDF, darsliklar va qo‘shimcha materiallar bazasi.'],
+  [PlayCircle, 'Video darslar', 'Sifatli video darslar va ko‘rgazmali tushuntirishlar.'],
+  [MessageCircle, 'Savol-javob va muloqot', 'Ustozlar va o‘quvchilar o‘rtasida tezkor aloqa.'],
+  [Trophy, 'Test va baholash tizimi', 'Bilimingizni sinab, natijalarni monitoring qiling.'],
+  [BarChart3, 'Statistika va reyting', 'O‘qish dinamikasi va shaxsiy o‘sish ko‘rsatkichlari.'],
 ];
 
 function DashboardPreview() {
@@ -25,12 +26,14 @@ function DashboardPreview() {
     <motion.div className="dashboard-wrap" initial={{ opacity: 0, scale: .94 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: .15 }}>
       <div className="dashboard-preview">
         <div className="dashboard-top">
-          <span className="text-gray-900 dark:text-white"><b>A</b> Abdora AI</span>
-          <em>AI faol</em>
+          <span className="flex items-center gap-2 text-gray-900 dark:text-white font-bold text-sm">
+            <LogoIcon size={30} /> Abdora
+          </span>
+          <em className="font-medium">Faol tizim</em>
         </div>
         <div className="dashboard-body">
           <aside>
-            <small>MENU</small>
+            <small>MENYU</small>
             <strong>Darslar</strong>
             <span>Hujjatlar</span>
             <span>Testlar</span>
@@ -40,7 +43,7 @@ function DashboardPreview() {
             <small>Bugungi progress</small>
             <div className="dashboard-number text-gray-900 dark:text-white">84% <BarChart3 size={20} /></div>
             <div className="bars"><i /><i /><i /><i /><i /></div>
-            <div className="ai-note"><Brain size={16} /> AI yordamchi tayyor</div>
+            <div className="ai-note"><CheckCircle2 size={16} /> O‘quv kursi faol</div>
           </div>
         </div>
       </div>
@@ -56,7 +59,7 @@ export default function LandingPage() {
       <section className="home-hero public-container">
         <div className="hero-copy">
           <motion.span initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="hero-badge">
-            <Sparkles size={14} /> AI yordamida o‘quvchilar uchun maksimal platforma
+            <GraduationCap size={15} /> O‘quv markazlari va talabalar uchun zamonaviy ta'lim
           </motion.span>
           <motion.h1
             initial={{ opacity: 0, y: 15 }}
@@ -64,10 +67,10 @@ export default function LandingPage() {
             transition={{ delay: .08 }}
             className="public-title text-gray-900 dark:text-white"
           >
-            Har bir o‘quvchi uchun <span>intelligent yordamchi</span>
+            Har bir o‘quvchi uchun <span>mukammal ta'lim tizimi</span>
           </motion.h1>
           <p className="public-lede text-gray-600 dark:text-gray-300">
-            Abdora AI — darslarni yaratadi, savollaringizga javob beradi va o‘qish jarayonini yengillashtiradi.
+            Abdora — darslarni o‘zlashtirish, testlar topshirish va natijalarni tizimli tahlil qilish uchun yagona innovatsion platforma.
           </p>
           <div className="hero-actions">
             <Link className="public-button primary" to="/contact">
@@ -84,7 +87,7 @@ export default function LandingPage() {
       <section className="home-stats-grid public-container">
         {stats.map(([value, label, Icon]) => (
           <div className="public-card home-stat-card" key={label}>
-            <Icon size={19} />
+            <Icon size={20} />
             <strong className="text-gray-900 dark:text-white">{value}</strong>
             <span className="text-gray-600 dark:text-gray-400">{label}</span>
           </div>
@@ -95,7 +98,7 @@ export default function LandingPage() {
         <div className="section-heading">
           <span className="public-eyebrow">Platforma</span>
           <h2 className="text-gray-900 dark:text-white">Nima qila oladi?</h2>
-          <p className="text-gray-600 dark:text-gray-300">Barcha kerakli vositalar — bitta platformada.</p>
+          <p className="text-gray-600 dark:text-gray-300">Barcha kerakli o‘quv vositalari — bitta tizimda.</p>
         </div>
         <div className="feature-grid">
           {features.map(([Icon, title, text], index) => (
@@ -117,31 +120,31 @@ export default function LandingPage() {
 
       <section id="nega" className="public-container benefit-block">
         <div>
-          <span className="public-eyebrow">Nega aynan Abdora AI?</span>
+          <span className="public-eyebrow">Nega aynan Abdora?</span>
           <h2 className="text-gray-900 dark:text-white">O‘rganish jarayoni endi sizning qo‘lingizda.</h2>
         </div>
         <div className="benefits">
           <div>
             <b>01</b>
             <h3 className="text-gray-900 dark:text-white">Vaqtni tejaydi</h3>
-            <p className="text-gray-600 dark:text-gray-300">Dars tayyorlashga ketadigan vaqtingizni kamaytiradi.</p>
+            <p className="text-gray-600 dark:text-gray-300">Darslarni rejalashtirish va tahlil qilish vaqtini qisqartiradi.</p>
           </div>
           <div>
             <b>02</b>
             <h3 className="text-gray-900 dark:text-white">Sifatli natija</h3>
-            <p className="text-gray-600 dark:text-gray-300">AI bilan aniq va tushunarli natijalar oling.</p>
+            <p className="text-gray-600 dark:text-gray-300">Aniq va tizimli tushuntirishlar orqali yuqori ko‘rsatkichga erishing.</p>
           </div>
           <div>
             <b>03</b>
             <h3 className="text-gray-900 dark:text-white">Har doim yoningizda</h3>
-            <p className="text-gray-600 dark:text-gray-300">24/7 yordam va qo‘llab-quvvatlash.</p>
+            <p className="text-gray-600 dark:text-gray-300">Istalgan qurilmadan 24/7 qulay foydalanish imkoniyati.</p>
           </div>
         </div>
       </section>
 
       <section className="public-container home-cta">
         <div>
-          <span className="public-eyebrow">Abdora AI bilan boshlang</span>
+          <span className="public-eyebrow">Abdora bilan boshlang</span>
           <h2>Boshlashga tayyormiz?</h2>
           <p>Imkoniyatlardan foydalanish uchun ma’lumotlaringizni qoldiring, biz siz bilan bog‘lanamiz.</p>
         </div>

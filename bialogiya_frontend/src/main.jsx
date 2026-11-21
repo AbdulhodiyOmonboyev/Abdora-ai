@@ -27,6 +27,22 @@ export function Root() {
   }, [init, theme]);
 
   useEffect(() => {
+    // Dynamic favicon refresher - forces browser tab (Chromium / Yandex / Edge) to reload fox icon
+    try {
+      const timestamp = Date.now();
+      const existingIcons = document.querySelectorAll("link[rel*='icon']");
+      existingIcons.forEach(link => {
+        const rawHref = link.getAttribute('data-origin-href') || link.getAttribute('href') || '';
+        const baseHref = rawHref.split('?')[0];
+        if (baseHref) {
+          link.setAttribute('data-origin-href', baseHref);
+          link.href = `${baseHref}?v=fox_${timestamp}`;
+        }
+      });
+    } catch (_) {}
+  }, []);
+
+  useEffect(() => {
     queryClient.clear();
   }, [queryClient, isAuthenticated, user?.centerId]);
 

@@ -8,7 +8,7 @@ import api from '../../config/axios';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import './login.css';
-
+import { LogoIcon } from '../../components/ui/Logo';
 import { formatUzPhone } from '../../utils/formatPhone';
 
 export default function LoginPage() {
@@ -23,19 +23,25 @@ export default function LoginPage() {
     onSuccess: ({ data }) => {
       const { user, accessToken, refreshToken } = data.data;
       setAuth(user, accessToken, refreshToken);
-      toast.success(`Xush kelibsiz, ${user.name}!`);
-      if (user.role === 'student') navigate('/student/dashboard');
-      else if (user.role === 'teacher') navigate('/teacher/dashboard');
-      else if (user.role === 'reception') navigate('/reception/dashboard');
-      else if (user.role === 'manager') navigate('/manager/dashboard');
-      else navigate('/admin/dashboard');
+      toast.success(t('login_success') || 'Xush kelibsiz!');
+      const role = user.role;
+      if (role === 'admin' || role === 'owner') navigate('/owner/dashboard');
+      else if (role === 'teacher') navigate('/teacher/dashboard');
+      else if (role === 'student') navigate('/student/dashboard');
+      else if (role === 'reception') navigate('/reception/dashboard');
+      else navigate('/');
     },
-    onError: (err) => toast.error(err.response?.data?.message || t('invalid_credentials')),
+    onError: (err) => {
+      toast.error(err.response?.data?.message || t('login_failed') || 'Kirishda xatolik yuz berdi');
+    },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.username || !form.password) return toast.error("Barcha maydonlarni to'ldiring");
+    if (!form.username.trim() || !form.password.trim()) {
+      toast.error(t('fill_required_fields') || 'Barcha maydonlarni to\'ldiring');
+      return;
+    }
     loginMutation.mutate(form);
   };
 
@@ -50,17 +56,19 @@ export default function LoginPage() {
         className="login-panel"
       >
         <div className="login-card">
-          <a className="login-back" href="/"><ArrowLeft size={15} /> Bosh sahifaga qaytish</a>
+          <a className="login-back text-gray-600 dark:text-gray-400" href="/">
+            <ArrowLeft size={15} /> Bosh sahifaga qaytish
+          </a>
           <div className="login-brand">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1 }}
-              className="login-logo"
+              className="flex justify-center mb-3"
             >
-              <span>A</span>
+              <LogoIcon size={76} />
             </motion.div>
-            <p className="login-kicker">Abdora AI</p>
+            <p className="login-kicker">Abdora</p>
             <h1>{t('app_name')}</h1>
             <p>{t('tagline')}</p>
           </div>
@@ -92,37 +100,38 @@ export default function LoginPage() {
                   type={showPass ? 'text' : 'password'}
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  placeholder="Parol yoki telefon oxirgi 4 raqami"
+                  placeholder="••••••••"
                   className="login-input"
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPass(!showPass)}
                   className="login-eye"
+                  onClick={() => setShowPass(s => !s)}
+                  aria-label={showPass ? 'Parolni yashirish' : 'Parolni ko\'rsatish'}
                 >
-                  {showPass ? <EyeOff size={17} /> : <Eye size={17} />}
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            <motion.button
+            <button
               type="submit"
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
               disabled={loginMutation.isPending}
               className="login-submit"
             >
               {loginMutation.isPending ? (
-                <span className="flex items-center justify-center gap-2">
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    className="login-spinner" />
-                  {t('signing_in')}
-                </span>
-              ) : t('login')}
-            </motion.button>
+                <span className="login-spinner" />
+              ) : (
+                'Kirish'
+              )}
+            </button>
           </form>
-          <div className="login-note"><LockKeyhole size={14} /> Hisobingiz xavfsiz himoyalangan</div>
+
+          <div className="login-note">
+            <LockKeyhole size={14} />
+            <span>Xavfsiz va shifrlangan ulanish</span>
+          </div>
         </div>
       </motion.div>
     </main>
