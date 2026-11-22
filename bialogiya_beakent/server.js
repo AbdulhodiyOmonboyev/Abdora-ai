@@ -1,11 +1,11 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
 const compression = require('compression');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-const path = require('path');
 const { connectDB } = require('./src/config/db');
 const { loadKeyFromDb } = require('./src/config/gemini');
 const { cleanupOrphanedRecords } = require('./src/utils/cleanupOrphans');

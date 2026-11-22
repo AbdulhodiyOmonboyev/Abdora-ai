@@ -85,59 +85,56 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Rasmiy Abdora AI logotipi
+                // Rasmiy Abdora Origami Tulki logotipi
                 Container(
-                  width: 96,
-                  height: 96,
+                  width: 108,
+                  height: 108,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
+                    color: AppColors.darkSurface.withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                      width: 1.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.35),
-                        blurRadius: 30,
+                        color: AppColors.primary.withOpacity(0.25),
+                        blurRadius: 32,
+                        spreadRadius: 2,
                         offset: const Offset(0, 8),
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(48),
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      width: 96,
-                      height: 96,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.12),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.primary, width: 2),
-                        ),
-                        child: const Icon(
-                          Icons.school_rounded,
-                          size: 48,
-                          color: AppColors.primary,
-                        ),
-                      ),
+                  padding: const EdgeInsets.all(16),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 76,
+                    height: 76,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.school_rounded,
+                      size: 48,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  'Abdora Student',
+                  'Abdora',
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 26,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.35)),
                   ),
                   child: const Text(
                     'O\'quvchi Shaxsiy Ta\'lim Portali',

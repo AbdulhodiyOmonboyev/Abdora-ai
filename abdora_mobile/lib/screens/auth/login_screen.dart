@@ -113,51 +113,53 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Rasmiy Abdora AI logotipi
+                    // Rasmiy Abdora Origami Tulki logotipi
                     Center(
                       child: Container(
-                        width: 80,
-                        height: 80,
+                        width: 92,
+                        height: 92,
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
+                          color: AppColors.surfaceColor(context),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.28),
+                            width: 1.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 22,
+                              color: AppColors.primary.withOpacity(0.22),
+                              blurRadius: 26,
+                              spreadRadius: 1,
                               offset: const Offset(0, 6),
                             ),
                           ],
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(40),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.school_rounded, color: AppColors.primary, size: 40),
-                            ),
+                        padding: const EdgeInsets.all(14),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.school_rounded,
+                            color: AppColors.primary,
+                            size: 40,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
                     Center(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                         ),
                         child: const Text(
-                          'Abdora AI',
-                          style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                          'Abdora',
+                          style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.3),
                         ),
                       ),
                     ),
