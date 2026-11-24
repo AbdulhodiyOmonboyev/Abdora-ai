@@ -4,20 +4,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   BookOpen, Clock, Sparkles, Loader2, Search, X, RefreshCw,
-  LayoutGrid, List, ArrowRight, Eye, Paperclip, Play, CheckCircle2
+  LayoutGrid, List, ArrowRight, Eye, Paperclip, Play,
+  Route
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../config/axios';
 import { formatDate } from '../../utils/format';
 import { getSubjectIcon, getSubjectLabel, getSubjectBadgeClass } from '../../utils/subjects';
 import StudentAcademicTabs from '../../components/student/StudentAcademicTabs';
+import DuolingoPathView from '../../components/student/DuolingoPathView';
+import FourStageLessonModal from '../../components/student/FourStageLessonModal';
 
 export default function StudentLessons() {
   const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [onlyAiReady, setOnlyAiReady] = useState(false);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+  const [viewMode, setViewMode] = useState('path'); // 'path' | 'grid' | 'list' (default: 'path')
+  const [activePathLesson, setActivePathLesson] = useState(null);
+  const modalLesson = activePathLesson;
+  const setModalLesson = setActivePathLesson;
 
   const {
     data: lessons = [],
@@ -33,6 +40,48 @@ export default function StudentLessons() {
     },
     enabled: !!user?.groupId,
   });
+
+  // O'quvchining o'zlashtirgan darslari ro'yxatini olish
+  const {
+    data: progressData,
+    refetch: refetchProgress,
+  } = useQuery({
+    queryKey: ['student-lesson-progress', user?.id],
+    queryFn: async () => {
+      try {
+        const res = await api.get('/lessons/student-progress');
+        return res.data?.data || res.data || {};
+      } catch {
+        return { completedLessonIds: [] };
+      }
+    },
+    enabled: !!user?.id,
+    staleTime: 30000,
+  });
+
+  const completedLessonIds = useMemo(() => {
+    return progressData?.completedLessonIds || [];
+  }, [progressData]);
+
+  // Darsni 4 bosqichli dars oynasida muvaffaqiyatli yakunlash
+  const handleLessonComplete = async (result) => {
+    const currentLesson = activePathLesson || modalLesson;
+    const earnedXp = (typeof result === 'object' && result?.earnedXp) ? result.earnedXp : 50;
+    const earnedCoins = (typeof result === 'object' && result?.earnedCoins) ? result.earnedCoins : 10;
+    const idToComplete = (typeof result === 'string' && result) ? result : currentLesson?.id;
+    if (idToComplete && !result?.backendResult) {
+      try {
+        await api.post(`/lessons/${idToComplete}/complete`, { xp: earnedXp, coins: earnedCoins });
+      } catch (err) {
+        console.error('Error completing lesson:', err);
+      }
+    }
+    refetchProgress();
+    refetch();
+    toast.success(`Dars muvaffaqiyatli yakunlandi! +${earnedXp} XP va +${earnedCoins} tanga qo'shildi! 🎉`);
+    setActivePathLesson(null);
+    setModalLesson(null);
+  };
 
   // Mavjud fanlarni dinamik ajratib olish
   const availableSubjects = useMemo(() => {
@@ -111,6 +160,16 @@ export default function StudentLessons() {
             className="p-1 rounded-xl flex items-center gap-1"
             style={{ background: 'var(--secondary-background)', border: '1px solid var(--border)' }}
           >
+            <button
+              onClick={() => setViewMode('path')}
+              className={`px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold ${
+                viewMode === 'path' ? 'bg-card text-primary shadow-xs' : 'text-muted hover:text-primary'
+              }`}
+              title="O'quv Yo'li (Winding Snake Path)"
+            >
+              <Route size={16} />
+              <span className="hidden sm:inline">O'quv Yo'li</span>
+            </button>
             <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-lg transition-all ${
@@ -295,6 +354,20 @@ export default function StudentLessons() {
             Qayta yuklash
           </button>
         </div>
+      ) : viewMode === 'path' ? (
+        // ── Duolingo O'quv Yo'li (Winding Snake Path) ──
+        <DuolingoPathView
+          lessons={filteredLessons}
+          onSelectLesson={(lesson) => {
+            setActivePathLesson(lesson);
+            setModalLesson(lesson);
+          }}
+          completedLessonIds={completedLessonIds}
+          lessonMastery={progressData?.lessonMastery || {}}
+          groupStageInfo={progressData?.groupStageInfo}
+        />
+
+
       ) : viewMode === 'grid' ? (
         // ── Katak ko'rinishi (Grid Mode) — App GlassCard dizayni bilan bir xil ──
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
@@ -315,8 +388,11 @@ export default function StudentLessons() {
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.2, delay: idx * 0.03 }}
                 >
-                  <Link
-                    to={`/student/lessons/${lesson.id}`}
+                  <div
+                    onClick={() => {
+                      setActivePathLesson(lesson);
+                      setModalLesson(lesson);
+                    }}
                     className="card group flex flex-col justify-between h-full p-4 sm:p-5 rounded-2xl transition-all hover:border-primary/40 hover:shadow-md cursor-pointer block relative overflow-hidden"
                     style={{
                       background: 'var(--card)',
@@ -405,20 +481,31 @@ export default function StudentLessons() {
                         </div>
                       </div>
 
-                      {/* 'O'rganish' tugmasi — Mobil ilovadagi kabi to'liq kenglikda */}
-                      <div
-                        className="w-full py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all group-hover:bg-primary group-hover:text-white"
-                        style={{
-                          background: 'rgba(59, 130, 246, 0.08)',
-                          color: 'var(--primary)',
-                          border: '1px solid rgba(59, 130, 246, 0.2)',
-                        }}
-                      >
-                        <span>O'rganish</span>
-                        <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
+                      {/* 4-Bosqichli AI Dars va Batafsil tugmalari */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setModalLesson(lesson);
+                          }}
+                          className="flex-1 py-2 px-2.5 rounded-xl flex items-center justify-center gap-1 text-[11px] font-bold bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 transition-all shadow-xs"
+                          title="AI Avatar bilan 4 Bosqichli Dars"
+                        >
+                          <Sparkles size={12} />
+                          <span>4 Bosqichli Dars</span>
+                        </button>
+
+                        <div
+                          className="py-2 px-3 rounded-xl flex items-center justify-center gap-1 text-[11px] font-bold bg-primary text-white shadow-xs"
+                        >
+                          <span>Darsni Boshlash</span>
+                          <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+                        </div>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 </motion.div>
               );
             })}
@@ -441,9 +528,12 @@ export default function StudentLessons() {
                   exit={{ opacity: 0, y: 8 }}
                   transition={{ duration: 0.15, delay: idx * 0.02 }}
                 >
-                  <Link
-                    to={`/student/lessons/${lesson.id}`}
-                    className="card group flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-2xl gap-4 hover:border-primary/40 hover:shadow-sm transition-all"
+                  <div
+                    onClick={() => {
+                      setActivePathLesson(lesson);
+                      setModalLesson(lesson);
+                    }}
+                    className="card group flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-2xl gap-4 hover:border-primary/40 hover:shadow-sm transition-all cursor-pointer"
                     style={{
                       background: 'var(--card)',
                       border: '1px solid var(--border)',
@@ -500,25 +590,48 @@ export default function StudentLessons() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end flex-shrink-0">
-                      <div
-                        className="py-2 px-4 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all group-hover:bg-primary group-hover:text-white"
-                        style={{
-                          background: 'rgba(59, 130, 246, 0.08)',
-                          color: 'var(--primary)',
-                          border: '1px solid rgba(59, 130, 246, 0.2)',
+                    <div className="flex items-center gap-2 justify-end flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setModalLesson(lesson);
                         }}
+                        className="py-2 px-3 rounded-xl flex items-center gap-1 text-xs font-bold bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 transition-all shadow-xs"
+                        title="AI Avatar bilan 4 Bosqichli Dars"
                       >
-                        <span>O'rganish</span>
+                        <Sparkles size={13} />
+                        <span>4 Bosqichli Dars</span>
+                      </button>
+
+                      <div
+                        className="py-2 px-4 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all bg-primary text-white shadow-xs"
+                      >
+                        <span>Darsni Boshlash</span>
                         <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 </motion.div>
               );
             })}
           </AnimatePresence>
         </div>
+      )}
+
+      {/* 4-BOSQICHLI AI AVATAR INTERAKTIV DARSLIK MODAL */}
+      {(activePathLesson || modalLesson) && (
+        <FourStageLessonModal
+          lesson={activePathLesson || modalLesson}
+          studentUser={user}
+          isOpen={!!(activePathLesson || modalLesson)}
+          onClose={() => {
+            setActivePathLesson(null);
+            setModalLesson(null);
+          }}
+          onComplete={handleLessonComplete}
+        />
       )}
     </div>
   );

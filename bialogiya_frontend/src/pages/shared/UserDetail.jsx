@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Phone, Mail, MapPin, ShieldCheck, CalendarCheck, Building2,
   GraduationCap, Users, Clock, Flame, Snowflake, Coins, Star, Trophy,
   CreditCard, CheckCircle2, XCircle, AlertCircle, Plus, Trash2, Edit3,
-  Sparkles, CheckSquare, X, Calendar, Award, FileText, Check
+  Sparkles, CheckSquare, X, Calendar, Award, FileText, Check, History,
+  ArrowRightLeft, ArrowRight, UserCheck, DollarSign, Printer
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../config/axios';
@@ -79,6 +80,12 @@ export default function UserDetail() {
     groupId: '',
   });
 
+  // Transfer modal state
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [targetGroupId, setTargetGroupId] = useState('');
+  const [transferReason, setTransferReason] = useState('');
+  const [timelineFilter, setTimelineFilter] = useState('all');
+
   // Query: Student History
   const {
     data: historyData,
@@ -93,7 +100,7 @@ export default function UserDetail() {
     retry: false,
   });
 
-  // Query: Groups (for edit modal assignment)
+  // Query: Groups (for edit and transfer modal)
   const { data: groupsData } = useQuery({
     queryKey: ['groups-list-detail'],
     queryFn: async () => {
@@ -106,7 +113,25 @@ export default function UserDetail() {
       const list = fallback.data?.data || fallback.data || [];
       return Array.isArray(list) ? list : [];
     },
-    enabled: showEditModal,
+    enabled: Boolean(showEditModal || showTransferModal || activeTab === 'groups'),
+  });
+
+  const transferMutation = useMutation({
+    mutationFn: (data) => api.post('/groups/transfer-student', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['student-history', id] });
+      qc.invalidateQueries({ queryKey: ['all-groups'] });
+      qc.invalidateQueries({ queryKey: ['manager-groups'] });
+      qc.invalidateQueries({ queryKey: ['admin-students'] });
+      qc.invalidateQueries({ queryKey: ['reception-students'] });
+      toast.success("O'quvchi yangi guruhga muvaffaqiyatli o'tkazildi!");
+      setShowTransferModal(false);
+      setTargetGroupId('');
+      setTransferReason('');
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Guruhni almashtirishda xatolik yuz berdi");
+    },
   });
 
   // Mutations
@@ -244,6 +269,8 @@ export default function UserDetail() {
 
   const student = historyData.student || {};
   const group = historyData.group || student.group || null;
+  const groupHistory = Array.isArray(historyData.groupHistory) ? historyData.groupHistory : [];
+  const timeline = Array.isArray(historyData.timeline) ? historyData.timeline : [];
   const payments = Array.isArray(historyData.payments) ? historyData.payments : [];
   const attendance = Array.isArray(historyData.attendance) ? historyData.attendance : [];
   const tests = Array.isArray(historyData.tests) ? historyData.tests : [];
@@ -580,7 +607,8 @@ export default function UserDetail() {
           {/* Tabs Bar */}
           <div className="flex items-center gap-1.5 overflow-x-auto p-1.5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] scrollbar-none">
             {[
-              { id: 'groups', label: 'Guruhlar', icon: Users, count: group ? 1 : 0 },
+              { id: 'groups', label: 'Guruhlar', icon: Users, count: groupHistory.length || (group ? 1 : 0) },
+              { id: 'timeline', label: "O'zgarishlar Tarixi", icon: History, count: timeline.length },
               { id: 'payments', label: "To'lovlar", icon: CreditCard, count: payments.length },
               { id: 'attendance', label: 'Davomat', icon: CalendarCheck, count: attendance.length },
               { id: 'coins', label: 'Tanga / Kristal', icon: Coins, count: coinHistory.length },
@@ -618,7 +646,7 @@ export default function UserDetail() {
             })}
           </div>
 
-          {/* TAB 1: GURUHLAR */}
+          {/* TAB 1: GURUHLAR VA ALMASHINUV TARIXI */}
           {activeTab === 'groups' && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
               {group ? (
@@ -636,9 +664,26 @@ export default function UserDetail() {
                       </div>
                     </div>
 
-                    <span className="badge bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 text-xs font-semibold">
-                      O'qiyapti (Faol)
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="badge bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 text-xs font-semibold">
+                        O'qiyapti (Faol)
+                      </span>
+                      {canManage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTargetGroupId('');
+                            setTransferReason('');
+                            setShowTransferModal(true);
+                          }}
+                          className="py-1 px-3 rounded-xl border border-primary/20 bg-primary/10 hover:bg-primary hover:text-white text-primary text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
+                          title="Boshqa guruhga o'tkazish"
+                        >
+                          <ArrowRightLeft size={13} />
+                          <span>Guruhni almashtirish</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
@@ -699,12 +744,289 @@ export default function UserDetail() {
                     O'quvchi hozirda hech qaysi guruhga biriktirilmagan
                   </div>
                   {canManage && (
-                    <button onClick={() => openEditModal(student)} className="btn-primary text-xs mx-auto">
-                      Guruhga biriktirish
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetGroupId('');
+                        setTransferReason('');
+                        setShowTransferModal(true);
+                      }}
+                      className="btn-primary text-xs mx-auto flex items-center gap-1.5"
+                    >
+                      <Plus size={14} />
+                      <span>Guruhga biriktirish</span>
                     </button>
                   )}
                 </div>
               )}
+
+              {/* Guruhlar Almashinuvi Tarixi Card */}
+              <div className="panel-card space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+                  <div className="flex items-center gap-2">
+                    <History size={16} className="text-primary" />
+                    <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                      Guruhlar Almashinuvi Tarixi
+                    </h3>
+                  </div>
+                  <span className="text-xs text-[var(--text-muted)] font-medium">
+                    {groupHistory.length} ta qayd
+                  </span>
+                </div>
+
+                {groupHistory.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {groupHistory.map((gh, idx) => (
+                      <div
+                        key={gh.id || idx}
+                        className="p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs hover:border-primary/30 transition-all"
+                      >
+                        <div className="flex items-start sm:items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 font-bold">
+                            <ArrowRightLeft size={14} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap font-bold text-[var(--text-primary)]">
+                              {gh.fromGroupName ? (
+                                <>
+                                  <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                    {gh.fromGroupName}
+                                  </span>
+                                  <span className="text-primary font-bold">➔</span>
+                                  <span className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                                    {gh.toGroupName}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                  {gh.toGroupName || 'Guruhga qo\'shildi'}
+                                </span>
+                              )}
+                            </div>
+                            {gh.reason && (
+                              <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                                <b>Sabab:</b> {gh.reason}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-left sm:text-right flex sm:flex-col items-center sm:items-end justify-between text-[11px] text-[var(--text-muted)]">
+                          <span>{formatDateTime(gh.createdAt || gh.date)}</span>
+                          {gh.changedBy?.name && (
+                            <span className="text-[10px] text-gray-400">
+                              Xodim: {gh.changedBy.name} ({gh.changedBy.role || 'admin'})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-xs text-[var(--text-muted)] border border-dashed border-[var(--border)] rounded-2xl p-4">
+                    <Users size={24} className="mx-auto mb-1.5 opacity-30" />
+                    <p>Ushbu o'quvchi hali boshqa guruhga ko'chirilmagan</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 2: O'ZGARISHLAR VA AMALLAR TARIXI (TIMELINE / AUDIT LOG) */}
+          {activeTab === 'timeline' && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <div className="panel-card space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
+                  <div>
+                    <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
+                      <History size={18} className="text-primary" />
+                      <span>O'quvchi O'zgarishlar va Amallar Tarixi (Audit Log)</span>
+                    </h3>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                      Guruh almashinuvlari, to'lovlar, davomat, testlar va barcha qaydlar xronologiyasi
+                    </p>
+                  </div>
+                  {canManage && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTargetGroupId('');
+                          setTransferReason('');
+                          setShowTransferModal(true);
+                        }}
+                        className="py-1.5 px-3 rounded-xl border border-primary/20 bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
+                      >
+                        <ArrowRightLeft size={13} />
+                        <span>Guruhni almashtirish</span>
+                      </button>
+                      {currentUser?.role !== 'teacher' && (
+                        <button
+                          type="button"
+                          onClick={() => openPaymentModal(summary.monthlyFee)}
+                          className="btn-primary text-xs flex items-center gap-1.5 py-1.5 px-3 rounded-xl"
+                        >
+                          <CreditCard size={13} />
+                          <span>To'lov kiritish</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+                  {[
+                    { id: 'all', label: `Barchasi (${timeline.length})` },
+                    { id: 'group', label: `Guruhlar (${timeline.filter(t => t.category === 'group').length})` },
+                    { id: 'payment', label: `To'lovlar (${timeline.filter(t => t.category === 'payment').length})` },
+                    { id: 'attendance', label: `Davomat (${timeline.filter(t => t.category === 'attendance').length})` },
+                    { id: 'test', label: `Testlar (${timeline.filter(t => t.category === 'test').length})` },
+                    { id: 'homework', label: `Vazifalar (${timeline.filter(t => t.category === 'homework').length})` },
+                    { id: 'note', label: `Eslatmalar (${timeline.filter(t => t.category === 'note').length})` },
+                  ].map(f => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setTimelineFilter(f.id)}
+                      className={`px-3 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap ${
+                        timelineFilter === f.id
+                          ? 'bg-primary text-white shadow-xs'
+                          : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:bg-[var(--card)] hover:text-[var(--text-primary)] border border-[var(--border)]'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Timeline List */}
+                {(() => {
+                  const filtered = timelineFilter === 'all'
+                    ? timeline
+                    : timeline.filter(t => t.category === timelineFilter);
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="text-center py-12 text-xs text-[var(--text-muted)] border border-dashed border-[var(--border)] rounded-2xl">
+                        <History size={32} className="mx-auto mb-2 opacity-30" />
+                        <p>Tanlangan toifada hech qanday amallar topilmadi</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-3 relative before:absolute before:inset-0 before:left-5 before:w-0.5 before:bg-[var(--border)] before:z-0">
+                      {filtered.map((item, idx) => {
+                        let iconBg = 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
+                        let IconComp = History;
+
+                        if (item.category === 'group') {
+                          iconBg = 'bg-purple-500/10 text-purple-600 dark:text-purple-400';
+                          IconComp = ArrowRightLeft;
+                        } else if (item.category === 'payment') {
+                          iconBg = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
+                          IconComp = CreditCard;
+                        } else if (item.category === 'attendance') {
+                          iconBg = 'bg-amber-500/10 text-amber-600 dark:text-amber-400';
+                          IconComp = CalendarCheck;
+                        } else if (item.category === 'test') {
+                          iconBg = 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400';
+                          IconComp = Award;
+                        } else if (item.category === 'homework') {
+                          iconBg = 'bg-sky-500/10 text-sky-600 dark:text-sky-400';
+                          IconComp = CheckSquare;
+                        } else if (item.category === 'note') {
+                          iconBg = 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400';
+                          IconComp = FileText;
+                        } else if (item.category === 'profile') {
+                          iconBg = 'bg-violet-500/10 text-violet-600 dark:text-violet-400';
+                          IconComp = ShieldCheck;
+                        }
+
+                        return (
+                          <div
+                            key={item.id || idx}
+                            className="relative z-10 p-3.5 sm:p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-primary/30 transition-all flex items-start gap-3.5 shadow-xs"
+                          >
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold ${iconBg}`}>
+                              <IconComp size={17} />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                                <h4 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] leading-tight">
+                                  {item.title}
+                                </h4>
+                                <span className="text-[11px] font-medium text-[var(--text-muted)] flex items-center gap-1 flex-shrink-0">
+                                  <Clock size={11} />
+                                  {formatDateTime(item.date)}
+                                </span>
+                              </div>
+
+                              {/* Qo'shimcha tafsilotlar */}
+                              {item.category === 'group' && item.fromGroupName && item.toGroupName && (
+                                <div className="mt-2 flex items-center gap-2 flex-wrap text-xs">
+                                  <span className="px-2 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold">
+                                    {item.fromGroupName}
+                                  </span>
+                                  <span className="text-primary font-bold">➔</span>
+                                  <span className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20 font-bold">
+                                    {item.toGroupName}
+                                  </span>
+                                  {item.reason && (
+                                    <span className="text-[11px] text-[var(--text-muted)] italic">
+                                      · {item.reason}
+                                    </span>
+                                  )}
+                                  {item.changedBy?.name && (
+                                    <span className="text-[10px] text-gray-400 ml-auto">
+                                      Xodim: {item.changedBy.name}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {item.category === 'payment' && (
+                                <div className="mt-2 flex items-center gap-2 flex-wrap text-xs">
+                                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                    {(item.amount || 0).toLocaleString()} so'm
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 capitalize text-[10px] font-semibold">
+                                    {item.method || 'Naqd'}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                    item.status === 'paid'
+                                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600'
+                                      : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600'
+                                  }`}>
+                                    {item.status === 'paid' ? "To'liq to'landi" : (item.status === 'partial' ? 'Qisman' : "To'lanmagan")}
+                                  </span>
+                                  {item.note && (
+                                    <span className="text-[11px] text-[var(--text-muted)] italic">
+                                      · {item.note}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {item.category === 'note' && (
+                                <div className="mt-1 text-[11px] text-[var(--text-secondary)]">
+                                  {item.authorName && (
+                                    <span className="text-gray-400">
+                                      Yozuvchi: <b>{item.authorName}</b> ({item.authorRole || 'xodim'})
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
             </motion.div>
           )}
 
@@ -760,6 +1082,7 @@ export default function UserDetail() {
                           <th className="py-2.5 px-3">Usul</th>
                           <th className="py-2.5 px-3">Holat</th>
                           <th className="py-2.5 px-3">Sana / Izoh</th>
+                          <th className="py-2.5 px-3 text-right">Kvitansiya</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[var(--border)]">
@@ -794,8 +1117,22 @@ export default function UserDetail() {
                                 </span>
                               </td>
                               <td className="py-3 px-3 text-[var(--text-muted)]">
-                                <div>{p.paidAt ? formatDate(p.paidAt) : formatDate(p.createdAt)}</div>
+                                <div className="font-medium text-[var(--text-primary)]">{p.paidAt ? formatDateTime(p.paidAt) : formatDateTime(p.createdAt)}</div>
                                 {p.note && <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">{p.note}</div>}
+                              </td>
+                              <td className="py-3 px-3 text-right">
+                                {p.id && (
+                                  <Link
+                                    to={`/erp/receipt/${p.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-ghost p-1.5 rounded-lg text-primary hover:bg-primary/10 inline-flex items-center gap-1 text-[11px] font-bold border border-primary/20"
+                                    title="Kvitansiyani chop etish"
+                                  >
+                                    <Printer size={12} />
+                                    <span className="hidden sm:inline">Kvitansiya</span>
+                                  </Link>
+                                )}
                               </td>
                             </tr>
                           );
@@ -1537,6 +1874,127 @@ export default function UserDetail() {
                   className="btn-primary text-xs py-2 px-4 flex items-center gap-1.5"
                 >
                   <Check size={14} /> Saqlash
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 5: TRANSFER STUDENT TO ANOTHER GROUP */}
+      <AnimatePresence>
+        {showTransferModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs"
+            onClick={(e) => e.target === e.currentTarget && setShowTransferModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              className="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 grid place-items-center">
+                    <ArrowRightLeft size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-[var(--text-primary)]">
+                      O'quvchini boshqa guruhga o'tkazish
+                    </h3>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Barcha progress va to'lovlar yangi guruhga xronologik tarix sifatida ulanadi
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowTransferModal(false)}
+                  className="btn-ghost p-1.5 rounded-xl"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Hozirgi guruh info */}
+              <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-xs flex items-center justify-between">
+                <div>
+                  <span className="text-[var(--text-muted)] block">Joriy guruh:</span>
+                  <span className="font-bold text-sm text-[var(--text-primary)]">
+                    {group?.name || "Guruhsiz (biriktirilmagan)"}
+                  </span>
+                </div>
+                {group?.level && (
+                  <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800 text-[11px]">
+                    {group.level}
+                  </span>
+                )}
+              </div>
+
+              {/* Yangi guruh tanlash */}
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                  Mo'ljal (Yangi) guruhni tanlang *
+                </label>
+                <select
+                  value={targetGroupId}
+                  onChange={(e) => setTargetGroupId(e.target.value)}
+                  className="input-field w-full text-xs font-medium"
+                >
+                  <option value="">Guruhni tanlang...</option>
+                  {(groupsData || [])
+                    .filter((g) => g.id !== student.groupId && g.isActive !== false)
+                    .map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name} · {g.level || 'Oddiy'} {g.teacher?.name ? `(${g.teacher.name})` : ''} {g.branch?.name ? `· ${g.branch.name}` : ''}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                  Tanlangan guruh o'qituvchisi va dars jadvali avtomatik o'quvchiga biriktiriladi
+                </p>
+              </div>
+
+              {/* O'tkazish sababi */}
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                  O'tkazish sababi / Izoh (ixtiyoriy)
+                </label>
+                <input
+                  type="text"
+                  value={transferReason}
+                  onChange={(e) => setTransferReason(e.target.value)}
+                  placeholder="Masalan: Bilim darajasi oshdi, dars vaqti o'zgardi..."
+                  className="input-field w-full text-xs"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
+                <button
+                  type="button"
+                  onClick={() => setShowTransferModal(false)}
+                  className="btn-ghost text-xs py-2 px-4"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="button"
+                  disabled={!targetGroupId || transferMutation.isPending}
+                  onClick={() =>
+                    transferMutation.mutate({
+                      studentId: student.id,
+                      targetGroupId,
+                      reason: transferReason.trim() || undefined,
+                    })
+                  }
+                  className="btn-primary text-xs py-2 px-4 flex items-center gap-1.5 font-bold disabled:opacity-50"
+                >
+                  <ArrowRightLeft size={14} />
+                  <span>{transferMutation.isPending ? "O'tkazilmoqda..." : "Guruhga o'tkazishni tasdiqlash"}</span>
                 </button>
               </div>
             </motion.div>

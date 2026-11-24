@@ -126,6 +126,8 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       setState(() {
         _aiContent = content ?? LessonAiContent();
         _isLoading = false;
+        // O'quvchi usul tanlamaydi, dars avtomatik 1-bosqichdan boshlanadi!
+        _selectedMethodIndex ??= 0;
       });
     }
   }
@@ -485,7 +487,117 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         Expanded(
           child: _buildSelectedContent(_selectedMethodIndex!),
         ),
+
+        // Avtomatik bosqichma-bosqich o'tish paneli
+        _buildBottomStepBar(),
       ],
+    );
+  }
+
+  Widget _buildBottomStepBar() {
+    final idx = _selectedMethodIndex ?? 0;
+    const totalSteps = 8;
+    final hasPrev = idx > 0;
+    final hasNext = idx < totalSteps - 1;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg(context),
+        border: Border(top: BorderSide(color: AppColors.borderCol(context))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            if (hasPrev)
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _selectedMethodIndex = idx - 1;
+                  });
+                },
+                icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                label: const Text('Oldingi', style: TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.text2(context),
+                  side: BorderSide(color: AppColors.borderCol(context)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              )
+            else
+              const SizedBox(width: 80),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Bosqich ${idx + 1} / $totalSteps',
+                    style: TextStyle(
+                      color: AppColors.text1(context),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (idx + 1) / totalSteps,
+                      backgroundColor: AppColors.inputCol(context),
+                      color: AppColors.of(context),
+                      minHeight: 4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            ElevatedButton.icon(
+              onPressed: () {
+                if (hasNext) {
+                  setState(() {
+                    _selectedMethodIndex = idx + 1;
+                  });
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => InteractiveGameScreen(
+                        topicTitle: widget.lesson.title,
+                        topicDescription: widget.lesson.content,
+                        aiContent: _aiContent,
+                        initialGameMode: GameMode.duel,
+                      ),
+                    ),
+                  );
+                }
+              },
+              icon: Icon(hasNext ? Icons.arrow_forward_rounded : Icons.sports_kabaddi_rounded, size: 16),
+              label: Text(
+                hasNext ? 'Keyingisi' : 'Bellashuv ⚔️',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: hasNext ? AppColors.of(context) : const Color(0xFF0D9488),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 /**
  * Universal Modal component
  * Props:
- *  open       - boolean
+ *  open / isOpen - boolean
  *  onClose    - fn
  *  title      - string
  *  subtitle   - string (optional)
@@ -17,6 +17,7 @@ import { X } from 'lucide-react';
  */
 export default function Modal({
   open,
+  isOpen,
   onClose,
   title,
   subtitle,
@@ -26,20 +27,21 @@ export default function Modal({
   hideClose = false,
 }) {
   const overlayRef = useRef(null);
+  const isModalOpen = Boolean(open ?? isOpen);
 
   useEffect(() => {
-    if (!open) return;
+    if (!isModalOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
-  }, [open]);
+  }, [isModalOpen]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!isModalOpen) return;
     const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [isModalOpen, onClose]);
 
   const sizeClass = {
     sm: 'max-w-sm',
@@ -51,7 +53,7 @@ export default function Modal({
 
   return createPortal(
     <AnimatePresence>
-      {open && (
+      {isModalOpen && (
         <motion.div
           ref={overlayRef}
           initial={{ opacity: 0 }}

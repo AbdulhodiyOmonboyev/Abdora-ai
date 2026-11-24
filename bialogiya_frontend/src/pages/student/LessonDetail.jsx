@@ -10,7 +10,7 @@ import {
   Send, Loader2, Play, Pause, Square, Check, X, Download, Clapperboard, Mic,
   Sparkles, HelpCircle, Layers, Award, CheckCircle, Clock, Flame,
   ArrowRight, Trophy, ThumbsUp, AlertTriangle, CheckCircle2, AlertCircle, ShieldCheck, Pencil, Trash2, Plus,
-  Heart
+  Heart, Zap
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -20,6 +20,8 @@ import ExplainerVideoPlayer from '../../components/ai/ExplainerVideoPlayer';
 import SpeakingPractice from '../../components/ai/SpeakingPractice';
 import BananaAiIllustrationCard from '../../components/ai/BananaAiIllustrationCard';
 import TushunBuddySection from '../../components/ai/TushunBuddySection';
+import DuolingoLessonStepper from '../../components/student/DuolingoLessonStepper';
+import FourStageLessonModal from '../../components/student/FourStageLessonModal';
 
 
 const TABS = [
@@ -787,15 +789,52 @@ function AIChatSection({ lessonId, i18nLanguage }) {
 export default function LessonDetail() {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const [activeTab, setActiveTab] = useState('overview');
+  const [showDuolingoModal, setShowDuolingoModal] = useState(false);
+  const [showFourStageModal, setShowFourStageModal] = useState(false);
   const queryClient = useQueryClient();
+
+  const { data: progressData } = useQuery({
+    queryKey: ['student-progress'],
+    queryFn: () => api.get('/lessons/student-progress').then(r => r.data?.data || r.data),
+    enabled: !!user,
+  });
+
+  const isLessonCompleted = Array.isArray(progressData?.completedLessonIds) && progressData.completedLessonIds.includes(id);
+
+  const completeLessonMutation = useMutation({
+    mutationFn: (payload) => api.post(`/lessons/${id}/complete`, payload || { xp: 50 }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries(['student-progress']);
+      queryClient.invalidateQueries(['lesson', id]);
+      if (res?.data?.data?.newXP !== undefined && updateUser) {
+        updateUser({
+          xp: res.data.data.newXP,
+          level: res.data.data.level,
+          streakCurrent: res.data.data.streakCurrent,
+        });
+      }
+      toast.success(res?.data?.message || "Dars muvaffaqiyatli yakunlandi! +50 XP 🎉");
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Darsni yakunlashda xatolik yuz berdi");
+    }
+  });
 
   const { data: lesson, isLoading } = useQuery({
     queryKey: ['lesson', id],
     queryFn: () => api.get(`/lessons/${id}`).then(r => r.data.data),
     refetchInterval: (data) => data?.aiContent?.status === 'generating' ? 3000 : false,
   });
+
+  // O'quvchi uchun dars sahifasiga kirilishi bilan hech narsa tanlamasdan avtomatik dars boshlanadi!
+  useEffect(() => {
+    if (user?.role === 'student' && lesson?.id) {
+      setShowFourStageModal(true);
+    }
+  }, [user?.role, lesson?.id]);
 
   const regenerateMutation = useMutation({
     mutationFn: () => api.post(`/lessons/${id}/regenerate-ai`, { language: i18n.language }),
@@ -900,6 +939,55 @@ export default function LessonDetail() {
           </button>
         )}
       </header>
+
+      {/* ⚡ Duolingo Mode Banner / Button (4 Bosqichli Interaktiv Dars) */}
+      <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20 border border-emerald-400/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center flex-shrink-0 text-white shadow-inner">
+            <Zap size={26} className="fill-amber-300 text-amber-300 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="badge text-[10px] font-black uppercase tracking-wider bg-amber-400 text-amber-950 px-2.5 py-0.5 rounded-full shadow-sm">
+                Duolingo Uslubida
+              </span>
+              {isLessonCompleted ? (
+                <span className="badge text-[11px] font-bold bg-white/25 text-white backdrop-blur-xs px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <CheckCircle2 size={13} className="text-emerald-200" /> Bajarilgan
+                </span>
+              ) : (
+                <span className="badge text-[10px] font-bold bg-emerald-800/60 text-emerald-100 px-2 py-0.5 rounded-full">
+                  4 Bosqichli Interaktiv
+                </span>
+              )}
+            </div>
+            <h3 className="text-base sm:text-lg font-black tracking-tight text-white mt-1">
+              ⚡ Duolingo Rejimi (4 Bosqichli Interaktiv Dars)
+            </h3>
+            <p className="text-xs sm:text-sm text-emerald-100/90 font-medium mt-0.5">
+              Nazariya, test, atamalar juftligi va amaliy mashqlar orqali darsni tezkor o'zlashtiring (+50 XP)
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto">
+          <button
+            onClick={() => setShowFourStageModal(true)}
+            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-gray-950 hover:from-amber-300 hover:to-orange-300 active:scale-95 font-black text-sm shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all flex-shrink-0 border-b-2 border-amber-600/30"
+          >
+            <Sparkles size={16} />
+            <span>4 Bosqichli AI Dars & Meeting</span>
+            <span className="bg-black/15 text-gray-950 text-[11px] font-extrabold px-2 py-0.5 rounded-lg">+50 XP</span>
+          </button>
+          <button
+            onClick={() => setShowDuolingoModal(true)}
+            className="w-full sm:w-auto px-4 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+            title="Duolingo Stepper Rejimi"
+          >
+            <Zap size={14} />
+            <span>Duolingo Mashqi</span>
+          </button>
+        </div>
+      </div>
 
       {/* Teacher AI Verification Bar */}
       {isTeacher && isDone && (
@@ -1037,6 +1125,32 @@ export default function LessonDetail() {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* O'quvchi uchun darsni yakunlash bloki */}
+              {user?.role === 'student' && (
+                <div className="mt-6 pt-4 border-t border-[var(--border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[var(--secondary-background)] p-4 rounded-2xl">
+                  <div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      {isLessonCompleted ? "Dars muvaffaqiyatli tugallangan!" : "Dars materiallarini o'qib chiqdingizmi?"}
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                      {isLessonCompleted ? "Siz ushbu dars uchun +50 XP oldingiz. Duolingo rejimida bilimlaringizni sinab ko'rishingiz mumkin." : "Darsni yakunlab, reytingingiz uchun +50 XP va kunlik streak to'plang."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => completeLessonMutation.mutate({ xp: 50 })}
+                    disabled={completeLessonMutation.isPending}
+                    className={`btn-primary text-xs py-2 px-4 rounded-xl flex items-center gap-1.5 flex-shrink-0 font-bold ${isLessonCompleted ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+                  >
+                    {completeLessonMutation.isPending ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <CheckCircle2 size={14} />
+                    )}
+                    <span>{isLessonCompleted ? "Qayta tugallash (+50 XP)" : "Darsni tugallash (+50 XP)"}</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -1263,6 +1377,35 @@ export default function LessonDetail() {
           </div>
         </div>
       </div>
+
+      {/* ⚡ 4-Bosqichli Duolingo Interaktiv Dars Modali */}
+      {showDuolingoModal && (
+        <DuolingoLessonStepper
+          lesson={lesson}
+          onClose={() => setShowDuolingoModal(false)}
+          onComplete={({ xp }) => {
+            completeLessonMutation.mutate({ xp: xp || 50 });
+          }}
+        />
+      )}
+
+      {/* 🌟 4-Bosqichli AI Avatar Interaktiv Dars & Mini-Meeting Modali */}
+      {showFourStageModal && (
+        <FourStageLessonModal
+          lesson={lesson}
+          studentUser={user}
+          isOpen={showFourStageModal}
+          onClose={() => setShowFourStageModal(false)}
+          onComplete={({ earnedXp, backendResult }) => {
+            if (!backendResult) {
+              completeLessonMutation.mutate({ xp: earnedXp || 50 });
+            } else {
+              queryClient.invalidateQueries(['student-progress']);
+              queryClient.invalidateQueries(['lesson', id]);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

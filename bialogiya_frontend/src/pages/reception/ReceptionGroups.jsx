@@ -63,12 +63,12 @@ const TIME_HOURS = Array.from({ length: 15 }, (_, i) => String(i + 8).padStart(2
 const TIME_MINUTES = ['00', '15', '30', '45'];
 
 const DEFAULT_COURSE_LEVELS = [
-  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000 },
-  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000 },
-  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000 },
-  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000 },
-  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000 },
-  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000 },
+  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000, durationMonths: 3, totalLessons: 24 },
+  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000, durationMonths: 6, totalLessons: 48 },
+  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000, durationMonths: 6, totalLessons: 48 },
+  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000, durationMonths: 9, totalLessons: 72 },
+  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000, durationMonths: 6, totalLessons: 48 },
+  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000, durationMonths: 2, totalLessons: 24 },
 ];
 
 function addMinutesToTime(timeStr, minutesToAdd) {
@@ -397,6 +397,9 @@ export default function ReceptionGroups() {
         const updated = { ...f, level: selectedVal };
         if ((!f.monthlyFee || f.monthlyFee === '0' || f.monthlyFee === '') && matched?.defaultFee) {
           updated.monthlyFee = String(matched.defaultFee);
+        }
+        if ((!f.totalLessons || f.totalLessons === '0' || f.totalLessons === '') && (matched?.totalLessons || matched?.durationMonths)) {
+          updated.totalLessons = String(matched.totalLessons || (matched.durationMonths * 8));
         }
         return updated;
       });
@@ -739,7 +742,7 @@ export default function ReceptionGroups() {
                           const lvlTeachers = getTeachersForLevel(lvl.name);
                           return (
                             <option key={lvl.id || lvl.name} value={lvl.name}>
-                              {lvl.name} {lvl.defaultFee ? `· ${Number(lvl.defaultFee).toLocaleString()} so'm` : ''} {lvlTeachers.length > 0 ? `(${lvlTeachers.length} ta o'qituvchi)` : ''}
+                              {lvl.name} {lvl.durationMonths ? `(${lvl.durationMonths} oy)` : ''} {lvl.defaultFee ? `· ${Number(lvl.defaultFee).toLocaleString()} so'm` : ''} {lvlTeachers.length > 0 ? `(${lvlTeachers.length} ta o'qituvchi)` : ''}
                             </option>
                           );
                         })}
@@ -765,11 +768,30 @@ export default function ReceptionGroups() {
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">Jami darslar</label>
+                    <label className="block text-xs font-semibold mb-1 text-[var(--text-secondary)]">Rejalashtirilgan jami darslar</label>
                     <input value={form.totalLessons} onChange={e => setForm(f => ({ ...f, totalLessons: e.target.value.replace(/\D/g, '') }))}
                       placeholder="Masalan: 48" inputMode="numeric" className="input-field text-sm py-1.5" />
                   </div>
                 </div>
+
+                {/* Level duration info banner */}
+                {form.level && (() => {
+                  const matched = allLevels.find(l => l.name?.toLowerCase() === form.level?.toLowerCase());
+                  if (!matched?.durationMonths && !form.totalLessons) return null;
+                  const dMonths = matched?.durationMonths || Math.ceil((Number(form.totalLessons) || 48) / 8);
+                  return (
+                    <div className="p-2.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/30 text-xs flex items-center justify-between text-indigo-700 dark:text-indigo-300 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <span>⏱️ Kurs davomiyligi: <b>{dMonths} oy</b></span>
+                        <span className="opacity-50">·</span>
+                        <span>📚 Rejali darslar: <b>{form.totalLessons || matched?.totalLessons || (dMonths * 8)} ta</b></span>
+                      </span>
+                      <span className="text-[11px] text-indigo-500 font-normal">
+                        (~{Math.round(((form.totalLessons || matched?.totalLessons || (dMonths * 8)) / dMonths) * 10) / 10} dars/oy)
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* Tanlangan daraja o'qituvchilari bo'yicha tezkor tavsiya */}
                 {form.level && selectedLevelTeachers.length > 0 && (

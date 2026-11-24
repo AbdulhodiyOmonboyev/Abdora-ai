@@ -1,8 +1,8 @@
-const { prisma } = require('./src/config/db');
-const { createLesson } = require('./src/controllers/lesson.controller');
-const { createTest, getTestAnalysis } = require('./src/controllers/test.controller');
-const { markAttendance } = require('./src/controllers/attendance.controller');
-const { gradeHomework, safeJsonParse } = require('./src/services/ai/gradingAI.service');
+const { prisma } = require('../src/config/db');
+const { createLesson } = require('../src/controllers/lesson.controller');
+const { createTest, getTestAnalysis } = require('../src/controllers/test.controller');
+const { markAttendance } = require('../src/controllers/attendance.controller');
+const { gradeHomework, safeJsonParse } = require('../src/services/ai/gradingAI.service');
 const bcrypt = require('bcryptjs');
 
 // Mock response creator

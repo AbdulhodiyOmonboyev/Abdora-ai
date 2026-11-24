@@ -52,6 +52,7 @@ class AppColors {
   static Color bg(BuildContext context) => isDark(context) ? darkBackground : lightBackground;
   static Color cardBg(BuildContext context) => isDark(context) ? darkCard : lightCard;
   static Color surfaceCol(BuildContext context) => isDark(context) ? darkSurface : lightSurface;
+  static Color surfaceColor(BuildContext context) => surfaceCol(context);
   static Color borderCol(BuildContext context) => isDark(context) ? darkBorder : lightBorder;
   static Color dividerCol(BuildContext context) => isDark(context) ? darkDivider : lightDivider;
   static Color inputCol(BuildContext context) => isDark(context) ? darkInputBg : lightInputBg;

@@ -934,12 +934,12 @@ const DEFAULT_CENTER_LIMITS = {
 };
 
 const DEFAULT_COURSE_LEVELS = [
-  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000, subject: 'all', teacherIds: [] },
-  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000, subject: 'all', teacherIds: [] },
-  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000, subject: 'all', teacherIds: [] },
-  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000, subject: 'all', teacherIds: [] },
-  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000, subject: 'all', teacherIds: [] },
-  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000, subject: 'all', teacherIds: [] },
+  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000, durationMonths: 3, totalLessons: 24, subject: 'all', teacherIds: [] },
+  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000, durationMonths: 6, totalLessons: 48, subject: 'all', teacherIds: [] },
+  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000, durationMonths: 6, totalLessons: 48, subject: 'all', teacherIds: [] },
+  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000, durationMonths: 9, totalLessons: 72, subject: 'all', teacherIds: [] },
+  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000, durationMonths: 6, totalLessons: 48, subject: 'all', teacherIds: [] },
+  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000, durationMonths: 2, totalLessons: 24, subject: 'all', teacherIds: [] },
 ];
 
 const resolveSettingsCenter = async (req) => {
@@ -1213,7 +1213,7 @@ const updateSettings = async (req, res, next) => {
           };
         }
       } else if (key === 'courseLevels' && Array.isArray(value)) {
-        if (role === 'admin' || role === 'manager') {
+        if (role === 'admin' || role === 'manager' || role === 'reception') {
           sharedSettingsUpdate.courseLevels = value;
         }
       } else if (key === 'aiConfig' && typeof value === 'object') {

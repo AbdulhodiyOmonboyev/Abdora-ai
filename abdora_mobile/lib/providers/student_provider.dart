@@ -7,6 +7,8 @@ import '../models/student_models.dart';
 class StudentProvider extends ChangeNotifier {
   // Darslar
   List<LessonModel> _lessons = [];
+  Set<String> _completedLessonIds = {};
+  int _streakCurrent = 0;
   LessonAiContent? _currentLessonAi;
   bool _isLoadingLessons = false;
 
@@ -28,6 +30,8 @@ class StudentProvider extends ChangeNotifier {
 
   // Getters
   List<LessonModel> get lessons => _lessons;
+  Set<String> get completedLessonIds => _completedLessonIds;
+  int get streakCurrent => _streakCurrent;
   LessonAiContent? get currentLessonAi => _currentLessonAi;
   bool get isLoadingLessons => _isLoadingLessons;
 
@@ -59,6 +63,49 @@ class StudentProvider extends ChangeNotifier {
 
     _isLoadingLessons = false;
     notifyListeners();
+
+    // Darslar progressini ham yangilash
+    await fetchLessonProgress();
+  }
+
+  // O'quvchining dars progressini (tugatilgan darslar) yuklash
+  Future<void> fetchLessonProgress() async {
+    try {
+      final res = await ApiClient().dio.get(Endpoints.studentLessonProgress);
+      if (res.statusCode == 200 && res.data['data'] != null) {
+        final data = res.data['data'];
+        if (data['completedLessonIds'] is List) {
+          final List ids = data['completedLessonIds'];
+          _completedLessonIds = ids.map((e) => e.toString()).toSet();
+        }
+        if (data['streakCurrent'] != null) {
+          _streakCurrent = (data['streakCurrent'] is int)
+              ? data['streakCurrent']
+              : int.tryParse(data['streakCurrent'].toString()) ?? 0;
+        }
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  // Darsni tugallangan deb belgilash
+  Future<bool> completeLesson(String lessonId, {int xp = 50}) async {
+    try {
+      final res = await ApiClient().dio.post(
+        Endpoints.lessonComplete(lessonId),
+        data: {'xp': xp},
+      );
+      if (res.statusCode == 200) {
+        _completedLessonIds.add(lessonId);
+        notifyListeners();
+        return true;
+      }
+    } catch (_) {
+      // Offline yoki vaqtinchalik xatolikda ham interfeysda qo'shib turish
+      _completedLessonIds.add(lessonId);
+      notifyListeners();
+    }
+    return false;
   }
 
   // Darsning AI kontentini olish
@@ -201,6 +248,7 @@ class StudentProvider extends ChangeNotifier {
   Future<void> refreshAll() async {
     await Future.wait([
       fetchLessons(),
+      fetchLessonProgress(),
       fetchTests(),
       fetchHomework(),
       fetchLeaderboard(),

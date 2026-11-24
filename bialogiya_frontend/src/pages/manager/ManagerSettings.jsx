@@ -55,12 +55,12 @@ const AI_MODEL_OPTIONS = [
 ];
 
 const DEFAULT_COURSE_LEVELS = [
-  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000, teacherIds: [] },
-  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000, teacherIds: [] },
-  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000, teacherIds: [] },
-  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000, teacherIds: [] },
-  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000, teacherIds: [] },
-  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000, teacherIds: [] },
+  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000, durationMonths: 3, totalLessons: 24, teacherIds: [] },
+  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000, durationMonths: 6, totalLessons: 48, teacherIds: [] },
+  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000, durationMonths: 6, totalLessons: 48, teacherIds: [] },
+  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000, durationMonths: 9, totalLessons: 72, teacherIds: [] },
+  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000, durationMonths: 6, totalLessons: 48, teacherIds: [] },
+  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000, durationMonths: 2, totalLessons: 24, teacherIds: [] },
 ];
 
 const DEFAULT_GRADE_SETTINGS = {
@@ -167,6 +167,12 @@ export default function ManagerSettings() {
   const [activeTab, setActiveTabState] = useState(urlTab || 'reception_control');
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTabState(urlTab);
+    }
+  }, [urlTab]);
+
   const setActiveTab = (tabId) => {
     setActiveTabState(tabId);
     setSearchParams({ tab: tabId }, { replace: true });
@@ -230,6 +236,8 @@ export default function ManagerSettings() {
     },
   });
 
+  const set = (key, val) => setSettings(s => ({ ...s, [key]: val }));
+
   // Query settings
   const { data: serverSettings } = useQuery({
     queryKey: ['manager-settings', user?.id, user?.centerId],
@@ -266,11 +274,14 @@ export default function ManagerSettings() {
   // Course Levels state & handlers
   const [showLevelModal, setShowLevelModal] = useState(false);
   const [editingLevel, setEditingLevel] = useState(null);
+  const [isSavingLevel, setIsSavingLevel] = useState(false);
   const [levelForm, setLevelForm] = useState({
     id: '',
     name: '',
     description: '',
     defaultFee: 400000,
+    durationMonths: 6,
+    totalLessons: 48,
     teacherIds: [],
   });
 
@@ -281,6 +292,8 @@ export default function ManagerSettings() {
       name: '',
       description: '',
       defaultFee: 450000,
+      durationMonths: 6,
+      totalLessons: 48,
       teacherIds: [],
     });
     setShowLevelModal(true);
@@ -288,56 +301,77 @@ export default function ManagerSettings() {
 
   const openEditLevel = (lvl) => {
     setEditingLevel(lvl);
+    const dMonths = lvl.durationMonths || 6;
     setLevelForm({
       id: lvl.id || `level_${Date.now()}`,
       name: lvl.name || '',
       description: lvl.description || '',
       defaultFee: lvl.defaultFee || 400000,
+      durationMonths: dMonths,
+      totalLessons: lvl.totalLessons || dMonths * 8,
       teacherIds: Array.isArray(lvl.teacherIds) ? [...lvl.teacherIds] : [],
     });
     setShowLevelModal(true);
   };
 
-  const handleSaveLevel = (e) => {
+  const handleSaveLevel = async (e) => {
     e.preventDefault();
     if (!levelForm.name.trim()) return toast.error("Daraja nomini kiriting");
+    setIsSavingLevel(true);
+
     const currentList = Array.isArray(settings.courseLevels) && settings.courseLevels.length > 0
       ? settings.courseLevels
       : DEFAULT_COURSE_LEVELS;
+
     let nextList;
     if (editingLevel) {
-      nextList = currentList.map(l => (l.id === editingLevel.id || l.name === editingLevel.name) ? { ...levelForm, name: levelForm.name.trim() } : l);
+      nextList = currentList.map(l => {
+        const isMatch = (editingLevel.id && l.id && l.id === editingLevel.id) ||
+                        (editingLevel.name && l.name === editingLevel.name);
+        return isMatch ? { ...l, ...levelForm, id: l.id || levelForm.id, name: levelForm.name.trim() } : l;
+      });
+      if (!nextList.some(l => l.name === levelForm.name.trim() || (l.id && l.id === levelForm.id))) {
+        nextList.push({ ...levelForm, name: levelForm.name.trim() });
+      }
     } else {
       nextList = [...currentList, { ...levelForm, name: levelForm.name.trim() }];
     }
+
     set('courseLevels', nextList);
-    api.put('/admin/settings', { courseLevels: nextList })
-      .then(() => {
-        qc.invalidateQueries({ queryKey: ['manager-settings'] });
-        qc.invalidateQueries({ queryKey: ['center-settings'] });
-        qc.invalidateQueries({ queryKey: ['admin-settings'] });
-        toast.success("Kurs darajasi saqlandi");
-      })
-      .catch(() => toast.error("Saqlashda xatolik yuz berdi"));
-    setShowLevelModal(false);
-    setEditingLevel(null);
+    const targetCenterId = user?.centerId || serverSettings?.centerId || settings?.centerId;
+
+    try {
+      await api.put('/admin/settings', { courseLevels: nextList, centerId: targetCenterId });
+      qc.invalidateQueries({ queryKey: ['manager-settings'] });
+      qc.invalidateQueries({ queryKey: ['center-settings'] });
+      qc.invalidateQueries({ queryKey: ['admin-settings'] });
+      toast.success(editingLevel ? "Kurs darajasi muvaffaqiyatli yangilandi" : "Yangi kurs darajasi qo'shildi");
+      setShowLevelModal(false);
+      setEditingLevel(null);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Saqlashda xatolik yuz berdi");
+    } finally {
+      setIsSavingLevel(false);
+    }
   };
 
-  const handleDeleteLevel = (lvl) => {
+  const handleDeleteLevel = async (lvl) => {
     if (!window.confirm(`"${lvl.name}" darajasini o'chirishni tasdiqlaysizmi?`)) return;
     const currentList = Array.isArray(settings.courseLevels) && settings.courseLevels.length > 0
       ? settings.courseLevels
       : DEFAULT_COURSE_LEVELS;
-    const nextList = currentList.filter(l => l.id !== lvl.id && l.name !== lvl.name);
+    const nextList = currentList.filter(l => (l.id ? l.id !== lvl.id : l.name !== lvl.name));
     set('courseLevels', nextList);
-    api.put('/admin/settings', { courseLevels: nextList })
-      .then(() => {
-        qc.invalidateQueries({ queryKey: ['manager-settings'] });
-        qc.invalidateQueries({ queryKey: ['center-settings'] });
-        qc.invalidateQueries({ queryKey: ['admin-settings'] });
-        toast.success("Daraja o'chirildi");
-      })
-      .catch(() => toast.error("O'chirishda xatolik yuz berdi"));
+    const targetCenterId = user?.centerId || serverSettings?.centerId || settings?.centerId;
+    try {
+      await api.put('/admin/settings', { courseLevels: nextList, centerId: targetCenterId });
+      qc.invalidateQueries({ queryKey: ['manager-settings'] });
+      qc.invalidateQueries({ queryKey: ['center-settings'] });
+      qc.invalidateQueries({ queryKey: ['admin-settings'] });
+      toast.success("Daraja o'chirildi");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "O'chirishda xatolik yuz berdi");
+    }
   };
 
   // AI Agents state & queries
@@ -593,8 +627,6 @@ export default function ManagerSettings() {
     },
     onError: (err) => toast.error(friendlyAiErrorMessage(err)),
   });
-
-  const set = (key, val) => setSettings(s => ({ ...s, [key]: val }));
 
   const togglePerm = (permKey) => {
     const updated = {
@@ -1464,8 +1496,16 @@ export default function ManagerSettings() {
                                 <h3 className="text-sm font-bold text-[var(--text-primary)] truncate">
                                   {lvl.name}
                                 </h3>
-                                <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                                  {lvl.defaultFee ? `${Number(lvl.defaultFee).toLocaleString()} so'm / oy` : "To'lov belgilanmagan"}
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                    {lvl.defaultFee ? `${Number(lvl.defaultFee).toLocaleString()} so'm / oy` : "To'lov belgilanmagan"}
+                                  </span>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800">
+                                    ⏱️ {lvl.durationMonths || 6} oy
+                                  </span>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800">
+                                    📚 {lvl.totalLessons || ((lvl.durationMonths || 6) * 8)} dars
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -2789,6 +2829,7 @@ export default function ManagerSettings() {
 
       {/* ── Kurs Darajasi Modal (Yaratish / Tahrirlash) ── */}
       <Modal
+        open={showLevelModal}
         isOpen={showLevelModal}
         onClose={() => setShowLevelModal(false)}
         title={editingLevel ? "Kurs darajasini tahrirlash" : "Yangi kurs darajasi qo'shish"}
@@ -2817,6 +2858,74 @@ export default function ManagerSettings() {
               className="input-field text-sm font-mono"
             />
             <p className="form-hint">Yangi guruh ochilganda ushbu narx avtomatik to'ldiriladi</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="form-label">Kurs davomiyligi (oyda) *</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="1"
+                  max="36"
+                  required
+                  value={levelForm.durationMonths || ''}
+                  onChange={e => {
+                    const months = Number(e.target.value) || 0;
+                    setLevelForm(f => ({
+                      ...f,
+                      durationMonths: months,
+                      totalLessons: f.totalLessons || (months * 8),
+                    }));
+                  }}
+                  placeholder="Masalan: 6"
+                  className="input-field text-sm font-semibold pr-12"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--text-muted)] pointer-events-none">
+                  oy
+                </span>
+              </div>
+              {/* Tezkor tanlov tugmalari */}
+              <div className="flex items-center gap-1 flex-wrap mt-1.5">
+                {[1, 2, 3, 6, 9, 12].map(m => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setLevelForm(f => ({
+                      ...f,
+                      durationMonths: m,
+                      totalLessons: m * 8,
+                    }))}
+                    className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all ${
+                      Number(levelForm.durationMonths) === m
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600'
+                    }`}
+                  >
+                    {m} oy
+                  </button>
+                ))}
+              </div>
+              <p className="form-hint mt-1">Kurs to'liq yakunlanishi uchun mo'ljallangan muddat</p>
+            </div>
+
+            <div>
+              <label className="form-label">Rejalashtirilgan darslar soni</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="1"
+                  value={levelForm.totalLessons || ''}
+                  onChange={e => setLevelForm(f => ({ ...f, totalLessons: Number(e.target.value) || 0 }))}
+                  placeholder="Masalan: 48"
+                  className="input-field text-sm font-semibold pr-12"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--text-muted)] pointer-events-none">
+                  dars
+                </span>
+              </div>
+              <p className="form-hint">Ushbu bosqichda o'tiladigan jami darslar</p>
+            </div>
           </div>
 
           <div>
@@ -2882,10 +2991,11 @@ export default function ManagerSettings() {
             </button>
             <button
               type="submit"
+              disabled={isSavingLevel}
               className="btn-primary px-5 py-2 text-xs font-bold flex items-center gap-1.5"
             >
-              <Save size={14} />
-              <span>Saqlash</span>
+              {isSavingLevel ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              <span>{isSavingLevel ? "Saqlanmoqda..." : "Saqlash"}</span>
             </button>
           </div>
         </form>
@@ -2893,6 +3003,7 @@ export default function ManagerSettings() {
 
       {/* ── Yangi AI Agent Modal ── */}
       <Modal
+        open={showCreateAgentModal}
         isOpen={showCreateAgentModal}
         onClose={() => setShowCreateAgentModal(false)}
         title="Yangi AI Agent yaratish"

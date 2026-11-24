@@ -1,4 +1,4 @@
-﻿const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs');
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
 const { generateUsername, generatePassword } = require('../utils/generateCredentials');
@@ -326,8 +326,28 @@ const updateProfile = async (req, res, next) => {
     const {
       name, username, language, avatar, phone, gender, age, address,
       studyLocation, residence, alternativeWorkplace, birthDate,
-      permissions, aiPreferences
+      permissions, aiPreferences, lockProfile, isProfileLocked
     } = req.body;
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { id: true, role: true, name: true, avatar: true, permissions: true }
+    });
+    if (!currentUser) return error(res, 'Foydalanuvchi topilmadi', 404);
+
+    const isStudent = currentUser.role === 'student' || req.user.role === 'student';
+    const currentPerms = (currentUser.permissions && typeof currentUser.permissions === 'object') ? currentUser.permissions : {};
+    const isLocked = Boolean(currentPerms.isProfileLocked);
+
+    // Agar foydalanuvchi roli 'student' bo'lsa va uning permissions?.isProfileLocked === true bo'lsa,
+    // 'name' va 'avatar' maydonlarini o'zgartirishni rad etish: "Ism va avatar bir marta o'rnatilgan va qayta o'zgartirib bo'lmaydi" (400 xatolik).
+    if (isStudent && isLocked) {
+      const isChangingName = name !== undefined && String(name).trim() !== currentUser.name;
+      const isChangingAvatar = avatar !== undefined && avatar !== currentUser.avatar;
+      if (isChangingName || isChangingAvatar) {
+        return error(res, "Ism va avatar bir marta o'rnatilgan va qayta o'zgartirib bo'lmaydi", 400);
+      }
+    }
 
     if (username) {
       const cleanUsername = String(username).trim();
@@ -340,12 +360,9 @@ const updateProfile = async (req, res, next) => {
     }
 
     let updatedPermissions = permissions;
-    if (aiPreferences !== undefined || permissions !== undefined) {
-      const currentUser = await prisma.user.findUnique({
-        where: { id: req.user.userId },
-        select: { permissions: true }
-      });
-      const currentPerms = (currentUser?.permissions && typeof currentUser.permissions === 'object') ? currentUser.permissions : {};
+    const shouldLock = Boolean(lockProfile || isProfileLocked || permissions?.isProfileLocked);
+
+    if (aiPreferences !== undefined || permissions !== undefined || shouldLock) {
       updatedPermissions = {
         ...currentPerms,
         ...(permissions || {}),
@@ -354,12 +371,18 @@ const updateProfile = async (req, res, next) => {
             ...(currentPerms.aiPreferences || {}),
             ...aiPreferences
           }
-        } : {})
+        } : {}),
+        ...(shouldLock ? { isProfileLocked: true, lockedAt: new Date().toISOString() } : {})
       };
     }
 
+    // Student qulflangan holatda o'zi isProfileLocked ni false qilib yuborsa, ochilmasligi kerak
+    if (isStudent && isLocked && updatedPermissions) {
+      updatedPermissions.isProfileLocked = true;
+    }
+
     const updateData = {
-      ...(name !== undefined && { name }),
+      ...(name !== undefined && { name: String(name).trim() }),
       ...(username !== undefined && { username: String(username).trim() }),
       ...(language !== undefined && { language }),
       ...(avatar !== undefined && { avatar }),
@@ -382,6 +405,69 @@ const updateProfile = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const lockStudentProfile = async (req, res, next) => {
+  try {
+    const targetUserId = req.params.id || req.body.studentId || req.user.userId;
+    const target = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, role: true, name: true, avatar: true, permissions: true, centerId: true }
+    });
+    if (!target) return error(res, 'Foydalanuvchi topilmadi', 404);
+
+    if (targetUserId !== req.user.userId && req.user.role !== 'admin') {
+      if (target.centerId !== req.user.centerId) return error(res, 'Forbidden', 403);
+      if (!['admin', 'manager', 'reception', 'teacher'].includes(req.user.role)) {
+        return error(res, 'Forbidden', 403);
+      }
+    }
+
+    const currentPerms = (target.permissions && typeof target.permissions === 'object') ? target.permissions : {};
+    const updatedUser = await prisma.user.update({
+      where: { id: targetUserId },
+      data: {
+        permissions: {
+          ...currentPerms,
+          isProfileLocked: true,
+          lockedAt: new Date().toISOString(),
+        }
+      }
+    });
+
+    return success(res, safeUser(updatedUser), 'Talaba profili muvaffaqiyatli qulflandi');
+  } catch (err) { next(err); }
+};
+
+const unlockStudentProfile = async (req, res, next) => {
+  try {
+    const targetUserId = req.params.id || req.body.studentId;
+    if (!targetUserId) return error(res, 'studentId kiritilishi shart', 400);
+
+    const target = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, role: true, permissions: true, centerId: true }
+    });
+    if (!target) return error(res, 'Foydalanuvchi topilmadi', 404);
+
+    if (req.user.role !== 'admin' && target.centerId !== req.user.centerId) {
+      return error(res, 'Forbidden', 403);
+    }
+
+    const currentPerms = (target.permissions && typeof target.permissions === 'object') ? target.permissions : {};
+    const updatedUser = await prisma.user.update({
+      where: { id: targetUserId },
+      data: {
+        permissions: {
+          ...currentPerms,
+          isProfileLocked: false,
+          unlockedAt: new Date().toISOString(),
+        }
+      }
+    });
+
+    return success(res, safeUser(updatedUser), 'Talaba profili muvaffaqiyatli qulfdan chiqarildi');
+  } catch (err) { next(err); }
+};
+
 const updateLanguage = async (req, res, next) => {
   try {
     const { language } = req.body;
@@ -400,6 +486,16 @@ const updateLanguage = async (req, res, next) => {
 const uploadAvatar = async (req, res, next) => {
   try {
     if (!req.file) return error(res, 'Rasm fayli yuklanmadi', 400);
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { id: true, role: true, permissions: true }
+    });
+    const currentPerms = (currentUser?.permissions && typeof currentUser.permissions === 'object') ? currentUser.permissions : {};
+    if (currentUser?.role === 'student' && currentPerms.isProfileLocked) {
+      return error(res, "Ism va avatar bir marta o'rnatilgan va qayta o'zgartirib bo'lmaydi", 400);
+    }
+
     const row = await prisma.uploadedFile.create({
       data: {
         name: req.file.originalname || 'avatar.jpg',
@@ -409,9 +505,21 @@ const uploadAvatar = async (req, res, next) => {
       },
     });
     const avatarUrl = `/api/users/avatar/${row.id}`;
+
+    const shouldLock = Boolean(req.query.lockProfile === 'true' || req.body?.lockProfile === 'true');
+
     const user = await prisma.user.update({
       where: { id: req.user.userId },
-      data: { avatar: avatarUrl },
+      data: {
+        avatar: avatarUrl,
+        ...(shouldLock ? {
+          permissions: {
+            ...currentPerms,
+            isProfileLocked: true,
+            lockedAt: new Date().toISOString(),
+          }
+        } : {})
+      },
     });
     return success(res, safeUser(user), 'Avatar muvaffaqiyatli saqlandi');
   } catch (err) { next(err); }
@@ -836,12 +944,13 @@ const getStudentHistory = async (req, res, next) => {
       });
     }
 
-    // 5. Notes, Custom transactions, Game activities, and Referrals stored in achievements
+    // 5. Notes, Custom transactions, Game activities, Referrals and Group History stored in achievements
     let notes = [];
     let customTransactions = [];
     let gameActivities = [];
     let referrals = [];
     let referredBy = null;
+    let groupHistory = [];
 
     if (student.achievements) {
       if (Array.isArray(student.achievements)) {
@@ -853,7 +962,22 @@ const getStudentHistory = async (req, res, next) => {
         gameActivities = Array.isArray(student.achievements.gameActivities) ? student.achievements.gameActivities : [];
         referrals = Array.isArray(student.achievements.referrals) ? student.achievements.referrals : [];
         referredBy = student.achievements.referredBy || null;
+        groupHistory = Array.isArray(student.achievements.groupHistory) ? student.achievements.groupHistory : [];
       }
+    }
+
+    // Agar o'quvchi guruhda bo'lsa, lekin guruhlar tarixi bo'sh bo'lsa, dastlabki guruh qo'shilganini tarixga yozish
+    if (groupHistory.length === 0 && student.group) {
+      groupHistory.push({
+        id: `initial_grp_${student.id}`,
+        type: 'join',
+        title: `Guruhga a'zo bo'ldi: "${student.group.name}"`,
+        toGroupId: student.group.id,
+        toGroupName: student.group.name,
+        reason: "Boshlang'ich guruhga biriktirilgan",
+        changedBy: { id: 'system', name: 'Tizim', role: 'admin' },
+        createdAt: student.createdAt,
+      });
     }
 
     // 6. Chronological Coin & XP History (Barcha real operatsiyalar)
@@ -1041,9 +1165,118 @@ const getStudentHistory = async (req, res, next) => {
     const excusedCount = attendanceList.filter((a) => a.status === 'excused').length;
     const attendanceRate = totalLessons > 0 ? Math.round((presentCount / totalLessons) * 100) : 100;
 
+    // 9. Universal Change & Activity Timeline (Barcha o'zgarishlar va amallar xronologiyasi)
+    const timeline = [];
+
+    // a) Guruh almashinuvi va harakatlari (qaysi guruhdan qaysi guruhga o'tkazilgan)
+    groupHistory.forEach((gh) => {
+      timeline.push({
+        id: gh.id || `gh_${Math.random()}`,
+        category: 'group',
+        type: gh.type || 'transfer', // 'transfer' | 'join' | 'leave'
+        title: gh.title || (gh.type === 'transfer' ? `Guruh o'zgartirildi: "${gh.fromGroupName}" ➔ "${gh.toGroupName}"` : `Guruhga qo'shildi: "${gh.toGroupName}"`),
+        fromGroupName: gh.fromGroupName || null,
+        toGroupName: gh.toGroupName || null,
+        fromGroupId: gh.fromGroupId || null,
+        toGroupId: gh.toGroupId || null,
+        reason: gh.reason || "Guruh almashtirildi",
+        changedBy: gh.changedBy || null,
+        date: gh.createdAt || new Date().toISOString(),
+      });
+    });
+
+    // b) To'lovlar tarixi (qachon pul to'ladi, summa, usul va izoh)
+    payments.forEach((p) => {
+      const isPaid = p.status === 'paid' || p.isPaid;
+      const isPartial = p.status === 'partial';
+      const amountStr = (p.amount || 0).toLocaleString();
+      const expectedStr = (p.expectedAmount || 0).toLocaleString();
+      timeline.push({
+        id: `pay_${p.id}`,
+        category: 'payment',
+        type: p.status || (isPaid ? 'paid' : 'unpaid'),
+        title: isPaid
+          ? `To'lov qabul qilindi: ${amountStr} so'm (${p.month} oyi)`
+          : (isPartial
+              ? `Qisman to'lov: ${amountStr} / ${expectedStr} so'm (${p.month} oyi)`
+              : `To'lov kutilmoqda: ${expectedStr} so'm (${p.month} oyi)`),
+        amount: p.amount || 0,
+        expectedAmount: p.expectedAmount || 0,
+        month: p.month,
+        method: p.method || 'cash',
+        note: p.note || null,
+        status: p.status,
+        date: p.paidAt || p.createdAt,
+      });
+    });
+
+    // c) Eslatmalar (xodimlar qoldirgan izohlar)
+    notes.forEach((n) => {
+      timeline.push({
+        id: n.id || `note_${Math.random()}`,
+        category: 'note',
+        type: 'note',
+        title: `Eslatma: ${n.text}`,
+        text: n.text,
+        authorName: n.authorName || 'Xodim',
+        authorRole: n.authorRole || 'admin',
+        date: n.createdAt,
+      });
+    });
+
+    // d) Profil ochilishi va AI Avatar muhrlanishi
+    timeline.push({
+      id: `reg_${student.id}`,
+      category: 'profile',
+      type: 'registration',
+      title: `O'quvchi ro'yxatdan o'tdi (${student.name})`,
+      date: student.createdAt,
+    });
+    if (student.achievements && student.achievements.isProfileLocked) {
+      timeline.push({
+        id: `lock_${student.id}`,
+        category: 'profile',
+        type: 'lock',
+        title: `AI Avatar va ism muhrlandi: "${student.name}" (Tahrir cheklandi)`,
+        date: student.achievements.profileLockedAt || student.updatedAt,
+      });
+    }
+
+    // e) Test sinovlari natijalari
+    testResults.slice(0, 15).forEach((tr) => {
+      timeline.push({
+        id: `test_res_${tr.id}`,
+        category: 'test',
+        type: tr.passed ? 'pass' : 'fail',
+        title: `Test sinovi: ${tr.test?.title || 'Imtihon'} (${tr.percentage}%)`,
+        score: tr.score,
+        percentage: tr.percentage,
+        passed: tr.passed,
+        date: tr.completedAt,
+      });
+    });
+
+    // f) Uyga vazifalar
+    submissions.slice(0, 15).forEach((sub) => {
+      timeline.push({
+        id: `sub_${sub.id}`,
+        category: 'homework',
+        type: 'submission',
+        title: `Uyga vazifa: ${sub.homework?.title || 'Topshiriq'} (${sub.finalScore || 0} ball)`,
+        score: sub.finalScore,
+        status: sub.status,
+        date: sub.submittedAt,
+      });
+    });
+
+    // Xronologik tartib: eng yangisi birinchi
+    timeline.sort((a, b) => new Date(b.date) - new Date(a.date));
+
     return success(res, {
       student,
       group: student.group,
+      groupHistory,
+      timeline,
       payments,
       attendance: attendanceList,
       tests: testResults,
@@ -1433,6 +1666,8 @@ module.exports = {
   getAllUsers,
   getUserById,
   updateProfile,
+  lockStudentProfile,
+  unlockStudentProfile,
   updateUser,
   deleteUser,
   resetStudentPassword,

@@ -571,6 +571,503 @@ const updateAIContent = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const completeLesson = async (req, res, next) => {
+  try {
+    const lessonId = req.params.id;
+    const studentId = req.user.userId;
+
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+    });
+    if (!lesson) return error(res, 'Lesson not found', 404);
+
+    const student = await prisma.user.findUnique({
+      where: { id: studentId },
+      select: {
+        id: true,
+        xp: true,
+        coins: true,
+        level: true,
+        streakCurrent: true,
+        streakLongest: true,
+        streakLastDate: true,
+        achievements: true,
+      },
+    });
+    if (!student) return error(res, 'Foydalanuvchi topilmadi', 404);
+
+    let achievementsObj = {};
+    if (student.achievements) {
+      if (typeof student.achievements === 'object' && !Array.isArray(student.achievements)) {
+        achievementsObj = { ...student.achievements };
+      } else if (Array.isArray(student.achievements)) {
+        achievementsObj = { badges: student.achievements };
+      } else if (typeof student.achievements === 'string') {
+        try {
+          const parsed = JSON.parse(student.achievements);
+          achievementsObj = typeof parsed === 'object' && !Array.isArray(parsed)
+            ? parsed
+            : { badges: Array.isArray(parsed) ? parsed : [] };
+        } catch (_) {}
+      }
+    }
+
+    const completedLessons = Array.isArray(achievementsObj.completedLessons)
+      ? [...achievementsObj.completedLessons]
+      : [];
+
+    let gamifyRes = null;
+    let earnedXp = 0;
+
+    const alreadyCompleted = completedLessons.includes(lessonId);
+    if (!alreadyCompleted) {
+      completedLessons.push(lessonId);
+      achievementsObj.completedLessons = completedLessons;
+
+      await prisma.user.update({
+        where: { id: studentId },
+        data: { achievements: achievementsObj },
+      });
+
+      // Talabaga standart +50 XP berish va bugungi streak'ini yangilash
+      earnedXp = 50;
+      const { awardXP } = require('../services/gamification.service');
+      gamifyRes = await awardXP(studentId, earnedXp, 'lesson_complete');
+    }
+
+    // Yangilangan ko'rsatkichlarni olish
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: studentId },
+      select: { xp: true, coins: true, level: true, streakCurrent: true, streakLongest: true },
+    });
+
+    return success(res, {
+      lessonId,
+      completed: true,
+      alreadyCompleted,
+      completedLessonIds: completedLessons,
+      completedCount: completedLessons.length,
+      xpGained: gamifyRes?.xpGained ?? xpReward,
+      newXP: updatedUser?.xp ?? (student.xp + xpReward),
+      streakCurrent: updatedUser?.streakCurrent ?? student.streakCurrent,
+      streakLongest: updatedUser?.streakLongest ?? student.streakLongest,
+      level: updatedUser?.level ?? student.level,
+    }, 'Dars muvaffaqiyatli yakunlandi');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getStudentLessonProgress = async (req, res, next) => {
+  try {
+    const student = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: {
+        id: true,
+        xp: true,
+        coins: true,
+        level: true,
+        streakCurrent: true,
+        streakLongest: true,
+        achievements: true,
+        groupId: true,
+        group: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
+            totalLessons: true,
+            subject: true,
+          },
+        },
+        center: {
+          select: {
+            id: true,
+            settings: true,
+          },
+        },
+      },
+    });
+    if (!student) return error(res, 'Foydalanuvchi topilmadi', 404);
+
+    let achievementsObj = {};
+    if (student.achievements) {
+      if (typeof student.achievements === 'object' && !Array.isArray(student.achievements)) {
+        achievementsObj = { ...student.achievements };
+      } else if (Array.isArray(student.achievements)) {
+        achievementsObj = { badges: student.achievements };
+      } else if (typeof student.achievements === 'string') {
+        try {
+          const parsed = JSON.parse(student.achievements);
+          achievementsObj = typeof parsed === 'object' && !Array.isArray(parsed)
+            ? parsed
+            : { badges: Array.isArray(parsed) ? parsed : [] };
+        } catch (_) {}
+      }
+    }
+
+    const completedLessonIds = Array.isArray(achievementsObj.completedLessons)
+      ? achievementsObj.completedLessons.map(item => (typeof item === 'object' && item?.id ? item.id : item))
+      : [];
+
+    const lessonMastery = achievementsObj.lessonMastery && typeof achievementsObj.lessonMastery === 'object'
+      ? achievementsObj.lessonMastery
+      : {};
+
+    // Determine planned total lessons from group or center settings
+    let plannedTotalLessons = student.group?.totalLessons || null;
+    let stageLevelName = student.group?.level || "Boshlang'ich";
+
+    if (!plannedTotalLessons && student.center?.settings) {
+      try {
+        const settings = typeof student.center.settings === 'string'
+          ? JSON.parse(student.center.settings)
+          : student.center.settings;
+        const levels = settings.courseLevels || settings.levels || [];
+        if (Array.isArray(levels) && levels.length > 0) {
+          const found = levels.find(l => 
+            (l.name && stageLevelName && l.name.toLowerCase() === stageLevelName.toLowerCase()) ||
+            (l.id && stageLevelName && l.id === stageLevelName)
+          );
+          if (found && found.totalLessons) {
+            plannedTotalLessons = Number(found.totalLessons);
+          } else if (levels[0]?.totalLessons) {
+            plannedTotalLessons = Number(levels[0].totalLessons);
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Default planned curriculum count: 12 lessons per unit/stage if not specified
+    if (!plannedTotalLessons || plannedTotalLessons < 1) {
+      plannedTotalLessons = 12;
+    }
+
+    const groupStageInfo = {
+      level: stageLevelName,
+      totalLessons: plannedTotalLessons,
+      groupName: student.group?.name || null,
+      subject: student.group?.subject || null,
+    };
+
+    return success(res, {
+      completedLessonIds,
+      completedCount: completedLessonIds.length,
+      lessonMastery,
+      xp: student.xp,
+      coins: student.coins,
+      level: student.level,
+      streakCurrent: student.streakCurrent,
+      streakLongest: student.streakLongest,
+      groupStageInfo,
+      totalPlannedLessons: plannedTotalLessons,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const submitStepProgress = async (req, res, next) => {
+  try {
+    const lessonId = req.params.id;
+    const studentId = req.user.userId;
+
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, title: true },
+    });
+    if (!lesson) return error(res, 'Lesson not found', 404);
+
+    const student = await prisma.user.findUnique({
+      where: { id: studentId },
+      select: {
+        id: true,
+        xp: true,
+        coins: true,
+        level: true,
+        streakCurrent: true,
+        streakLongest: true,
+        achievements: true,
+      },
+    });
+    if (!student) return error(res, 'Foydalanuvchi topilmadi', 404);
+
+    const { stepId, stepType, isCorrect, userAnswer, timeSpent, stepIndex } = req.body;
+    const isStepCorrect = isCorrect === true || isCorrect === 'true' || isCorrect === 1;
+
+    let achievementsObj = {};
+    if (student.achievements) {
+      if (typeof student.achievements === 'object' && !Array.isArray(student.achievements)) {
+        achievementsObj = { ...student.achievements };
+      } else if (Array.isArray(student.achievements)) {
+        achievementsObj = { badges: student.achievements };
+      } else if (typeof student.achievements === 'string') {
+        try {
+          const parsed = JSON.parse(student.achievements);
+          achievementsObj = typeof parsed === 'object' && !Array.isArray(parsed)
+            ? parsed
+            : { badges: Array.isArray(parsed) ? parsed : [] };
+        } catch (_) {}
+      }
+    }
+
+    const lessonProgress = achievementsObj.lessonProgress && typeof achievementsObj.lessonProgress === 'object'
+      ? { ...achievementsObj.lessonProgress }
+      : {};
+
+    const currentLesson = lessonProgress[lessonId] && typeof lessonProgress[lessonId] === 'object'
+      ? { ...lessonProgress[lessonId] }
+      : {
+          completedSteps: [],
+          mistakes: [],
+          lastStep: null,
+          updatedAt: new Date().toISOString(),
+        };
+
+    const completedSteps = Array.isArray(currentLesson.completedSteps)
+      ? [...currentLesson.completedSteps]
+      : [];
+    const mistakes = Array.isArray(currentLesson.mistakes)
+      ? [...currentLesson.mistakes]
+      : [];
+
+    const effectiveStepId = (stepId !== undefined && stepId !== null)
+      ? String(stepId)
+      : (stepIndex !== undefined ? `step_${stepIndex}` : `step_${completedSteps.length + 1}`);
+
+    let xpEarned = 0;
+    if (isStepCorrect) {
+      xpEarned = 5;
+      if (!completedSteps.includes(effectiveStepId)) {
+        completedSteps.push(effectiveStepId);
+      }
+    } else {
+      mistakes.push({
+        stepId: effectiveStepId,
+        stepType: stepType || 'quiz',
+        userAnswer: userAnswer !== undefined ? userAnswer : null,
+        timeSpent: Number(timeSpent) || 0,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    currentLesson.completedSteps = completedSteps;
+    currentLesson.mistakes = mistakes;
+    currentLesson.lastStep = effectiveStepId;
+    currentLesson.updatedAt = new Date().toISOString();
+
+    lessonProgress[lessonId] = currentLesson;
+    achievementsObj.lessonProgress = lessonProgress;
+
+    // Mirror to duolingoProgress
+    if (!achievementsObj.duolingoProgress || typeof achievementsObj.duolingoProgress !== 'object') {
+      achievementsObj.duolingoProgress = {};
+    }
+    achievementsObj.duolingoProgress[lessonId] = currentLesson;
+
+    await prisma.user.update({
+      where: { id: studentId },
+      data: { achievements: achievementsObj },
+    });
+
+    if (xpEarned > 0) {
+      const { awardXP } = require('../services/gamification.service');
+      await awardXP(studentId, xpEarned, 'step_complete');
+    }
+
+    return success(res, {
+      success: true,
+      xpEarned,
+      currentStep: effectiveStepId,
+      mistakesCount: mistakes.length,
+      totalStepsCompleted: completedSteps.length,
+      lessonId,
+      stepType: stepType || 'concept',
+      isCorrect: isStepCorrect,
+      timeSpent: Number(timeSpent) || 0,
+      xpGained: xpEarned,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const finishLessonQuiz = async (req, res, next) => {
+  try {
+    const lessonId = req.params.id;
+    const studentId = req.user.userId;
+
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, title: true },
+    });
+    if (!lesson) return error(res, 'Lesson not found', 404);
+
+    const student = await prisma.user.findUnique({
+      where: { id: studentId },
+      select: {
+        id: true,
+        xp: true,
+        coins: true,
+        level: true,
+        streakCurrent: true,
+        streakLongest: true,
+        achievements: true,
+      },
+    });
+    if (!student) return error(res, 'Foydalanuvchi topilmadi', 404);
+
+    const { score = 0, totalQuestions = 0, answers, mistakes, timeSpent = 0 } = req.body;
+    const numericScore = typeof score === 'number' ? score : Number(score) || 0;
+    const numericTotal = typeof totalQuestions === 'number' ? totalQuestions : Number(totalQuestions) || 0;
+
+    const masteryPercent = numericTotal > 0 ? Math.round((numericScore / numericTotal) * 100) : 0;
+    const isMastered = masteryPercent >= 70;
+
+    let achievementsObj = {};
+    if (student.achievements) {
+      if (typeof student.achievements === 'object' && !Array.isArray(student.achievements)) {
+        achievementsObj = { ...student.achievements };
+      } else if (Array.isArray(student.achievements)) {
+        achievementsObj = { badges: student.achievements };
+      } else if (typeof student.achievements === 'string') {
+        try {
+          const parsed = JSON.parse(student.achievements);
+          achievementsObj = typeof parsed === 'object' && !Array.isArray(parsed)
+            ? parsed
+            : { badges: Array.isArray(parsed) ? parsed : [] };
+        } catch (_) {}
+      }
+    }
+
+    const lessonProgress = achievementsObj.lessonProgress && typeof achievementsObj.lessonProgress === 'object'
+      ? { ...achievementsObj.lessonProgress }
+      : {};
+
+    const currentLesson = lessonProgress[lessonId] && typeof lessonProgress[lessonId] === 'object'
+      ? { ...lessonProgress[lessonId] }
+      : {
+          completedSteps: [],
+          mistakes: [],
+          lastStep: null,
+          updatedAt: new Date().toISOString(),
+        };
+
+    const quizMistakes = Array.isArray(mistakes) ? mistakes : [];
+    if (quizMistakes.length > 0) {
+      const existingMistakes = Array.isArray(currentLesson.mistakes) ? currentLesson.mistakes : [];
+      currentLesson.mistakes = [...existingMistakes, ...quizMistakes];
+    }
+
+    currentLesson.quizResult = {
+      score: numericScore,
+      totalQuestions: numericTotal,
+      masteryPercent,
+      isMastered,
+      answers: answers || [],
+      mistakes: quizMistakes,
+      timeSpent: Number(timeSpent) || 0,
+      completedAt: new Date().toISOString(),
+    };
+    currentLesson.masteryPercent = masteryPercent;
+    currentLesson.isMastered = isMastered;
+    currentLesson.updatedAt = new Date().toISOString();
+
+    let xpEarned = 0;
+    let coinsEarned = 0;
+
+    if (isMastered) {
+      xpEarned = 30;
+      coinsEarned = 5;
+
+      // Darsni completedLessons ga qo'shish
+      const completedLessons = Array.isArray(achievementsObj.completedLessons)
+        ? [...achievementsObj.completedLessons]
+        : [];
+      if (!completedLessons.includes(lessonId)) {
+        completedLessons.push(lessonId);
+        achievementsObj.completedLessons = completedLessons;
+      }
+
+      // Mastered lessons list
+      const masteredLessons = Array.isArray(achievementsObj.masteredLessons)
+        ? [...achievementsObj.masteredLessons]
+        : [];
+      if (!masteredLessons.includes(lessonId)) {
+        masteredLessons.push(lessonId);
+        achievementsObj.masteredLessons = masteredLessons;
+      }
+    }
+
+    // Also update lessonMastery map for legacy/monitoring views
+    const lessonMastery = achievementsObj.lessonMastery && typeof achievementsObj.lessonMastery === 'object'
+      ? { ...achievementsObj.lessonMastery }
+      : {};
+    lessonMastery[lessonId] = {
+      score: numericScore,
+      totalQuestions: numericTotal,
+      mastery: masteryPercent,
+      isMastered,
+      stars: masteryPercent >= 90 ? 3 : masteryPercent >= 60 ? 2 : masteryPercent > 0 ? 1 : 0,
+      timeSpent: Number(timeSpent) || 0,
+      completedAt: new Date().toISOString(),
+    };
+    achievementsObj.lessonMastery = lessonMastery;
+
+    lessonProgress[lessonId] = currentLesson;
+    achievementsObj.lessonProgress = lessonProgress;
+
+    // Mirror to duolingoProgress
+    if (!achievementsObj.duolingoProgress || typeof achievementsObj.duolingoProgress !== 'object') {
+      achievementsObj.duolingoProgress = {};
+    }
+    achievementsObj.duolingoProgress[lessonId] = currentLesson;
+
+    await prisma.user.update({
+      where: { id: studentId },
+      data: { achievements: achievementsObj },
+    });
+
+    let streakCurrent = student.streakCurrent;
+
+    if (isMastered) {
+      const { awardXP } = require('../services/gamification.service');
+      const gamifyRes = await awardXP(studentId, xpEarned, 'quiz_finish');
+      if (gamifyRes?.streakCurrent !== undefined) {
+        streakCurrent = gamifyRes.streakCurrent;
+      } else {
+        const refreshedUser = await prisma.user.findUnique({
+          where: { id: studentId },
+          select: { streakCurrent: true },
+        });
+        streakCurrent = refreshedUser?.streakCurrent ?? student.streakCurrent;
+      }
+    } else {
+      const refreshedUser = await prisma.user.findUnique({
+        where: { id: studentId },
+        select: { streakCurrent: true },
+      });
+      streakCurrent = refreshedUser?.streakCurrent ?? student.streakCurrent;
+    }
+
+    return success(res, {
+      success: true,
+      masteryPercent,
+      isMastered,
+      score: numericScore,
+      xpEarned,
+      coinsEarned,
+      streakCurrent,
+      lessonId,
+      totalQuestions: numericTotal,
+      mastery: masteryPercent,
+      xpGained: xpEarned,
+    }, isMastered ? 'Dars to\'liq o\'zlashtirildi!' : 'Test yakunlandi');
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createLesson,
   getLessons,
@@ -582,5 +1079,10 @@ module.exports = {
   regenerateAI,
   generateTestFromPDF,
   updateAIContent,
+  completeLesson,
+  getStudentLessonProgress,
+  submitStepProgress,
+  submitLessonStep: submitStepProgress,
+  finishLessonQuiz,
 };
 

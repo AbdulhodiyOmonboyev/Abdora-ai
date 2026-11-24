@@ -3,7 +3,22 @@ const router = express.Router();
 const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const upload = require('../middleware/upload.middleware');
 const { pdfUpload } = require('../middleware/upload.middleware');
-const { createLesson, getLessons, getLessonById, updateLesson, deleteLesson, removeAttachment, regenerateAI, getAIContent, generateTestFromPDF, updateAIContent } = require('../controllers/lesson.controller');
+const {
+  createLesson,
+  getLessons,
+  getLessonById,
+  updateLesson,
+  deleteLesson,
+  removeAttachment,
+  regenerateAI,
+  getAIContent,
+  generateTestFromPDF,
+  updateAIContent,
+  completeLesson,
+  getStudentLessonProgress,
+  submitStepProgress,
+  finishLessonQuiz,
+} = require('../controllers/lesson.controller');
 const {
   chatMessage, getChatHistory, clearChatHistory, generateQuizForLesson,
   getStoryAudio, getVoiceAudio, generateExplainerVideo, getExplainerVideo, getExplainerSlideAudio, getExplainerSlideImage,
@@ -11,7 +26,11 @@ const {
 } = require('../controllers/ai.controller');
 
 router.get('/', verifyToken, getLessons);
+router.get('/student-progress', verifyToken, getStudentLessonProgress);
 router.get('/:id', verifyToken, getLessonById);
+router.post('/:id/complete', verifyToken, completeLesson);
+router.post('/:id/step-submit', verifyToken, submitStepProgress);
+router.post('/:id/quiz-finish', verifyToken, finishLessonQuiz);
 router.get('/:id/ai', verifyToken, getAIContent);
 router.put('/:id/ai', verifyToken, requireRole('teacher', 'admin', 'manager'), updateAIContent);
 router.post('/', verifyToken, requireRole('teacher', 'admin', 'manager'), upload.array('files', 5), createLesson);

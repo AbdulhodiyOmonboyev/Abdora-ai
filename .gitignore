@@ -31,3 +31,14 @@ Thumbs.db
 # Prisma
 prisma/dev.db
 .env.production
+
+# Flutter
+.dart_tool/
+**/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/android/local.properties
+**/GeneratedPluginRegistrant.*
+**/ios/Flutter/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh

@@ -43,7 +43,8 @@ const verifyToken = async (req, res, next) => {
       }
 
     if (user.isFrozen && user.role === 'student') return error(res, 'Hisobingiz muzlatilgan', 403);
-    req.user = { ...decoded, id: user.id, userId: user.id, role: user.role, centerId: user.centerId, branchId: user.branchId };
+    const effectiveCenterId = user.centerId || user.center?.id || user.branch?.center?.id || user.branch?.centerId || null;
+    req.user = { ...decoded, id: user.id, userId: user.id, role: user.role, centerId: effectiveCenterId, branchId: user.branchId };
     return checkSubscriptionStatus(req, res, next);
   } catch (err) {
     return error(res, 'Invalid or expired token', 401);

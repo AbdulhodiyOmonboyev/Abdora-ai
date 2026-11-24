@@ -2,6 +2,7 @@ const { prisma } = require('../config/db');
 
 const XP_REWARDS = {
   lesson_view: 10,
+  lesson_complete: 50,
   homework_submit: 20,
   homework_on_time: 10,
   quiz_complete: 25,
@@ -14,15 +15,23 @@ const XP_REWARDS = {
   streak_30_days: 500,
   flashcard_session: 5,
   ai_chat: 3,
+  step_complete: 5,
+  lesson_step: 5,
+  quiz_finish: 30,
+  lesson_mastered: 30,
 };
 
 const COIN_REWARDS = {
   lesson_view: 2,
+  lesson_complete: 5,
   homework_submit: 5,
   test_complete: 10,
   test_passed: 10,
   quiz_perfect: 15,
   daily_streak: 3,
+  step_complete: 0,
+  quiz_finish: 5,
+  lesson_mastered: 5,
 };
 
 const calculateLevel = (xp) => Math.max(1, Math.floor(Math.sqrt(xp / 100)));
@@ -53,6 +62,8 @@ const awardXP = async (userId, xpAmount, action = '') => {
   } else {
     streakCurrent = 1;
   }
+  if (!streakCurrent || streakCurrent < 1) streakCurrent = 1;
+  if (streakCurrent > streakLongest) streakLongest = streakCurrent;
 
   const newXP = user.xp + xpAmount + bonusXP;
   const newCoins = user.coins + coinAmount;
@@ -70,7 +81,7 @@ const awardXP = async (userId, xpAmount, action = '') => {
     });
   }
 
-  return { xpGained: xpAmount + bonusXP, coinsGained: coinAmount, newXP, newLevel };
+  return { xpGained: xpAmount + bonusXP, coinsGained: coinAmount, newXP, newLevel, streakCurrent, streakLongest };
 };
 
 module.exports = { awardXP, calculateLevel, XP_REWARDS, COIN_REWARDS };

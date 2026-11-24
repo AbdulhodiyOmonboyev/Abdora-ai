@@ -1,12 +1,19 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const userController = require('../src/controllers/user.controller');
+const groupController = require('../src/controllers/group.controller');
 
 test('User Controller - Referral logic & History Exports', async (t) => {
   await t.test('controller exports getStudentHistory, getReferralStats and applyReferralCode', () => {
     assert.equal(typeof userController.getStudentHistory, 'function');
     assert.equal(typeof userController.getReferralStats, 'function');
     assert.equal(typeof userController.applyReferralCode, 'function');
+  });
+
+  await t.test('group controller exports transferStudentToGroup and addStudentToGroup', () => {
+    assert.equal(typeof groupController.transferStudentToGroup, 'function');
+    assert.equal(typeof groupController.addStudentToGroup, 'function');
+    assert.equal(typeof groupController.removeStudentFromGroup, 'function');
   });
 
   await t.test('applyReferralCode validates missing code parameter', async () => {

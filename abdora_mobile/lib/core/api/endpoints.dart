@@ -16,6 +16,8 @@ class Endpoints {
   // Darslar va Multimodal AI
   static const String lessons = '/lessons';
   static String lessonDetail(String id) => '/lessons/$id';
+  static String lessonComplete(String id) => '/lessons/$id/complete';
+  static const String studentLessonProgress = '/lessons/student-progress';
   static String lessonAi(String id) => '/lessons/$id/ai';
   static String lessonAiChat(String id) => '/lessons/$id/ai-chat';
   static String lessonAiChatHistory(String id) => '/lessons/$id/ai-chat/history';

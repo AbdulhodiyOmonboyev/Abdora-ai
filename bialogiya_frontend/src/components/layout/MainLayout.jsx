@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import MobileBottomNav from './MobileBottomNav';
+import RoamingAiAvatar from '../ai/RoamingAiAvatar';
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -58,6 +59,9 @@ export default function MainLayout() {
         {/* Mobile bottom navigation bar */}
         <MobileBottomNav onMoreClick={toggleSidebar} />
       </div>
+
+      {/* Sayt ichida erkin aylanib yuruvchi interaktiv AI Avatar */}
+      <RoamingAiAvatar />
     </div>
   );
 }

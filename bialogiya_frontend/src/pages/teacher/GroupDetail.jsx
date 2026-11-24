@@ -7,7 +7,7 @@ import {
   BookOpen, Snowflake, Phone, Plus, KeyRound, Copy, Check,
   Trash2, ExternalLink, Calendar, Clock, DoorOpen, Building2,
   TrendingUp, Wallet, Banknote, Smartphone, Search, RefreshCw,
-  UserCheck, AlertCircle, ShieldCheck, CheckCircle2
+  UserCheck, AlertCircle, ShieldCheck, CheckCircle2, Layers
 } from 'lucide-react';
 import api from '../../config/axios';
 import { getSubjectLabel } from '../../utils/subjects';
@@ -335,6 +335,14 @@ export default function GroupDetail() {
               </span>
             )}
 
+            {group?.level && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold"
+                style={{ background: 'rgba(99, 102, 241, 0.12)', color: '#6366f1', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                <Layers size={13} />
+                {group.level}
+              </span>
+            )}
+
             {monthlyFee > 0 && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold"
                 style={{ background: 'var(--primary-50)', color: 'var(--primary)', border: '1px solid var(--border)' }}>
@@ -345,16 +353,14 @@ export default function GroupDetail() {
           </div>
         </div>
 
-        {user?.role !== 'teacher' && (
-          <div className="flex items-center gap-2 self-start sm:self-center">
-            <button
-              onClick={() => setShowAddStudent(true)}
-              className="btn-primary flex items-center gap-2 py-2 px-4 text-xs font-semibold rounded-xl"
-            >
-              <Plus size={16} /> O'quvchi qo'shish
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <button
+            onClick={() => setShowAddStudent(true)}
+            className="btn-primary flex items-center gap-2 py-2 px-4 text-xs font-semibold rounded-xl"
+          >
+            <Plus size={16} /> O'quvchi qo'shish
+          </button>
+        </div>
       </header>
 
       {/* ── Monthly Payment Bar & Statistics ── */}

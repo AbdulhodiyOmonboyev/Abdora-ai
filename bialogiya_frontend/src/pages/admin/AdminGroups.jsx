@@ -50,12 +50,12 @@ const SUBJECTS = [
 ];
 
 const DEFAULT_COURSE_LEVELS = [
-  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000 },
-  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000 },
-  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000 },
-  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000 },
-  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000 },
-  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000 },
+  { id: 'level_beginner', name: "Boshlang'ich (Beginner)", description: "Boshlang'ich bilim va poydevor darajasi", defaultFee: 400000, durationMonths: 3, totalLessons: 24 },
+  { id: 'level_elementary', name: "O'rta (Intermediate)", description: "Asosiy o'rta daraja, chuqurlashtirilgan bilimlar", defaultFee: 450000, durationMonths: 6, totalLessons: 48 },
+  { id: 'level_advanced', name: "Yuqori (Advanced)", description: "Yuqori murakkablikdagi bosqich", defaultFee: 500000, durationMonths: 6, totalLessons: 48 },
+  { id: 'level_dtm', name: "DTM / Imtihonga tayyorlov", description: "OTM kirish imtihonlari va testlariga tayyorlov", defaultFee: 550000, durationMonths: 9, totalLessons: 72 },
+  { id: 'level_cert', name: "Milliy sertifikat / CEFR", description: "Milliy sertifikat va xalqaro imtihonlar", defaultFee: 600000, durationMonths: 6, totalLessons: 48 },
+  { id: 'level_intensive', name: "Intensiv / Tezlashtirilgan", description: "Qisqa muddatli tezkor darslar", defaultFee: 650000, durationMonths: 2, totalLessons: 24 },
 ];
 
 const EMPTY_FORM = {
@@ -174,6 +174,9 @@ export default function AdminGroups() {
         const updated = { ...f, level: selectedVal };
         if ((!f.monthlyFee || f.monthlyFee === '0' || f.monthlyFee === '') && matched?.defaultFee) {
           updated.monthlyFee = String(matched.defaultFee);
+        }
+        if ((!f.totalLessons || f.totalLessons === '0' || f.totalLessons === '') && (matched?.totalLessons || matched?.durationMonths)) {
+          updated.totalLessons = String(matched.totalLessons || (matched.durationMonths * 8));
         }
         return updated;
       });
@@ -667,8 +670,8 @@ export default function AdminGroups() {
                   </div>
                 </div>
 
-                {/* Room, Monthly Fee, Level */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Room, Monthly Fee, Level, Total Lessons */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
                       Xona
@@ -738,7 +741,7 @@ export default function AdminGroups() {
                           const lvlTeachers = getTeachersForLevel(lvl.name);
                           return (
                             <option key={lvl.id || lvl.name} value={lvl.name}>
-                              {lvl.name} {lvl.defaultFee ? `· ${Number(lvl.defaultFee).toLocaleString()} so'm` : ''} {lvlTeachers.length > 0 ? `(${lvlTeachers.length} ta o'qituvchi)` : ''}
+                              {lvl.name} {lvl.durationMonths ? `(${lvl.durationMonths} oy)` : ''} {lvl.defaultFee ? `· ${Number(lvl.defaultFee).toLocaleString()} so'm` : ''} {lvlTeachers.length > 0 ? `(${lvlTeachers.length} ta o'qituvchi)` : ''}
                             </option>
                           );
                         })}
@@ -767,7 +770,45 @@ export default function AdminGroups() {
                       </div>
                     )}
                   </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
+                      Rejali darslar soni
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="1"
+                        value={form.totalLessons || ''}
+                        onChange={e => setForm(f => ({ ...f, totalLessons: e.target.value.replace(/\D/g, '') }))}
+                        placeholder="Masalan: 48"
+                        className="input-field text-sm font-semibold pr-12"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none">
+                        dars
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Level duration info banner */}
+                {form.level && (() => {
+                  const matched = allLevels.find(l => l.name?.toLowerCase() === form.level?.toLowerCase());
+                  if (!matched?.durationMonths && !form.totalLessons) return null;
+                  const dMonths = matched?.durationMonths || Math.ceil((Number(form.totalLessons) || 48) / 8);
+                  return (
+                    <div className="p-2.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/30 text-xs flex items-center justify-between text-indigo-700 dark:text-indigo-300 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <span>⏱️ Kurs davomiyligi: <b>{dMonths} oy</b></span>
+                        <span className="opacity-50">·</span>
+                        <span>📚 Rejalashtirilgan jami darslar: <b>{form.totalLessons || matched?.totalLessons || (dMonths * 8)} ta</b></span>
+                      </span>
+                      <span className="text-[11px] text-indigo-500 font-normal">
+                        (~{Math.round(((form.totalLessons || matched?.totalLessons || (dMonths * 8)) / dMonths) * 10) / 10} dars/oy)
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* Tanlangan daraja o'qituvchilari bo'yicha tezkor tavsiya */}
                 {form.level && selectedLevelTeachers.length > 0 && (

@@ -182,14 +182,28 @@ const buildProgress = async (group) => {
   ]);
 
   const total = group.totalLessons || null;
-  const percent = total && total > 0 ? Math.min(100, Math.round((lessonsHeld / total) * 100)) : null;
+  const currentLessonsCount = Math.max(lessonsHeld, lessonsCreated);
+  const percent = total && total > 0 ? Math.min(100, Math.round((currentLessonsCount / total) * 100)) : null;
+
+  const STAGE_ORDER = ["Boshlang'ich", "O'rta", "Yuqori", "Bitiruvchi"];
+  const currentLevel = group.level || "Boshlang'ich";
+  const normalizedLevel = currentLevel.trim().toLowerCase();
+  const currentStageIndex = STAGE_ORDER.findIndex(s => s.toLowerCase() === normalizedLevel);
+  const nextStage = currentStageIndex >= 0 && currentStageIndex < STAGE_ORDER.length - 1
+    ? STAGE_ORDER[currentStageIndex + 1]
+    : (currentStageIndex === STAGE_ORDER.length - 1 ? 'Tugallangan' : "O'rta");
 
   return {
     lessonsHeld,
     lessonsCreated,
+    currentLessonsCount,
     totalLessons: total,
+    level: currentLevel,
+    currentStageIndex: currentStageIndex >= 0 ? currentStageIndex : 0,
+    nextStage,
     percent,
-    remaining: total ? Math.max(0, total - lessonsHeld) : null,
+    remaining: total ? Math.max(0, total - currentLessonsCount) : null,
+    isStageCompleted: total ? currentLessonsCount >= total : false,
     lastSessionAt: lastSession?.date || null,
     // Plain-language answer to "can I still put a new student in this group?"
     label: percent === null
@@ -315,19 +329,40 @@ const addStudentToGroup = async (req, res, next) => {
     const accessErr = await assertGroupAccess(req.params.id, req.user);
     if (accessErr) return error(res, accessErr.message, accessErr.status);
 
-    const { studentId } = req.body;
+    const { studentId, reason } = req.body;
     if (!studentId) return error(res, 'studentId required', 400);
-    const student = await prisma.user.findFirst({ where: { id: studentId, role: 'student', ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { id: true, branchId: true, group: { select: { branchId: true } } } });
+    const student = await prisma.user.findFirst({
+      where: { id: studentId, role: 'student', ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
+      include: { group: { select: { id: true, name: true, branchId: true } } }
+    });
     if (!student) return error(res, 'Student not found', 404);
-    const group = await prisma.group.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { branchId: true } });
+    const group = await prisma.group.findFirst({ where: { id: req.params.id, ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { id: true, name: true, branchId: true } });
+    if (!group) return error(res, 'Group not found', 404);
     if (req.user.role !== 'admin' && req.user.role !== 'manager' && ((student.branchId && group?.branchId && student.branchId !== group.branchId) || (student.group?.branchId && group?.branchId && student.group.branchId !== group.branchId))) {
       return error(res, 'Forbidden: student belongs to different branch', 403);
     }
+
+    const existingAch = student.achievements && typeof student.achievements === 'object' && !Array.isArray(student.achievements)
+      ? { ...student.achievements }
+      : { notes: [], coinTransactions: [], referrals: [] };
+    const groupHistory = Array.isArray(existingAch.groupHistory) ? [...existingAch.groupHistory] : [];
+    groupHistory.unshift({
+      id: `join_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      type: 'join',
+      title: `Guruhga qo'shildi: "${group.name}"`,
+      toGroupId: group.id,
+      toGroupName: group.name,
+      reason: reason || "Guruhga qabul qilindi",
+      changedBy: { id: req.user.userId, name: req.user.name || req.user.username || 'Xodim', role: req.user.role },
+      createdAt: new Date().toISOString(),
+    });
+
     await prisma.user.update({
       where: { id: studentId },
       data: {
         groupId: req.params.id,
         ...(group?.branchId ? { branchId: group.branchId } : {}),
+        achievements: { ...existingAch, groupHistory },
       }
     });
     return success(res, null, 'Student added');
@@ -339,9 +374,34 @@ const removeStudentFromGroup = async (req, res, next) => {
     const accessErr = await assertGroupAccess(req.params.id, req.user);
     if (accessErr) return error(res, accessErr.message, accessErr.status);
 
-    const student = await prisma.user.findFirst({ where: { id: req.params.studentId, groupId: req.params.id, role: 'student', ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) }, select: { id: true } });
+    const student = await prisma.user.findFirst({
+      where: { id: req.params.studentId, groupId: req.params.id, role: 'student', ...(req.user.role !== 'admin' ? { centerId: req.user.centerId } : {}) },
+      include: { group: { select: { id: true, name: true } } }
+    });
     if (!student) return error(res, 'Student not found', 404);
-    await prisma.user.update({ where: { id: student.id }, data: { groupId: null } });
+
+    const existingAch = student.achievements && typeof student.achievements === 'object' && !Array.isArray(student.achievements)
+      ? { ...student.achievements }
+      : { notes: [], coinTransactions: [], referrals: [] };
+    const groupHistory = Array.isArray(existingAch.groupHistory) ? [...existingAch.groupHistory] : [];
+    groupHistory.unshift({
+      id: `leave_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      type: 'leave',
+      title: `Guruhdan chiqarildi: "${student.group?.name || 'Guruh'}"`,
+      fromGroupId: req.params.id,
+      fromGroupName: student.group?.name || 'Guruh',
+      reason: req.body?.reason || "Guruhdan chiqarildi",
+      changedBy: { id: req.user.userId, name: req.user.name || req.user.username || 'Xodim', role: req.user.role },
+      createdAt: new Date().toISOString(),
+    });
+
+    await prisma.user.update({
+      where: { id: student.id },
+      data: {
+        groupId: null,
+        achievements: { ...existingAch, groupHistory },
+      }
+    });
     return success(res, null, 'Student removed');
   } catch (err) { next(err); }
 };
@@ -445,8 +505,292 @@ const getGroupGradebook = async (req, res, next) => {
   }
 };
 
+const transferStudentToGroup = async (req, res, next) => {
+  try {
+    const studentId = req.body.studentId || req.params.studentId;
+    const targetGroupId = req.body.targetGroupId || req.body.groupId || req.params.targetGroupId;
+
+    if (!studentId || !targetGroupId) {
+      return error(res, 'studentId va targetGroupId talab qilinadi', 400);
+    }
+
+    const student = await prisma.user.findFirst({
+      where: {
+        id: studentId,
+        role: 'student',
+        ...(req.user.role !== 'admin' && req.user.centerId ? { centerId: req.user.centerId } : {}),
+      },
+      include: {
+        group: {
+          select: { id: true, name: true, branchId: true, teacherId: true, centerId: true },
+        },
+      },
+    });
+    if (!student) return error(res, 'Talaba topilmadi', 404);
+
+    if (student.groupId === targetGroupId) {
+      return error(res, 'Talaba allaqachon ushbu guruhda', 400);
+    }
+
+    const targetGroup = await prisma.group.findFirst({
+      where: {
+        id: targetGroupId,
+        isActive: true,
+        ...(req.user.role !== 'admin' && req.user.centerId ? { centerId: req.user.centerId } : {}),
+      },
+      include: {
+        branch: { select: { id: true, name: true } },
+        teacher: { select: { id: true, name: true } },
+      },
+    });
+    if (!targetGroup) return error(res, 'Mo\'ljal guruh topilmadi', 404);
+
+    // Ruxsatlarni tekshirish (admin, manager, reception, yoki tegishli o'qituvchi)
+    if (req.user.role === 'admin') {
+      // Admin to'liq huquqqa ega
+    } else if (req.user.role === 'manager') {
+      if (targetGroup.centerId && req.user.centerId && targetGroup.centerId !== req.user.centerId) {
+        return error(res, 'Ruxsat yo\'q: Mo\'ljal guruh boshqa markazga tegishli', 403);
+      }
+    } else if (req.user.role === 'reception') {
+      const ownBranchIds = await getOwnBranchIds(req.user);
+      if (targetGroup.branchId && ownBranchIds && !ownBranchIds.includes(targetGroup.branchId)) {
+        return error(res, 'Ruxsat yo\'q: Mo\'ljal guruh sizning filialingizga tegishli emas', 403);
+      }
+      if (student.branchId && ownBranchIds && !ownBranchIds.includes(student.branchId)) {
+        return error(res, 'Ruxsat yo\'q: Talaba sizning filialingizga tegishli emas', 403);
+      }
+    } else if (req.user.role === 'teacher') {
+      const isCurrentTeacher = student.teacherId === req.user.userId || student.group?.teacherId === req.user.userId;
+      const isTargetTeacher = targetGroup.teacherId === req.user.userId;
+      if (!isCurrentTeacher && !isTargetTeacher) {
+        return error(res, 'Ruxsat yo\'q: Siz ushbu talaba yoki mo\'ljal guruhning o\'qituvchisi emassiz', 403);
+      }
+    } else {
+      return error(res, 'Ruxsat yo\'q', 403);
+    }
+
+    const oldGroupName = student.group?.name || 'Guruhsiz';
+    const oldGroupId = student.groupId || null;
+
+    const existingAch = student.achievements && typeof student.achievements === 'object' && !Array.isArray(student.achievements)
+      ? { ...student.achievements }
+      : { notes: [], coinTransactions: [], referrals: [] };
+    const groupHistory = Array.isArray(existingAch.groupHistory) ? [...existingAch.groupHistory] : [];
+    const transferEntry = {
+      id: `trans_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      type: 'transfer',
+      title: `Guruh almashtirildi: "${oldGroupName}" ➔ "${targetGroup.name}"`,
+      fromGroupId: oldGroupId,
+      fromGroupName: oldGroupName,
+      toGroupId: targetGroupId,
+      toGroupName: targetGroup.name,
+      reason: req.body.reason || "Guruh almashtirildi",
+      changedBy: {
+        id: req.user.userId,
+        name: req.user.name || req.user.username || 'Xodim',
+        role: req.user.role,
+      },
+      createdAt: new Date().toISOString(),
+    };
+    groupHistory.unshift(transferEntry);
+
+    const updatedStudent = await prisma.user.update({
+      where: { id: studentId },
+      data: {
+        groupId: targetGroupId,
+        branchId: targetGroup.branchId || student.branchId,
+        teacherId: targetGroup.teacherId || student.teacherId,
+        achievements: {
+          ...existingAch,
+          groupHistory,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        phone: true,
+        avatar: true,
+        groupId: true,
+        branchId: true,
+        teacherId: true,
+        group: {
+          select: {
+            id: true,
+            name: true,
+            level: true,
+            branchId: true,
+            teacher: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    // Talabaga yangi guruhga o'tkazilgani haqida bildirishnoma yuborish
+    await prisma.notification.create({
+      data: {
+        userId: studentId,
+        type: 'info',
+        title: 'Guruh o\'zgartirildi',
+        message: `Siz "${oldGroupName}" guruhidan "${targetGroup.name}" guruhiga o'tkazildingiz.`,
+      },
+    }).catch(() => {});
+
+    return success(res, updatedStudent, `Talaba muvaffaqiyatli "${targetGroup.name}" guruhiga ko'chirildi`);
+  } catch (err) { next(err); }
+};
+
+const getGroupStageProgress = async (req, res, next) => {
+  try {
+    const groupId = req.params.id || req.params.groupId;
+    if (!groupId) return error(res, 'Guruh ID talab qilinadi', 400);
+
+    const group = await prisma.group.findFirst({
+      where: {
+        id: groupId,
+        ...(req.user.role !== 'admin' && req.user.centerId ? { centerId: req.user.centerId } : {}),
+      },
+      include: {
+        teacher: { select: { id: true, name: true, phone: true } },
+        branch: { select: { id: true, name: true } },
+        _count: { select: { students: true, lessons: true, attendances: true } },
+      },
+    });
+    if (!group) return error(res, 'Guruh topilmadi', 404);
+
+    if (req.user.role === 'student') {
+      const student = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { groupId: true },
+      });
+      if (student?.groupId !== groupId) return error(res, 'Ruxsat yo\'q', 403);
+    } else {
+      const accessErr = await assertGroupAccess(groupId, req.user);
+      if (accessErr) return error(res, accessErr.message, accessErr.status);
+    }
+
+    const [lessonsCreated, lessonsHeld] = await Promise.all([
+      prisma.lesson.count({ where: { groupId: group.id, isActive: true } }),
+      prisma.attendance.count({ where: { groupId: group.id } }),
+    ]);
+
+    const totalLessons = group.totalLessons || 12;
+    const currentLessonsCount = Math.max(lessonsCreated, lessonsHeld);
+    const progressPercent = totalLessons > 0 ? Math.min(100, Math.round((currentLessonsCount / totalLessons) * 100)) : 0;
+    const isStageCompleted = currentLessonsCount >= totalLessons;
+
+    const STAGE_ORDER = ["Boshlang'ich", "O'rta", "Yuqori", "Bitiruvchi"];
+    const currentLevel = group.level || "Boshlang'ich";
+    const normalizedLevel = currentLevel.trim().toLowerCase();
+    const currentStageIndex = STAGE_ORDER.findIndex(s => s.toLowerCase() === normalizedLevel);
+
+    let nextStage = null;
+    if (currentStageIndex >= 0 && currentStageIndex < STAGE_ORDER.length - 1) {
+      nextStage = STAGE_ORDER[currentStageIndex + 1];
+    } else if (currentStageIndex === STAGE_ORDER.length - 1) {
+      nextStage = 'Tugallangan';
+    } else {
+      nextStage = "O'rta";
+    }
+
+    return success(res, {
+      groupId: group.id,
+      groupName: group.name,
+      level: currentLevel,
+      currentStageIndex: currentStageIndex >= 0 ? currentStageIndex : 0,
+      nextStage,
+      availableStages: STAGE_ORDER,
+      currentLessonsCount,
+      lessonsCreated,
+      lessonsHeld,
+      totalLessons,
+      progressPercent,
+      isStageCompleted,
+      remainingLessons: Math.max(0, totalLessons - currentLessonsCount),
+      canAdvance: isStageCompleted || ['admin', 'manager', 'teacher', 'reception'].includes(req.user.role),
+      studentsCount: group._count.students,
+      teacher: group.teacher,
+      branch: group.branch,
+    });
+  } catch (err) { next(err); }
+};
+
+const advanceGroupStage = async (req, res, next) => {
+  try {
+    const groupId = req.params.id || req.params.groupId || req.body.groupId;
+    if (!groupId) return error(res, 'Guruh ID talab qilinadi', 400);
+
+    const accessErr = await assertGroupAccess(groupId, req.user);
+    if (accessErr) return error(res, accessErr.message, accessErr.status);
+
+    const group = await prisma.group.findFirst({
+      where: {
+        id: groupId,
+        ...(req.user.role !== 'admin' && req.user.centerId ? { centerId: req.user.centerId } : {}),
+      },
+      include: {
+        students: { select: { id: true, name: true } },
+      },
+    });
+    if (!group) return error(res, 'Guruh topilmadi', 404);
+
+    const STAGE_ORDER = ["Boshlang'ich", "O'rta", "Yuqori", "Bitiruvchi"];
+    const currentLevel = group.level || "Boshlang'ich";
+    const normalizedLevel = currentLevel.trim().toLowerCase();
+    const currentStageIndex = STAGE_ORDER.findIndex(s => s.toLowerCase() === normalizedLevel);
+
+    let calculatedNextLevel = "O'rta";
+    if (currentStageIndex >= 0 && currentStageIndex < STAGE_ORDER.length - 1) {
+      calculatedNextLevel = STAGE_ORDER[currentStageIndex + 1];
+    } else if (currentStageIndex === STAGE_ORDER.length - 1) {
+      calculatedNextLevel = 'Bitiruvchi';
+    }
+
+    const {
+      nextLevel,
+      level,
+      totalLessons,
+      isActive,
+    } = req.body;
+
+    const targetLevel = nextLevel || level || calculatedNextLevel;
+    const newTotalLessons = totalLessons !== undefined && totalLessons !== ''
+      ? parseInt(totalLessons, 10)
+      : (group.totalLessons || 12);
+
+    const updatedGroup = await prisma.group.update({
+      where: { id: groupId },
+      data: {
+        level: targetLevel,
+        totalLessons: newTotalLessons,
+        ...(isActive !== undefined ? { isActive: Boolean(isActive) } : {}),
+      },
+      include: {
+        teacher: { select: { id: true, name: true } },
+        branch: { select: { id: true, name: true } },
+        _count: { select: { students: true, lessons: true } },
+      },
+    });
+
+    if (group.students && group.students.length > 0) {
+      await prisma.notification.createMany({
+        data: group.students.map(st => ({
+          userId: st.id,
+          type: 'achievement',
+          title: 'Yangi bosqichga o\'tdingiz! 🎉',
+          message: `Sizning guruhingiz ("${group.name}") yangi bosqichga o'tkazildi: ${targetLevel}.`,
+        })),
+      }).catch(() => {});
+    }
+
+    return success(res, updatedGroup, `Guruh muvaffaqiyatli keyingi bosqichga (${targetLevel}) o'tkazildi`);
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   createGroup, getMyGroups, getAllGroups, getGroupById,
   updateGroup, deleteGroup, addStudentToGroup, removeStudentFromGroup,
+  transferStudentToGroup, getGroupStageProgress, advanceGroupStage,
   getGroupGradebook,
 };

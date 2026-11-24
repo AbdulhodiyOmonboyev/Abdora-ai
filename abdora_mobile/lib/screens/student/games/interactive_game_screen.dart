@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/endpoints.dart';
 import '../../../core/constants/app_colors.dart';
@@ -78,17 +80,24 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
 
   // Guruhdosh bilan bellashuv holatlari
   String _roomCode = '';
-  bool _isDuelWaiting = false;
+  bool _isDuelLobby = false;
   String? _opponentName;
   int _opponentScore = 0;
   Timer? _opponentSimTimer;
+  int _playerLives = 3;
+  int _opponentLives = 3;
+  int _winStreak = 1;
 
   // Umumiy ball va vaqt
   int _playerScore = 0;
   int _comboCount = 0;
+  int _maxCombo = 0;
   int _secondsElapsed = 0;
   Timer? _gameTimer;
   bool _isGameOver = false;
+  String? _gameOverReason;
+  bool _isSavingResult = false;
+  bool _resultSavedSuccess = false;
 
   // 1. Juftliklar o'yini holati
   List<GamePairItem> _generatedPairs = [];
@@ -131,11 +140,13 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     _currentGameType = widget.initialGameType;
     _currentGameMode = widget.initialGameMode;
 
+    _generateRoomCode();
     _generateTopicContent();
-    _initCurrentGame();
 
     if (_currentGameMode == GameMode.duel) {
-      _generateRoomCode();
+      _isDuelLobby = true;
+    } else {
+      _initCurrentGame();
     }
   }
 
@@ -237,8 +248,16 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     _playerScore = 0;
     _opponentScore = 0;
     _comboCount = 0;
+    _maxCombo = 0;
     _secondsElapsed = 0;
+    _playerLives = 3;
+    _opponentLives = 3;
+    _playerDuelProgress = 0.0;
+    _opponentDuelProgress = 0.0;
     _isGameOver = false;
+    _gameOverReason = null;
+    _isSavingResult = false;
+    _resultSavedSuccess = false;
 
     // Umumiy taymer
     _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -270,7 +289,12 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
       if (!_isGameOver && mounted) {
         setState(() {
           _opponentScore += random.nextInt(20) + 15;
-          _opponentDuelProgress = (_opponentDuelProgress + 0.15).clamp(0.0, 0.95);
+          _opponentDuelProgress = (_opponentDuelProgress + 0.16).clamp(0.0, 0.98);
+
+          // Kamdan-kam xato qilsa bitta jon kamayishi
+          if (random.nextInt(6) == 0 && _opponentLives > 1) {
+            _opponentLives--;
+          }
         });
       }
     });
@@ -411,13 +435,15 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
 
     if (isMatch) {
       HapticFeedback.lightImpact();
-      final earned = 20 + (_comboCount * 5);
-      final comboSuffix = _comboCount >= 2 ? ' (${_comboCount + 1}x Combo!)' : '';
+      _comboCount++;
+      if (_comboCount > _maxCombo) _maxCombo = _comboCount;
+
+      final earned = 20 + (_comboCount * 10);
+      final comboSuffix = _comboCount >= 2 ? ' (${_comboCount}x Combo! 🔥)' : '';
       _triggerFloatingScore('+$earned Ball!$comboSuffix');
 
       setState(() {
         _matchedPairIds.add(termItem.id);
-        _comboCount++;
         _playerScore += earned;
         _playerDuelProgress = (_matchedPairIds.length / _generatedPairs.length).clamp(0.0, 1.0);
         _selectedTerm = null;
@@ -434,11 +460,25 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
       HapticFeedback.heavyImpact();
       final wrongT = _selectedTerm;
       final wrongD = _selectedDefinition;
+
       setState(() {
         _comboCount = 0;
         _wrongTerm = wrongT;
         _wrongDef = wrongD;
+        if (_currentGameMode == GameMode.duel && _playerLives > 0) {
+          _playerLives--;
+        }
       });
+
+      _triggerFloatingScore(_currentGameMode == GameMode.duel ? 'Xato! 💔 1 ta jon kamaydi' : 'Mos kelmadi, qayta urinib ko\'ring!');
+
+      if (_currentGameMode == GameMode.duel && _playerLives <= 0) {
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (mounted) _finishGame(reason: 'Barcha jonlaringiz tugadi!');
+        });
+        return;
+      }
+
       Future.delayed(const Duration(milliseconds: 600), () {
         if (mounted) {
           setState(() {
@@ -460,28 +500,45 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
 
     final currentQ = _blitzQuestions[_currentBlitzIndex];
     final isCorrect = index == currentQ.correctIndex;
+    bool shouldFinishDueToLives = false;
 
     setState(() {
       _selectedAnswerIndex = index;
       _isBlitzAnswered = true;
       if (isCorrect) {
         _comboCount++;
-        final earned = 25 + (_comboCount * 5) + (_blitzSecondsLeft * 2);
+        if (_comboCount > _maxCombo) _maxCombo = _comboCount;
+
+        final earned = 25 + (_comboCount * 10) + (_blitzSecondsLeft * 2);
         _playerScore += earned;
         _playerDuelProgress = ((_currentBlitzIndex + 1) / _blitzQuestions.length).clamp(0.0, 1.0);
-        final comboSuffix = _comboCount >= 2 ? ' (${_comboCount}x Combo!)' : '';
+        final comboSuffix = _comboCount >= 2 ? ' (${_comboCount}x Combo! 🔥)' : '';
         _triggerFloatingScore('+$earned Ball!$comboSuffix');
         HapticFeedback.lightImpact();
       } else {
         _comboCount = 0;
-        _triggerFloatingScore('Noto\'g\'ri! Izohga qarang');
+        if (_currentGameMode == GameMode.duel && _playerLives > 0) {
+          _playerLives--;
+        }
+        _triggerFloatingScore(_currentGameMode == GameMode.duel ? 'Noto\'g\'ri! 💔 1 ta jon kamaydi' : 'Noto\'g\'ri! Izohga qarang');
         HapticFeedback.heavyImpact();
+
+        if (_currentGameMode == GameMode.duel && _playerLives <= 0) {
+          shouldFinishDueToLives = true;
+        }
       }
     });
 
+    if (shouldFinishDueToLives) {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) _finishGame(reason: 'Barcha jonlaringiz tugadi!');
+      });
+      return;
+    }
+
     Future.delayed(const Duration(milliseconds: 1400), () {
       if (!mounted) return;
-      if (_currentBlitzIndex + 1 < _blitzQuestions.length) {
+      if (_currentBlitzIndex + 1 < _blitzQuestions.length && _playerLives > 0) {
         setState(() {
           _currentBlitzIndex++;
         });
@@ -517,14 +574,16 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
         HapticFeedback.lightImpact();
         Future.delayed(const Duration(milliseconds: 400), () {
           if (mounted) {
-            final earned = 30 + (_comboCount * 5);
-            final comboSuffix = _comboCount >= 2 ? ' (${_comboCount + 1}x Combo!)' : '';
+            _comboCount++;
+            if (_comboCount > _maxCombo) _maxCombo = _comboCount;
+
+            final earned = 30 + (_comboCount * 10);
+            final comboSuffix = _comboCount >= 2 ? ' (${_comboCount}x Combo! 🔥)' : '';
             _triggerFloatingScore('+$earned Ball! Ajoyib xotira!$comboSuffix');
 
             setState(() {
               first['isMatched'] = true;
               second['isMatched'] = true;
-              _comboCount++;
               _playerScore += earned;
               _playerDuelProgress = (_memoryCards.where((c) => c['isMatched'] == true).length / _memoryCards.length).clamp(0.0, 1.0);
               _firstFlippedIndex = null;
@@ -532,7 +591,6 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               _isMemoryFlipping = false;
             });
 
-            // Hammasi ochildimi?
             final allDone = _memoryCards.every((c) => c['isMatched'] == true);
             if (allDone) {
               _finishGame();
@@ -542,7 +600,9 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
       } else {
         // Noto'g'ri
         HapticFeedback.heavyImpact();
-        _comboCount = 0;
+        setState(() {
+          _comboCount = 0;
+        });
         Future.delayed(const Duration(milliseconds: 900), () {
           if (mounted) {
             setState(() {
@@ -558,45 +618,460 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     }
   }
 
-  // O'YINNI YAKUNLASH
-  void _finishGame() {
+  // O'YINNI YAKUNLASH VA NATIJALARNI MUSTAHKAM SAQLASH
+  Future<void> _finishGame({String? reason}) async {
+    if (_isGameOver) return;
+    _isGameOver = true;
     _gameTimer?.cancel();
     _blitzTimer?.cancel();
     _opponentSimTimer?.cancel();
 
+    final isWonDuel = _currentGameMode == GameMode.duel && _playerScore >= _opponentScore;
+    if (isWonDuel) {
+      _winStreak++;
+    }
+
     setState(() {
       _isGameOver = true;
+      _gameOverReason = reason;
+      _isSavingResult = true;
+      _resultSavedSuccess = false;
     });
 
     // Abdora tanga va bildirishnoma berish
     final notifProvider = Provider.of<NotificationProvider>(context, listen: false);
-    final isWonDuel = _currentGameMode == GameMode.duel && _playerScore >= _opponentScore;
 
     notifProvider.addNotification(
       title: _currentGameMode == GameMode.duel
-          ? (isWonDuel ? 'Bellashuvda g\'alaba qozondingiz!' : 'Guruhdosh bilan bellashuv yakunlandi')
-          : 'Mavzu o\'yini muvaffaqiyatli yakunlandi!',
+          ? (isWonDuel ? 'Bellashuvda g\'alaba qozondingiz! 🏆' : 'Guruhdosh bilan bellashuv yakunlandi ⚔️')
+          : 'Mavzu o\'yini muvaffaqiyatli yakunlandi! ⭐',
       description: '"${widget.topicTitle}" mavzusi bo\'yicha siz $_playerScore ball to\'pladingiz. +15 Abdora tangasi hisobingizga qo\'shildi!',
       category: NotificationCategory.challenge,
       route: 'homework',
     );
 
-    // O'qituvchi nazorati va umumiy statistika uchun serverga yuborish
+    // Backendga mustahkam saqlash mexanizmi
+    await _saveGameResultToBackend(isWonDuel: isWonDuel);
+  }
+
+  // Natijalarni backend va keshga saqlash
+  Future<void> _saveGameResultToBackend({required bool isWonDuel}) async {
+    final activityData = {
+      'topicTitle': widget.topicTitle,
+      'gameType': _currentGameType == GameType.matchPairs
+          ? 'Juftliklar'
+          : _currentGameType == GameType.blitzSprint
+              ? 'Blitz Sprint'
+              : 'Xotira',
+      'score': _playerScore,
+      'opponentName': _opponentName,
+      'isWon': isWonDuel,
+      'moves': _memoryMoves,
+      'duration': _secondsElapsed,
+      'mode': _currentGameMode == GameMode.duel ? 'duel' : 'solo',
+      'livesRemaining': _playerLives,
+      'maxCombo': _maxCombo,
+    };
+
     try {
-      ApiClient().dio.post(
+      final res = await ApiClient().dio.post(
         Endpoints.gameActivity,
-        data: {
-          'topicTitle': widget.topicTitle,
-          'gameType': _currentGameType == GameType.matchPairs ? 'Juftliklar' : _currentGameType == GameType.blitzSprint ? 'Blitz Sprint' : 'Xotira',
-          'score': _playerScore,
-          'opponentName': _opponentName,
-          'isWon': isWonDuel,
-          'moves': _memoryMoves,
-          'duration': _secondsElapsed,
-          'mode': _currentGameMode == GameMode.duel ? 'duel' : 'solo',
-        },
-      ).catchError((_) {});
+        data: activityData,
+      );
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        if (mounted) {
+          setState(() {
+            _isSavingResult = false;
+            _resultSavedSuccess = true;
+          });
+        }
+        return;
+      }
+    } catch (e) {
+      debugPrint('Game activity serverga yozishda uzilish: $e. Keshga yozilmoqda...');
+    }
+
+    // Mahalliy SharedPreferences keshiga saqlash (Offline chidamlilik)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> pending = prefs.getStringList('pending_game_activities') ?? [];
+      pending.add(jsonEncode(activityData));
+      await prefs.setStringList('pending_game_activities', pending);
     } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _isSavingResult = false;
+        _resultSavedSuccess = true; // Keshga yozildi
+      });
+    }
+  }
+
+  // DUEL LOBBYSI (Jangga tayyorgarlik ekrani)
+  Widget _buildDuelLobbyView() {
+    final defaultOpponent = _opponentName ?? 'Jasurbek Aliyev';
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 10),
+          // Yuqori sarlavha
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.sports_esports_rounded, color: AppColors.of(context), size: 24),
+              const SizedBox(width: 8),
+              Text(
+                'Jonli Duel Maydoni',
+                style: TextStyle(
+                  color: AppColors.text1(context),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Guruhdoshlar o\'rtasida real-time bilimlar bellashuvi',
+            style: TextStyle(color: AppColors.text2(context), fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+
+          // Xona kodi kartasi
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.cardBg(context),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.of(context).withOpacity(0.35)),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.of(context).withOpacity(0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Jang xonasi kodi:', style: TextStyle(color: AppColors.textM(context), fontSize: 11)),
+                    const SizedBox(height: 2),
+                    Text(
+                      _roomCode,
+                      style: TextStyle(
+                        color: AppColors.of(context),
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.copy_rounded, size: 20),
+                      color: AppColors.of(context),
+                      tooltip: 'Kodni nusxalash',
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: _roomCode));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Xona kodi nusxalandi: $_roomCode'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => _showJoinRoomDialog(),
+                      icon: const Icon(Icons.login_rounded, size: 14, color: Colors.white),
+                      label: const Text('Xonaga ulanish', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.of(context),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Ikki tomon profili (Siz VS Raqib)
+          Row(
+            children: [
+              // 1. Sizning profilingiz
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBg(context),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.success.withOpacity(0.4), width: 1.5),
+                  ),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: AppColors.of(context).withOpacity(0.18),
+                        child: Text('Siz', style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold, fontSize: 14)),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Siz', style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('Tayyor ✅', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.favorite_rounded, color: Colors.red, size: 14),
+                          SizedBox(width: 2),
+                          Icon(Icons.favorite_rounded, color: Colors.red, size: 14),
+                          SizedBox(width: 2),
+                          Icon(Icons.favorite_rounded, color: Colors.red, size: 14),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // O'rtadagi VS nishoni
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.amber.shade700,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withOpacity(0.4),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'VS',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                  ),
+                ),
+              ),
+
+              // 2. Raqib profili
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBg(context),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _opponentName != null ? Colors.orange.withOpacity(0.5) : AppColors.borderCol(context),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: Colors.orange.withOpacity(0.18),
+                        child: Text(
+                          defaultOpponent.substring(0, 1),
+                          style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        defaultOpponent,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('Jangga shay! 🔥', style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.favorite_rounded, color: Colors.red, size: 14),
+                          SizedBox(width: 2),
+                          Icon(Icons.favorite_rounded, color: Colors.red, size: 14),
+                          SizedBox(width: 2),
+                          Icon(Icons.favorite_rounded, color: Colors.red, size: 14),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Tezkor raqib tanlash / Guruhdoshlar ro'yxati
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Guruhdoshni chorlang yoki sparring tanlang:',
+              style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Bot sparring
+          InkWell(
+            onTap: () {
+              setState(() {
+                _opponentName = '🤖 Abdora AI Sparring';
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: _opponentName == '🤖 Abdora AI Sparring' ? AppColors.of(context).withOpacity(0.15) : AppColors.cardBg(context),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _opponentName == '🤖 Abdora AI Sparring' ? AppColors.of(context) : AppColors.borderCol(context),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Color(0xFF6366F1),
+                    child: Icon(Icons.smart_toy_rounded, size: 18, color: Colors.white),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Abdora AI Sparring Boti', style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text('Yakka mashq dueli (Tezkor sparring)', style: TextStyle(color: AppColors.textM(context), fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  if (_opponentName == '🤖 Abdora AI Sparring')
+                    const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20)
+                  else
+                    Text('Tanlash', style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold, fontSize: 12)),
+                ],
+              ),
+            ),
+          ),
+
+          // Guruhdoshlar ro'yxati
+          ...[
+            {'name': 'Shukrona Rahimova', 'rank': '1-o\'rin', 'league': 'Oltin liga'},
+            {'name': 'Jasurbek Aliyev', 'rank': '2-o\'rin', 'league': 'Kumush liga'},
+            {'name': 'Bekzod Mirzayev', 'rank': '3-o\'rin', 'league': 'Faol liga'},
+          ].map((c) {
+            final name = c['name'] as String;
+            final isSelected = _opponentName == name;
+            return InkWell(
+              onTap: () {
+                setState(() {
+                  _opponentName = name;
+                });
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.of(context).withOpacity(0.15) : AppColors.cardBg(context),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected ? AppColors.of(context) : AppColors.borderCol(context),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.orange.withOpacity(0.18),
+                      child: Text(name.substring(0, 1), style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(name, style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text('${c['rank']} • ${c['league']}', style: TextStyle(color: AppColors.textM(context), fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    if (isSelected)
+                      const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20)
+                    else
+                      Text('Chorlash', style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold, fontSize: 12)),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 20),
+
+          // JANGNI BOSHLASH TUGMASI
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                _opponentName ??= 'Jasurbek Aliyev';
+                setState(() {
+                  _isDuelLobby = false;
+                });
+                _initCurrentGame();
+                _startCountdownAnimation();
+              },
+              icon: const Icon(Icons.flash_on_rounded, color: Colors.white, size: 20),
+              label: const Text(
+                'DUELNI BOSHLASH ⚔️',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.of(context),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // GURUHDOSHGA TAKLIF YUBORISH DIALOGI
@@ -739,8 +1214,11 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     setState(() {
       _opponentName = opponentName;
       _currentGameMode = GameMode.duel;
+      _isDuelLobby = false;
       _playerDuelProgress = 0.0;
       _opponentDuelProgress = 0.0;
+      _playerLives = 3;
+      _opponentLives = 3;
     });
     _initCurrentGame();
     _startCountdownAnimation();
@@ -783,7 +1261,7 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Guruhdoshingiz yuborgan 6 xonali kodni kiriting (Masalan: ABD-492):',
+              'Guruhdoshingiz yuborgan kodni kiriting (Masalan: ABD-492):',
               style: TextStyle(color: AppColors.text2(context), fontSize: 13),
             ),
             const SizedBox(height: 14),
@@ -866,7 +1344,11 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
       ),
       body: Stack(
         children: [
-          _isGameOver ? _buildGameOverView() : _buildGameActiveView(),
+          _isGameOver
+              ? _buildGameOverView()
+              : (_currentGameMode == GameMode.duel && _isDuelLobby)
+                  ? _buildDuelLobbyView()
+                  : _buildGameActiveView(),
 
           // 3, 2, 1, START! Bellashuv animatsiyasi
           if (_showStartCountdown)
@@ -920,10 +1402,10 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
   Widget _buildGameActiveView() {
     return Column(
       children: [
-        // 1. Yuqori panel: Rejim tanlash va Bellashuv ko'rsatkichlari
+        // 1. Yuqori panel: Rejim tanlash va hisoblagichlar
         _buildTopControlBar(),
 
-        // 2. Bellashuv jadvali (Duel rejimida)
+        // 2. Bellashuv jadvali (Jonlar, Vaqt poygasi va Ballar)
         if (_currentGameMode == GameMode.duel) _buildDuelScoreHeader(),
 
         // 3. O'yin maydoni
@@ -978,7 +1460,7 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                   ],
                 ),
               ),
-              // Combo
+              // Combo ko'rsatkich
               if (_comboCount > 1)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -987,7 +1469,7 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '${_comboCount}x Combo!',
+                    '${_comboCount}x Combo! 🔥',
                     style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ).animate().scale(duration: 200.ms),
@@ -1014,9 +1496,12 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               InkWell(
                 onTap: () {
                   if (_currentGameMode == GameMode.solo) {
-                    _showInviteClassmateSheet();
+                    setState(() {
+                      _currentGameMode = GameMode.duel;
+                      _isDuelLobby = true;
+                    });
                   } else {
-                    _showJoinRoomDialog();
+                    _showInviteClassmateSheet();
                   }
                 },
                 borderRadius: BorderRadius.circular(8),
@@ -1041,7 +1526,7 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
             ],
           ),
 
-          // Combo va Mukofot banneri
+          // Combo va Olovli Mukofot banneri
           if (_comboCount >= 2) ...[
             const SizedBox(height: 6),
             Container(
@@ -1070,10 +1555,10 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                   const SizedBox(width: 6),
                   Text(
                     _comboCount >= 5
-                        ? 'To\'xtatib bo\'lmas shiddat! ${_comboCount}x Combo!'
+                        ? 'TO\'XTATIB BO\'LMAS YONG\'IN! ${_comboCount}x MEGA COMBO!'
                         : _comboCount >= 3
                             ? 'Olovdek shiddatli bilim! ${_comboCount}x Combo!'
-                            : 'Zo\'r ketma-ketlik! ${_comboCount}x Combo!',
+                            : 'Ajoyib tezlik! ${_comboCount}x Combo!',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5),
                   ),
                 ],
@@ -1088,13 +1573,13 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               key: _floatingScoreKey,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
               decoration: BoxDecoration(
-                color: _floatingScoreText!.contains('Noto\'g\'ri')
+                color: _floatingScoreText!.contains('Xato') || _floatingScoreText!.contains('Noto\'g\'ri')
                     ? Colors.red.shade700
                     : AppColors.success,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: (_floatingScoreText!.contains('Noto\'g\'ri') ? Colors.red : AppColors.success).withOpacity(0.4),
+                    color: (_floatingScoreText!.contains('Xato') || _floatingScoreText!.contains('Noto\'g\'ri') ? Colors.red : AppColors.success).withOpacity(0.4),
                     blurRadius: 10,
                   ),
                 ],
@@ -1150,7 +1635,7 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     );
   }
 
-  // DUEL REJIMIDA JONLI POYGA VA BALL CHIZIG'I
+  // DUEL REJIMIDA JONLAR VA JONLI POYGA SHKALASI
   Widget _buildDuelScoreHeader() {
     final opponent = _opponentName ?? 'Guruhdoshingiz';
     final isPlayerLeading = _playerScore >= _opponentScore;
@@ -1169,6 +1654,7 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Sizning holatingiz va jonlaringiz
               Row(
                 children: [
                   CircleAvatar(
@@ -1176,36 +1662,76 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                     backgroundColor: AppColors.of(context),
                     child: const Text('Siz', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
                   ),
-                  const SizedBox(width: 8),
-                  Text('Siz: $_playerScore', style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 13)),
-                  if (isPlayerLeading && _playerScore > 0) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
+                  const SizedBox(width: 6),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text('Siz: $_playerScore', style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 12.5)),
+                          if (isPlayerLeading && _playerScore > 0) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: AppColors.success.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('Peshqadam', style: TextStyle(color: AppColors.success, fontSize: 9, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ],
                       ),
-                      child: const Text('Peshqadam', style: TextStyle(color: AppColors.success, fontSize: 9.5, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
+                      Row(
+                        children: List.generate(
+                          3,
+                          (i) => Icon(
+                            i < _playerLives ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            color: i < _playerLives ? Colors.red : AppColors.textM(context),
+                            size: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
+
+              // Raqib holati va jonlari
               Row(
                 children: [
-                  if (!isPlayerLeading && _opponentScore > 0) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
+                        children: [
+                          if (!isPlayerLeading && _opponentScore > 0) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('Peshqadam', style: TextStyle(color: Colors.orange, fontSize: 9, fontWeight: FontWeight.bold)),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          Text('$opponent: $_opponentScore', style: TextStyle(color: AppColors.text2(context), fontWeight: FontWeight.bold, fontSize: 12.5)),
+                        ],
                       ),
-                      child: const Text('Peshqadam', style: TextStyle(color: Colors.orange, fontSize: 9.5, fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                  Text('$opponent: $_opponentScore', style: TextStyle(color: AppColors.text2(context), fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(width: 8),
+                      Row(
+                        children: List.generate(
+                          3,
+                          (i) => Icon(
+                            i < _opponentLives ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            color: i < _opponentLives ? Colors.red : AppColors.textM(context),
+                            size: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 6),
                   CircleAvatar(
                     radius: 12,
                     backgroundColor: Colors.orange.shade700,
@@ -1216,36 +1742,42 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          // Jonli poyga yo'lakchasi
+
+          // Jonli poyga yo'lakchasi (Race Track)
           Stack(
             alignment: Alignment.centerLeft,
             children: [
               Container(
-                height: 10,
+                height: 12,
                 decoration: BoxDecoration(
                   color: AppColors.inputCol(context),
-                  borderRadius: BorderRadius.circular(5),
+                  borderRadius: BorderRadius.circular(6),
                 ),
               ),
               // Raqib chizig'i
               FractionallySizedBox(
-                widthFactor: _opponentDuelProgress.clamp(0.05, 1.0),
+                widthFactor: _opponentDuelProgress.clamp(0.06, 1.0),
                 child: Container(
-                  height: 10,
+                  height: 12,
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade600.withOpacity(0.55),
-                    borderRadius: BorderRadius.circular(5),
+                    color: Colors.orange.shade600.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
               ),
               // O'quvchi chizig'i
               FractionallySizedBox(
-                widthFactor: _playerDuelProgress.clamp(0.05, 1.0),
+                widthFactor: _playerDuelProgress.clamp(0.06, 1.0),
                 child: Container(
-                  height: 10,
+                  height: 12,
                   decoration: BoxDecoration(
-                    color: AppColors.of(context),
-                    borderRadius: BorderRadius.circular(5),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.of(context),
+                        AppColors.success,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
               ),
@@ -1255,10 +1787,10 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Start', style: TextStyle(color: AppColors.textM(context), fontSize: 10)),
+              Text('Start 🏁', style: TextStyle(color: AppColors.textM(context), fontSize: 10)),
               Row(
                 children: [
-                  Icon(Icons.flag_rounded, size: 12, color: AppColors.of(context)),
+                  Icon(Icons.emoji_events_rounded, size: 12, color: AppColors.of(context)),
                   const SizedBox(width: 2),
                   Text('Finish (G\'alaba)', style: TextStyle(color: AppColors.of(context), fontSize: 10, fontWeight: FontWeight.bold)),
                 ],
@@ -1839,7 +2371,7 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     );
   }
 
-  // O'YIN YAKUNI VA NATIJALAR OYNASI
+  // TANTANALI G'ALABA VA NATIJALAR EKRANI
   Widget _buildGameOverView() {
     final isDuel = _currentGameMode == GameMode.duel;
     final isWon = _playerScore >= _opponentScore;
@@ -1847,45 +2379,48 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
     String rankBadge;
     Color rankColor;
     if (_playerScore >= 140) {
-      rankBadge = 'Oltin Bilimdon';
+      rankBadge = 'Oltin Bilimdon 👑';
       rankColor = Colors.amber.shade700;
     } else if (_playerScore >= 80) {
-      rankBadge = 'Kumush Bilimdon';
+      rankBadge = 'Kumush Bilimdon ⭐';
       rankColor = const Color(0xFF38BDF8);
     } else {
-      rankBadge = 'Faol Tadqiqotchi';
+      rankBadge = 'Faol Tadqiqotchi 🚀';
       rankColor = AppColors.of(context);
     }
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(22),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
+
+          // Tantanali sovrin kubogi yoki quroli
           Container(
-            width: 86,
-            height: 86,
+            width: 90,
+            height: 90,
             decoration: BoxDecoration(
               color: (isDuel ? (isWon ? AppColors.success : Colors.orange) : AppColors.of(context)).withOpacity(0.18),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (isDuel ? (isWon ? AppColors.success : Colors.orange) : AppColors.of(context)).withOpacity(0.3),
-                  blurRadius: 20,
-                  spreadRadius: 2,
+                  color: (isDuel ? (isWon ? AppColors.success : Colors.orange) : AppColors.of(context)).withOpacity(0.35),
+                  blurRadius: 24,
+                  spreadRadius: 4,
                 ),
               ],
             ),
             child: Icon(
-              isDuel ? (isWon ? Icons.emoji_events_outlined : Icons.military_tech_outlined) : Icons.celebration_outlined,
-              color: isDuel ? (isWon ? AppColors.success : Colors.orange) : AppColors.of(context),
-              size: 46,
+              isDuel ? (isWon ? Icons.emoji_events_rounded : Icons.military_tech_rounded) : Icons.celebration_rounded,
+              color: isDuel ? (isWon ? Colors.amber.shade700 : Colors.orange) : AppColors.of(context),
+              size: 50,
             ),
           ).animate().scale(duration: 400.ms).shimmer(duration: 1500.ms),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
+          // Unvon nishoni
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
@@ -1907,19 +2442,107 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
           ).animate(delay: 150.ms).fadeIn().scale(),
           const SizedBox(height: 12),
 
-          Text(
-            isDuel ? (isWon ? 'G\'alaba! Tabriklaymiz!' : 'Ajoyib Bellashuv!') : 'Barakalla! Dars mustahkamlandi!',
-            style: TextStyle(color: AppColors.text1(context), fontSize: 20, fontWeight: FontWeight.bold),
-          ).animate(delay: 200.ms).fadeIn(),
-          const SizedBox(height: 8),
+          // Sarlavha
           Text(
             isDuel
-                ? 'Siz $_opponentName bilan bellashuvda $_playerScore ball to\'pladingiz.'
+                ? (isWon ? 'DUELDA G\'ALABA! TABRIKLAYMIZ! 🏆' : 'AJOYIB BELLASHUV! ⚔️')
+                : 'BARAKALLA! DARS MUSTAHKAMLANDI! ⭐',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.text1(context), fontSize: 19, fontWeight: FontWeight.bold),
+          ).animate(delay: 200.ms).fadeIn(),
+          const SizedBox(height: 8),
+
+          Text(
+            isDuel
+                ? (_gameOverReason != null
+                    ? '$_gameOverReason $_opponentName bilan bellashuvda $_playerScore ball to\'pladingiz.'
+                    : 'Siz $_opponentName bilan shiddatli jangda $_playerScore ball to\'pladingiz.')
                 : '"${widget.topicTitle}" mavzusi bo\'yicha topshiriqlarni a\'lo darajada bajardingiz.',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.text2(context), fontSize: 13, height: 1.4),
           ).animate(delay: 250.ms).fadeIn(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+
+          // DUEL REJIMIDA IKKALA TOMONNING TAQQOSIY HISOBOTI
+          if (isDuel) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.cardBg(context),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderCol(context)),
+              ),
+              child: Row(
+                children: [
+                  // Siz
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text('Siz', style: TextStyle(color: AppColors.of(context), fontWeight: FontWeight.bold, fontSize: 13)),
+                        const SizedBox(height: 4),
+                        Text('$_playerScore', style: TextStyle(color: AppColors.text1(context), fontSize: 24, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.favorite_rounded, color: Colors.red, size: 12),
+                            const SizedBox(width: 3),
+                            Text('$_playerLives ta jon', style: TextStyle(color: AppColors.textM(context), fontSize: 11)),
+                          ],
+                        ),
+                        if (isWon) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('G\'olib 👑', style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  // Divider
+                  Container(width: 1, height: 60, color: AppColors.borderCol(context)),
+
+                  // Raqib
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(_opponentName ?? 'Raqib', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1),
+                        const SizedBox(height: 4),
+                        Text('$_opponentScore', style: TextStyle(color: AppColors.text1(context), fontSize: 24, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.favorite_rounded, color: Colors.red, size: 12),
+                            const SizedBox(width: 3),
+                            Text('$_opponentLives ta jon', style: TextStyle(color: AppColors.textM(context), fontSize: 11)),
+                          ],
+                        ),
+                        if (!isWon) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('G\'olib 👑', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ).animate(delay: 280.ms).fadeIn(),
+            const SizedBox(height: 16),
+          ],
 
           // Mukofotlar paneli
           Container(
@@ -1940,24 +2563,68 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildAwardItem('To\'plangan ball', '$_playerScore', Icons.stars_rounded, AppColors.of(context)),
-                _buildAwardItem('Sarflangan vaqt', '${_secondsElapsed}s', Icons.timer_outlined, Colors.amber),
-                _buildAwardItem('Abdora Tanga', '+15', Icons.monetization_on_outlined, AppColors.success),
+                _buildAwardItem('Maksimal Combo', '${_maxCombo}x 🔥', Icons.local_fire_department_rounded, Colors.orange),
+                if (isDuel)
+                  _buildAwardItem('Win Streak', '${_winStreak}x 🔥', Icons.whatshot_rounded, Colors.deepOrange),
+                _buildAwardItem('Abdora Tanga', isWon ? '+25' : '+15', Icons.monetization_on_outlined, AppColors.success),
               ],
             ),
           ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.1, end: 0),
-          const SizedBox(height: 28),
+          const SizedBox(height: 14),
 
+          // Serverga saqlanish holati indikatori
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.inputCol(context),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isSavingResult) ...[
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('Natija serverga saqlanmoqda...', style: TextStyle(color: AppColors.textM(context), fontSize: 11)),
+                ] else if (_resultSavedSuccess) ...[
+                  const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 14),
+                  const SizedBox(width: 6),
+                  Text('Natija server va reytingga saqlandi! +XP qo\'shildi', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold)),
+                ] else ...[
+                  Icon(Icons.info_outline_rounded, color: AppColors.textM(context), size: 14),
+                  const SizedBox(width: 6),
+                  Text('Natija mahalliy keshga yozildi', style: TextStyle(color: AppColors.textM(context), fontSize: 11)),
+                ],
+              ],
+            ),
+          ).animate(delay: 320.ms).fadeIn(),
+          const SizedBox(height: 24),
+
+          // Harakat tugmalari
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _initCurrentGame(),
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    if (_currentGameMode == GameMode.duel) {
+                      setState(() {
+                        _isDuelLobby = true;
+                      });
+                    } else {
+                      _initCurrentGame();
+                    }
+                  },
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text(_currentGameMode == GameMode.duel ? 'Revansh ⚔️' : 'Qayta o\'ynash'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     side: BorderSide(color: AppColors.borderCol(context)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text('Qayta o\'ynash', style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1969,7 +2636,7 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Tugatish', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text('Darsga qaytish', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -1984,9 +2651,9 @@ class _InteractiveGameScreenState extends State<InteractiveGameScreen> {
       children: [
         Icon(icon, color: color, size: 24),
         const SizedBox(height: 6),
-        Text(value, style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(value, style: TextStyle(color: AppColors.text1(context), fontWeight: FontWeight.bold, fontSize: 15)),
         const SizedBox(height: 2),
-        Text(label, style: TextStyle(color: AppColors.textM(context), fontSize: 11)),
+        Text(label, style: TextStyle(color: AppColors.textM(context), fontSize: 10.5)),
       ],
     );
   }

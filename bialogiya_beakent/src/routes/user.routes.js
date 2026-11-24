@@ -1,10 +1,10 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const { fileUpload } = require('../middleware/upload.middleware');
 const {
   createStudent, createTeacher, createManager, getManagers, updateManager, deleteManager, getManagerBranches, getAllUsers, getStudentsByTeacher, getUserById,
-  updateUser, updateProfile, deleteUser, resetStudentPassword, freezeStudent, changePassword,
+  updateUser, updateProfile, lockStudentProfile, unlockStudentProfile, deleteUser, resetStudentPassword, freezeStudent, changePassword,
   getStudentHistory, addStudentNote, deleteStudentNote, awardStudentCoins, testAIPersonalization,
   updateLanguage, uploadAvatar, getAvatar,
   getReferralStats, applyReferralCode, scanAvatarFace,
@@ -26,6 +26,10 @@ router.put('/managers/:id', verifyToken, requireRole('admin'), updateManager);
 router.delete('/managers/:id', verifyToken, requireRole('admin'), deleteManager);
 router.get('/manager/branches', verifyToken, requireRole('manager'), getManagerBranches);
 router.put('/profile', verifyToken, updateProfile);
+router.post('/lock-profile', verifyToken, lockStudentProfile);
+router.post('/profile/lock', verifyToken, lockStudentProfile);
+router.post('/:id/lock-profile', verifyToken, requireRole('admin', 'reception', 'manager', 'teacher'), lockStudentProfile);
+router.post('/:id/unlock-profile', verifyToken, requireRole('admin', 'reception', 'manager'), unlockStudentProfile);
 router.patch('/language', verifyToken, updateLanguage);
 router.put('/language', verifyToken, updateLanguage);
 router.post('/change-password', verifyToken, changePassword);

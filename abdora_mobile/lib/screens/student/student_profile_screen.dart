@@ -1067,8 +1067,16 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         Icon(icon, color: AppColors.textMuted, size: 18),
         const SizedBox(width: 12),
         Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        const Spacer(),
-        Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+        ),
       ],
     );
   }

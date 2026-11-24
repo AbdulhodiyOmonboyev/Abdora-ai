@@ -135,7 +135,7 @@ export default function TeacherDashboard() {
             </div>
             <div className="mini-metric blue">
               <span>To'lagan o‘quvchilar</span>
-              <strong>{totalStudents}</strong>
+              <strong>{earningsData?.totalPaidStudents || 0} / {totalStudents}</strong>
             </div>
           </div>
         </div>

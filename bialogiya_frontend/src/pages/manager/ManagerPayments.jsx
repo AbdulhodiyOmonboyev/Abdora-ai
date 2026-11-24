@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Users, Download, Loader2, X, Snowflake, ChevronRight } from 'lucide-react';
+import { Wallet, Users, Download, Loader2, X, Snowflake, ChevronRight, Printer } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
@@ -194,12 +195,25 @@ export default function ManagerPayments() {
                 )}
               </div>
 
-              <button type="button" onClick={() => setEditing(s)}
-                aria-label={`${s.name} — to'lovni tahrirlash`}
-                className={`flex flex-shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${style.cls}`}>
-                {style.label}
-                <ChevronRight size={12} aria-hidden="true" />
-              </button>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {s.payment?.id && (
+                  <Link
+                    to={`/erp/receipt/${s.payment.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-ghost p-1.5 rounded-xl text-primary hover:bg-primary/10 flex items-center justify-center border border-primary/20"
+                    title="Kvitansiyani chop etish"
+                  >
+                    <Printer size={14} />
+                  </Link>
+                )}
+                <button type="button" onClick={() => setEditing(s)}
+                  aria-label={`${s.name} — to'lovni tahrirlash`}
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${style.cls}`}>
+                  {style.label}
+                  <ChevronRight size={12} aria-hidden="true" />
+                </button>
+              </div>
             </motion.div>
           );
         })}

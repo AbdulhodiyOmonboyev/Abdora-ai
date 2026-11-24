@@ -1,7 +1,7 @@
-const { prisma } = require('./src/config/db');
-const { createHomework, getSubmissions, gradeSubmission, submitHomework } = require('./src/controllers/homework.controller');
-const { getTestResults, getTests } = require('./src/controllers/test.controller');
-const { getAttendanceByGroup } = require('./src/controllers/attendance.controller');
+const { prisma } = require('../src/config/db');
+const { createHomework, getSubmissions, gradeSubmission, submitHomework } = require('../src/controllers/homework.controller');
+const { getTestResults, getTests } = require('../src/controllers/test.controller');
+const { getAttendanceByGroup } = require('../src/controllers/attendance.controller');
 
 const createMockRes = () => {
   const res = {
