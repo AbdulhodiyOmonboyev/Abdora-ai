@@ -1,13 +1,22 @@
 const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
 
+const resolveScopedCenterId = (req) => {
+  if (req.user.role === 'admin') return req.query.centerId || null;
+  if (!req.user.centerId) return null;
+  if (req.query.centerId && req.query.centerId !== req.user.centerId) return false;
+  return req.user.centerId;
+};
+
 /**
  * Get aggregated AI usage statistics
  */
 const getAIUsageStats = async (req, res) => {
   try {
     const isAdmin = req.user.role === 'admin';
-    const centerId = req.query.centerId || (!isAdmin ? req.user.centerId : null);
+    const centerId = resolveScopedCenterId(req);
+    if (centerId === false) return error(res, 'Ruxsat berilmagan', 403);
+    if (!isAdmin && !centerId) return error(res, 'Markaz topilmadi', 400);
 
     const where = centerId ? { centerId } : {};
 
@@ -82,8 +91,9 @@ const getAIUsageStats = async (req, res) => {
  */
 const getAIUsageLogs = async (req, res) => {
   try {
-    const isAdmin = req.user.role === 'admin';
-    const centerId = req.query.centerId || (!isAdmin ? req.user.centerId : null);
+    const centerId = resolveScopedCenterId(req);
+    if (centerId === false) return error(res, 'Ruxsat berilmagan', 403);
+    if (req.user.role !== 'admin' && !centerId) return error(res, 'Markaz topilmadi', 400);
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
     const skip = (page - 1) * limit;
@@ -130,8 +140,9 @@ const getAIUsageLogs = async (req, res) => {
  */
 const exportAIUsageCSV = async (req, res) => {
   try {
-    const isAdmin = req.user.role === 'admin';
-    const centerId = req.query.centerId || (!isAdmin ? req.user.centerId : null);
+    const centerId = resolveScopedCenterId(req);
+    if (centerId === false) return error(res, 'Ruxsat berilmagan', 403);
+    if (req.user.role !== 'admin' && !centerId) return error(res, 'Markaz topilmadi', 400);
     const where = centerId ? { centerId } : {};
 
     const logs = await prisma.aIUsageLog.findMany({

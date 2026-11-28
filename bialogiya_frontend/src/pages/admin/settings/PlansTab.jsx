@@ -16,7 +16,7 @@ const EMPTY_PLAN_FORM = {
   trialDays: 7,
   aiEnabled: false,
   aiProvider: 'gemini',
-  aiModel: 'gemini-1.5-flash',
+  aiModel: 'gemini-2.5-flash',
   aiMonthlyTokenLimit: 500000,
   aiMonthlyRequestLimit: 1000,
   smsEnabled: false,
@@ -176,14 +176,14 @@ export default function PlansTab({ selectedCenterId, currentCenter }) {
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
                 <CreditCard size={24} />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-xs text-[var(--text-secondary)] font-medium">
                   {currentCenter?.name || "Markaz"} — Obuna holati:
                 </div>
-                <div className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <div className="text-base font-bold text-[var(--text-primary)] flex flex-wrap items-center gap-2 mt-0.5">
                   <span>{subscription?.plan?.name || "Tarif bog'lanmagan"}</span>
                   {subscription ? (
-                    <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${
+                    <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize whitespace-nowrap ${
                       subscription.status === 'active' ? 'bg-emerald-500/10 text-emerald-600' :
                       subscription.status === 'trial' ? 'bg-blue-500/10 text-blue-600' :
                       subscription.status === 'grace' ? 'bg-amber-500/10 text-amber-600' :
@@ -241,7 +241,7 @@ export default function PlansTab({ selectedCenterId, currentCenter }) {
 
           {/* Subscription detail badges */}
           {subscription && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 pt-4 text-xs">
               <div className="p-3 rounded-xl bg-[var(--secondary-background)]">
                 <span className="text-[var(--text-muted)] block mb-1">To'lov muddati:</span>
                 <span className="font-semibold text-[var(--text-primary)]">

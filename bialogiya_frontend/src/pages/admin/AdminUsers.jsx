@@ -10,8 +10,11 @@ import { cleanPhone } from '../../utils/formatPhone';
 
 const ROLE_LABELS = {
   admin: 'Admin',
-  teacher: 'Teacher',
-  student: 'Student',
+  owner: 'Admin',
+  manager: 'Manager',
+  reception: 'Qabulxona',
+  teacher: "O'qituvchi",
+  student: "O'quvchi",
 };
 
 export default function AdminUsers() {
@@ -40,38 +43,38 @@ export default function AdminUsers() {
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }) => api.put(`/users/${id}`, { ...payload, phone: cleanPhone(payload.phone) }),
     onSuccess: () => {
-      qc.invalidateQueries(['all-users']);
-      toast.success('User updated');
+      qc.invalidateQueries({ queryKey: ['all-users'] });
+      toast.success("Foydalanuvchi yangilandi");
       setEditingUser(null);
     },
-    onError: () => toast.error('Update failed'),
+    onError: () => toast.error("Yangilashda xatolik"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/users/${id}`),
     onSuccess: () => {
-      qc.invalidateQueries(['all-users']);
-      toast.success('User deactivated');
+      qc.invalidateQueries({ queryKey: ['all-users'] });
+      toast.success("Foydalanuvchi o'chirildi");
     },
-    onError: () => toast.error('Delete failed'),
+    onError: () => toast.error("O'chirishda xatolik"),
   });
 
   const toggleActiveMutation = useMutation({
     mutationFn: (id) => api.put(`/admin/users/${id}/toggle`),
     onSuccess: () => {
-      qc.invalidateQueries(['all-users']);
-      toast.success('Status toggled');
+      qc.invalidateQueries({ queryKey: ['all-users'] });
+      toast.success("Holat o'zgartirildi");
     },
-    onError: () => toast.error('Toggle failed'),
+    onError: () => toast.error("Holatni o'zgartirishda xatolik"),
   });
 
   const freezeMutation = useMutation({
     mutationFn: (id) => api.patch(`/users/${id}/freeze`),
     onSuccess: () => {
-      qc.invalidateQueries(['all-users']);
-      toast.success('Freeze status updated');
+      qc.invalidateQueries({ queryKey: ['all-users'] });
+      toast.success("Muzlatish holati yangilandi");
     },
-    onError: () => toast.error('Action failed'),
+    onError: () => toast.error("Amalni bajarishda xatolik"),
   });
 
   const resetPasswordMutation = useMutation({
@@ -117,6 +120,8 @@ export default function AdminUsers() {
           </button>
           <button onClick={() => setRoleFilter('all')} className={`btn-ghost text-sm ${roleFilter === 'all' ? 'bg-primary/10 text-primary' : ''}`}>Barchasi</button>
           <button onClick={() => setRoleFilter('admin')} className={`btn-ghost text-sm ${roleFilter === 'admin' ? 'bg-primary/10 text-primary' : ''}`}>Adminlar</button>
+          <button onClick={() => setRoleFilter('manager')} className={`btn-ghost text-sm ${roleFilter === 'manager' ? 'bg-primary/10 text-primary' : ''}`}>Managerlar</button>
+          <button onClick={() => setRoleFilter('reception')} className={`btn-ghost text-sm ${roleFilter === 'reception' ? 'bg-primary/10 text-primary' : ''}`}>Qabulxona</button>
           <button onClick={() => setRoleFilter('teacher')} className={`btn-ghost text-sm ${roleFilter === 'teacher' ? 'bg-primary/10 text-primary' : ''}`}>O'qituvchilar</button>
           <button onClick={() => setRoleFilter('student')} className={`btn-ghost text-sm ${roleFilter === 'student' ? 'bg-primary/10 text-primary' : ''}`}>O'quvchilar</button>
         </div>

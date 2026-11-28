@@ -83,6 +83,7 @@ export default function AdminTeachers() {
   const createMutation = useMutation({
     mutationFn: (d) => api.post('/admin/teachers', {
       ...d,
+      branchId: d.branchId || (branches?.length === 1 ? branches[0].id : undefined),
       phone: cleanPhone(d.phone) || null,
       age: d.age ? Number(d.age) : undefined,
     }),
@@ -988,9 +989,9 @@ export default function AdminTeachers() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {branches?.length > 0 && (
-                      <div>
-                        <label className="form-label">Markaz (Filial)</label>
+                    <div>
+                      <label className="form-label">Markaz (Filial)</label>
+                      {branches?.length > 0 ? (
                         <select
                           value={form.branchId || (branches.length === 1 ? branches[0].id : '')}
                           onChange={e => setForm(f => ({ ...f, branchId: e.target.value }))}
@@ -999,8 +1000,12 @@ export default function AdminTeachers() {
                           {branches.length > 1 && <option value="">Filialni tanlang...</option>}
                           {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="input-field flex items-center text-xs text-[var(--text-muted)]">
+                          Umumiy markaz (filial ochilmagan)
+                        </div>
+                      )}
+                    </div>
                     <div>
                       <label className="form-label">Til</label>
                       <select

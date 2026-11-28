@@ -132,8 +132,11 @@ const login = async (req, res, next) => {
     });
 
     const { passwordHash, refreshTokenHash: _rth, ...safeUser } = user;
+    const rawCenterSettings = user.center?.settings || user.branch?.center?.settings || {};
     const userOut = {
       ...safeUser,
+      centerFeatures: rawCenterSettings.features || {},
+      centerRoles: rawCenterSettings.roles || {},
       streak: { current: safeUser.streakCurrent, longest: safeUser.streakLongest, lastActiveDate: safeUser.streakLastDate },
       lastPaymentAt: lastPayment?.paidAt?.toISOString() || null,
     };
@@ -189,6 +192,8 @@ const getMe = async (req, res, next) => {
         groupId: true, teacherId: true,
         group: { select: { id: true, name: true, subject: true } },
         teacher: { select: { id: true, name: true } },
+        center: { select: { id: true, name: true, settings: true } },
+        branch: { select: { id: true, center: { select: { id: true, name: true, settings: true } } } },
       },
     });
     if (!user) return error(res, 'User not found', 404);
@@ -197,8 +202,12 @@ const getMe = async (req, res, next) => {
       orderBy: { paidAt: 'desc' },
       select: { paidAt: true },
     });
+    const rawCenterSettings = user.center?.settings || user.branch?.center?.settings || {};
+    const { center: _c, branch: _b, ...cleanUser } = user;
     const userOut = {
-      ...user,
+      ...cleanUser,
+      centerFeatures: rawCenterSettings.features || {},
+      centerRoles: rawCenterSettings.roles || {},
       streak: { current: user.streakCurrent, longest: user.streakLongest, lastActiveDate: user.streakLastDate },
       lastPaymentAt: lastPayment?.paidAt?.toISOString() || null,
     };

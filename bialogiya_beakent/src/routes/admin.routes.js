@@ -28,7 +28,7 @@ router.delete('/teachers/:id', ...adminOrReception, deleteTeacher);
 router.get('/students', ...adminOrReception, getStudents);
 router.get('/groups', ...adminOrReception, getGroups);
 router.put('/users/:id/toggle', ...adminOrReception, toggleUserStatus);
-router.get('/settings', ...adminOrReception, getSettings);
+router.get('/settings', verifyToken, getSettings);
 router.put('/settings', ...adminOrReception, updateSettings);
 
 // Centers (O'quv Markazlar) - Superadmin only

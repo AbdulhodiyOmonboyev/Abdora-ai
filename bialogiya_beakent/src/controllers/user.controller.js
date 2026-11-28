@@ -1604,29 +1604,159 @@ const applyReferralCode = async (req, res, next) => {
 };
 
 
+const isAvatarAllowedForUserCenter = async (userRecord) => {
+  const cId = userRecord?.centerId || userRecord?.branch?.centerId || null;
+  if (!cId) return true;
+  const center = await prisma.center.findUnique({ where: { id: cId }, select: { settings: true } });
+  const s = center?.settings && typeof center.settings === 'object' ? center.settings : {};
+  if (s.features?.avatarEnabled === false) return false;
+  if (s.roles?.student?.permissions?.canUseAvatar === false) return false;
+  return true;
+};
+
+const getAvatarConfig = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'student') {
+      return error(res, "3D AI Avatar faqat o'quvchilar uchun mavjud", 403);
+    }
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { id: true, role: true, xp: true, permissions: true, name: true, centerId: true, branch: { select: { centerId: true } } },
+    });
+    if (!currentUser) return error(res, 'User not found', 404);
+    if (!(await isAvatarAllowedForUserCenter(currentUser))) {
+      return error(res, "Ushbu o'quv markazda 3D AI Avatar funksiyasi o'chirilgan", 403);
+    }
+
+    const currentPerms = (currentUser.permissions && typeof currentUser.permissions === 'object')
+      ? currentUser.permissions
+      : {};
+    const rawAvatarProfile = currentPerms.avatarProfile || null;
+    const avatarProfile = rawAvatarProfile
+      ? { ...rawAvatarProfile, isSaved: true }
+      : null;
+    const savedAtXp = avatarProfile?.savedAtXp ?? 0;
+    const unlockStepXp = avatarProfile?.unlockStepXp ?? 200;
+    const neededXp = savedAtXp + unlockStepXp;
+    const currentXp = currentUser.xp ?? 0;
+    const canEditIdentity = currentUser.role !== 'student' || !avatarProfile || currentXp >= neededXp;
+
+    return success(res, {
+      avatarProfile,
+      xp: currentXp,
+      neededXp,
+      canEditIdentity,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const saveAvatarConfig = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'student') {
+      return error(res, "3D AI Avatar faqat o'quvchilar uchun mavjud", 403);
+    }
+    const { name, profession, config } = req.body;
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { id: true, role: true, xp: true, permissions: true, name: true, centerId: true, branch: { select: { centerId: true } } },
+    });
+    if (!currentUser) return error(res, 'User not found', 404);
+    if (!(await isAvatarAllowedForUserCenter(currentUser))) {
+      return error(res, "Ushbu o'quv markazda 3D AI Avatar funksiyasi o'chirilgan", 403);
+    }
+
+    const currentPerms = (currentUser.permissions && typeof currentUser.permissions === 'object')
+      ? currentUser.permissions
+      : {};
+    const existing = currentPerms.avatarProfile || null;
+    const currentXp = currentUser.xp ?? 0;
+
+    const trimmedName = typeof name === 'string' ? name.trim() : (existing?.name || '');
+    const trimmedProfession = typeof profession === 'string' ? profession.trim() : (existing?.profession || '');
+    const nextConfig = config !== undefined ? config : (existing?.config || {});
+
+    if (!trimmedName || trimmedName.length < 2) {
+      return error(res, "Avatar ismi kamida 2 ta belgidan iborat bo'lishi shart!", 400);
+    }
+    if (!trimmedProfession || trimmedProfession.length < 2) {
+      return error(res, "Avatar kasbi tanlanishi shart!", 400);
+    }
+
+    const nameChanged = Boolean(typeof name === 'string' && name.trim() && name.trim() !== existing?.name);
+    const professionChanged = Boolean(typeof profession === 'string' && profession.trim() && profession.trim() !== existing?.profession);
+
+    let newSavedAtXp = currentXp;
+    const unlockStepXp = existing?.unlockStepXp ?? 200;
+
+    if (existing) {
+      if (currentUser.role === 'student' && (nameChanged || professionChanged)) {
+        const needed = (existing.savedAtXp ?? 0) + unlockStepXp;
+        if (currentXp < needed) {
+          const remaining = needed - currentXp;
+          return error(
+            res,
+            `Avatarning ismi va kasbini o'zgartirish uchun yana ${remaining} XP to'plashingiz kerak! (${currentXp}/${needed} XP)`,
+            400
+          );
+        }
+        newSavedAtXp = currentXp;
+      } else if (nameChanged || professionChanged) {
+        newSavedAtXp = currentXp;
+      } else {
+        newSavedAtXp = existing.savedAtXp ?? 0;
+      }
+    }
+
+    const avatarProfile = {
+      isSaved: true,
+      name: trimmedName,
+      profession: trimmedProfession,
+      config: nextConfig,
+      savedAtXp: newSavedAtXp,
+      unlockStepXp,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.userId },
+      data: {
+        permissions: {
+          ...currentPerms,
+          avatarProfile,
+        },
+      },
+    });
+
+    return success(res, { user: safeUser(updatedUser), avatarProfile }, 'Avatar sozlamalari saqlandi');
+  } catch (err) {
+    next(err);
+  }
+};
+
 const scanAvatarFace = async (req, res, next) => {
   try {
     if (!req.file) return error(res, 'Rasm fayli yuklanmadi', 400);
 
-    // Resolve API key using the project's existing gemini config helpers
-    let apiKey = '';
+    const geminiConfig = require('../config/gemini');
+    let model = null;
     try {
-      const geminiConfig = require('../config/gemini');
-      apiKey = await geminiConfig.getApiKeyAsync();
+      model = await geminiConfig.getModelAsync({ jsonMode: false, centerId: req.user?.centerId });
     } catch (_) {
-      apiKey = process.env.GIMINI_AI_API_KEY ||
+      const apiKey =
         process.env.GEMINI_API_KEY ||
         process.env.GEMINI_AI_API_KEY ||
-        process.env.GOOGLE_API_KEY || '';
+        process.env.GOOGLE_API_KEY ||
+        process.env.GIMINI_AI_API_KEY ||
+        '';
+      if (!apiKey) {
+        return res.json({ success: false, faceFound: false, message: 'AI kalit topilmadi' });
+      }
+      const { GoogleGenerativeAI } = require('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(apiKey);
+      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     }
-
-    if (!apiKey) {
-      return res.json({ success: false, faceFound: false, message: 'AI kalit topilmadi' });
-    }
-
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const PROMPT = 'You help build a cartoon avatar. Look at this selfie and describe ONLY visible appearance traits needed to style a cartoon avatar. Do not identify the person and do not guess name, age, ethnicity or gender. If several faces are visible use the most prominent one. If no clear human face is visible reply {"faceFound":false}. Otherwise reply with JSON only, no other text: {"faceFound":true,"skin":"#rrggbb","hair":"#rrggbb","eyes":"#rrggbb","lips":"#rrggbb","hairStyle":"long|pig|pony|bob|spiky|neat","glasses":true or false,"hat":"none|cap","facialHair":"none|mustache|beard","faceShape":"round|oval|long","eyeSize":"small|normal|large","eyeShape":"round|almond","brows":"thin|normal|thick"}. skin=avg cheek/forehead colour. hair=main colour. eyes=iris. lips=natural. hairStyle: long=loose, pig=two tails, pony=one tail, bob=chin length, spiky=short messy, neat=short tidy.';
 
@@ -1683,5 +1813,7 @@ module.exports = {
   getAvatar,
   getReferralStats,
   applyReferralCode,
+  getAvatarConfig,
+  saveAvatarConfig,
   scanAvatarFace,
 };

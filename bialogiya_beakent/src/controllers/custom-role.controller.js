@@ -6,7 +6,10 @@ const { success, error } = require('../utils/apiResponse');
  */
 const getCustomRoles = async (req, res) => {
   try {
-    const centerId = req.query.centerId || req.user.centerId;
+    if (req.user.role !== 'admin' && req.query.centerId && req.query.centerId !== req.user.centerId) {
+      return error(res, 'Ruxsat berilmagan', 403);
+    }
+    const centerId = req.user.role === 'admin' ? (req.query.centerId || req.user.centerId) : req.user.centerId;
     if (!centerId) return error(res, 'Markaz ID topilmadi', 400);
 
     const roles = await prisma.customRole.findMany({
@@ -28,7 +31,10 @@ const getCustomRoles = async (req, res) => {
  */
 const createCustomRole = async (req, res) => {
   try {
-    const centerId = req.body.centerId || req.user.centerId;
+    if (req.user.role !== 'admin' && req.body.centerId && req.body.centerId !== req.user.centerId) {
+      return error(res, 'Ruxsat berilmagan', 403);
+    }
+    const centerId = req.user.role === 'admin' ? (req.body.centerId || req.user.centerId) : req.user.centerId;
     const { name, baseRole = 'reception', permissions = {} } = req.body;
 
     if (!centerId || !name) {
@@ -116,6 +122,23 @@ const assignUserCustomRole = async (req, res) => {
   try {
     const { userId, customRoleId } = req.body;
     if (!userId) return error(res, 'userId majburiy', 400);
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, centerId: true, role: true },
+    });
+    if (!targetUser) return error(res, 'Foydalanuvchi topilmadi', 404);
+    if (req.user.role !== 'admin' && targetUser.centerId !== req.user.centerId) {
+      return error(res, 'Ruxsat berilmagan', 403);
+    }
+
+    if (customRoleId) {
+      const role = await prisma.customRole.findUnique({ where: { id: customRoleId } });
+      if (!role) return error(res, 'Rol topilmadi', 404);
+      if (role.centerId !== targetUser.centerId || (req.user.role !== 'admin' && role.centerId !== req.user.centerId)) {
+        return error(res, 'Ruxsat berilmagan', 403);
+      }
+    }
 
     const user = await prisma.user.update({
       where: { id: userId },

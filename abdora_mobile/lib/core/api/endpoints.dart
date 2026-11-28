@@ -11,6 +11,12 @@ class Endpoints {
   static const String refresh = '/auth/refresh';
   static const String updateProfile = '/users/profile';
   static const String changePassword = '/users/change-password';
+  static const String uploadAvatar = '/users/avatar';
+  static const String avatarConfig = '/users/avatar-config';
+  static const String avatarScan = '/users/avatar-scan';
+  static const String avatarContext = '/ai/avatar-context';
+  static const String avatarChat = '/ai/avatar-chat';
+  static const String avatarTts = '/ai/avatar-tts';
   static String studentHistory(String id) => '/users/$id/history';
 
   // Darslar va Multimodal AI

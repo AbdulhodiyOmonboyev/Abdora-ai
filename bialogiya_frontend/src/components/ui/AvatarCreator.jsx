@@ -11,10 +11,10 @@ function getAvatarHTML() {
 :root[data-theme="dark"]{--bg:#1c1a2b;--fg:#ece9f7;--card:#2a2740;--line:#47426b;--btn:#F06413;color-scheme:dark}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
-#wrap{flex:1;min-height:0;position:relative;overflow:hidden}
+#wrap{flex:1;min-height:0;position:relative;overflow:hidden;background:var(--bg)}
 #stage{position:absolute;inset:0;touch-action:none;cursor:grab}
 #stage canvas{display:block}
-#bubble{position:absolute;top:58px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px 14px;font-size:15px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:52%;text-align:center;z-index:4}
+#bubble{position:absolute;top:82px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px 14px;font-size:15px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:52%;text-align:center;z-index:4}
 .bar{position:absolute;top:12px;display:flex;flex-direction:column;gap:6px;z-index:6}
 #barl{left:10px}#barr{right:10px}
 .sq{position:relative;width:60px;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;padding:0;font-size:11px;font-family:inherit}
@@ -33,25 +33,40 @@ body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"S
 .sw.on{border-color:var(--fg);box-shadow:0 0 0 2px var(--card) inset}
 .act{flex:1;background:var(--btn);color:#fff;border:0;border-radius:10px;padding:10px 8px;font-size:15px;cursor:pointer}
 .zb{height:30px;font-size:18px;line-height:1}
-#ntag{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--btn);color:#fff;border:0;border-radius:999px;padding:7px 16px;font-size:15px;font-family:inherit;cursor:pointer;z-index:4;max-width:56%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#nameIn{flex:1;min-width:120px;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-size:16px;font-family:inherit}
-.nmsg{font-size:13px;opacity:.8;margin-top:8px}
+#tagWrap{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:5px;z-index:4;max-width:58%}
+#ntag{background:var(--btn);color:#fff;border:0;border-radius:999px;padding:7px 16px;font-size:15px;font-family:inherit;cursor:pointer;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ptag{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:12px;font-family:inherit;cursor:pointer;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+#nameIn,#profIn{flex:1;min-width:120px;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-size:15px;font-family:inherit}
+#nameIn:disabled,#profIn:disabled{opacity:.55;cursor:not-allowed}
+.seg:disabled{opacity:.45;cursor:not-allowed}
+.nmsg{font-size:13px;opacity:.85;margin-top:6px;line-height:1.4}
+.xp-ok{background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.4);color:#16a34a;border-radius:10px;padding:8px 10px;font-size:13px;font-weight:500}
+.xp-lock{background:rgba(240,100,19,.12);border:1px solid rgba(240,100,19,.35);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:500}
+:root[data-theme="dark"] .xp-ok{color:#4ade80}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .xp-ok{color:#4ade80}}
 .sq.lock{opacity:.55}.sq.lock::after{content:'🔒';position:absolute;top:1px;right:3px;font-size:11px}
 .lnk{background:none;border:0;color:var(--fg);opacity:.6;text-decoration:underline;font-size:13px;cursor:pointer;font-family:inherit;align-self:center;padding:6px}
 </style></head>
 <body>
 <div id="wrap">
 <div id="stage"></div>
-<button id="ntag"></button>
+<div id="tagWrap"><button id="ntag"></button><button id="ptag"></button></div>
 <div id="bubble"></div>
 <div class="bar" id="barl"></div>
 <div class="bar" id="barr"></div>
 <div id="sheet">
 <div id="sh"><b id="shT"></b><button class="seg" id="shX" aria-label="Yopish">Yopish</button></div>
 <div class="sec" data-k="name">
-<div id="nameForm"><div class="row"><input id="nameIn" maxlength="16" placeholder="Qahramon ismi" autocomplete="off"><button class="seg on" id="nameGo">Tasdiqlash</button></div><div class="nmsg" id="nameMsg">2 dan 16 gacha belgi. Ism tasdiqlangandan keyin o\u02BBzgartirib bo\u02BBlmaydi.</div></div>
+<div id="nameBanner" style="display:none"></div>
+<div id="nameForm"><div class="row"><input id="nameIn" maxlength="16" placeholder="Qahramon ismi" autocomplete="off"><button class="seg on" id="nameGo">Tasdiqlash</button></div><div class="nmsg" id="nameMsg">2 dan 16 gacha belgi.</div></div>
 <div id="nameConf" style="display:none"><div id="nameAsk"></div><div class="row" style="margin-top:10px"><button class="seg on" id="nameYes">Ha, tasdiqlayman</button><button class="seg" id="nameNo">Yo\u02BBq, qaytish</button></div></div>
-<div id="nameLock" style="display:none">Qahramon ismi: <b id="nameShow"></b> (qulflangan, o\u02BBzgartirib bo\u02BBlmaydi)</div>
+<div id="nameLock" style="display:none">Qahramon ismi: <b id="nameShow"></b><div class="nmsg xp-lock" id="nameLockMsg" style="margin-top:8px"></div></div>
+</div>
+<div class="sec" data-k="profession">
+<div id="profBanner" style="display:none"></div>
+<div class="row" id="profPresets"></div>
+<div class="row"><input id="profIn" maxlength="24" placeholder="Boshqa kasb (2-24 belgi)" autocomplete="off"><button class="seg on" id="profGo">Tanlash</button></div>
+<div class="nmsg" id="profMsg">Tayyor kasblardan birini tanlang yoki o\u02BBzingiznikini yozing.</div>
 </div>
 <div class="sec" data-k="gender"><div class="row"><b>Jins</b><span id="gender" class="row"></span></div></div>
 <div class="sec" data-k="skin"><div class="row"><b>Teri</b><span id="skin" class="row"></span></div></div>
@@ -70,6 +85,7 @@ const box=document.getElementById('stage'),bub=document.getElementById('bubble')
 const scene=new THREE.Scene();
 const cam=new THREE.PerspectiveCamera(35,1,0.1,100);
 const rend=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+rend.setClearColor(0x000000,0);
 rend.setPixelRatio(Math.min(devicePixelRatio,2));
 box.appendChild(rend.domElement);
 scene.add(new THREE.HemisphereLight(0xffffff,0xcfc4ea,0.95));
@@ -221,6 +237,7 @@ tog('cap','Kepka');tog('wiz','Sehrgar shlyapasi');tog('glasses',"Ko\u02BBzoynak"
 sw('acc',['#d9606a','#4aa3df','#2b2b36','#f2c94c','#7bc67e','#8b74e0'],c=>accM.color.set(c));
 let customMsg=null;
 let NAME=null;try{NAME=localStorage.getItem('avatarName')||null}catch(e){}
+let PROFESSION=null;try{PROFESSION=localStorage.getItem('avatarProfession')||null}catch(e){}
 const msg=n=>customMsg||(n==='hello'&&NAME?'Salom! Mening ismim '+NAME+". Men sizning o\u02BBquv do\u02BBstingizman!":say[n]);
 let AC=null,soundOn=true;
 function ac(){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}return AC}
@@ -243,20 +260,107 @@ function play(n,auto,text){customMsg=text||null;act=n;t0=now;bub.textContent=msg
 [['hello','Salom'],['bye','Xayr'],['jump','Sakrash']].forEach(([n,l])=>{const b=document.createElement('button');b.className='act';b.textContent=l;b.onclick=()=>play(n);document.getElementById('acts').appendChild(b)});
 let zoom=1,baseD=13,camD=13,camL=3,sheetOpen=false,openCat=null;
 const sheet=document.getElementById('sheet'),shT=document.getElementById('shT');
-const FOC={name:[3.0,13],gender:[3.0,13],skin:[4.0,9],hair:[4.9,6.5],eye:[4.7,5],top:[3.2,8],bottom:[1.7,8],shoes:[0.6,6],acc:[4.9,7],act:[3.0,13]};
-const CATS={name:['\u270F\uFE0F','Ism'],gender:['\u{1F9CD}','Jins'],skin:['\u{1F3A8}','Teri'],hair:['\u{1F487}','Soch'],eye:['\u{1F441}','Ko\u02BBz'],top:['\u{1F455}','Ustki'],bottom:['\u{1F456}','Pastki'],shoes:['\u{1F45F}','Poyabzal'],acc:['\u{1F3A9}','Aksessuar'],act:['\u{1F44B}','Harakat']};
+const FOC={name:[3.0,13],profession:[3.0,13],gender:[3.0,13],skin:[4.0,9],hair:[4.9,6.5],eye:[4.7,5],top:[3.2,8],bottom:[1.7,8],shoes:[0.6,6],acc:[4.9,7],act:[3.0,13]};
+const CATS={name:['\u270F\uFE0F','Ism'],profession:['\u{1F4BC}','Kasb'],gender:['\u{1F9CD}','Jins'],skin:['\u{1F3A8}','Teri'],hair:['\u{1F487}','Soch'],eye:['\u{1F441}','Ko\u02BBz'],top:['\u{1F455}','Ustki'],bottom:['\u{1F456}','Pastki'],shoes:['\u{1F45F}','Poyabzal'],acc:['\u{1F3A9}','Aksessuar'],act:['\u{1F44B}','Harakat']};
 function hint(t){bub.textContent=t;bub.style.opacity=1;clearTimeout(hint.t);hint.t=setTimeout(()=>{if(!act)bub.style.opacity=0},2600)}
 function setCat(k){if(!S.gset&&(k==='top'||k==='bottom'||k==='shoes')){hint('Kiyim tanlash uchun avval jinsni tanlang');if(openCat==='gender')return;k='gender'}zoom=1;openCat=openCat===k?null:k;document.querySelectorAll('.sq').forEach(b=>b.classList.toggle('on',b.dataset.k===openCat));document.querySelectorAll('.sec').forEach(x=>x.classList.toggle('on',x.dataset.k===openCat));sheetOpen=!!openCat;sheet.classList.toggle('open',sheetOpen);if(openCat)shT.textContent=CATS[openCat][1]}
-[['barl',['gender','skin','hair','eye']],['barr',['top','bottom','shoes','acc','act']]].forEach(([id,ks])=>{const bar=document.getElementById(id);ks.forEach(k=>{const b=document.createElement('button');b.className='sq'+(!S.gset&&['top','bottom','shoes'].includes(k)?' lock':'');b.dataset.k=k;b.innerHTML='<span>'+CATS[k][0]+'</span>'+CATS[k][1];b.onclick=()=>{pop();setCat(k)};bar.appendChild(b)})});
-const nIn=document.getElementById('nameIn'),nForm=document.getElementById('nameForm'),nConf=document.getElementById('nameConf'),nLock=document.getElementById('nameLock'),ntag=document.getElementById('ntag'),nMsg=document.getElementById('nameMsg');
+[['barl',['gender','skin','hair','eye']],['barr',['top','bottom','shoes','acc','profession','act']]].forEach(([id,ks])=>{const bar=document.getElementById(id);ks.forEach(k=>{const b=document.createElement('button');b.className='sq'+(!S.gset&&['top','bottom','shoes'].includes(k)?' lock':'');b.dataset.k=k;b.innerHTML='<span>'+CATS[k][0]+'</span>'+CATS[k][1];b.onclick=()=>{pop();setCat(k)};bar.appendChild(b)})});
+const nIn=document.getElementById('nameIn'),nForm=document.getElementById('nameForm'),nConf=document.getElementById('nameConf'),nLock=document.getElementById('nameLock'),ntag=document.getElementById('ntag'),ptag=document.getElementById('ptag'),nMsg=document.getElementById('nameMsg');
+const nBanner=document.getElementById('nameBanner'),nLockMsg=document.getElementById('nameLockMsg');
+const pBanner=document.getElementById('profBanner'),pPresets=document.getElementById('profPresets'),pIn=document.getElementById('profIn'),pGo=document.getElementById('profGo'),pMsg=document.getElementById('profMsg');
+const PRESET_PROFS=['Biolog \u{1F9EC}','Shifokor \u{1FA7A}','Dasturchi \u{1F4BB}','Olim \u{1F52C}',"O\u02BBqituvchi \u{1F468}\u200D\u{1F3EB}",'Muhandis \u2699\uFE0F','Kosmonavt \u{1F680}','Tadbirkor \u{1F4BC}','Rassom \u{1F3A8}','Sportchi \u26BD'];
+let META={isSaved:false,mandatory:false,name:'',profession:'',savedAtXp:0,unlockStepXp:200,userXp:0,role:'student'};
+function getIdentityState(){
+  const isSaved=!!META.isSaved;
+  const role=META.role||'student';
+  const savedAt=Number(META.savedAtXp)||0;
+  const step=Number(META.unlockStepXp)||200;
+  const xp=Number(META.userXp)||0;
+  const needed=savedAt+step;
+  const remaining=Math.max(0,needed-xp);
+  const canEdit=!isSaved||role!=='student'||xp>=needed;
+  const unlockedByXp=isSaved&&xp>=needed;
+  return {isSaved,role,savedAt,step,xp,needed,remaining,canEdit,unlockedByXp};
+}
 let pendingName='';
-function updateTag(){ntag.textContent=(NAME?NAME+' \u{1F512}':"Ism qo\u02BByish \u270F\uFE0F")}
-function syncName(){nForm.style.display=NAME?'none':'block';nConf.style.display='none';nLock.style.display=NAME?'block':'none';document.getElementById('nameShow').textContent=NAME||'';updateTag()}
+function updateTag(){
+  const st=getIdentityState();
+  ntag.textContent=NAME?(NAME+(st.canEdit?'':' \u{1F512}')):"Ism qo\u02BByish \u270F\uFE0F";
+  ptag.textContent=PROFESSION?PROFESSION:"Kasb tanlash \u{1F4BC}";
+}
+const profBtns=[];
+PRESET_PROFS.forEach(label=>{
+  const b=document.createElement('button');
+  b.className='seg';
+  b.textContent=label;
+  b.onclick=()=>{
+    const st=getIdentityState();
+    if(!st.canEdit)return;
+    pop();
+    PROFESSION=label;
+    try{localStorage.setItem('avatarProfession',PROFESSION)}catch(e){}
+    pIn.value='';
+    pMsg.textContent='Tanlangan kasb: '+PROFESSION;
+    syncIdentity();
+  };
+  pPresets.appendChild(b);
+  profBtns.push(b);
+});
+function syncIdentity(){
+  const st=getIdentityState();
+  const lockTxt="Ism va kasbni o\u02BBzgartirish uchun yana "+st.remaining+" XP to\u02BBplang ("+st.xp+"/"+st.needed+" XP) \u{1F512}";
+  const okTxt="Tabriklaymiz! "+st.step+" XP to\u02BBpladingiz \u2014 ism va kasbni o\u02BBzgartirishingiz mumkin! \u{1F513}";
+  if(st.canEdit){
+    nForm.style.display='block';
+    nConf.style.display='none';
+    nLock.style.display='none';
+    nIn.disabled=false;
+    if(NAME&&!nIn.value)nIn.value=NAME;
+    nMsg.textContent='2 dan 16 gacha belgi.';
+  }else{
+    nForm.style.display='none';
+    nConf.style.display='none';
+    nLock.style.display='block';
+    document.getElementById('nameShow').textContent=NAME||'Belgilanmagan';
+    nLockMsg.textContent=lockTxt;
+  }
+  if(st.unlockedByXp){
+    nBanner.style.display='block';nBanner.className='xp-ok';nBanner.textContent=okTxt;
+    pBanner.style.display='block';pBanner.className='xp-ok';pBanner.textContent=okTxt;
+  }else if(!st.canEdit){
+    nBanner.style.display='none';
+    pBanner.style.display='block';pBanner.className='xp-lock';pBanner.textContent=lockTxt;
+  }else{
+    nBanner.style.display='none';
+    pBanner.style.display='none';
+  }
+  profBtns.forEach(b=>{
+    b.classList.toggle('on',b.textContent===PROFESSION);
+    b.disabled=!st.canEdit;
+  });
+  pIn.disabled=!st.canEdit;
+  pGo.disabled=!st.canEdit;
+  if(PROFESSION&&!PRESET_PROFS.includes(PROFESSION)&&!pIn.value){pIn.value=PROFESSION}
+  if(typeof closeBtn!=='undefined'&&closeBtn){closeBtn.style.display=META.mandatory?'none':'flex'}
+  updateTag();
+}
 ntag.onclick=()=>{pop();if(openCat!=='name')setCat('name')};
-document.getElementById('nameGo').onclick=()=>{const v=nIn.value.trim().replace(/\\s+/g,' ');if(!/^[\\p{L}\\p{N}\u02BB\u02BC'' -]{2,16}$/u.test(v)){nMsg.textContent="Ism 2 dan 16 gacha belgi bo\u02BBlishi kerak (harf, raqam yoki probel).";return}pendingName=v;nMsg.textContent='';nForm.style.display='none';nConf.style.display='block';document.getElementById('nameAsk').textContent='Ism \u00AB'+v+'\u00BB bo\u02BBladi. Keyin uni o\u02BBzgartirib bo\u02BBlmaydi. Tasdiqlaysizmi?'};
-document.getElementById('nameNo').onclick=()=>{nConf.style.display='none';nForm.style.display='block';nMsg.textContent="2 dan 16 gacha belgi. Ism tasdiqlangandan keyin o\u02BBzgartirib bo\u02BBlmaydi."};
-document.getElementById('nameYes').onclick=()=>{if(NAME)return;NAME=pendingName;try{localStorage.setItem('avatarName',NAME)}catch(e){}syncName();pop();setCat('name');play('hello')};
-syncName();
+ptag.onclick=()=>{pop();if(openCat!=='profession')setCat('profession')};
+pGo.onclick=()=>{
+  const st=getIdentityState();
+  if(!st.canEdit)return;
+  const v=pIn.value.trim().replace(/\\s+/g,' ');
+  if(v.length<2||v.length>24){pMsg.textContent="Kasb nomi 2 dan 24 gacha belgi bo\u02BBlishi kerak.";return}
+  pop();
+  PROFESSION=v;
+  try{localStorage.setItem('avatarProfession',PROFESSION)}catch(e){}
+  pMsg.textContent='Tanlangan kasb: '+PROFESSION;
+  syncIdentity();
+};
+document.getElementById('nameGo').onclick=()=>{const st=getIdentityState();if(!st.canEdit)return;const v=nIn.value.trim().replace(/\\s+/g,' ');if(!/^[\\p{L}\\p{N}\u02BB\u02BC'' -]{2,16}$/u.test(v)){nMsg.textContent="Ism 2 dan 16 gacha belgi bo\u02BBlishi kerak (harf, raqam yoki probel).";return}pendingName=v;nMsg.textContent='';nForm.style.display='none';nConf.style.display='block';document.getElementById('nameAsk').textContent='Ism \u00AB'+v+'\u00BB bo\u02BBladi. Tasdiqlaysizmi?'};
+document.getElementById('nameNo').onclick=()=>{nConf.style.display='none';nForm.style.display='block';nMsg.textContent='2 dan 16 gacha belgi.'};
+document.getElementById('nameYes').onclick=()=>{const st=getIdentityState();if(!st.canEdit)return;NAME=pendingName;try{localStorage.setItem('avatarName',NAME)}catch(e){}syncIdentity();pop();setCat('name');play('hello')};
+syncIdentity();
 document.getElementById('shX').onclick=()=>{if(openCat)setCat(openCat)};
 [['\uFF0B',"Yaqinlashtirish",()=>zoom=zc(zoom*0.8)],['\uFF0D',"Uzoqlashtirish",()=>zoom=zc(zoom*1.25)],['\u27F2',"Asl holat",()=>zoom=1]].forEach(([t,l,fn])=>{const b=document.createElement('button');b.className='sq zb';b.textContent=t;b.setAttribute('aria-label',l);b.onclick=()=>{pop();fn()};document.getElementById('barl').appendChild(b)});
 function target(t){
@@ -285,11 +389,10 @@ saveBtn.innerHTML='<span>\u{1F4BE}</span>Saqlash';
 saveBtn.style.background='#F06413';
 saveBtn.style.color='#fff';
 saveBtn.style.borderColor='#F06413';
-saveBtn.onclick=()=>{
-  pop();
-  rend.render(scene,cam);
-  const dataUrl=rend.domElement.toDataURL('image/png');
-  const config={
+function getConfig(){
+  return {
+    name:NAME||'',
+    profession:PROFESSION||'',
     gender:S.gender,
     style:S.style,
     top:S.top,
@@ -309,15 +412,47 @@ saveBtn.onclick=()=>{
       acc:'#'+accM.color.getHexString()
     }
   };
-  window.parent.postMessage({type:'AVATAR_SAVE',dataUrl,config},'*');
+}
+function syncTypedIdentityInputs(){
+  const st=getIdentityState();
+  if(!st.canEdit)return;
+  if(!NAME&&nIn&&nIn.value.trim().length>=2){
+    NAME=nIn.value.trim().replace(/\\s+/g,' ').slice(0,16);
+    try{localStorage.setItem('avatarName',NAME)}catch(e){}
+  }
+  if(!PROFESSION&&pIn&&pIn.value.trim().length>=2){
+    PROFESSION=pIn.value.trim().replace(/\\s+/g,' ').slice(0,24);
+    try{localStorage.setItem('avatarProfession',PROFESSION)}catch(e){}
+  }
+  updateTag();
+}
+saveBtn.onclick=()=>{
+  pop();
+  syncTypedIdentityInputs();
+  if(!NAME||NAME.trim().length<2){
+    if(openCat!=='name')setCat('name');
+    hint("Saqlashdan oldin qahramoningizga ism bering! \u270F\uFE0F");
+    return;
+  }
+  if(!PROFESSION||PROFESSION.trim().length<2){
+    if(openCat!=='profession')setCat('profession');
+    hint("Saqlashdan oldin qahramoningiz kasbini tanlang! \u{1F4BC}");
+    return;
+  }
+  floor.visible=false;
+  rend.render(scene,cam);
+  const dataUrl=rend.domElement.toDataURL('image/png');
+  floor.visible=true;
+  window.parent.postMessage({type:'AVATAR_SAVE',dataUrl,config:getConfig()},'*');
 };
 document.getElementById('barr').appendChild(saveBtn);
 
 // Close button
-const closeBtn=document.createElement('button');
+var closeBtn=document.createElement('button');
 closeBtn.className='sq';
 closeBtn.innerHTML='<span>\u2715</span>Yopish';
 closeBtn.onclick=()=>{
+  if(META.mandatory)return;
   window.parent.postMessage({type:'AVATAR_CLOSE'},'*');
 };
 document.getElementById('barl').appendChild(closeBtn);
@@ -382,29 +517,45 @@ function applyScan(r) {
 window.addEventListener('message', function(e) {
   if (!e.data || typeof e.data !== 'object') return;
 
-  if (e.data.type === 'AVATAR_LOAD_CONFIG' && e.data.config) {
+  if (e.data.type === 'AVATAR_LOAD_CONFIG') {
     const c = e.data.config;
-    if (c.gender) {
-      const gi = c.gender === 'boy' ? 1 : 0;
-      if (gBtns[gi]) gBtns[gi].click();
+    if (c) {
+      if (c.gender && (!S.gset || S.gender !== c.gender)) {
+        const gi = c.gender === 'boy' ? 1 : 0;
+        if (gBtns[gi]) gBtns[gi].click();
+      }
+      if (c.style) {
+        const si = STYLES.indexOf(c.style);
+        if (si >= 0 && stBtns[si]) stBtns[si].click();
+      }
+      if (c.cap && !S.cap && btns.cap) btns.cap.click();
+      if (c.wiz && !S.wiz && btns.wiz) btns.wiz.click();
+      if (c.glasses && !S.glasses && btns.glasses) btns.glasses.click();
+      if (c.elf && !S.elf && btns.elf) btns.elf.click();
+      if (c.colors) {
+        if (c.colors.skin && hexOk(c.colors.skin)) skin.color.set(c.colors.skin);
+        if (c.colors.hair && hexOk(c.colors.hair)) hairM.color.set(c.colors.hair);
+        if (c.colors.eyes && hexOk(c.colors.eyes)) irisM.color.set(c.colors.eyes);
+        if (c.colors.shirt && hexOk(c.colors.shirt)) shirtM.color.set(c.colors.shirt);
+        if (c.colors.pants && hexOk(c.colors.pants)) shortsM.color.set(c.colors.pants);
+        if (c.colors.shoes && hexOk(c.colors.shoes)) shoeM.color.set(c.colors.shoes);
+        if (c.colors.acc && hexOk(c.colors.acc)) accM.color.set(c.colors.acc);
+      }
+      if (c.name && !NAME) NAME = c.name;
+      if (c.profession && !PROFESSION) PROFESSION = c.profession;
     }
-    if (c.style) {
-      const si = STYLES.indexOf(c.style);
-      if (si >= 0 && stBtns[si]) stBtns[si].click();
+    if (e.data.avatarMeta && typeof e.data.avatarMeta === 'object') {
+      META = Object.assign({}, META, e.data.avatarMeta);
+      if (META.name) {
+        NAME = META.name;
+        try{localStorage.setItem('avatarName',NAME)}catch(err){}
+      }
+      if (META.profession) {
+        PROFESSION = META.profession;
+        try{localStorage.setItem('avatarProfession',PROFESSION)}catch(err){}
+      }
     }
-    if (c.cap && !S.cap && btns.cap) btns.cap.click();
-    if (c.wiz && !S.wiz && btns.wiz) btns.wiz.click();
-    if (c.glasses && !S.glasses && btns.glasses) btns.glasses.click();
-    if (c.elf && !S.elf && btns.elf) btns.elf.click();
-    if (c.colors) {
-      if (c.colors.skin && hexOk(c.colors.skin)) skin.color.set(c.colors.skin);
-      if (c.colors.hair && hexOk(c.colors.hair)) hairM.color.set(c.colors.hair);
-      if (c.colors.eyes && hexOk(c.colors.eyes)) irisM.color.set(c.colors.eyes);
-      if (c.colors.shirt && hexOk(c.colors.shirt)) shirtM.color.set(c.colors.shirt);
-      if (c.colors.pants && hexOk(c.colors.pants)) shortsM.color.set(c.colors.pants);
-      if (c.colors.shoes && hexOk(c.colors.shoes)) shoeM.color.set(c.colors.shoes);
-      if (c.colors.acc && hexOk(c.colors.acc)) accM.color.set(c.colors.acc);
-    }
+    syncIdentity();
   }
 
   if (e.data.type === 'AVATAR_APPLY_SCAN' && e.data.data) {
@@ -416,9 +567,12 @@ window.addEventListener('message', function(e) {
   }
 
   if (e.data.type === 'AVATAR_REQUEST_EXPORT') {
+    syncTypedIdentityInputs();
+    floor.visible = false;
     rend.render(scene, cam);
     const dataUrl = rend.domElement.toDataURL('image/png');
-    window.parent.postMessage({ type: 'AVATAR_EXPORT_READY', dataUrl }, '*');
+    floor.visible = true;
+    window.parent.postMessage({ type: 'AVATAR_EXPORT_READY', dataUrl, config: getConfig() }, '*');
   }
 });
 
@@ -449,6 +603,7 @@ export default function AvatarCreator({
   onSave,
   onReady,
   onExportReady,
+  avatarMeta = null,
   inline = false,
   className = '',
   iframeRef: externalIframeRef,
@@ -485,17 +640,17 @@ export default function AvatarCreator({
       if (e.data.type === 'AVATAR_READY') {
         setIframeReady(true);
         onReady?.(iframeRef.current);
-        // Send saved config if any
-        if (savedConfig && iframeRef.current?.contentWindow) {
+        // Send saved config & avatarMeta
+        if (iframeRef.current?.contentWindow) {
           iframeRef.current.contentWindow.postMessage(
-            { type: 'AVATAR_LOAD_CONFIG', config: savedConfig },
+            { type: 'AVATAR_LOAD_CONFIG', config: savedConfig || null, avatarMeta: avatarMeta || null },
             '*'
           );
         }
       }
 
       if (e.data.type === 'AVATAR_EXPORT_READY') {
-        onExportReady?.(e.data.dataUrl);
+        onExportReady?.(e.data.dataUrl, e.data.config);
       }
 
       if (e.data.type === 'AVATAR_SAVE') {
@@ -515,7 +670,17 @@ export default function AvatarCreator({
 
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [onSave, onClose, savedConfig]);
+  }, [onSave, onClose, onReady, onExportReady, savedConfig, avatarMeta]);
+
+  // Sync avatarMeta updates to iframe once ready
+  useEffect(() => {
+    if (iframeReady && avatarMeta && iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        { type: 'AVATAR_LOAD_CONFIG', config: null, avatarMeta },
+        '*'
+      );
+    }
+  }, [iframeReady, avatarMeta]);
 
   // Reset ready state when modal closes
   useEffect(() => {

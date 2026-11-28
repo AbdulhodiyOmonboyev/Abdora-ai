@@ -8,7 +8,7 @@ import {
   Coins, Smartphone, Target, ShoppingBag, Sparkles,
   Banknote, Wallet, CheckCircle2, FileEdit,
   ShieldCheck, Lock, Unlock, PieChart, GraduationCap, BookMarked, Calendar,
-  Plus, Trash2, Pencil, UserCog, Copy, Sliders, Layers, UserCheck, CheckSquare, Key, Settings2, Mic,
+  Plus, Trash2, Pencil, UserCog, Copy, Sliders, Layers, UserCheck, CheckSquare, Key, Settings2, Mic, Gamepad2,
 } from 'lucide-react';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
@@ -143,6 +143,9 @@ const DEFAULT_SETTINGS = {
     aiSpeakingEnabled: true,
     aiGradingEnabled: true,
     aiTestGenEnabled: true,
+    aiTtsEnabled: true,
+    aiImageEnabled: true,
+    avatarEnabled: true,
     financeEnabled: true,
     cashboxEnabled: true,
     paymentsEnabled: true,
@@ -511,12 +514,12 @@ export default function AdminSettings() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 max-w-full">
                 <label className="text-xs text-[var(--text-muted)] font-medium hidden sm:inline">Markazni tanlang:</label>
                 <select
                   value={selectedCenterId || currentCenter?.id || ''}
                   onChange={(e) => handleCenterChange(e.target.value)}
-                  className="input-field text-xs py-1.5 px-3 min-w-[200px]"
+                  className="input-field text-xs py-1.5 px-3 min-w-[180px] sm:min-w-[200px] max-w-full flex-1 sm:flex-initial"
                 >
                   {centers.map(c => (
                     <option key={c.id} value={c.id}>
@@ -807,10 +810,12 @@ export default function AdminSettings() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                       {[
+                        { key: 'avatarEnabled', label: "3D AI Avatar (O'quvchi Hamrohi)", hint: "Oyna bo'ylab yuradigan va o'tilgan darslardan savol-javob qiladigan 3D qahramon", icon: Gamepad2, color: '#ea580c' },
                         { key: 'leadsEnabled', label: "CRM Lidlar Voronkasi", hint: "Murojaatlarni yig'ish, holatlar bo'yicha siljitish va tahlil", icon: Users, color: '#f59e0b' },
                         { key: 'smsEnabled', label: "SMS Bildirishnomalar", hint: "To'lov, davomat va eslatmalar bo'yicha SMS jo'natish", icon: Smartphone, color: '#0284c7' },
                         { key: 'coinsEnabled', label: "Tangalar (Coins) & XP", hint: "Faollik uchun o'quvchilarga rag'bat tangalari berish", icon: Coins, color: '#d97706' },
                         { key: 'shopEnabled', label: "Tangalar Do'koni (Coin Shop)", hint: "O'quvchilar tangalarini sovg'alarga almashtirish do'koni", icon: ShoppingBag, color: '#b45309' },
+                        { key: 'leaderboardEnabled', label: "Reyting Jadvali (Leaderboard)", hint: "O'quvchilar o'rtasidagi XP va faollik musobaqa reytingi", icon: GraduationCap, color: '#8b5cf6' },
                       ].map(({ key, label, hint, icon: Icon, color }) => {
                         const isChecked = settings.features?.[key] !== false;
                         return (

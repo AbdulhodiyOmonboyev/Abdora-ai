@@ -170,5 +170,9 @@
   "section_learning": "Обучение",
   "section_results": "Результаты и посещаемость",
   "section_gamification": "Награды и рейтинг",
-  "section_system": "Система"
+  "section_system": "Система",
+  "login_success": "Добро пожаловать!",
+  "login_failed": "Ошибка входа",
+  "fill_required_fields": "Заполните все поля",
+  "avatar": "3D Аватар"
 }

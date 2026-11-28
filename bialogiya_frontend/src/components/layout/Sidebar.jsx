@@ -14,7 +14,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/axios';
 import { LogoIcon } from '../ui/Logo';
 import { cn } from '../../utils/cn';
-import { getLevelProgress } from '../../utils/format';
+import toast from 'react-hot-toast';
+import { getLevelProgress, resolveMediaUrl, hasStudentCreatedAvatar, isStudentAvatarEnabled } from '../../utils/format';
 
 export const studentSections = [
   {
@@ -71,16 +72,18 @@ const teacherLinks = [
   { to: '/teacher/resources', icon: Upload, key: 'resources' },
   { to: '/teacher/voice', icon: Mic, key: 'voice' },
   { to: '/teacher/analytics', icon: BarChart2, key: 'analytics' },
-  { to: '/avatar', icon: Gamepad2, key: 'avatar', label: '3D Avatar' },
+
 ];
 
 const adminLinks = [
   { to: '/admin/dashboard',    icon: LayoutDashboard, key: 'dashboard' },
   { to: '/admin/centers',      icon: Building2,       key: 'centers' },
+
+
   { to: '/admin/applications', icon: Inbox,           key: 'applications' },
   { to: '/admin/ai-agents',    icon: Bot,             key: 'aiAgents' },
   { to: '/admin/settings',     icon: Settings,        key: 'settings' },
-  { to: '/avatar',             icon: Gamepad2,        key: 'avatar', label: '3D Avatar' },
+
 ];
 
 const managerLinks = [
@@ -126,7 +129,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const { data: serverSettings } = useQuery({
     queryKey: ['center-settings', user?.centerId || user?.id],
     queryFn: () => api.get('/admin/settings').then(r => r.data?.data || {}),
-    enabled: !!user && user.role === 'reception',
+    enabled: !!user && user.role !== 'admin',
     staleTime: 30 * 1000,
   });
 
@@ -188,10 +191,69 @@ export default function Sidebar({ isOpen, onClose }) {
     ];
   }, [serverSettings?.receptionPermissions]);
 
-  const links = user?.role === 'student' ? studentLinks
-    : user?.role === 'teacher' ? teacherLinks
+  const centerFeatures = useMemo(
+    () => ({ ...(user?.centerFeatures || {}), ...(serverSettings?.features || {}) }),
+    [user?.centerFeatures, serverSettings?.features]
+  );
+
+  const centerRoles = useMemo(
+    () => ({ ...(user?.centerRoles || {}), ...(serverSettings?.roles || {}) }),
+    [user?.centerRoles, serverSettings?.roles]
+  );
+
+  const activeStudentSections = useMemo(() => {
+    const sPerms = centerRoles?.student?.permissions || {};
+    const avatarOn = isStudentAvatarEnabled(user, serverSettings);
+    return studentSections
+      .map((sec) => ({
+        ...sec,
+        items: sec.items.filter((item) => {
+          if (item.to === '/student/lessons' && centerFeatures.lessonsEnabled === false) return false;
+          if (item.to === '/student/homework' && (centerFeatures.homeworkEnabled === false || sPerms.canSubmitHomework === false)) return false;
+          if (item.to === '/student/tests' && (centerFeatures.testsEnabled === false || sPerms.canTakeTests === false)) return false;
+          if (item.to === '/student/attendance' && (centerFeatures.attendanceEnabled === false || sPerms.canViewAttendance === false)) return false;
+          if (item.to === '/student/certificates' && centerFeatures.certificatesEnabled === false) return false;
+          if (item.to === '/student/avatar' && !avatarOn) return false;
+          if (item.to === '/student/shop' && (centerFeatures.shopEnabled === false || sPerms.canAccessShop === false)) return false;
+          if (item.to === '/student/leaderboard' && (centerFeatures.leaderboardEnabled === false || sPerms.canViewLeaderboard === false)) return false;
+          if (item.to === '/student/achievements' && centerFeatures.coinsEnabled === false) return false;
+          return true;
+        }),
+      }))
+      .filter((sec) => sec.items.length > 0);
+  }, [centerFeatures, centerRoles, user, serverSettings]);
+
+  const activeTeacherLinks = useMemo(() => {
+    const tPerms = centerRoles?.teacher?.permissions || {};
+    return teacherLinks.filter((item) => {
+      if (item.to === '/teacher/lessons' && (centerFeatures.lessonsEnabled === false || tPerms.canCreateLessons === false)) return false;
+      if (item.to === '/teacher/homework' && (centerFeatures.homeworkEnabled === false || tPerms.canManageHomework === false)) return false;
+      if (item.to === '/teacher/tests' && (centerFeatures.testsEnabled === false || tPerms.canManageTests === false)) return false;
+      if ((item.to === '/teacher/attendance' || item.to === '/teacher/gradebook') && (centerFeatures.attendanceEnabled === false || tPerms.canMarkAttendance === false)) return false;
+      if (item.to === '/teacher/voice' && (centerFeatures.aiEnabled === false || centerFeatures.aiTtsEnabled === false || tPerms.canUseAI === false)) return false;
+      return true;
+    });
+  }, [centerFeatures, centerRoles]);
+
+  const activeManagerLinks = useMemo(() => {
+    const mPerms = centerRoles?.manager?.permissions || {};
+    return managerLinks.filter((item) => {
+      if ((item.to === '/crm/dashboard' || item.to === '/leads') && (centerFeatures.leadsEnabled === false || mPerms.canManageLeads === false)) return false;
+      if ((item.to === '/erp/rooms' || item.to === '/erp/timetable') && (centerFeatures.timetableEnabled === false || mPerms.canManageTimetable === false)) return false;
+      if (item.to === '/manager/branches' && mPerms.canManageBranches === false) return false;
+      if ((item.to === '/manager/reception' || item.to === '/manager/teachers') && mPerms.canManageStaff === false) return false;
+      if (item.to === '/manager/payments' && centerFeatures.paymentsEnabled === false) return false;
+      if (item.to === '/finance' && (centerFeatures.financeEnabled === false || mPerms.canViewReports === false)) return false;
+      if (item.to === '/erp/cashbox' && centerFeatures.cashboxEnabled === false) return false;
+      if (item.to === '/finance/payroll' && (centerFeatures.payrollEnabled === false || mPerms.canManageSalaries === false)) return false;
+      return true;
+    });
+  }, [centerFeatures, centerRoles]);
+
+  const links = user?.role === 'student' ? activeStudentSections.flatMap(s => s.items)
+    : user?.role === 'teacher' ? activeTeacherLinks
     : user?.role === 'reception' ? activeReceptionLinks
-    : user?.role === 'manager' ? managerLinks
+    : user?.role === 'manager' ? activeManagerLinks
     : adminLinks;
 
   const safeCoins = Number(user?.coins) || 0;
@@ -260,7 +322,7 @@ export default function Sidebar({ isOpen, onClose }) {
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5 scrollbar-thin">
           {user?.role === 'student' ? (
             <div className="space-y-4">
-              {studentSections.map((section, sIdx) => (
+              {activeStudentSections.map((section, sIdx) => (
                 <div key={section.title || sIdx} className="space-y-1">
                   <div className="flex items-center justify-between px-3 py-1">
                     <span
@@ -285,6 +347,12 @@ export default function Sidebar({ isOpen, onClose }) {
                         <NavLink
                           to={to}
                           end={to === '/student/dashboard'}
+                          onClickCapture={(e) => {
+                            if (user?.role === 'student' && !hasStudentCreatedAvatar(user, serverSettings) && to !== '/student/avatar') {
+                              e.preventDefault();
+                              toast('Avval shaxsiy 3D AI avataringizni yaratib «Saqlash» tugmasini bosing! ✨');
+                            }
+                          }}
                           onClick={() => {
                             if (typeof window !== 'undefined' && window.innerWidth < 768) {
                               onClose?.();
@@ -497,7 +565,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="relative flex-shrink-0">
               {user?.avatar ? (
                 <img
-                  src={user.avatar}
+                  src={resolveMediaUrl(user.avatar)}
                   alt={user?.name || ''}
                   className="w-8 h-8 rounded-full object-cover border border-primary/20"
                 />

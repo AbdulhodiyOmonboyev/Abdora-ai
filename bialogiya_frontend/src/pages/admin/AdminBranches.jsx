@@ -166,12 +166,19 @@ export default function AdminBranches() {
       )
     : branches) : [];
 
+  const invalidateAllBranchQueries = () => {
+    qc.invalidateQueries({ queryKey: ['admin-branches'] });
+    qc.invalidateQueries({ queryKey: ['header-branches'] });
+    qc.invalidateQueries({ queryKey: ['branches-list'] });
+    qc.invalidateQueries({ queryKey: ['manager-branches'] });
+    qc.invalidateQueries({ queryKey: ['branches'] });
+    qc.invalidateQueries({ queryKey: ['admin-stats'] });
+  };
+
   const createMutation = useMutation({
     mutationFn: (data) => api.post('/admin/branches', data),
     onSuccess: () => {
-      qc.invalidateQueries(['admin-branches']);
-      qc.invalidateQueries(['header-branches']);
-      qc.invalidateQueries(['admin-stats']);
+      invalidateAllBranchQueries();
       setShowCreate(false);
       setForm(EMPTY_FORM);
       toast.success('Filial yaratildi');
@@ -182,9 +189,7 @@ export default function AdminBranches() {
   const updateMutation = useMutation({
     mutationFn: (data) => api.put(`/admin/branches/${editingBranch.id}`, data),
     onSuccess: () => {
-      qc.invalidateQueries(['admin-branches']);
-      qc.invalidateQueries(['header-branches']);
-      qc.invalidateQueries(['admin-stats']);
+      invalidateAllBranchQueries();
       setShowEdit(false);
       setEditingBranch(null);
       setEditForm(EMPTY_FORM);
@@ -196,9 +201,7 @@ export default function AdminBranches() {
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/admin/branches/${id}`),
     onSuccess: () => {
-      qc.invalidateQueries(['admin-branches']);
-      qc.invalidateQueries(['header-branches']);
-      qc.invalidateQueries(['admin-stats']);
+      invalidateAllBranchQueries();
       toast.success("Filial o'chirildi");
     },
     onError: (error) => toast.error(friendlyAiErrorMessage(error)),
@@ -207,9 +210,7 @@ export default function AdminBranches() {
   const cleanupMutation = useMutation({
     mutationFn: () => api.post('/admin/branches/cleanup-empty'),
     onSuccess: (res) => {
-      qc.invalidateQueries(['admin-branches']);
-      qc.invalidateQueries(['header-branches']);
-      qc.invalidateQueries(['admin-stats']);
+      invalidateAllBranchQueries();
       toast.success(res.data?.message || "Bo'sh filiallar tozalandi");
     },
     onError: (error) => toast.error(friendlyAiErrorMessage(error)),

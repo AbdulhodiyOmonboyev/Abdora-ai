@@ -7,9 +7,11 @@ const {
   updateUser, updateProfile, lockStudentProfile, unlockStudentProfile, deleteUser, resetStudentPassword, freezeStudent, changePassword,
   getStudentHistory, addStudentNote, deleteStudentNote, awardStudentCoins, testAIPersonalization,
   updateLanguage, uploadAvatar, getAvatar,
-  getReferralStats, applyReferralCode, scanAvatarFace,
+  getReferralStats, applyReferralCode, getAvatarConfig, saveAvatarConfig, scanAvatarFace,
 } = require('../controllers/user.controller');
 
+router.get('/avatar-config', verifyToken, getAvatarConfig);
+router.post('/avatar-config', verifyToken, saveAvatarConfig);
 router.get('/avatar/:id', getAvatar);
 router.post('/avatar', verifyToken, fileUpload.single('avatar'), uploadAvatar);
 router.post('/scan-avatar-face', verifyToken, fileUpload.single('image'), scanAvatarFace);

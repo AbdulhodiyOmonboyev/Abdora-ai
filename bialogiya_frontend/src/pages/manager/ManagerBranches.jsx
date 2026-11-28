@@ -32,6 +32,10 @@ export default function ManagerBranches() {
     mutationFn: (data) => api.post('/admin/branches', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['manager-branches'] });
+      qc.invalidateQueries({ queryKey: ['admin-branches'] });
+      qc.invalidateQueries({ queryKey: ['header-branches'] });
+      qc.invalidateQueries({ queryKey: ['branches-list'] });
+      qc.invalidateQueries({ queryKey: ['branches'] });
       qc.invalidateQueries({ queryKey: ['manager-stats'] });
       setShowCreate(false);
       setForm({ name: '', address: '', studentCapacity: '' });

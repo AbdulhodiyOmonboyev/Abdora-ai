@@ -1,6 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #F06413;
+  --color-primary-50: #FFF2E9;
+  --color-primary-100: #FFD9C2;
+  --color-primary-200: #FFBE95;
+  --color-primary-300: #FFA269;
+  --color-primary-400: #F9823D;
+  --color-primary-500: #F06413;
+  --color-primary-600: #D9530B;
+  --color-primary-700: #B7440A;
+  --color-primary-800: #8F350B;
+  --color-primary-900: #612509;
+  --color-primary-dark: #D9530B;
+  --color-secondary: #2563EB;
+  --color-accent: #7C3AED;
+}
+
 /* =============================================================
    LIGHT MODE — Default (applied by preset-light theme)
    ============================================================= */
@@ -1507,11 +1524,11 @@
   .settings-shell {
     width: 100%;
     display: grid;
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: 230px minmax(0, 1fr);
     gap: 1.5rem;
     align-items: start;
   }
-  @media (max-width: 768px) {
+  @media (max-width: 1080px) {
     .settings-shell { grid-template-columns: 1fr; }
   }
   .settings-nav {

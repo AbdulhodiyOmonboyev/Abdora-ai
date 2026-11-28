@@ -2,13 +2,21 @@ const { prisma } = require('../config/db');
 const { success, error } = require('../utils/apiResponse');
 const { sendCenterSMS } = require('../utils/smsProvider');
 
+const resolveScopedCenterId = (req, candidateCenterId = null) => {
+  if (req.user.role === 'admin') return candidateCenterId || null;
+  if (!req.user.centerId) return null;
+  if (candidateCenterId && candidateCenterId !== req.user.centerId) return false;
+  return req.user.centerId;
+};
+
 /**
  * Get aggregated SMS stats
  */
 const getSMSStats = async (req, res) => {
   try {
-    const isAdmin = req.user.role === 'admin';
-    const centerId = req.query.centerId || (!isAdmin ? req.user.centerId : null);
+    const centerId = resolveScopedCenterId(req, req.query.centerId);
+    if (centerId === false) return error(res, 'Ruxsat berilmagan', 403);
+    if (req.user.role !== 'admin' && !centerId) return error(res, 'Markaz topilmadi', 400);
     const where = centerId ? { centerId } : {};
 
     const [totalLogs, sentCount, failedCount, totalCostAgg, triggers, providers] = await Promise.all([
@@ -54,8 +62,9 @@ const getSMSStats = async (req, res) => {
  */
 const getSMSLogs = async (req, res) => {
   try {
-    const isAdmin = req.user.role === 'admin';
-    const centerId = req.query.centerId || (!isAdmin ? req.user.centerId : null);
+    const centerId = resolveScopedCenterId(req, req.query.centerId);
+    if (centerId === false) return error(res, 'Ruxsat berilmagan', 403);
+    if (req.user.role !== 'admin' && !centerId) return error(res, 'Markaz topilmadi', 400);
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
     const skip = (page - 1) * limit;
@@ -97,7 +106,8 @@ const getSMSLogs = async (req, res) => {
  */
 const sendTestOrCustomSMS = async (req, res) => {
   try {
-    const centerId = req.body.centerId || req.user.centerId;
+    const centerId = resolveScopedCenterId(req, req.body.centerId);
+    if (centerId === false) return error(res, 'Ruxsat berilmagan', 403);
     const { toPhone, message, trigger = 'custom', recipientType = 'custom' } = req.body;
 
     if (!toPhone || !message) {
@@ -132,7 +142,8 @@ const sendTestOrCustomSMS = async (req, res) => {
  */
 const getSMSTemplates = async (req, res) => {
   try {
-    const centerId = req.query.centerId || req.user.centerId;
+    const centerId = resolveScopedCenterId(req, req.query.centerId);
+    if (centerId === false) return error(res, 'Ruxsat berilmagan', 403);
     if (!centerId) return error(res, 'Markaz topilmadi', 400);
 
     const center = await prisma.center.findUnique({
@@ -159,7 +170,8 @@ const getSMSTemplates = async (req, res) => {
  */
 const updateSMSTemplates = async (req, res) => {
   try {
-    const centerId = req.body.centerId || req.user.centerId;
+    const centerId = resolveScopedCenterId(req, req.body.centerId);
+    if (centerId === false) return error(res, 'Ruxsat berilmagan', 403);
     const { templates } = req.body;
 
     if (!centerId || !templates) {

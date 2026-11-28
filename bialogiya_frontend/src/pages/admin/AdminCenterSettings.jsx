@@ -7,7 +7,7 @@ import {
   DollarSign, Smartphone, BookOpen, Coins, ShieldCheck,
   CreditCard, Sparkles, CheckCircle2, AlertCircle, Loader2,
   FileText, Check, Settings2, Receipt, Users, HelpCircle,
-  UserCog,
+  UserCog, Gamepad2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../config/axios";
@@ -53,13 +53,15 @@ const PERMISSION_GROUPS = [
     ],
   },
   {
-    title: "Gamifikatsiya va Do'kon",
-    description: "Talabalar motivatsiyasi va rag'batlantirish",
+    title: "Gamifikatsiya, 3D Avatar va Do'kon",
+    description: "Talabalar motivatsiyasi, shaxsiy 3D AI hamroh va rag'batlantirish",
     icon: Coins,
     color: "#f59e0b",
     permissions: [
-      { key: "coinsEnabled", label: "Tangalar (Coins) & XP", hint: "Faollik uchun tangalar, darajalar va umumiy reyting" },
-      { key: "shopEnabled",  label: "Tangalar do'koni",      hint: "O'quvchilar tangalarini mahsulotlarga almashtirishi" },
+      { key: "avatarEnabled",      label: "3D AI Avatar (O'quvchi hamrohi)", hint: "O'quvchida oyna bo'ylab yuradigan va o'tilgan darslardan savol-javob qiladigan 3D qahramon" },
+      { key: "coinsEnabled",       label: "Tangalar (Coins) & XP",           hint: "Faollik uchun tangalar, darajalar va rag'bat tizimi" },
+      { key: "shopEnabled",        label: "Tangalar do'koni",                hint: "O'quvchilar tangalarini mahsulotlarga almashtirishi" },
+      { key: "leaderboardEnabled", label: "Reyting jadvali (Leaderboard)",   hint: "O'quvchilar o'rtasidagi XP va faollik musobaqa reytingi" },
     ],
   },
   {
@@ -109,6 +111,116 @@ const TABS = [
   { id: "receipts",    label: "Kvitansiya va To'lov",   icon: Receipt },
 ];
 
+const ROLE_PERMISSION_DEFS = [
+  {
+    roleKey: "student",
+    title: "O'quvchi (Student) ruxsatlari",
+    color: "#ea580c",
+    items: [
+      { key: "canUseAvatar",       label: "3D AI Avatar yaratish va savol-javob" },
+      { key: "canAccessAIChat",    label: "Darslarda AI tyutordan foydalanish" },
+      { key: "canSubmitHomework",  label: "Uy vazifalarini topshirish" },
+      { key: "canTakeTests",       label: "Onlayn testlarni ishlash" },
+      { key: "canAccessShop",      label: "Tangalar do'konidan xarid qilish" },
+      { key: "canViewLeaderboard", label: "Reyting jadvalini ko'rish" },
+      { key: "canViewAttendance",  label: "Shaxsiy davomatni ko'rish" },
+    ],
+  },
+  {
+    roleKey: "teacher",
+    title: "O'qituvchi (Teacher) ruxsatlari",
+    color: "#8b5cf6",
+    items: [
+      { key: "canCreateLessons",  label: "Dars va materiallar yaratish" },
+      { key: "canUseAI",          label: "AI dars/test/baholashdan foydalanish" },
+      { key: "canManageHomework", label: "Uy vazifasi berish va tekshirish" },
+      { key: "canManageTests",    label: "Testlar yaratish" },
+      { key: "canMarkAttendance", label: "Davomat va baho qo'yish" },
+      { key: "canAwardCoins",     label: "O'quvchilarga tanga berish" },
+    ],
+  },
+  {
+    roleKey: "reception",
+    title: "Qabulxona (Reception) ruxsatlari",
+    color: "#10b981",
+    items: [
+      { key: "canManageLeads",     label: "CRM Lidlar bilan ishlash" },
+      { key: "canManageStudents",  label: "O'quvchilar qo'shish va tahrirlash" },
+      { key: "canManageGroups",    label: "Guruhlar boshqaruvi" },
+      { key: "canManageTeachers",  label: "O'qituvchilar ro'yxati" },
+      { key: "canManageTimetable", label: "Dars jadvali va xonalar" },
+      { key: "canManagePayments",  label: "To'lov qabul qilish" },
+      { key: "canViewFinance",     label: "Moliya tahlilini ko'rish" },
+      { key: "canViewCashbox",     label: "Kassa balansini ko'rish" },
+    ],
+  },
+  {
+    roleKey: "manager",
+    title: "Menejer (Boshqaruvchi) ruxsatlari",
+    color: "#2563eb",
+    items: [
+      { key: "canManageBranches",  label: "Filiallar boshqaruvi" },
+      { key: "canManageStaff",     label: "Xodimlar va o'qituvchilar nazorati" },
+      { key: "canManageSalaries",  label: "O'qituvchilar maoshi (Payroll)" },
+      { key: "canViewReports",     label: "Moliyaviy hisobotlarni ko'rish" },
+      { key: "canManageLeads",     label: "CRM va lidlar voronkasi" },
+      { key: "canManageTimetable", label: "Xonalar va dars jadvali" },
+    ],
+  },
+];
+
+const DEFAULT_ROLES_STATE = {
+  student: {
+    enabled: true,
+    permissions: {
+      canUseAvatar: true,
+      canAccessAIChat: true,
+      canSubmitHomework: true,
+      canTakeTests: true,
+      canAccessShop: true,
+      canViewLeaderboard: true,
+      canViewAttendance: true,
+    },
+  },
+  teacher: {
+    enabled: true,
+    permissions: {
+      canCreateLessons: true,
+      canUseAI: true,
+      canManageHomework: true,
+      canManageTests: true,
+      canMarkAttendance: true,
+      canAwardCoins: true,
+      canViewOwnSalary: true,
+    },
+  },
+  reception: {
+    enabled: true,
+    permissions: {
+      canViewFinance: false,
+      canViewCashbox: false,
+      canManagePayments: true,
+      canManageLeads: true,
+      canManageTimetable: true,
+      canManageGroups: true,
+      canManageStudents: true,
+      canManageTeachers: true,
+    },
+  },
+  manager: {
+    enabled: true,
+    permissions: {
+      canManageBranches: true,
+      canManageStaff: true,
+      canManageSalaries: true,
+      canViewReports: true,
+      canManageLeads: true,
+      canManageTimetable: true,
+      canExportData: true,
+    },
+  },
+};
+
 export default function AdminCenterSettings() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -130,8 +242,10 @@ export default function AdminCenterSettings() {
     timetableEnabled: true,
     attendanceEnabled: true,
     certificatesEnabled: true,
+    avatarEnabled: true,
     coinsEnabled: true,
     shopEnabled: true,
+    leaderboardEnabled: true,
     aiEnabled: true,
     aiLessonGenEnabled: true,
     aiChatEnabled: true,
@@ -141,6 +255,8 @@ export default function AdminCenterSettings() {
     aiTtsEnabled: true,
     aiImageEnabled: true,
   });
+
+  const [rolesState, setRolesState] = useState(DEFAULT_ROLES_STATE);
 
   // AI Configuration state
   const [aiConfig, setAiConfig] = useState({
@@ -192,8 +308,10 @@ export default function AdminCenterSettings() {
         timetableEnabled:   f.timetableEnabled   !== false,
         attendanceEnabled:  f.attendanceEnabled  !== false,
         certificatesEnabled:f.certificatesEnabled!== false,
+        avatarEnabled:      f.avatarEnabled      !== false,
         coinsEnabled:       f.coinsEnabled       !== false,
         shopEnabled:        f.shopEnabled        !== false,
+        leaderboardEnabled: f.leaderboardEnabled !== false,
         aiEnabled:          f.aiEnabled          !== false,
         aiLessonGenEnabled: f.aiLessonGenEnabled !== false,
         aiChatEnabled:      f.aiChatEnabled      !== false,
@@ -214,6 +332,30 @@ export default function AdminCenterSettings() {
         customPrompt: ai.customPrompt || "",
       });
 
+      const r = s.roles || {};
+      setRolesState({
+        student: {
+          ...DEFAULT_ROLES_STATE.student,
+          ...(r.student || {}),
+          permissions: { ...DEFAULT_ROLES_STATE.student.permissions, ...(r.student?.permissions || {}) },
+        },
+        teacher: {
+          ...DEFAULT_ROLES_STATE.teacher,
+          ...(r.teacher || {}),
+          permissions: { ...DEFAULT_ROLES_STATE.teacher.permissions, ...(r.teacher?.permissions || {}) },
+        },
+        reception: {
+          ...DEFAULT_ROLES_STATE.reception,
+          ...(r.reception || {}),
+          permissions: { ...DEFAULT_ROLES_STATE.reception.permissions, ...(s.receptionPermissions || {}), ...(r.reception?.permissions || {}) },
+        },
+        manager: {
+          ...DEFAULT_ROLES_STATE.manager,
+          ...(r.manager || {}),
+          permissions: { ...DEFAULT_ROLES_STATE.manager.permissions, ...(r.manager?.permissions || {}) },
+        },
+      });
+
       setReceiptSettings({
         receiptHeader: s.receiptHeader || center.name || "",
         receiptFooter: s.receiptFooter || "Xizmatimizdan foydalanganingiz uchun rahmat!",
@@ -230,6 +372,8 @@ export default function AdminCenterSettings() {
         settings: {
           ...(center?.settings || {}),
           features,
+          roles: rolesState,
+          receptionPermissions: rolesState.reception?.permissions || {},
           aiConfig,
           receiptHeader: receiptSettings.receiptHeader,
           receiptFooter: receiptSettings.receiptFooter,
@@ -238,14 +382,31 @@ export default function AdminCenterSettings() {
         },
       }),
     onSuccess: () => {
-      toast.success("Markazning barcha sozlamalari muvaffaqiyatli saqlandi!");
+      toast.success("Markazning barcha sozlamalari va ruxsatlari saqlandi!");
       qc.invalidateQueries({ queryKey: ["admin-center", id] });
       qc.invalidateQueries({ queryKey: ["admin-centers"] });
+      qc.invalidateQueries({ queryKey: ["center-settings"] });
     },
     onError: (e) => toast.error(e.response?.data?.message || "Xatolik yuz berdi"),
   });
 
   const toggleFeature = (key) => setFeatures(p => ({ ...p, [key]: !p[key] }));
+  const toggleRoleEnabled = (roleKey) =>
+    setRolesState(prev => ({
+      ...prev,
+      [roleKey]: { ...prev[roleKey], enabled: prev[roleKey]?.enabled === false },
+    }));
+  const toggleRolePerm = (roleKey, permKey) =>
+    setRolesState(prev => ({
+      ...prev,
+      [roleKey]: {
+        ...prev[roleKey],
+        permissions: {
+          ...(prev[roleKey]?.permissions || {}),
+          [permKey]: !prev[roleKey]?.permissions?.[permKey],
+        },
+      },
+    }));
 
   const handleSelectAgent = (agentId) => {
     setAiConfig(prev => {
@@ -442,6 +603,75 @@ export default function AdminCenterSettings() {
                               <ToggleSwitch
                                 checked={isAllowed}
                                 onChange={() => toggleFeature(perm.key)}
+                                size="sm"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Standart rollar va ularning ichki ruxsatlari */}
+            <div className="panel-card space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: "var(--border)" }}>
+                <div>
+                  <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
+                    Rollar bo'yicha ichki ruxsatlar (O'quvchi, O'qituvchi, Qabulxona, Menejer)
+                  </h2>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Markazdagi har bir rolning tizimga kirishi hamda alohida funksiyalardan (shu jumladan 3D AI Avatar) foydalanish huquqini boshqaring.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {ROLE_PERMISSION_DEFS.map(rg => {
+                  const roleObj = rolesState[rg.roleKey] || { enabled: true, permissions: {} };
+                  const isRoleActive = roleObj.enabled !== false;
+                  return (
+                    <div
+                      key={rg.roleKey}
+                      className="p-4 rounded-2xl border space-y-3"
+                      style={{ borderColor: "var(--border)", background: "var(--secondary-background)" }}
+                    >
+                      <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: "var(--border)" }}>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: rg.color }} />
+                          <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+                            {rg.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span style={{ color: "var(--text-muted)" }}>
+                            {isRoleActive ? "Rol yoqilgan" : "Rol o'chirilgan"}
+                          </span>
+                          <ToggleSwitch
+                            checked={isRoleActive}
+                            onChange={() => toggleRoleEnabled(rg.roleKey)}
+                            size="sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className={`space-y-2 ${!isRoleActive ? "opacity-45 pointer-events-none" : ""}`}>
+                        {rg.items.map(item => {
+                          const permVal = Boolean(roleObj.permissions?.[item.key]);
+                          return (
+                            <div
+                              key={item.key}
+                              className="px-3 py-2 rounded-xl border flex items-center justify-between gap-2 bg-[var(--card)]"
+                              style={{ borderColor: "var(--border)" }}
+                            >
+                              <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
+                                {item.label}
+                              </span>
+                              <ToggleSwitch
+                                checked={permVal}
+                                onChange={() => toggleRolePerm(rg.roleKey, item.key)}
                                 size="sm"
                               />
                             </div>

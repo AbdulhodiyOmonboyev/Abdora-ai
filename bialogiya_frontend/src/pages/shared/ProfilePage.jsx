@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -6,7 +6,7 @@ import { User, Phone, Globe, KeyRound, Save, Flame, Trophy, Users, BookOpen, Bui
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
-import { getLevelProgress } from '../../utils/format';
+import { getLevelProgress, resolveMediaUrl, isStudentAvatarEnabled } from '../../utils/format';
 import { friendlyAiErrorMessage } from '../../utils/aiErrors';
 import { useTranslation } from 'react-i18next';
 import ThemeBuilder from '../../components/ui/ThemeBuilder';
@@ -28,10 +28,32 @@ export default function ProfilePage() {
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
-  const { data: me } = useQuery({
+  const { data: me, refetch: refetchMe } = useQuery({
     queryKey: ['me'],
     queryFn: () => api.get('/auth/me').then(r => r.data.data),
   });
+
+  const { data: serverSettings } = useQuery({
+    queryKey: ['center-settings', user?.centerId || user?.id],
+    queryFn: () => api.get('/admin/settings').then((r) => r.data?.data || {}),
+    enabled: !!user && user.role !== 'admin',
+    staleTime: 30 * 1000,
+  });
+
+  const activeUser = me || user;
+  const canShowStudentAvatar = isStudentAvatarEnabled(activeUser, serverSettings);
+  const avatarMeta = useMemo(() => {
+    const ap = activeUser?.permissions?.avatarProfile || {};
+    return {
+      isSaved: Boolean(ap.isSaved || ap.savedAtXp !== undefined || ap.updatedAt),
+      name: ap.name || '',
+      profession: ap.profession || '',
+      savedAtXp: typeof ap.savedAtXp === 'number' ? ap.savedAtXp : 0,
+      unlockStepXp: typeof ap.unlockStepXp === 'number' ? ap.unlockStepXp : 200,
+      userXp: typeof activeUser?.xp === 'number' ? activeUser.xp : 0,
+      role: activeUser?.role || 'student',
+    };
+  }, [activeUser]);
 
   useEffect(() => {
     if (me) setForm({ name: me.name || '', phone: me.phone || '+998 ', language: me.language || 'uz', studyLocation: me.studyLocation || '', residence: me.residence || '', alternativeWorkplace: me.alternativeWorkplace || '', birthDate: me.birthDate ? me.birthDate.slice(0, 10) : '' });
@@ -68,6 +90,18 @@ export default function ProfilePage() {
   const handleAvatarSave = async (dataUrl, config) => {
     setAvatarUploading(true);
     try {
+      if (config) {
+        const cfgRes = await api.post('/users/avatar-config', {
+          name: config?.name,
+          profession: config?.profession,
+          config,
+        });
+        const updatedCfgUser = cfgRes?.data?.data?.user || cfgRes?.data?.data;
+        if (updatedCfgUser && updatedCfgUser.id) {
+          useAuthStore.getState().updateUser(updatedCfgUser);
+        }
+      }
+
       // Convert dataUrl to blob
       const res = await fetch(dataUrl);
       const blob = await res.blob();
@@ -77,10 +111,13 @@ export default function ProfilePage() {
       const { data } = await api.post('/users/avatar', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      updateUser(data.data);
+      if (data?.data) {
+        useAuthStore.getState().updateUser(data.data);
+      }
+      refetchMe();
       toast.success('3D Avatar saqlandi! 🎉');
     } catch (err) {
-      toast.error("Avatar saqlanmadi. Keyinroq urinib ko'ring.");
+      toast.error(err?.response?.data?.message || "Avatar saqlanmadi. Keyinroq urinib ko'ring.");
     } finally {
       setAvatarUploading(false);
     }
@@ -95,7 +132,7 @@ export default function ProfilePage() {
         <div className="relative flex-shrink-0">
           {me?.avatar ? (
             <img
-              src={me.avatar}
+              src={resolveMediaUrl(me.avatar)}
               alt={me?.name}
               className="w-16 h-16 rounded-full object-cover shadow-glow border-2 border-[var(--primary)]"
             />
@@ -104,14 +141,16 @@ export default function ProfilePage() {
               {me?.name?.charAt(0) || <User size={24} />}
             </div>
           )}
-          <button
-            onClick={() => setAvatarOpen(true)}
-            disabled={avatarUploading}
-            className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shadow-md hover:bg-[var(--primary-dark)] transition-colors text-xs"
-            title="3D Avatar yaratish"
-          >
-            {avatarUploading ? '⟳' : '✏️'}
-          </button>
+          {canShowStudentAvatar && (
+            <button
+              onClick={() => setAvatarOpen(true)}
+              disabled={avatarUploading}
+              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shadow-md hover:bg-[var(--primary-dark)] transition-colors text-xs"
+              title="3D Avatar yaratish"
+            >
+              {avatarUploading ? '⟳' : '✏️'}
+            </button>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-bold text-lg text-gray-800 dark:text-white truncate">{me?.name}</div>
@@ -120,32 +159,34 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* 3D Avatar Card */}
-      <div className="card flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3.5 min-w-0">
-          <div className="text-3xl flex-shrink-0">🎮</div>
-          <div className="min-w-0">
-            <div className="font-semibold text-sm text-gray-800 dark:text-white">3D Avatar boʻlimi</div>
-            <div className="text-xs text-gray-400 mt-0.5">Oʻzingizga oʻxshash 3D qahramon yarating yoki sunʼiy intellekt orqali selfi moslang</div>
+      {/* 3D Avatar Card — faqat o'quvchi uchun */}
+      {canShowStudentAvatar && (
+        <div className="card flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="text-3xl flex-shrink-0">🎮</div>
+            <div className="min-w-0">
+              <div className="font-semibold text-sm text-gray-800 dark:text-white">3D Avatar boʻlimi</div>
+              <div className="text-xs text-gray-400 mt-0.5">Oʻzingizga oʻxshash 3D qahramon yarating yoki sunʼiy intellekt orqali selfi moslang</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => navigate('/student/avatar')}
+              className="btn-secondary text-xs sm:text-sm px-3.5 py-2 rounded-xl flex items-center gap-1.5"
+            >
+              <span>Boʻlimga oʻtish</span>
+              <span>➔</span>
+            </button>
+            <button
+              onClick={() => setAvatarOpen(true)}
+              disabled={avatarUploading}
+              className="btn-primary text-xs sm:text-sm px-3.5 py-2 rounded-xl disabled:opacity-50"
+            >
+              {avatarUploading ? 'Saqlanmoqda...' : me?.avatar ? 'Tezkor tahrirlash' : 'Yaratish'}
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => navigate('/avatar')}
-            className="btn-secondary text-xs sm:text-sm px-3.5 py-2 rounded-xl flex items-center gap-1.5"
-          >
-            <span>Boʻlimga oʻtish</span>
-            <span>➔</span>
-          </button>
-          <button
-            onClick={() => setAvatarOpen(true)}
-            disabled={avatarUploading}
-            className="btn-primary text-xs sm:text-sm px-3.5 py-2 rounded-xl disabled:opacity-50"
-          >
-            {avatarUploading ? 'Saqlanmoqda...' : me?.avatar ? 'Tezkor tahrirlash' : 'Yaratish'}
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Student stats */}
       {me?.role === 'student' && (
@@ -255,12 +296,15 @@ export default function ProfilePage() {
 
       <ThemeBuilder />
 
-      {/* 3D Avatar Creator */}
-      <AvatarCreator
-        isOpen={avatarOpen}
-        onClose={() => setAvatarOpen(false)}
-        onSave={handleAvatarSave}
-      />
+      {/* 3D Avatar Creator — faqat o'quvchi uchun */}
+      {canShowStudentAvatar && (
+        <AvatarCreator
+          isOpen={avatarOpen}
+          onClose={() => setAvatarOpen(false)}
+          onSave={handleAvatarSave}
+          avatarMeta={avatarMeta}
+        />
+      )}
     </div>
   );
 }

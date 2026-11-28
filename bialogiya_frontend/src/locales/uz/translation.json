@@ -171,5 +171,9 @@
   "section_learning": "O'quv jarayoni",
   "section_results": "Natijalar & Davomat",
   "section_gamification": "Faollik & Mukofotlar",
-  "section_system": "Tizim"
+  "section_system": "Tizim",
+  "login_success": "Xush kelibsiz!",
+  "login_failed": "Kirishda xatolik yuz berdi",
+  "fill_required_fields": "Barcha maydonlarni to'ldiring",
+  "avatar": "3D Avatar"
 }

@@ -1,12 +1,29 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import MobileBottomNav from './MobileBottomNav';
 import RoamingAiAvatar from '../ai/RoamingAiAvatar';
+import api from '../../config/axios';
+import { useAuthStore } from '../../store/authStore';
+import { hasStudentCreatedAvatar, isStudentAvatarEnabled } from '../../utils/format';
 
 export default function MainLayout() {
+  const { user } = useAuthStore();
+  const location = useLocation();
+  const { data: serverSettings } = useQuery({
+    queryKey: ['center-settings', user?.centerId || user?.id],
+    queryFn: () => api.get('/admin/settings').then((r) => r.data?.data || {}),
+    enabled: !!user && user.role !== 'admin',
+    staleTime: 30 * 1000,
+  });
+
+  const isStudentWithAvatar =
+    isStudentAvatarEnabled(user, serverSettings) &&
+    hasStudentCreatedAvatar(user, serverSettings) &&
+    location.pathname !== '/student/avatar';
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('sidebar_open');
@@ -60,8 +77,8 @@ export default function MainLayout() {
         <MobileBottomNav onMoreClick={toggleSidebar} />
       </div>
 
-      {/* Sayt ichida erkin aylanib yuruvchi interaktiv AI Avatar */}
-      <RoamingAiAvatar />
+      {/* Faqat o'quvchi yaratgan 3D AI Avatar sayt oynasi bo'ylab yuradi */}
+      {isStudentWithAvatar && <RoamingAiAvatar />}
     </div>
   );
 }

@@ -1,7 +1,15 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+const isLocalBrowser =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+export const API_BASE_URL = (
+  isLocalBrowser && import.meta.env.VITE_FORCE_REMOTE_API !== 'true'
+    ? (import.meta.env.VITE_LOCAL_API_URL || 'http://localhost:5000/api')
+    : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api')
+).replace(/\/$/, '');
 
 const api = axios.create({
   baseURL: API_BASE_URL,

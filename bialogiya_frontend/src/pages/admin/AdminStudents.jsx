@@ -405,7 +405,7 @@ export default function AdminStudents() {
 
                     <div className="space-y-1.5">
                       <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200">
-                        Ota-onasi telefoni
+                        Ota-onasi telefoni <span className="text-red-500">*</span>
                       </label>
                       <PhoneInput
                         value={form.parentPhone}

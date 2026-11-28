@@ -211,7 +211,15 @@ const getTeachers = async (req, res, next) => {
 // shows up in a reception/manager's own branch list (and therefore in their
 // UI dropdowns) could get rejected here with a false 403.
 const assertBranchAccess = async (branchId, user) => {
-  if (!branchId) return user.role === 'manager' ? 'Filial tanlanishi shart' : null;
+  if (!branchId) {
+    if (user.role === 'manager') {
+      const branchCount = user.centerId
+        ? await prisma.branch.count({ where: { centerId: user.centerId, isActive: true } })
+        : 0;
+      return branchCount > 0 ? 'Filial tanlanishi shart' : null;
+    }
+    return null;
+  }
   const branch = await prisma.branch.findUnique({ where: { id: branchId } });
   if (!branch) return 'Filial topilmadi';
   if (user.role === 'admin') return null;
@@ -235,7 +243,14 @@ const createTeacher = async (req, res, next) => {
     }
 
     const branchErr = await assertBranchAccess(branchId, req.user);
-    if (branchErr) return error(res, branchErr, branchErr.startsWith('Forbidden') ? 403 : 404);
+    if (branchErr) {
+      const errStatus = branchErr.startsWith('Forbidden')
+        ? 403
+        : branchErr === 'Filial tanlanishi shart'
+        ? 400
+        : 404;
+      return error(res, branchErr, errStatus);
+    }
 
     // Resolve centerId: reception/manager always use their own centre;
     // admin has none of their own, so it's derived from the chosen branch.
@@ -889,8 +904,9 @@ const DEFAULT_CENTER_ROLES = {
   student: {
     enabled: true,
     label: "O'quvchi",
-    description: "Darslar, AI tyutor, topshiriqlar, testlar va do'kon",
+    description: "Darslar, AI tyutor, 3D AI avatar, topshiriqlar, testlar va do'kon",
     permissions: {
+      canUseAvatar: true,
       canAccessAIChat: true,
       canSubmitHomework: true,
       canTakeTests: true,
@@ -908,6 +924,9 @@ const DEFAULT_CENTER_FEATURES = {
   aiSpeakingEnabled: true,
   aiGradingEnabled: true,
   aiTestGenEnabled: true,
+  aiTtsEnabled: true,
+  aiImageEnabled: true,
+  avatarEnabled: true,
   financeEnabled: true,
   cashboxEnabled: true,
   paymentsEnabled: true,
@@ -944,7 +963,7 @@ const DEFAULT_COURSE_LEVELS = [
 
 const resolveSettingsCenter = async (req) => {
   const role = req.user?.role;
-  const isRestrictedStaff = role === 'manager' || role === 'reception';
+  const isRestrictedStaff = ['manager', 'reception', 'teacher', 'student'].includes(role);
   const userCenterId = req.user?.centerId;
 
   let targetId = req.query?.centerId || req.body?.centerId || req.headers?.['x-center-id'];
@@ -1060,11 +1079,40 @@ const getSettings = async (req, res, next) => {
     const rawSettings = typeof center.settings === 'object' && center.settings !== null ? center.settings : {};
 
     const roles = {
-      manager: { ...DEFAULT_CENTER_ROLES.manager, ...(rawSettings.roles?.manager || {}) },
-      reception: { ...DEFAULT_CENTER_ROLES.reception, ...(rawSettings.roles?.reception || {}) },
-      teacher: { ...DEFAULT_CENTER_ROLES.teacher, ...(rawSettings.roles?.teacher || {}) },
-      student: { ...DEFAULT_CENTER_ROLES.student, ...(rawSettings.roles?.student || {}) },
+      manager: {
+        ...DEFAULT_CENTER_ROLES.manager,
+        ...(rawSettings.roles?.manager || {}),
+        permissions: { ...DEFAULT_CENTER_ROLES.manager.permissions, ...(rawSettings.roles?.manager?.permissions || {}) },
+      },
+      reception: {
+        ...DEFAULT_CENTER_ROLES.reception,
+        ...(rawSettings.roles?.reception || {}),
+        permissions: { ...DEFAULT_CENTER_ROLES.reception.permissions, ...(rawSettings.roles?.reception?.permissions || {}) },
+      },
+      teacher: {
+        ...DEFAULT_CENTER_ROLES.teacher,
+        ...(rawSettings.roles?.teacher || {}),
+        permissions: { ...DEFAULT_CENTER_ROLES.teacher.permissions, ...(rawSettings.roles?.teacher?.permissions || {}) },
+      },
+      student: {
+        ...DEFAULT_CENTER_ROLES.student,
+        ...(rawSettings.roles?.student || {}),
+        permissions: { ...DEFAULT_CENTER_ROLES.student.permissions, ...(rawSettings.roles?.student?.permissions || {}) },
+      },
     };
+
+    // O'qituvchi va o'quvchi uchun maxfiy API kalitlarsiz faqat ruxsatlar va modullar qaytariladi
+    if (role === 'student' || role === 'teacher') {
+      return success(res, {
+        centerId: center.id,
+        centerName: center.name || 'Abdora AI Markazi',
+        features: { ...DEFAULT_CENTER_FEATURES, ...(rawSettings.features || {}) },
+        roles,
+        courseLevels: Array.isArray(rawSettings.courseLevels) && rawSettings.courseLevels.length > 0
+          ? rawSettings.courseLevels
+          : DEFAULT_COURSE_LEVELS,
+      });
+    }
 
     const shared = {
       centerName: center.name || 'Abdora AI Markazi',
@@ -1188,11 +1236,22 @@ const updateSettings = async (req, res, next) => {
           };
         }
       } else if (key === 'features' && typeof value === 'object') {
-        if (role === 'admin' || role === 'manager') {
+        if (role === 'admin') {
           sharedSettingsUpdate.features = {
             ...(currentSettings.features || {}),
             ...value,
           };
+        } else if (role === 'manager') {
+          // Menejer o'z markazida ichki AI va 3D Avatar yoqish/o'chirishni boshqarishi mumkin
+          // (agar Super Admin SaaS darajasida o'chirib qo'ymagan bo'lsa)
+          const managerAllowedFeatureKeys = ['aiEnabled', 'avatarEnabled'];
+          const nextFeatures = { ...(currentSettings.features || {}) };
+          for (const fk of managerAllowedFeatureKeys) {
+            if (typeof value[fk] === 'boolean') {
+              nextFeatures[fk] = value[fk];
+            }
+          }
+          sharedSettingsUpdate.features = nextFeatures;
         }
       } else if (key === 'receptionPermissions' && typeof value === 'object') {
         if (role === 'admin' || role === 'manager') {
@@ -1643,6 +1702,7 @@ const createBranch = async (req, res, next) => {
         _count: { select: { groups: true, teachers: true } },
       },
     });
+    cache.flushAll();
     return success(res, branch, 'Branch created', 201);
   } catch (err) { next(err); }
 };
@@ -1669,6 +1729,7 @@ const updateBranch = async (req, res, next) => {
         _count: { select: { groups: true, teachers: true } },
       },
     });
+    cache.flushAll();
     return success(res, updated, 'Branch updated');
   } catch (err) { next(err); }
 };

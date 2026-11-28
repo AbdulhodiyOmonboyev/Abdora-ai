@@ -205,17 +205,24 @@ const getLessons = async (req, res, next) => {
       },
     });
 
-    // Agar talabaga hech qanday dars topilmasa, mavjud barcha faol umumiy darslarni ko'rsatamiz
+    // Agar talabaning guruhida dars topilmasa, faqat o'z o'quv markazining umumiy (guruhsiz) darslarini ko'rsatamiz
     if (lessons.length === 0 && req.user.role === 'student') {
-      lessons = await prisma.lesson.findMany({
-        where: { isActive: true },
-        orderBy: { order: 'asc' },
-        include: {
-          teacher: { select: { id: true, name: true } },
-          group: { select: { id: true, name: true } },
-        },
-        take: 30,
+      const studentRecord = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { centerId: true },
       });
+      const studentCenterId = studentRecord?.centerId || req.user.centerId || null;
+      if (studentCenterId) {
+        lessons = await prisma.lesson.findMany({
+          where: { isActive: true, centerId: studentCenterId, groupId: null },
+          orderBy: { order: 'asc' },
+          include: {
+            teacher: { select: { id: true, name: true } },
+            group: { select: { id: true, name: true } },
+          },
+          take: 30,
+        });
+      }
     }
 
     return success(res, lessons);
@@ -224,23 +231,26 @@ const getLessons = async (req, res, next) => {
 
 const getLessonById = async (req, res, next) => {
   try {
-    let lesson = await prisma.lesson.findFirst({
+    let effectiveCenterId = req.user.centerId || null;
+    if (req.user.role !== 'admin' && !effectiveCenterId) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { centerId: true },
+      });
+      effectiveCenterId = dbUser?.centerId || null;
+    }
+
+    const lesson = await prisma.lesson.findFirst({
       where: {
         id: req.params.id,
         ...(req.user.role === 'admin'
           ? {}
-          : req.user.centerId
-          ? { OR: [{ centerId: req.user.centerId }, { centerId: null }] }
-          : {}),
+          : effectiveCenterId
+          ? { OR: [{ centerId: effectiveCenterId }, { centerId: null }] }
+          : { centerId: null }),
       },
       include: { teacher: { select: { id: true, name: true } }, group: { select: { id: true, name: true } } },
     });
-    if (!lesson) {
-      lesson = await prisma.lesson.findFirst({
-        where: { id: req.params.id },
-        include: { teacher: { select: { id: true, name: true } }, group: { select: { id: true, name: true } } },
-      });
-    }
     if (!lesson) return error(res, 'Lesson not found', 404);
 
     if (req.user.role === 'student') {
@@ -647,8 +657,9 @@ const completeLesson = async (req, res, next) => {
       alreadyCompleted,
       completedLessonIds: completedLessons,
       completedCount: completedLessons.length,
-      xpGained: gamifyRes?.xpGained ?? xpReward,
-      newXP: updatedUser?.xp ?? (student.xp + xpReward),
+      xpGained: gamifyRes?.xpGained ?? earnedXp,
+      newXP: updatedUser?.xp ?? (student.xp + earnedXp),
+      coins: updatedUser?.coins ?? student.coins,
       streakCurrent: updatedUser?.streakCurrent ?? student.streakCurrent,
       streakLongest: updatedUser?.streakLongest ?? student.streakLongest,
       level: updatedUser?.level ?? student.level,

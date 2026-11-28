@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import './login.css';
 import { LogoIcon } from '../../components/ui/Logo';
 import { formatUzPhone } from '../../utils/formatPhone';
+import { hasStudentCreatedAvatar } from '../../utils/format';
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -25,9 +26,12 @@ export default function LoginPage() {
       setAuth(user, accessToken, refreshToken);
       toast.success(t('login_success') || 'Xush kelibsiz!');
       const role = user.role;
-      if (role === 'admin' || role === 'owner') navigate('/owner/dashboard');
+      if (role === 'admin' || role === 'owner') navigate('/admin/dashboard');
+      else if (role === 'manager') navigate('/manager/dashboard');
       else if (role === 'teacher') navigate('/teacher/dashboard');
-      else if (role === 'student') navigate('/student/dashboard');
+      else if (role === 'student') {
+        navigate(hasStudentCreatedAvatar(user) ? '/student/dashboard' : '/student/avatar');
+      }
       else if (role === 'reception') navigate('/reception/dashboard');
       else navigate('/');
     },
@@ -87,7 +91,7 @@ export default function LoginPage() {
                     setForm(f => ({ ...f, username: val }));
                   }
                 }}
-                placeholder="+998 (90) 200-20-20"
+                placeholder={t('enter_username') || 'Login yoki +998 90 123 45 67'}
                 className="login-input"
                 autoComplete="username"
               />

@@ -9,10 +9,10 @@ const CACHE_TTL_MS = 30000; // 30 seconds
 const sanitizeKey = (k) => (k ? String(k).trim().replace(/^["']|["']$/g, '') : '');
 
 const getEnvApiKey = () => {
-  const key = process.env.GIMINI_AI_API_KEY ||
-    process.env.GEMINI_API_KEY ||
+  const key = process.env.GEMINI_API_KEY ||
     process.env.GEMINI_AI_API_KEY ||
     process.env.GOOGLE_API_KEY ||
+    process.env.GIMINI_AI_API_KEY ||
     '';
   return sanitizeKey(key);
 };
@@ -26,8 +26,8 @@ const normalizeModelName = (modelName) => {
   const trimmed = modelName.trim();
   const lower = trimmed.toLowerCase();
 
-  if (lower === 'gemini-3.8-flash' || lower === 'gemini-3.5-flash') return 'gemini-2.5-flash';
-  if (lower === 'gemini-3.5-flash-lite') return 'gemini-2.0-flash';
+  if (lower === 'gemini-3.8-flash' || lower === 'gemini-3.5-flash' || lower === 'gemini-1.5-flash') return 'gemini-2.5-flash';
+  if (lower === 'gemini-3.5-flash-lite' || lower === 'gemini-1.5-flash-8b') return 'gemini-2.0-flash';
   if (lower === 'gemini-3.8-flash-tts' || lower === 'gemini-3.8-flash-lite-tts') return 'gemini-2.5-flash-preview-tts';
   if (lower === 'gemini-2.5-flash-image') return 'imagen-3.0-generate-002';
   if (lower === 'default') return 'gemini-2.5-flash';
@@ -186,7 +186,7 @@ const updateCachedApiKey = (newAgent) => {
   }
 };
 
-const STABLE_FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+const STABLE_FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
 
 const isTransientAiError = (err) => {
   const msg = String(err?.message || err || '');
@@ -293,6 +293,17 @@ const createResilientModel = (client, primaryModelName, generationConfig) => {
                 return await activeModelInstance.generateContent(...args);
               } catch (err) {
                 lastError = err;
+                const errMsg = String(err?.message || '');
+                if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
+                  const envKey = getEnvApiKey();
+                  if (envKey && cachedAgent?.apiKey && envKey !== cachedAgent.apiKey) {
+                    cachedAgent = null;
+                    const envClient = new GoogleGenerativeAI(envKey);
+                    const envModel = envClient.getGenerativeModel({ model: currentModelName, generationConfig });
+                    return await envModel.generateContent(...args);
+                  }
+                  throw err;
+                }
                 if (!isFallbackableError(err)) {
                   throw err;
                 }

@@ -121,9 +121,9 @@ export default function AdminCenterDetail() {
   return (
     <div className="w-full p-3.5 sm:p-6 pb-24 md:pb-8 space-y-6 max-w-6xl mx-auto" style={{ background: "var(--background)" }}>
       {/* ── Header ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b"
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b"
         style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <Link
             to="/admin/centers"
             className="p-2.5 rounded-xl border transition-colors hover:bg-[var(--secondary-background)] flex-shrink-0"
@@ -133,7 +133,7 @@ export default function AdminCenterDetail() {
           </Link>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold truncate" style={{ color: "var(--text-primary)" }}>
+              <h1 className="text-xl sm:text-2xl font-bold break-words" style={{ color: "var(--text-primary)" }}>
                 {center.name}
               </h1>
               <StatusBadge status={center.isActive ? "faol" : "nofaol"} />
@@ -144,7 +144,7 @@ export default function AdminCenterDetail() {
           </div>
         </div>
 
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto flex-shrink-0">
           {/* Main Action: Go to Settings Page */}
           <Link
             to={`/admin/centers/${id}/settings`}
@@ -223,7 +223,7 @@ export default function AdminCenterDetail() {
 
       {/* ── Center Settings Banner Callout ─────────────────── */}
       <div
-        className="p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs"
+        className="p-4 sm:p-5 rounded-2xl border flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-xs"
         style={{
           background: "linear-gradient(135deg, rgba(240, 100, 19, 0.06) 0%, rgba(99, 102, 241, 0.06) 100%)",
           borderColor: "var(--border)",

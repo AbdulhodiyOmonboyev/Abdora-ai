@@ -792,7 +792,7 @@ export default function ManagerSettings() {
       <PageHeader
         title="Menejer sozlamalari"
         subtitle="Qabulxona boshqaruvi, filial operatsiyalari, to'lovlar va o'quv jarayoni"
-        action={
+        actions={
           <button
             onClick={() => saveMutation.mutate(settings)}
             disabled={saveMutation.isPending}
@@ -1416,11 +1416,11 @@ export default function ManagerSettings() {
                 <div className="space-y-5">
                   {/* Header & Statistika */}
                   <div className="panel-card space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--border)]">
-                      <div>
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4 border-b border-[var(--border)]">
+                      <div className="min-w-0 flex-1">
                         <span className="panel-kicker text-indigo-600 dark:text-indigo-400">O'quv Mahsulotlari</span>
                         <h2 className="panel-title mt-0.5 flex items-center gap-2">
-                          <Layers className="w-5 h-5 text-indigo-500" />
+                          <Layers className="w-5 h-5 text-indigo-500 flex-shrink-0" />
                           <span>Markaz Kurs Darajalari va Mahsulotlari</span>
                         </h2>
                         <p className="panel-subtitle mt-1">
@@ -1430,7 +1430,7 @@ export default function ManagerSettings() {
                       <button
                         type="button"
                         onClick={openCreateLevel}
-                        className="btn-primary text-xs px-4 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 self-start sm:self-auto shadow-sm"
+                        className="btn-primary text-xs px-4 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 self-start lg:self-auto shadow-sm flex-shrink-0 whitespace-nowrap"
                       >
                         <Plus className="w-4 h-4" />
                         <span>Yangi daraja qo'shish</span>
@@ -1438,37 +1438,37 @@ export default function ManagerSettings() {
                     </div>
 
                     {/* Metric Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] flex items-center gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
                           <Layers size={20} />
                         </div>
-                        <div>
-                          <div className="text-xl font-extrabold text-[var(--text-primary)]">
+                        <div className="min-w-0">
+                          <div className="text-xl font-extrabold text-[var(--text-primary)] whitespace-nowrap">
                             {(settings.courseLevels || DEFAULT_COURSE_LEVELS).length} ta
                           </div>
                           <div className="text-xs text-[var(--text-muted)]">Faol kurs darajalari</div>
                         </div>
                       </div>
 
-                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] flex items-center gap-3">
+                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
                           <Users size={20} />
                         </div>
-                        <div>
-                          <div className="text-xl font-extrabold text-[var(--text-primary)]">
+                        <div className="min-w-0">
+                          <div className="text-xl font-extrabold text-[var(--text-primary)] whitespace-nowrap">
                             {teachers.length} nafar
                           </div>
                           <div className="text-xs text-[var(--text-muted)]">Markaz o'qituvchilari</div>
                         </div>
                       </div>
 
-                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] flex items-center gap-3">
+                      <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
                           <BookOpen size={20} />
                         </div>
-                        <div>
-                          <div className="text-xl font-extrabold text-[var(--text-primary)]">
+                        <div className="min-w-0">
+                          <div className="text-xl font-extrabold text-[var(--text-primary)] whitespace-nowrap">
                             {groups.length} ta
                           </div>
                           <div className="text-xs text-[var(--text-muted)]">Mavjud guruhlar</div>
@@ -1478,7 +1478,7 @@ export default function ManagerSettings() {
                   </div>
 
                   {/* Levels Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                     {(settings.courseLevels || DEFAULT_COURSE_LEVELS).map((lvl) => {
                       const assignedTeachers = teachers.filter(t => (lvl.teacherIds || []).includes(t.id));
                       const activeGroupsCount = groups.filter(g => g.level?.toLowerCase() === lvl.name?.toLowerCase()).length;
@@ -1488,12 +1488,12 @@ export default function ManagerSettings() {
                           className="p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] hover:border-indigo-400/40 transition-all space-y-3 relative group"
                         >
                           <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
                               <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 font-bold text-sm">
                                 <Layers size={18} />
                               </div>
-                              <div className="min-w-0">
-                                <h3 className="text-sm font-bold text-[var(--text-primary)] truncate">
+                              <div className="min-w-0 flex-1">
+                                <h3 className="text-sm font-bold text-[var(--text-primary)] break-words leading-snug">
                                   {lvl.name}
                                 </h3>
                                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
@@ -1605,6 +1605,51 @@ export default function ManagerSettings() {
                           Ushbu markaz umumiy tizim modelidan emas, siz tanlagan shaxsiy AI Agenti yoki kiritgan API kalitingizdan mustaqil foydalanadi.
                         </div>
                       </div>
+                    </div>
+
+                    {/* 3D AI Avatar Switch: O'quvchilar uchun yoqish / o'chirish */}
+                    <div className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)]">
+                      <div>
+                        <div className="text-xs font-semibold text-[var(--text-primary)]">
+                          O'quvchilar uchun 3D AI Avatar va Savol-Javob hamrohi
+                        </div>
+                        <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                          {settings.features?.avatarEnabled === false
+                            ? "Super Admin tomonidan ushbu markaz tarifida 3D Avatar moduli o'chirilgan"
+                            : "Yoqilgan bo'lsa, o'quvchi birinchi kirishda 3D avatar yaratadi va u oyna bo'ylab yurib o'tilgan darslardan savol-javob qiladi"}
+                        </div>
+                      </div>
+                      <ToggleSwitch
+                        checked={
+                          settings.features?.avatarEnabled !== false &&
+                          settings.roles?.student?.permissions?.canUseAvatar !== false
+                        }
+                        onChange={() => {
+                          if (settings.features?.avatarEnabled === false) {
+                            toast.error("Bu modul platforma administratori tomonidan markaz tarifida o'chirilgan");
+                            return;
+                          }
+                          const currAllowed = settings.roles?.student?.permissions?.canUseAvatar !== false;
+                          const nextAllowed = !currAllowed;
+                          const updatedRoles = {
+                            ...(settings.roles || {}),
+                            student: {
+                              ...(settings.roles?.student || { enabled: true }),
+                              permissions: {
+                                ...(settings.roles?.student?.permissions || {}),
+                                canUseAvatar: nextAllowed,
+                              },
+                            },
+                          };
+                          set('roles', updatedRoles);
+                          api.put('/admin/settings', { roles: updatedRoles })
+                            .then(() => {
+                              qc.invalidateQueries({ queryKey: ['center-settings'] });
+                              toast.success(nextAllowed ? "O'quvchilar uchun 3D AI Avatar yoqildi" : "O'quvchilar uchun 3D AI Avatar o'chirildi");
+                            })
+                            .catch(() => {});
+                        }}
+                      />
                     </div>
 
                     {/* Master Switch: AI ni yoqish / o'chirish */}

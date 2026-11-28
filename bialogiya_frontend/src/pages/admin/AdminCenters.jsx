@@ -129,13 +129,13 @@ function CenterModal({ initial = emptyCenter, onClose, onSave, loading, plans = 
                     <label className="text-xs font-medium mb-1.5 block text-gray-700 dark:text-gray-300">Tarif</label>
                     <select
                       className="input-field"
-                      value={form.planId || ''}
+                      value={form.planId || (plans[0]?.id || '')}
                       onChange={e => f("planId", e.target.value)}
                     >
-                      <option value="">Standart (Starter)</option>
-                      {plans.map(p => (
+                      {plans.length === 0 && <option value="">Standart (Starter)</option>}
+                      {plans.map((p, idx) => (
                         <option key={p.id} value={p.id}>
-                          {p.name} — {p.price?.toLocaleString()} UZS/oy
+                          {p.name} — {p.price?.toLocaleString()} UZS/oy{idx === 0 ? ' (Standart)' : ''}
                         </option>
                       ))}
                     </select>

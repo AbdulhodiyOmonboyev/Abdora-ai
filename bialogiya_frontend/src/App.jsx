@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from './config/axios';
 import { useAuthStore } from './store/authStore';
 import i18n, { setLanguage } from './config/i18n';
 import MainLayout from './components/layout/MainLayout';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import { hasStudentCreatedAvatar, isStudentAvatarEnabled } from './utils/format';
 
 // Shared
 import ProfilePage from './pages/shared/ProfilePage';
@@ -112,22 +113,43 @@ import ReceptionStaffDetail from './pages/admin/ReceptionStaffDetail';
 
 const ProtectedRoute = ({ children, role, permission }) => {
   const { isAuthenticated, user } = useAuthStore();
+  const location = useLocation();
 
   const { data: serverSettings } = useQuery({
     queryKey: ['center-settings', user?.centerId || user?.id],
     queryFn: () => api.get('/admin/settings').then(r => r.data?.data || {}),
-    enabled: !!user && user.role === 'reception' && !!permission,
+    enabled: !!user && user.role !== 'admin',
     staleTime: 30 * 1000,
   });
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   const allowedRoles = Array.isArray(role) ? role : role ? [role] : null;
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    if (user?.role === 'student') return <Navigate to="/student/dashboard" replace />;
+    if (user?.role === 'student') {
+      return <Navigate to={hasStudentCreatedAvatar(user, serverSettings) ? '/student/dashboard' : '/student/avatar'} replace />;
+    }
     if (user?.role === 'teacher') return <Navigate to="/teacher/dashboard" replace />;
     if (user?.role === 'reception') return <Navigate to="/reception/dashboard" replace />;
     if (user?.role === 'manager') return <Navigate to="/manager/dashboard" replace />;
     if (user?.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  // Agar markazda 3D AI Avatar o'chirilgan bo'lsa, /student/avatar sahifasini yopish
+  if (
+    user?.role === 'student' &&
+    location.pathname === '/student/avatar' &&
+    !isStudentAvatarEnabled(user, serverSettings)
+  ) {
+    return <Navigate to="/student/dashboard" replace />;
+  }
+
+  // O'quvchi birinchi marta kirganda (agar markazda 3D Avatar ruxsat etilgan bo'lsa) uni yaratishi shart!
+  if (
+    user?.role === 'student' &&
+    !hasStudentCreatedAvatar(user, serverSettings) &&
+    location.pathname !== '/student/avatar'
+  ) {
+    return <Navigate to="/student/avatar" replace />;
   }
 
   if (user?.role === 'reception' && permission && serverSettings) {
@@ -169,7 +191,7 @@ export default function App() {
         </Route>
 
         <Route path="/" element={
-          user?.role === 'student' ? <Navigate to="/student/dashboard" replace /> :
+          user?.role === 'student' ? <Navigate to={hasStudentCreatedAvatar(user) ? '/student/dashboard' : '/student/avatar'} replace /> :
           user?.role === 'teacher' ? <Navigate to="/teacher/dashboard" replace /> :
           user?.role === 'reception' ? <Navigate to="/reception/dashboard" replace /> :
           user?.role === 'manager' ? <Navigate to="/manager/dashboard" replace /> :
@@ -228,9 +250,14 @@ export default function App() {
         <Route path="/profile" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route index element={<ProfilePage />} />
         </Route>
-        <Route path="/avatar" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-          <Route index element={<AvatarPage />} />
-        </Route>
+        <Route
+          path="/avatar"
+          element={
+            user?.role === 'student'
+              ? <Navigate to="/student/avatar" replace />
+              : <Navigate to="/" replace />
+          }
+        />
         <Route path="/users" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path=":id" element={<UserDetail />} />
         </Route>
@@ -251,9 +278,9 @@ export default function App() {
           <Route path="reception/:id" element={<ReceptionStaffDetail />} />
           <Route path="students" element={<AdminStudents />} />
           <Route path="students/:id" element={<UserDetail />} />
-          <Route path="managers" element={<AdminManagers />} />
+          <Route path="managers" element={<Navigate to="/admin/centers" replace />} />
           <Route path="managers/:id" element={<AdminManagerDetail />} />
-          <Route path="users" element={<AdminUsers />} />
+          <Route path="users" element={<Navigate to="/admin/centers" replace />} />
           <Route path="groups" element={<AdminGroups />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>

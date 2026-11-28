@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { XP_REWARDS, COIN_REWARDS } = require('../src/services/gamification.service');
-const { submitStepProgress, finishLessonQuiz } = require('../src/controllers/lesson.controller');
+const { submitStepProgress, finishLessonQuiz, completeLesson } = require('../src/controllers/lesson.controller');
 const { prisma } = require('../src/config/db');
 const router = require('../src/routes/lesson.routes');
 
@@ -287,4 +287,60 @@ test('Lesson Routes: /:id/step-submit and /:id/quiz-finish are registered', () =
   const quizFinishRoute = routes.find(r => r.path === '/:id/quiz-finish');
   assert.ok(quizFinishRoute, 'Route /:id/quiz-finish must be registered');
   assert.ok(quizFinishRoute.methods.includes('post'), '/:id/quiz-finish must support POST');
+});
+
+test('Lesson Controller: completeLesson awards +50 XP on first completion and handles alreadyCompleted=true cleanly', async () => {
+  const origLessonFindUnique = prisma.lesson.findUnique;
+  const origUserFindUnique = prisma.user.findUnique;
+  const origUserUpdate = prisma.user.update;
+
+  try {
+    let state = {
+      id: 'student-1',
+      xp: 120,
+      coins: 15,
+      level: 1,
+      streakCurrent: 2,
+      streakLongest: 4,
+      streakLastDate: new Date(),
+      achievements: { completedLessons: [] },
+    };
+
+    prisma.lesson.findUnique = async () => ({ id: 'lesson-complete-1', title: 'Mitoxondriya' });
+    prisma.user.findUnique = async () => ({ ...state });
+    prisma.user.update = async ({ data }) => {
+      state = { ...state, ...data };
+      return state;
+    };
+
+    const req = { params: { id: 'lesson-complete-1' }, user: { userId: 'student-1' } };
+    let firstRes = null;
+    const res1 = {
+      status() { return this; },
+      json(body) { firstRes = body; return this; },
+    };
+    const next = (err) => { if (err) throw err; };
+
+    await completeLesson(req, res1, next);
+    assert.equal(firstRes.data.completed, true);
+    assert.equal(firstRes.data.alreadyCompleted, false);
+    assert.equal(firstRes.data.xpGained, 50);
+    assert.equal(firstRes.data.completedLessonIds.includes('lesson-complete-1'), true);
+
+    // Second call (e.g. Stage 4 after finishLessonQuiz already marked lesson completed)
+    let secondRes = null;
+    const res2 = {
+      status() { return this; },
+      json(body) { secondRes = body; return this; },
+    };
+    await completeLesson(req, res2, next);
+    assert.equal(secondRes.data.completed, true);
+    assert.equal(secondRes.data.alreadyCompleted, true);
+    assert.equal(secondRes.data.xpGained, 0);
+    assert.equal(secondRes.data.coins, state.coins);
+  } finally {
+    prisma.lesson.findUnique = origLessonFindUnique;
+    prisma.user.findUnique = origUserFindUnique;
+    prisma.user.update = origUserUpdate;
+  }
 });

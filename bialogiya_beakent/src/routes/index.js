@@ -29,5 +29,6 @@ router.use('/subscriptions', require('./subscription.routes'));
 router.use('/ai-usage', require('./ai-usage.routes'));
 router.use('/sms', require('./sms.routes'));
 router.use('/custom-roles', require('./custom-role.routes'));
+router.use('/ai', require('./ai.routes'));
 
 module.exports = router;

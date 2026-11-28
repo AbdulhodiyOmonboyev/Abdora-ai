@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import api from '../../config/axios';
 import { useAuthStore } from '../../store/authStore';
-import { getLevelProgress } from '../../utils/format';
+import { getLevelProgress, resolveMediaUrl } from '../../utils/format';
 
 const MOTIVATIONS = [
   "Har bir dars — kelajagingizga bitta qadam!",
@@ -86,7 +86,7 @@ export default function StudentDashboard() {
           <div className="relative flex-shrink-0">
             {user?.avatar ? (
               <img
-                src={user.avatar}
+                src={resolveMediaUrl(user.avatar)}
                 alt={displayName}
                 className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-primary/20 shadow-sm"
               />

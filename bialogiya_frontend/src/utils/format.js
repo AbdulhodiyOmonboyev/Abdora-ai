@@ -94,10 +94,34 @@ export const getScoreBg = (score) => {
 
 export const resolveMediaUrl = (url) => {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
     return url;
   }
-  const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '');
+  const isLocalBrowser =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const rawApiUrl =
+    isLocalBrowser && import.meta.env.VITE_FORCE_REMOTE_API !== 'true'
+      ? (import.meta.env.VITE_LOCAL_API_URL || 'http://localhost:5000/api')
+      : (import.meta.env.VITE_API_URL || '');
+  const apiBase = rawApiUrl.replace(/\/api\/?$/, '');
   return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`;
 };
+
+export const isStudentAvatarEnabled = (user, serverSettings = null) => {
+  if (!user || String(user.role || '').toLowerCase() !== 'student') return false;
+  const features = serverSettings?.features || user?.centerFeatures || {};
+  const roles = serverSettings?.roles || user?.centerRoles || {};
+  if (features.avatarEnabled === false) return false;
+  if (roles?.student?.permissions?.canUseAvatar === false) return false;
+  return true;
+};
+
+export const hasStudentCreatedAvatar = (user, serverSettings = null) => {
+  if (!user || String(user.role || '').toLowerCase() !== 'student') return true;
+  if (!isStudentAvatarEnabled(user, serverSettings)) return true;
+  const ap = user?.permissions?.avatarProfile;
+  return Boolean(ap && (ap.isSaved || ap.savedAtXp !== undefined || ap.updatedAt));
+};
+
 

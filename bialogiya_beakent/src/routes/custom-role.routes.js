@@ -10,7 +10,7 @@ const {
 } = require('../controllers/custom-role.controller');
 
 router.use(verifyToken);
-router.get('/', getCustomRoles);
+router.get('/', requireRole(['admin', 'manager', 'reception']), getCustomRoles);
 router.post('/', requireRole(['admin', 'manager']), createCustomRole);
 router.put('/:id', requireRole(['admin', 'manager']), updateCustomRole);
 router.delete('/:id', requireRole(['admin', 'manager']), deleteCustomRole);

@@ -76,6 +76,8 @@ const createCenter = async (req, res, next) => {
       name,
       address,
       phone,
+      email,
+      website,
       managerName,
       managerUsername,
       managerPassword,
@@ -90,6 +92,8 @@ const createCenter = async (req, res, next) => {
         name: name.trim(),
         address: address?.trim() || null,
         phone: phone?.trim() || null,
+        email: email?.trim() || null,
+        website: website?.trim() || null,
         settings: {},
       },
     });

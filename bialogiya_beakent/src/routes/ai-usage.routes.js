@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken } = require('../middleware/auth.middleware');
+const { verifyToken, requireRole } = require('../middleware/auth.middleware');
 const {
   getAIUsageStats,
   getAIUsageLogs,
@@ -8,6 +8,7 @@ const {
 } = require('../controllers/ai-usage.controller');
 
 router.use(verifyToken);
+router.use(requireRole(['admin', 'manager']));
 router.get('/stats', getAIUsageStats);
 router.get('/logs', getAIUsageLogs);
 router.get('/export', exportAIUsageCSV);

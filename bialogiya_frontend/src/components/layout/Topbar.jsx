@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/axios';
 import toast from 'react-hot-toast';
-import { formatRelativeTime } from '../../utils/format';
+import { formatRelativeTime, resolveMediaUrl } from '../../utils/format';
 import { setLanguage } from '../../config/i18n';
 
 const ROLE_LABELS = {
@@ -668,7 +668,7 @@ export default function Topbar({ onMenuClick, isSidebarOpen }) {
             >
               {user?.avatar ? (
                 <img
-                  src={user.avatar}
+                  src={resolveMediaUrl(user.avatar)}
                   alt={user?.name || "Avatar"}
                   className="w-8 h-8 rounded-xl object-cover shadow-xs flex-shrink-0 border border-[var(--border)]"
                 />

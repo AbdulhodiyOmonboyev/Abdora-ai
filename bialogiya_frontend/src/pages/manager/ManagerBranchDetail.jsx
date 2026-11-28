@@ -32,6 +32,10 @@ export default function ManagerBranchDetail() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['manager-branch-detail', id] });
       qc.invalidateQueries({ queryKey: ['manager-branches'] });
+      qc.invalidateQueries({ queryKey: ['admin-branches'] });
+      qc.invalidateQueries({ queryKey: ['header-branches'] });
+      qc.invalidateQueries({ queryKey: ['branches-list'] });
+      qc.invalidateQueries({ queryKey: ['branches'] });
       setShowEdit(false);
       toast.success('Filial maʼlumotlari yangilandi');
     },
